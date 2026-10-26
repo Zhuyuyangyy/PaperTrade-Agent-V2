@@ -314,7 +314,11 @@ $('#gen').textContent = S.generated_at || '--';
 const total = num(pf.total_usdt);
 const pnl = num(pf.pnl_usdt);
 $('#k-eq').textContent = total === null ? '--' : money(total);
-$('#k-eq-s').textContent = '初始 ' + money(pf.starting_total_usdt) + ' · 5 个账本 · ' + (num(pf.running_count) || 0) + ' 个引擎在动';
+$('#k-eq-s').textContent = '初始 ' + money(pf.starting_total_usdt) + ' · 5 个账本 · ' + (num(pf.running_count) || 0) + ' 个引擎在动'
+  + (function () {
+      const bad = (num(mh.unpriced_count) || 0) + (num((S.counterpart || {}).unpriced_count) || 0);
+      return bad > 0 ? ' · ⚠ ' + bad + ' 笔持仓未标价，权益不完整' : '';
+    })();
 const pnlEl = $('#k-pnl');
 pnlEl.textContent = signed(pnl);
 pnlEl.className = 'kpi-v ' + (pnl === null ? '' : pnl >= 0 ? 'pos' : 'neg');

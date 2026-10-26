@@ -129,19 +129,24 @@ class CounterpartDesk:
             "SELECT COALESCE(SUM(exit_fill_price*qty - exit_cost_usd),0) FROM positions"
             " WHERE status='closed' AND exit_fill_price IS NOT NULL"
         ).fetchone()[0]
-        holdings = sum(float(p["mark_price"] or 0.0) * float(p["qty"]) for p in opens)
+        unpriced = [p["symbol"] for p in opens if not p["mark_price"]]
+        holdings = sum(float(p["mark_price"]) * float(p["qty"]) for p in opens if p["mark_price"])
         starting = float(self.cfg["starting_cash_usdt"])
         cash = starting - float(spent) + float(back)
         equity = cash + holdings
         return {
             "kind": "counterpart",
             "has_ledger": True,
+            # Equity is only complete when every holding has a mark; callers
+            # must show "incomplete" rather than a number that is quietly low.
+            "equity_complete": not unpriced,
             "starting_cash_usdt": starting,
             "cash_usdt": round(cash, 4),
             "equity_usdt": round(equity, 4),
             "pnl_usdt": round(equity - starting, 4),
             "pnl_pct": round((equity - starting) / starting * 100.0, 3),
             "open_count": len(opens),
+            "unpriced_count": len(unpriced),
             "closed_count": int(closed["n"]),
             "win_count": int(closed["w"]),
             "realized_usd": round(float(closed["p"]), 4),

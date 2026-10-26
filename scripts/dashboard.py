@@ -768,7 +768,10 @@ def memehunter_snapshot(now_ms: int) -> dict:
             for p in closed
             if p["exit_fill_price"] is not None
         )
-        holdings = sum(float(p["mark_price"] or 0.0) * float(p["qty"]) for p in opens)
+        unpriced = [p["symbol"] for p in opens if not p["mark_price"]]
+        holdings = sum(float(p["mark_price"]) * float(p["qty"]) for p in opens if p["mark_price"])
+        result["unpriced_count"] = len(unpriced)
+        result["equity_complete"] = not unpriced
         starting = float(_memehunter_starting_cash())
         cash = starting - spent + back
 
@@ -814,7 +817,7 @@ def memehunter_snapshot(now_ms: int) -> dict:
                 )
 
         for p in opens:
-            mark = float(p["mark_price"] or 0.0)
+            mark = float(p["mark_price"] or 0.0)  # display only; equity excludes unpriced
             entry = float(p["entry_fill_price"])
             result["open_positions"].append(
                 {
@@ -1048,6 +1051,7 @@ def counterpart_snapshot() -> dict:
         "cash_usdt": None, "equity_usdt": None, "pnl_usd": None, "pnl_pct": None,
         "open_count": 0, "closed_count": 0, "win_count": 0, "realized_usd": None,
         "open_positions": [],
+        "unpriced_count": 0, "equity_complete": True,
         "risk": {},
     }
     if not db_path.is_file():
