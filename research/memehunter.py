@@ -77,7 +77,10 @@ CREATE TABLE IF NOT EXISTS candidates (
     vol_1h REAL NOT NULL,
     score REAL NOT NULL,
     eligible INTEGER NOT NULL,
-    reject_reason TEXT
+    reject_reason TEXT,
+    llm_score INTEGER,
+    llm_flags TEXT,
+    llm_reason TEXT
 );
 CREATE TABLE IF NOT EXISTS positions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -414,6 +417,19 @@ def connect(path: Path) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
     return conn
+
+
+def ensure_candidate_columns(conn: sqlite3.Connection) -> None:
+    """Ledgers created before the JUDGE agent need the llm_* columns."""
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(candidates)")}
+    for name, ddl in (
+        ("llm_score", "ALTER TABLE candidates ADD COLUMN llm_score INTEGER"),
+        ("llm_flags", "ALTER TABLE candidates ADD COLUMN llm_flags TEXT"),
+        ("llm_reason", "ALTER TABLE candidates ADD COLUMN llm_reason TEXT"),
+    ):
+        if name not in columns:
+            conn.execute(ddl)
+    conn.commit()
 
 
 def now_ms() -> int:

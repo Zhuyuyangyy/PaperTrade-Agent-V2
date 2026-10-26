@@ -46,8 +46,8 @@ def _run_calls(class_name: str) -> set[str]:
     raise AssertionError(f"{class_name} not found")
 
 
-def test_five_worker_agents_are_registered() -> None:
-    assert [a.name for a in AGENT_ORDER] == ["SEARCH", "RISK", "GMGN", "FOMO", "EXIT"]
+def test_six_worker_agents_are_registered() -> None:
+    assert [a.name for a in AGENT_ORDER] == ["SEARCH", "RISK", "GMGN", "JUDGE", "FOMO", "EXIT"]
 
 
 @pytest.mark.parametrize("agent", ["SearchAgent", "RiskAgent", "SmartMoneyAgent"])
@@ -150,4 +150,4 @@ def test_pipeline_writes_an_auditable_run(tmp_path: Path, monkeypatch: pytest.Mo
     pipe.close()
     assert summary["ok"]
     agents = [step["agent"] for step in summary["steps"]]
-    assert agents == ["SEARCH", "RISK", "GMGN", "FOMO", "EXIT"]
+    assert agents == ["SEARCH", "RISK", "GMGN", "JUDGE", "FOMO", "EXIT"]

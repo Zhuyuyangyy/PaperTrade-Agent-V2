@@ -28,7 +28,8 @@ import sqlite3
 import time
 from typing import Any
 
-from ..memehunter import Desk, Token, fetch_universe, record_candidates, score, veto
+from ..memehunter import Desk, Token, ensure_candidate_columns, fetch_universe, record_candidates, score, veto
+from . import judge as judge_mod
 
 PIPELINE_VERSION = 1
 
@@ -53,6 +54,18 @@ DEFAULT_CONFIG: dict = {
     "exit": {"enabled": True},
     # The C account: same candidates, same moment, simplest possible rule.
     "counterpart": {"enabled": True, "top_n": 3},
+    # JUDGE: an LLM risk opinion that reorders survivors. It never overrides a
+    # veto and never predicts price; it is one more replayable column.
+    "judge": {
+        "enabled": True,
+        "base_url": "https://api.deepseek.com",
+        "api_key_env": "DEEPSEEK_API_KEY",
+        "model": "deepseek-chat",
+        "timeout_seconds": 25,
+        "max_per_round": 3,
+        "rule_weight": 0.6,
+        "llm_weight": 0.4,
+    },
 }
 
 
@@ -277,6 +290,63 @@ class SmartMoneyAgent(BaseAgent):
         )
 
 
+class JudgeAgent(BaseAgent):
+    """JUDGE: an LLM opinion on the survivors, recorded for replay.
+
+    Only reorders. A vetoed candidate is never sent to the model, so the
+    survival line stays a rule, not an opinion. No API key or a failed call
+    means "no opinion" and the rule score stands.
+    """
+
+    name = "JUDGE"
+
+    def run(self, ctx: Context) -> AgentResult:
+        cfg = dict(ctx.cfg.get("judge") or {})
+        survivors = list(ctx.get("survivors", []))
+        if not cfg.get("enabled") or not survivors:
+            return AgentResult(agent=self.name, ok=True, summary="未启用或无候选可研判",
+                               produced=0)
+        limit = int(cfg.get("max_per_round", 3))
+        judged: dict[str, dict] = {}
+
+        def work():
+            ensure_candidate_columns(ctx.desk.conn)
+            out: dict[str, dict] = {}
+            for value, token in survivors[:limit]:
+                candidate_id = judge_mod.candidate_id_for(ctx.desk.conn, token.mint)
+                result = judge_mod.judge_token(token, cfg)
+                if result is None:
+                    continue
+                judge_mod.record_judgment(ctx.desk.conn, token, candidate_id, cfg, result)
+                if result.get("ok"):
+                    out[token.mint] = result
+                    ctx.desk.conn.execute(
+                        "UPDATE candidates SET llm_score=?, llm_flags=?, llm_reason=? WHERE id=?",
+                        (result["score"], json.dumps(result.get("flags", []), ensure_ascii=False),
+                         result.get("reason", ""), candidate_id),
+                    )
+            ctx.desk.conn.commit()
+            return out
+
+        judged, elapsed, ok = self._timed(ctx, work)
+        ctx.put("llm_judgments", judged)
+        summary = f"研判 {len(judged)}/{min(limit, len(survivors))} 个候选"
+        if judged:
+            best = max(judged.values(), key=lambda r: r.get("score", 0))
+            summary += f" · 最高 {best.get('score')} 分"
+            flags = [f for r in judged.values() for f in (r.get("flags") or [])][:3]
+            if flags:
+                summary += " · " + ", ".join(flags)
+        return AgentResult(
+            agent=self.name,
+            ok=ok,
+            summary=summary,
+            produced=len(judged),
+            elapsed_ms=elapsed,
+            detail={"judged": {k: {"score": v.get("score"), "flags": v.get("flags")} for k, v in judged.items()}},
+        )
+
+
 class EntryAgent(BaseAgent):
     """FOMO: the only agent that opens a position. Hard stop on every entry."""
 
@@ -291,24 +361,32 @@ class EntryAgent(BaseAgent):
         # The boost never overrides a RISK veto -- it only reorders survivors.
         boost = float(ctx.cfg["smart_money"].get("score_boost", 6.0))
         buying = {str(row["symbol"]).upper() for row in ctx.get("smart_buying", [])}
+        judgments = ctx.get("llm_judgments", {}) or {}
+        judge_cfg = ctx.cfg.get("judge") or {}
         boosted = []
         for value, token in survivors:
-            mark = value + (boost if token.symbol.upper() in buying else 0.0)
-            boosted.append((mark, value, token))
+            opinion = judgments.get(token.mint)
+            llm_score = float(opinion["score"]) if opinion and opinion.get("ok") else None
+            base = judge_mod.blend(value, llm_score, judge_cfg)
+            mark = base + (boost if token.symbol.upper() in buying else 0.0)
+            boosted.append((mark, base, token, llm_score))
         boosted.sort(key=lambda item: item[0], reverse=True)
 
         def work():
             opened, skipped = [], []
-            for mark, base, token in boosted:
+            for mark, base, token, llm_score in boosted:
                 if len(opened) >= max_entries:
                     skipped.append({"symbol": token.symbol, "reason": "ROUND_QUOTA"})
                     continue
-                why = f"PIPELINE·score={base:.1f}"
+                why = f"PIPELINE·rule={base:.1f}"
+                if llm_score is not None:
+                    why += f"·llm={llm_score:.0f}"
                 if mark > base:
                     why += "·SMART_MONEY"
                 result = ctx.desk.open_position(token, why)
                 if result.get("opened"):
                     result["score"] = round(base, 1)
+                    result["llm_score"] = llm_score
                     result["smart_boosted"] = mark > base
                     opened.append(result)
                 else:
@@ -362,7 +440,7 @@ class ExitAgent(BaseAgent):
         )
 
 
-AGENT_ORDER = [SearchAgent, RiskAgent, SmartMoneyAgent, EntryAgent, ExitAgent]
+AGENT_ORDER = [SearchAgent, RiskAgent, SmartMoneyAgent, JudgeAgent, EntryAgent, ExitAgent]
 
 
 def load_config(path: Path) -> dict:

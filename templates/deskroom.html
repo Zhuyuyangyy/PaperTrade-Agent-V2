@@ -58,7 +58,7 @@ body{background:
 .lamp.run{background:var(--teal);box-shadow:0 0 10px rgba(45,212,191,.5)}
 
 /* ---------- bot room ---------- */
-.room{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:12px}
+.room{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin-top:12px}
 .bot{position:relative;border:1px solid var(--line);border-radius:14px;padding:13px 13px 12px;
   background:linear-gradient(170deg,#131a26,#0c1118);box-shadow:var(--glow);overflow:hidden;
   transition:border-color .25s,transform .25s}
@@ -202,7 +202,7 @@ table.p tr:last-child td{border-bottom:0}
 .foot{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:14px;
   font-size:9.5px;color:var(--dim);letter-spacing:.5px;padding:0 4px}
 
-@media(max-width:1500px){.room{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:1500px){.room{grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}}
 @media(max-width:1100px){
   .room{grid-template-columns:repeat(2,minmax(0,1fr))}
   .grid-2{grid-template-columns:1fr}
@@ -349,7 +349,8 @@ function robot(color) {
 const PL = mh.pipeline || null;
 const steps = (PL && PL.steps) || [];
 const stepOf = name => steps.find(st => st.agent === name) || null;
-const COLORS = {SEARCH:'#2dd4bf', RISK:'#a78bfa', GMGN:'#4a9eff', GROK:'#f0a13a', FOMO:'#35d07f', EXIT:'#8fa3b6'};
+const COLORS = {SEARCH:'#2dd4bf', RISK:'#a78bfa', GMGN:'#4a9eff', JUDGE:'#f472b6', GROK:'#f0a13a', FOMO:'#35d07f', EXIT:'#8fa3b6'};
+const ORDER = ['SEARCH','RISK','GMGN','JUDGE','GROK','FOMO','EXIT'];
 
 function botCard(key, name, role, live, metric, unit, viz, note) {
   const col = COLORS[key] || '#8fa3b6';
@@ -424,7 +425,27 @@ const cards = [];
     viz, (st && st.summary) || '等待 CopyWatch 账本'));
 })();
 
-/* 4 GROK */
+/* 4 JUDGE (LLM 研判) */
+(function () {
+  const st = stepOf('JUDGE');
+  const det = (st && st.detail) || {};
+  const judged = det.judged || {};
+  const mints = Object.keys(judged);
+  const avg = mints.length
+    ? Math.round(mints.reduce((s, k) => s + (judged[k].score || 0), 0) / mints.length)
+    : 0;
+  const flags = [];
+  mints.forEach(k => (judged[k].flags || []).forEach(f => flags.push(f)));
+  const viz = '<div class="gapbar"><i style="width:' + (mints.length ? 100 : 0) + '%;background:' + COLORS.JUDGE + '"></i></div>'
+    + '<div class="pillrow" style="margin-top:6px">'
+    + (mints.length ? '<span class="pill">均分 ' + avg + '</span>' : '<span class="pill">本轮无候选</span>')
+    + flags.slice(0, 2).map(f => '<span class="pill bad">' + esc(f) + '</span>').join('')
+    + '</div>';
+  cards.push(botCard('JUDGE', 'JUDGE', 'LLM 研判 · 只排序不放行', !!st && st.ok, String(mints.length), '个研判',
+    viz, (st && st.summary) || '等待候选 · 无 key 时自动静默'));
+})();
+
+/* 5 GROK */
 (function () {
   const totalMs = steps.reduce((s, st) => s + (num(st.elapsed_ms) || 0), 0);
   const dots = ['SEARCH','RISK','GMGN','FOMO','EXIT'].map(k => {
@@ -467,7 +488,9 @@ const cards = [];
     viz, (st && st.summary) || '等待首轮运行'));
 })();
 
-$('#room').innerHTML = cards.join('');
+const byName = {};
+cards.forEach((html, i) => { byName[ORDER[i]] = html; });
+$('#room').innerHTML = ORDER.map(n => byName[n]).filter(Boolean).join('');
 
 /* ---------- equity curve ---------- */
 const hist = (cw.equity_history || []).filter(pt => pt && Number.isFinite(Number(pt.v)));
