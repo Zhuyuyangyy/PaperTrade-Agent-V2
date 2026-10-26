@@ -854,8 +854,11 @@ def memehunter_snapshot(now_ms: int) -> dict:
         # Six-agent pipeline: the latest run, one row per agent. Read-only; a
         # desk that never ran the pipeline simply reports no pipeline at all.
         try:
+            # Only a finished round: the pipeline commits its run row first and
+            # its step rows last, so an in-flight round reads as zero agents.
             run = conn.execute(
-                "SELECT id, started_ms, finished_ms, ok FROM pipeline_runs ORDER BY id DESC LIMIT 1"
+                "SELECT id, started_ms, finished_ms, ok FROM pipeline_runs"
+                " WHERE finished_ms IS NOT NULL ORDER BY id DESC LIMIT 1"
             ).fetchone()
             if run:
                 steps = [
