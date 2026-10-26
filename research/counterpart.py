@@ -17,6 +17,7 @@ The ledger is its own SQLite file so the two desks can never share a position.
 from __future__ import annotations
 
 from pathlib import Path
+import json
 from typing import Any
 
 from .memehunter import Desk, Token, entry_slippage_bps, now_ms, score
@@ -80,10 +81,46 @@ class CounterpartDesk:
         return True, ""
 
     # ---------- one round ----------
+    def _record_choices(self, tokens: list[Token], at_ms: int) -> int:
+        """Persist what the control ranked, rejects included.
+
+        Same shape as the E desk's candidates table so a replay can join them:
+        eligible here means "the control would buy it", not "it passed a veto".
+        """
+        scan_id = self.desk.conn.execute(
+            "INSERT INTO scans (scanned_at_ms, tokens_seen, tokens_eligible, errors) "
+            "VALUES (?,?,?,?)",
+            (at_ms, len(tokens), 0, json.dumps([], ensure_ascii=False)),
+        ).lastrowid
+        ranked = self._rank(tokens)
+        wanted = {t.mint for t in ranked}
+        for token in tokens:
+            organic = token.organic_score
+            self.desk.conn.execute(
+                "INSERT INTO candidates (scan_id, scanned_at_ms, mint, symbol, price_usd,"
+                " liquidity_usd, fdv_usd, organic_score, organic_label, holder_count,"
+                " top_holders_pct, chg_5m, chg_1h, chg_24h, organic_buy_5m, organic_sell_5m,"
+                " net_buyers_5m, vol_1h, score, eligible, reject_reason)"
+                " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (
+                    scan_id, at_ms, token.mint, token.symbol, token.price_usd,
+                    token.liquidity_usd, token.fdv_usd, token.organic_score,
+                    token.organic_label, token.holder_count, token.top_holders_pct,
+                    token.chg_5m, token.chg_1h, token.chg_24h, token.organic_buy_5m,
+                    token.organic_sell_5m, token.net_buyers_5m, token.vol_1h,
+                    organic, 1 if token.mint in wanted else 0,
+                    None if token.mint in wanted else "NOT_IN_TOP_N",
+                ),
+            )
+        self.desk.conn.commit()
+        return scan_id
+
     def run_round(self, tokens: list[Token]) -> dict:
-        """Open the top-ranked candidates, then mark and exit what is open."""
+        """Record the ranking, open the top picks, then mark and exit."""
         at = now_ms()
         opened, skipped = [], []
+        if tokens:
+            self._record_choices(tokens, at)
         for token in self._rank(tokens):
             ok, reason = self.can_open(token, at)
             if not ok:

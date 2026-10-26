@@ -452,3 +452,71 @@ def test_swap_price_takes_the_base_token_on_both_sides(monkeypatch):
     assert by_kind["buy"].price_usd == pytest.approx(2360.5)
     assert by_kind["sell"].price_usd == pytest.approx(2362.75), "sell must price the base token"
     assert all(event.price_usd > 1000 for event in events), "no quote-token price may leak in"
+
+
+
+
+def test_same_symbol_keeps_only_the_largest_wallet(tmp_path) -> None:
+    """Duplicated buys of one token by many tracked wallets are one signal."""
+    import sys
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).resolve().parents[1]))
+    from research.copywatch import agent as agent_mod, store
+
+    db = _P(tmp_path) / "dedupe.sqlite"
+    conn = store.connect(db)
+    store.ensure_schema(conn)
+    for address, notional in (("0xbig", 9_000_000.0), ("0xmid", 500_000.0), ("0xsmall", 20_000.0)):
+        conn.execute(
+            "INSERT INTO wallets(address, network, first_seen_ms, last_seen_ms, swaps, buys,"
+            " sells, notional_usd) VALUES(?,?,?,?,?,?,?,?)",
+            (address, "base", 1, 1, 10, 10, 0, notional),
+        )
+    conn.commit()
+
+    class _Ev:
+        def __init__(self, wallet: str, symbol: str):
+            self.wallet = wallet
+            self.network = "base"
+            self.base_symbol = symbol
+            self.usd = 1000.0
+
+    events = [_Ev("0xsmall", "PEPE"), _Ev("0xbig", "PEPE"), _Ev("0xmid", "PEPE"), _Ev("0xbig", "DOGE")]
+    desk = agent_mod.CopyWatchAgent.__new__(agent_mod.CopyWatchAgent)
+    kept, dropped = desk._dedupe_by_symbol(conn, events, 1)
+    assert [e.wallet for e in kept] == ["0xbig", "0xbig"]
+    assert sorted(e.wallet for e in dropped) == ["0xmid", "0xsmall"]
+    conn.close()
+
+
+def test_same_symbol_keeps_only_the_largest_wallet(tmp_path) -> None:
+    """Duplicated buys of one token by many tracked wallets are one signal."""
+    import sys
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).resolve().parents[1]))
+    from research.copywatch import agent as agent_mod, store
+
+    db = _P(tmp_path) / "dedupe.sqlite"
+    conn = store.connect(db)
+    store.ensure_schema(conn)
+    for address, notional in (("0xbig", 9_000_000.0), ("0xmid", 500_000.0), ("0xsmall", 20_000.0)):
+        conn.execute(
+            "INSERT INTO wallets(address, network, first_seen_ms, last_seen_ms, swaps, buys,"
+            " sells, notional_usd) VALUES(?,?,?,?,?,?,?,?)",
+            (address, "base", 1, 1, 10, 10, 0, notional),
+        )
+    conn.commit()
+
+    class _Ev:
+        def __init__(self, wallet: str, symbol: str):
+            self.wallet = wallet
+            self.network = "base"
+            self.base_symbol = symbol
+            self.usd = 1000.0
+
+    events = [_Ev("0xsmall", "PEPE"), _Ev("0xbig", "PEPE"), _Ev("0xmid", "PEPE"), _Ev("0xbig", "DOGE")]
+    desk = agent_mod.CopyWatchAgent.__new__(agent_mod.CopyWatchAgent)
+    kept, dropped = desk._dedupe_by_symbol(conn, events, 1)
+    assert [e.wallet for e in kept] == ["0xbig", "0xbig"]
+    assert sorted(e.wallet for e in dropped) == ["0xmid", "0xsmall"]
+    conn.close()

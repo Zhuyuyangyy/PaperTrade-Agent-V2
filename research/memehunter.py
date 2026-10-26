@@ -413,10 +413,11 @@ def entry_slippage_bps(notional: float, liquidity_usd: float) -> float:
 
 
 def connect(path: Path) -> sqlite3.Connection:
-    conn = sqlite3.connect(str(path))
+    conn = sqlite3.connect(str(path), timeout=10.0)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
     return conn
+
 
 
 def ensure_candidate_columns(conn: sqlite3.Connection) -> None:

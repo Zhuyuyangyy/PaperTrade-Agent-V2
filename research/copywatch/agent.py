@@ -64,6 +64,9 @@ DEFAULT_CONFIG: dict = {
         # Tracking 434 wallets produced heavily overlapping signals. Cap the
         # active set to the highest-volume wallets.
         "max_tracked_wallets": 120,
+        # Many tracked wallets buy the same token minutes apart; only the
+        # largest wallet's signal per symbol is followed, the rest are dupes.
+        "max_wallets_per_symbol": 1,
     },
     "risk": {
         "notional_usdt": 100.0,
@@ -72,7 +75,7 @@ DEFAULT_CONFIG: dict = {
         "min_pool_reserve_usd": 250_000.0,
         "max_price_age_seconds": 180,
         "cooldown_minutes": 20,
-        "max_open_positions": 2,
+        "max_open_positions": 3,
         "max_daily_loss_usdt": 30.0,
     },
     "exit": {"take_profit_bps": 120.0, "stop_loss_bps": 80.0, "max_hold_minutes": 45},
@@ -267,6 +270,36 @@ class CopyWatchAgent:
             )
             summary["discovered_pools"] = len(found)
 
+    def _dedupe_by_symbol(self, conn, events: list, top_n: int) -> tuple[list, list]:
+        """Keep the top_n largest-wallet signals per symbol, drop the dupes.
+
+        Returns (kept, dropped). A wallet's size is its cumulative observed
+        notional, so "the largest wallet bought X" survives and the nine
+        smaller wallets that bought the same X minutes later do not.
+        """
+        if top_n <= 0 or len(events) <= 1:
+            return events, []
+        by_symbol: dict[str, list] = {}
+        for event in events:
+            by_symbol.setdefault(event.base_symbol, []).append(event)
+        kept: list = []
+        dropped: list = []
+        for _symbol, group in by_symbol.items():
+            if len(group) <= top_n:
+                kept.extend(group)
+                continue
+            sized = []
+            for event in group:
+                row = conn.execute(
+                    "SELECT notional_usd FROM wallets WHERE address = ? AND network = ?",
+                    (event.wallet, event.network),
+                ).fetchone()
+                sized.append((float(row[0]) if row else 0.0, event))
+            sized.sort(key=lambda item: item[0], reverse=True)
+            kept.extend(event for _size, event in sized[:top_n])
+            dropped.extend(event for _size, event in sized[top_n:])
+        return kept, dropped
+
     def _symbol_cooling(self, conn, symbol: str, network: str, now_ms: int, window_ms: int) -> bool:
         """True when this symbol already produced a signal inside the window.
 
@@ -432,6 +465,20 @@ class CopyWatchAgent:
                         )
                         continue
                     candidates.append(event)
+            # One signal per symbol: the largest wallet's buy survives, the
+            # duplicates from smaller wallets in the same window do not.
+            top_n = int(policy.get("max_wallets_per_symbol", 1))
+            if top_n > 0 and len(candidates) > 1:
+                kept, dropped = self._dedupe_by_symbol(conn, candidates, top_n)
+                for event in dropped:
+                    summary["skips"] += 1
+                    store.add_event(
+                        conn, ts_ms=now_ms, tag="SKIP", wallet=event.wallet,
+                        symbol=event.base_symbol, usd=event.usd,
+                        title=f"[SKIP] {event.base_symbol} 同标的重复信号",
+                        detail=f"该标的本轮已有更大型钱包的信号，按 max_wallets_per_symbol={top_n} 去重",
+                    )
+                candidates = kept
             if events:
                 newest = max(item.block_ts_ms for item in events)
                 store.kv_set(conn, cursor_key, str(max(newest, cursor_ts)))
@@ -617,7 +664,7 @@ class CopyWatchAgent:
         # rotates so a long run cannot fill the disk.
         from ..guards import guard_round
         log_path = self.runtime_dir / "agent.log"
-        while not self._stop.is_set():
+        while not self._stop:
             may_run, note = guard_round(self.root, log_path)
             if not may_run:
                 print(f"[copywatch] halted: {note}", flush=True)
@@ -628,7 +675,7 @@ class CopyWatchAgent:
                 self.poll_once()
             except Exception as exc:  # noqa: BLE001 - a bad poll must not kill the desk
                 print(f"[copywatch] poll failed: {type(exc).__name__}: {exc}", flush=True)
-            self._stop.wait(float(self.config.get("poll_seconds", 45)))
+            time.sleep(float(self.config.get("poll_seconds", 45)))
 
     def _run_loop_legacy(self) -> None:
         interval = max(10, int(self.config["poll_seconds"]))
