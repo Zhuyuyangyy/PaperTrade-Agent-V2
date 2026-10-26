@@ -229,13 +229,26 @@ def main(argv: list[str] | None = None) -> int:
     import argparse
 
     parser = argparse.ArgumentParser(description="Six-agent paper desk pipeline")
-    parser.add_argument("command", choices=["once", "status"], nargs="?", default="once")
+    parser.add_argument("command", choices=["once", "loop", "status"], nargs="?", default="once")
     parser.add_argument("--sleep", type=int, default=100, help="loop interval seconds")
     args = parser.parse_args(argv)
 
     root = _default_root()
     pipe = Pipeline(root)
     try:
+        if args.command == "loop":
+            import time
+            print(f"[pipeline] loop every {args.sleep}s · Ctrl-C to stop", flush=True)
+            while True:
+                try:
+                    summary = pipe.run_once()
+                    for step in summary["steps"]:
+                        flag = "ok " if step["ok"] else "ERR"
+                        print(f"[{flag}] {step['agent']:<9} {step['summary']}", flush=True)
+                    print(f"[run {summary['run_id']}] equity={summary['equity_usdt']}", flush=True)
+                except Exception as exc:  # noqa: BLE001 - a bad round must not kill the loop
+                    print(f"[loop] round failed: {type(exc).__name__}: {exc}", flush=True)
+                time.sleep(args.sleep)
         if args.command == "once":
             summary = pipe.run_once()
             for step in summary["steps"]:

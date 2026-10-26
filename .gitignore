@@ -34,3 +34,7 @@ runtime/*/*.log
 
 # MemeHunter E runtime artifacts
 runtime/memehunter/*.sh
+
+# Loop single-instance lock, machine local
+runtime/memehunter/.loop.pid
+runtime/copywatch/.loop.pid
