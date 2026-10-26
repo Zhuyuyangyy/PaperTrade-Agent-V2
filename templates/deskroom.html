@@ -582,7 +582,7 @@ const rows = [
   {n:'A 基线', sub:'SMA20/50', v:(AC.baseline||{}).equity_usdt, start:(AC.baseline||{}).starting_cash_usdt, live:abcLive('baseline'), extra:((AC.baseline||{}).closed_count||0)+' 成交'},
   {n:'B 风控', sub:'VETO', v:(AC.hybrid||{}).equity_usdt, start:(AC.hybrid||{}).starting_cash_usdt, live:abcLive('hybrid'), extra:((AC.hybrid||{}).closed_count||0)+' 成交'},
   {n:'C 对照组', sub:'CONTROL', v:(S.counterpart||{}).equity_usdt, start:(S.counterpart||{}).starting_cash_usdt, live:!!(S.counterpart||{}).has_ledger, extra:((S.counterpart||{}).open_count||0)+' 仓 · organic 排序'},
-  {n:'D 跟单', sub:'CW', v:cw.equity_usdt, start:cw.starting_cash_usdt, live:!!cw.running, extra:(num(cw.decisions)||0)+' 决策 / '+(num(cw.open_count)||0)+' 仓'},
+  {n:'D 跟单', sub:'CW', v:(cw.equity_usdt === null || cw.equity_usdt === undefined) ? cw.equity_last_sample_usdt : cw.equity_usdt, start:cw.starting_cash_usdt, live:!!cw.running, extra:(num(cw.decisions)||0)+' 决策 / '+(num(cw.open_count)||0)+' 仓'+(cw.equity_usdt === null ? ' · 快照' : '')},
   {n:'E 猎手', sub:'MH', v:mh.equity_usdt, start:mh.starting_cash_usdt, live:(mh.status_level==='good'), extra:(num(mh.open_count)||0)+' 仓 / '+(num(mh.veto_breakdown && mh.veto_breakdown.PASS)||0)+' 过线'}
 ];
 const maxV = Math.max.apply(null, rows.map(r => num(r.v) || 0).concat([1]));
