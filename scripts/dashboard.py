@@ -1072,6 +1072,89 @@ def counterpart_snapshot() -> dict:
         return empty
 
 
+def _read_equity_series(db_path: Path, table: str, ts_col: str, val_col: str,
+                         copy_first: bool = False) -> list[tuple[int, float]]:
+    """(t, equity) pairs from one ledger, oldest first.
+
+    The CopyWatch ledger lives in WAL mode and its path contains non-ASCII
+    characters, so a URI open fails; copying the file first is the reliable
+    read. Only complete samples are used.
+    """
+    import shutil
+    import tempfile
+
+    if not db_path.is_file():
+        return []
+    target = db_path
+    tmp_dir = None
+    if copy_first:
+        tmp_dir = tempfile.mkdtemp()
+        target = Path(tmp_dir) / db_path.name
+        try:
+            shutil.copy(db_path, target)
+        except OSError:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            return []
+    try:
+        conn = sqlite3.connect(str(target), timeout=10.0)
+        try:
+            rows = conn.execute(
+                f"SELECT {ts_col}, {val_col} FROM {table} WHERE complete=1"
+                f" AND {val_col} IS NOT NULL ORDER BY {ts_col}"
+            ).fetchall()
+        finally:
+            conn.close()
+        return [(int(r[0]), float(r[1])) for r in rows]
+    except sqlite3.Error:
+        return []
+    finally:
+        if tmp_dir:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def equity_curves() -> list[dict]:
+    """D/E/C return curves on one time axis, in percent of each book's start.
+
+    C's ledger is young (its equity table only started filling recently), so
+    its curve starts late -- that is honest, and it is visible as a short line.
+    """
+    series = {
+        "d": _read_equity_series(
+            ROOT / "runtime" / "copywatch" / "copywatch.sqlite",
+            "equity_samples", "ts_ms", "equity_usd", copy_first=True),
+        "e": _read_equity_series(
+            ROOT / "runtime" / "memehunter" / "memehunter.sqlite",
+            "equity", "at_ms", "equity_usd"),
+        "c": _read_equity_series(
+            ROOT / "runtime" / "memehunter" / "counterpart.sqlite",
+            "equity", "at_ms", "equity_usd"),
+    }
+    starts = {"d": 500.0, "e": 1000.0, "c": 1000.0}
+    for key in ("d", "e", "c"):
+        if series[key]:
+            starts[key] = series[key][0][1]
+    # Downsample each series to at most 180 points so the SVG stays light.
+    out: list[dict] = []
+    keys = [k for k in ("d", "e", "c") if series[k]]
+    if not keys:
+        return []
+    t_min = min(series[k][0][0] for k in keys)
+    t_max = max(series[k][-1][0] for k in keys)
+    span = max(t_max - t_min, 1)
+    buckets = 180
+    for i in range(buckets + 1):
+        t = t_min + span * i / buckets
+        point: dict = {"t": int(t)}
+        for k in keys:
+            vals = [v for (tt, v) in series[k] if tt <= t]
+            point[k] = round((vals[-1] / starts[k] - 1.0) * 100.0, 3) if vals else None
+        out.append(point)
+    # Drop leading points where nothing has started yet.
+    while out and all(out[0].get(k) is None for k in keys):
+        out.pop(0)
+    return out
+
+
 def build_state(now: datetime | None = None) -> dict:
     now = now or datetime.now(timezone.utc)
     now_ms = int(now.timestamp() * 1000)
@@ -1106,6 +1189,7 @@ def build_state(now: datetime | None = None) -> dict:
         "copywatch": copywatch,
         "memehunter": memehunter,
         "counterpart": counterpart,
+        "curves": equity_curves(),
         "signals": signals,
         "marks": marks,
         "fast_status": fast_status,
