@@ -158,6 +158,17 @@ class Pipeline:
             results.append(result)
             # The control group sees exactly the candidates SEARCH just returned,
             # in the same round, so any C-vs-E gap is the pipeline's contribution.
+            if agent.name == "EXIT":
+                # Evaluators are slow and their inputs move slowly; every 20
+                # rounds is plenty. They only file proposals, never edit config.
+                if self.cfg.get("evaluators", {}).get("enabled", True) and run_id % 20 == 0:
+                    try:
+                        from .evaluators import run_evaluators
+                        filed = run_evaluators(self.desk.conn)
+                        if filed:
+                            summary["proposals"] = [f["title"] for f in filed]
+                    except Exception as exc:  # noqa: BLE001 - evaluators never stop the desk
+                        self.evaluator_error = f"{type(exc).__name__}: {exc}"
             if agent.name == "RISK":
                 produced = int(getattr(result, "produced", 0) or 0)
                 self._kv_set("dry_streak", "0" if produced > 0 else str(dry_streak + 1))
@@ -229,7 +240,7 @@ def main(argv: list[str] | None = None) -> int:
     import argparse
 
     parser = argparse.ArgumentParser(description="Six-agent paper desk pipeline")
-    parser.add_argument("command", choices=["once", "loop", "status"], nargs="?", default="once")
+    parser.add_argument("command", choices=["once", "loop", "status", "proposals"], nargs="?", default="once")
     parser.add_argument("--sleep", type=int, default=100, help="loop interval seconds")
     args = parser.parse_args(argv)
 
@@ -257,6 +268,21 @@ def main(argv: list[str] | None = None) -> int:
                 except Exception as exc:  # noqa: BLE001 - a bad round must not kill the loop
                     print(f"[loop] round failed: {type(exc).__name__}: {exc}", flush=True)
                 time.sleep(args.sleep)
+        if args.command == "proposals":
+            from .evaluators import ensure_schema
+            ensure_schema(pipe.desk.conn)
+            rows = pipe.desk.conn.execute(
+                "SELECT id, agent, kind, title, status, created_ms FROM pipeline_proposals"
+                " WHERE status='pending' ORDER BY id DESC"
+            ).fetchall()
+            if not rows:
+                print("没有待审提案")
+            for row in rows:
+                stamp = datetime.fromtimestamp(row[5] / 1000, timezone.utc).strftime("%m-%d %H:%M")
+                print(f"#{row[0]} [{row[1]}] {row[3]}")
+                print(f"     {stamp} · {row[2]}")
+            return 0
+
         if args.command == "once":
             summary = pipe.run_once()
             for step in summary["steps"]:

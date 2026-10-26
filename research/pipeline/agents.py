@@ -82,6 +82,9 @@ DEFAULT_CONFIG: dict = {
         "rule_weight": 0.6,
         "llm_weight": 0.4,
     },
+    # Evaluators propose config changes; a human applies them. Auto-tuning is
+    # automated overfitting, so nothing here edits config by itself.
+    "evaluators": {"enabled": True, "every_rounds": 20},
     # Confidence-tiered sizing: the JUDGE score (structural health, NOT a return
     # prediction) scales the clip. Tiers are config so calibration can retire a
     # tier that fails to separate winners.

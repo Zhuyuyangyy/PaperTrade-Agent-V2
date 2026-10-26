@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import ast
 import json
+import sqlite3
+import sqlite3
 from pathlib import Path
 import sys
 
@@ -294,3 +296,105 @@ def test_confidence_tiers_scale_the_clip(tmp_path) -> None:
     ctx.put("llm_judgments", {})
     EntryAgent().run(ctx)
     assert _Desk.sizes == [100.0], "no opinion means the base clip, not zero"
+
+
+def test_evaluators_file_proposals_but_never_edit_config(tmp_path) -> None:
+    """Evaluators propose; the config file is untouched by them."""
+    import sys
+    import sqlite3
+    import sqlite3
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).resolve().parents[1]))
+    from research.pipeline import evaluators as E
+
+    before = (ROOT / "user_data" / "config.pipeline.json").read_text(encoding="utf-8")
+    conn = sqlite3.connect(":memory:")
+    conn.executescript(
+        "CREATE TABLE decisions (id INTEGER PRIMARY KEY, event_id TEXT, decided_at_ms INTEGER,"
+        " verdict TEXT, signal_class TEXT, primary_code TEXT, codes TEXT, detail TEXT);"
+    )
+    now = 1_700_000_000_000
+    for i in range(40):
+        conn.execute(
+            "INSERT INTO decisions (event_id, decided_at_ms, verdict, primary_code, detail)"
+            " VALUES (?,?,?,?,?)",
+            (f"e{i}", now, "SKIP", "ALREADY_OPEN", "x"),
+        )
+    conn.commit()
+    filed = E.run_evaluators(conn)
+    conn.close()
+    after = (ROOT / "user_data" / "config.pipeline.json").read_text(encoding="utf-8")
+    assert before == after, "an evaluator must never modify the config file"
+
+    # A proposal was filed with evidence and is pending, not applied.
+    if filed:
+        p = filed[0]
+        assert p["agent"] in ("CALIBRATOR", "DRIFT", "ARBITER")
+        assert p["evidence"], "a proposal without evidence is an opinion"
+        assert p.get("detail"), "a proposal must say what it would change"
+
+
+def test_identical_proposals_are_deduplicated(tmp_path) -> None:
+    import sys
+    import sqlite3
+    import sqlite3
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).resolve().parents[1]))
+    from research.pipeline.evaluators import ensure_schema, file_proposal
+
+    conn = sqlite3.connect(":memory:")
+    ensure_schema(conn)
+    first = file_proposal(conn, agent="T", kind="k", title="same", detail="d", evidence="e")
+    second = file_proposal(conn, agent="T", kind="k", title="same", detail="d", evidence="e")
+    assert first is not None
+    assert second is None, "an identical pending proposal must not be filed twice"
+    conn.close()
+
+
+def test_evaluators_file_proposals_but_never_edit_config(tmp_path) -> None:
+    """Evaluators propose; the config file is untouched by them."""
+    import sys
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).resolve().parents[1]))
+    from research.pipeline import evaluators as E
+
+    before = (ROOT / "user_data" / "config.pipeline.json").read_text(encoding="utf-8")
+    conn = sqlite3.connect(":memory:")
+    conn.executescript(
+        "CREATE TABLE decisions (id INTEGER PRIMARY KEY, event_id TEXT, decided_at_ms INTEGER,"
+        " verdict TEXT, signal_class TEXT, primary_code TEXT, codes TEXT, detail TEXT);"
+    )
+    now = 1_700_000_000_000
+    for i in range(40):
+        conn.execute(
+            "INSERT INTO decisions (event_id, decided_at_ms, verdict, primary_code, detail)"
+            " VALUES (?,?,?,?,?)",
+            (f"e{i}", now, "SKIP", "ALREADY_OPEN", "x"),
+        )
+    conn.commit()
+    filed = E.run_evaluators(conn)
+    conn.close()
+    after = (ROOT / "user_data" / "config.pipeline.json").read_text(encoding="utf-8")
+    assert before == after, "an evaluator must never modify the config file"
+
+    # A proposal was filed with evidence and is pending, not applied.
+    if filed:
+        p = filed[0]
+        assert p["agent"] in ("CALIBRATOR", "DRIFT", "ARBITER")
+        assert p["evidence"], "a proposal without evidence is an opinion"
+        assert p.get("detail"), "a proposal must say what it would change"
+
+
+def test_identical_proposals_are_deduplicated(tmp_path) -> None:
+    import sys
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).resolve().parents[1]))
+    from research.pipeline.evaluators import ensure_schema, file_proposal
+
+    conn = sqlite3.connect(":memory:")
+    ensure_schema(conn)
+    first = file_proposal(conn, agent="T", kind="k", title="same", detail="d", evidence="e")
+    second = file_proposal(conn, agent="T", kind="k", title="same", detail="d", evidence="e")
+    assert first is not None
+    assert second is None, "an identical pending proposal must not be filed twice"
+    conn.close()
