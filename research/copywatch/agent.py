@@ -613,6 +613,24 @@ class CopyWatchAgent:
         return summary
 
     def run(self) -> None:
+        # Unattended guards: a STOP file halts within one round, and the log
+        # rotates so a long run cannot fill the disk.
+        from ..guards import guard_round
+        log_path = self.runtime_dir / "agent.log"
+        while not self._stop.is_set():
+            may_run, note = guard_round(self.root, log_path)
+            if not may_run:
+                print(f"[copywatch] halted: {note}", flush=True)
+                return
+            if note:
+                print(f"[copywatch] {note}", flush=True)
+            try:
+                self.poll_once()
+            except Exception as exc:  # noqa: BLE001 - a bad poll must not kill the desk
+                print(f"[copywatch] poll failed: {type(exc).__name__}: {exc}", flush=True)
+            self._stop.wait(float(self.config.get("poll_seconds", 45)))
+
+    def _run_loop_legacy(self) -> None:
         interval = max(10, int(self.config["poll_seconds"]))
         self.log(f"[copywatch] starting · poll {interval}s · db {self.db_path}")
         while not self._stop:

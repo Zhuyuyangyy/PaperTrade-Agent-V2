@@ -238,8 +238,16 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "loop":
             import time
-            print(f"[pipeline] loop every {args.sleep}s · Ctrl-C to stop", flush=True)
+            from ..guards import guard_round
+            log_path = root / "runtime" / "memehunter" / "loop.log"
+            print(f"[pipeline] loop every {args.sleep}s · Ctrl-C or a STOP file to stop", flush=True)
             while True:
+                may_run, note = guard_round(root, log_path)
+                if not may_run:
+                    print(f"[pipeline] halted: {note}", flush=True)
+                    return 0
+                if note:
+                    print(f"[pipeline] {note}", flush=True)
                 try:
                     summary = pipe.run_once()
                     for step in summary["steps"]:
