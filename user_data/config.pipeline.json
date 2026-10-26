@@ -23,13 +23,13 @@
   },
   "judge": {
     "enabled": true,
-    "base_url": "https://api.deepseek.com",
-    "api_key_env": "DEEPSEEK_API_KEY",
-    "model": "deepseek-chat",
+    "base_url": "https://api.stepfun.com/v1",
+    "api_key_env": "STEPFUN_API_KEY",
+    "model": "step-5-preview",
     "timeout_seconds": 25,
     "max_per_round": 3,
     "rule_weight": 0.6,
     "llm_weight": 0.4,
-    "_note": "LLM 只对通过 veto 的候选研判，只重排不放行；无 key 或调用失败自动降级为规则分。换服务商改 base_url/model/api_key_env 即可（OpenAI 兼容）。"
+    "_note": "LLM 只研判通过 veto 的候选，只重排不放行；无 key 或失败自动降级为规则分。OpenAI 兼容，换服务商只改 base_url/model/api_key_env。"
   }
 }

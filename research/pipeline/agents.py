@@ -58,9 +58,9 @@ DEFAULT_CONFIG: dict = {
     # veto and never predicts price; it is one more replayable column.
     "judge": {
         "enabled": True,
-        "base_url": "https://api.deepseek.com",
-        "api_key_env": "DEEPSEEK_API_KEY",
-        "model": "deepseek-chat",
+        "base_url": "https://api.stepfun.com/v1",
+        "api_key_env": "STEPFUN_API_KEY",
+        "model": "step-5-preview",
         "timeout_seconds": 25,
         "max_per_round": 3,
         "rule_weight": 0.6,
