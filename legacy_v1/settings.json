@@ -1,0 +1,16 @@
+{
+  "symbols": ["BTCUSDT", "ETHUSDT"],
+  "interval": "1h",
+  "initial_cash_usdt": 1000.0,
+  "max_fraction_per_symbol": 0.10,
+  "max_total_exposure": 0.20,
+  "stop_loss_pct": 0.03,
+  "daily_loss_cutoff": 0.02,
+  "fee_bps": 10,
+  "slippage_bps": 5,
+  "min_order_usdt": 10.0,
+  "poll_seconds": 60,
+  "lookback_candles": 120,
+  "data_url": "https://data-api.binance.vision",
+  "database": "data/paper.sqlite3"
+}

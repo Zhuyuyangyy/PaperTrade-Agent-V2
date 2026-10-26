@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>PaperTrade Agent · AI Paper Trading</title>
+<style>
+:root{--bg:#f4f8f7;--surface:#fff;--surface-soft:#f9fbfa;--ink:#142238;--muted:#718198;--muted-2:#9aa8b8;--line:#e7edf0;--green:#10a978;--green-dark:#087b59;--green-soft:#e8fbf3;--blue:#3478ef;--blue-soft:#edf4ff;--amber:#df922a;--amber-soft:#fff6e8;--red:#e25353;--red-soft:#fff0f0;--purple:#8b5cf6;--shadow:0 7px 22px rgba(31,57,78,.045);--radius:18px;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+*{box-sizing:border-box}html{background:var(--bg);scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 10% 0%,rgba(202,241,227,.28),transparent 34%),var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}button,select{font:inherit}.app{width:min(1720px,100%);margin:0 auto;padding:24px 26px 30px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:22px}.brand{display:flex;align-items:center;gap:15px;min-width:0}.brand-icon{width:64px;height:64px;border-radius:20px;background:linear-gradient(145deg,#d8fff0,#baf5df);display:grid;place-items:center;box-shadow:0 5px 16px rgba(16,169,120,.11);flex:none}.brand-icon svg{width:40px;height:40px}.brand h1{margin:0;font-size:clamp(23px,2.5vw,34px);letter-spacing:-.045em;line-height:1.1;font-weight:820}.brand p{margin:7px 0 0;color:var(--muted);font-size:13px;letter-spacing:.025em}.top-tags{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap}.tag{display:inline-flex;align-items:center;gap:8px;padding:10px 13px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.84);color:#52637a;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(31,57,78,.025)}.tag svg{width:15px;height:15px}.tag.status{background:#ecfbf4;color:var(--green-dark);border-color:#d5f6e7}.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(16,169,120,.09)}.tag.status .dot{background:#17bd83}.tag.status.snapshot{background:#eef5ff;color:#365e9d;border-color:#dfeaff}.tag.status.snapshot .dot{background:#6a91d8;box-shadow:0 0 0 4px rgba(106,145,216,.1)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:17px}.card{background:var(--surface);border:1px solid rgba(223,232,235,.95);border-radius:var(--radius);box-shadow:var(--shadow);min-width:0}.kpi{padding:19px 20px 17px;min-height:145px;position:relative;overflow:hidden}.kpi-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.kpi-label{display:flex;align-items:center;gap:9px;color:#4e6077;font-size:13px;font-weight:700}.kpi-icon{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:var(--blue-soft);color:var(--blue);flex:none}.kpi-icon svg{width:17px;height:17px}.kpi-icon.green{background:var(--green-soft);color:var(--green-dark)}.kpi-icon.amber{background:var(--amber-soft);color:var(--amber)}.kpi-icon.purple{background:#f3edff;color:var(--purple)}.kpi-value{font-size:clamp(25px,2.25vw,34px);font-weight:820;letter-spacing:-.055em;line-height:1.15;margin-top:17px;white-space:nowrap}.kpi-value.positive{color:var(--green-dark)}.kpi-value.negative{color:var(--red)}.kpi-caption{font-size:11px;color:var(--muted);margin-top:7px;line-height:1.5}.kpi-corner{position:absolute;right:17px;bottom:16px;opacity:.95}.sparkline{width:88px;height:39px}.gauge{width:82px;height:46px}.ring-wrap{display:flex;align-items:center;gap:14px;margin-top:11px}.ring{width:68px;height:68px;border-radius:50%;background:conic-gradient(var(--green) var(--progress,0deg),#e8f1ed 0deg);display:grid;place-items:center;position:relative;flex:none}.ring:before{content:"";position:absolute;inset:7px;border-radius:50%;background:#fff}.ring strong{position:relative;font-size:16px;letter-spacing:-.03em}.ring-side strong{display:block;font-size:14px;color:var(--green-dark)}.ring-side small{display:block;color:var(--muted);font-size:10px;margin-top:4px}
+.main-grid{display:grid;grid-template-columns:minmax(0,1.03fr) minmax(0,.97fr);gap:15px;align-items:stretch;margin-bottom:16px}.panel{overflow:hidden}.panel-head{padding:18px 21px 13px;display:flex;align-items:center;justify-content:space-between;gap:12px}.panel-title-wrap{display:flex;align-items:center;gap:10px;min-width:0}.panel-icon{width:31px;height:31px;border-radius:10px;background:#f0f5ff;color:#4575c4;display:grid;place-items:center;flex:none}.panel-icon svg{width:18px;height:18px}.panel-title{font-size:15px;font-weight:800;letter-spacing:-.02em}.panel-subtitle{font-size:11px;color:var(--muted);margin-top:4px}.range-tabs{display:flex;gap:4px;align-items:center;flex:none}.range-btn{border:0;background:transparent;color:#74849a;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:750;cursor:pointer}.range-btn:hover{background:#f3f8f6}.range-btn.active{background:#e4fbf1;color:var(--green-dark)}.chart-panel,.log-panel{min-height:410px}.chart-body{padding:0 17px 15px;position:relative}.chart{height:310px;width:100%;position:relative}.chart svg{display:block;width:100%;height:100%;overflow:visible}.chart-empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--muted);padding:24px;background:repeating-linear-gradient(to bottom,transparent 0,transparent 60px,rgba(225,234,237,.5) 61px),repeating-linear-gradient(to right,transparent 0,transparent 100px,rgba(225,234,237,.35) 101px);border-radius:12px}.empty-icon{width:54px;height:54px;border-radius:17px;background:#f0f8f5;color:#72bba0;display:grid;place-items:center;margin-bottom:13px}.empty-icon svg{width:26px;height:26px}.chart-empty strong{font-size:14px;color:#52637a}.chart-empty p{font-size:11px;line-height:1.7;max-width:290px;margin:7px 0 0}.chart-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:5px 5px 0;color:var(--muted);font-size:11px}.legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.legend-item{display:inline-flex;align-items:center;gap:6px}.legend-line{width:15px;height:3px;border-radius:4px;background:var(--blue)}.legend-line.green{background:var(--green)}.legend-status{color:var(--muted-2);font-size:10px}
+.log-panel{display:flex;flex-direction:column}.log-tools{display:flex;align-items:center;gap:9px}.select{border:1px solid var(--line);border-radius:10px;background:#fff;padding:8px 10px;color:#52637a;font-size:11px;outline:none;max-width:150px}.event-count{font-size:11px;color:var(--muted);white-space:nowrap}.log-list{padding:0 19px 15px;overflow:auto;max-height:363px}.log-row{display:grid;grid-template-columns:69px 68px minmax(0,1fr);align-items:start;gap:9px;padding:11px 0;border-bottom:1px solid #f0f3f4}.log-row:last-child{border-bottom:0}.log-time{font-family:var(--mono);font-size:10px;color:#8a9aaf;padding-top:3px;white-space:nowrap}.log-tag{display:inline-flex;justify-content:center;align-items:center;padding:4px 5px;border-radius:6px;font-family:var(--mono);font-size:9px;font-weight:800;letter-spacing:-.03em;white-space:nowrap}.log-tag.fill{color:#087d59;background:#e4fbf0}.log-tag.signal{color:#2869c9;background:#eaf2ff}.log-tag.risk{color:#b66b12;background:#fff2df}.log-tag.scan{color:#7a55ce;background:#f2ecff}.log-tag.skip{color:#a97616;background:#fff7dc}.log-tag.system{color:#5e7188;background:#eff3f7}.log-copy{min-width:0}.log-copy strong{display:block;font-family:var(--mono);font-size:11px;line-height:1.55;font-weight:700;color:#2b3d53;overflow-wrap:anywhere}.log-copy small{display:block;font-size:10px;line-height:1.55;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}.log-empty{padding:44px 18px;text-align:center;color:var(--muted);font-size:12px;line-height:1.8}
+.ab-strip{display:grid;grid-template-columns:minmax(210px,1.15fr) minmax(140px,.75fr) minmax(140px,.75fr) minmax(190px,1fr);align-items:center;gap:16px;padding:18px 21px;margin-bottom:16px}.ab-intro{display:flex;align-items:center;gap:13px}.ab-icon{width:46px;height:46px;border-radius:15px;background:#e9faf2;color:var(--green-dark);display:grid;place-items:center;flex:none}.ab-icon svg{width:25px;height:25px}.ab-title{font-size:14px;font-weight:820;letter-spacing:-.02em}.ab-sub{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.55}.ab-account{padding-left:17px;border-left:1px solid var(--line);min-width:0}.ab-label{display:flex;align-items:center;gap:7px;font-size:11px;color:#607189}.ab-dot{width:8px;height:8px;border-radius:50%;background:#8ba0b9;flex:none}.ab-dot.green{background:var(--green)}.ab-value{font-size:21px;font-weight:820;letter-spacing:-.04em;margin-top:6px;white-space:nowrap}.ab-value.positive{color:var(--green-dark)}.ab-value.negative{color:var(--red)}.ab-caption{font-size:10px;color:var(--muted);margin-top:4px}.ab-delta{padding:13px 15px;background:#f0fbf5;border-radius:13px;display:flex;align-items:center;gap:11px;color:#28765b;min-width:0}.ab-delta svg{width:24px;height:24px;flex:none}.ab-delta strong{display:block;font-size:12px;line-height:1.5}.ab-delta small{display:block;font-size:10px;color:#68907f;line-height:1.5;margin-top:3px}.ab-delta.neutral{background:#f5f8fa;color:#63748a}.ab-delta.neutral small{color:#8493a5}
+.modules{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:10px}.module{border:1px solid var(--line);background:#fff;border-radius:15px;box-shadow:0 4px 13px rgba(31,57,78,.025);padding:13px 12px 12px;min-width:0;text-align:left;cursor:pointer;color:inherit;transition:transform .15s,border-color .15s,box-shadow .15s}.module:hover{transform:translateY(-2px);border-color:#cce8dd;box-shadow:0 8px 20px rgba(31,57,78,.07)}.module:focus-visible{outline:2px solid var(--green);outline-offset:2px}.module-top{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:10px}.module-icon{width:35px;height:35px;border-radius:50%;display:grid;place-items:center;background:#e6fbf1;color:#13966d;font-size:15px;font-weight:850;flex:none}.module-icon.blue{background:#eaf2ff;color:#3878de}.module-icon.amber{background:#fff2df;color:#d58b28}.module-icon.purple{background:#f2ebff;color:#8b5cf6}.module-icon.gray{background:#eef2f6;color:#62758b}.module-icon.pink{background:#ffedf4;color:#d65a87}.module-status{font-size:8px;font-weight:850;letter-spacing:.04em;padding:4px 6px;border-radius:6px;background:#f0f3f6;color:#7b8a9d;white-space:nowrap}.module-status.good{background:#e7fbf1;color:#11805b}.module-status.info{background:#edf4ff;color:#396fc4}.module-status.warn{background:#fff3df;color:#a66a14}.module-title{font-size:11px;font-weight:820;line-height:1.4;overflow-wrap:anywhere}.module-desc{font-size:9px;color:var(--muted);line-height:1.5;min-height:27px;margin-top:4px}.module-metric{font-size:10px;font-weight:800;color:#3473d3;margin-top:12px;line-height:1.45;overflow-wrap:anywhere}.module-metric.green{color:var(--green-dark)}.module-metric.muted{color:#8a98a9}.module-detail{display:none;margin-top:12px;padding:16px 18px;border:1px solid #dcebe5;background:#fbfffd;border-radius:14px;color:#52637a}.module-detail.show{display:block}.module-detail h3{margin:0 0 6px;font-size:13px;color:var(--ink)}.module-detail p{margin:0;font-size:12px;line-height:1.75}.module-detail button{float:right;border:1px solid var(--line);background:#fff;color:#52637a;padding:6px 9px;border-radius:8px;font-size:10px;cursor:pointer}
+.footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 3px 0;margin-top:6px;color:#91a0af;font-size:10px;line-height:1.7}.footer strong{color:#5b7184;letter-spacing:.12em}.foot-right{text-align:right}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+.trade-status-panel{margin-bottom:17px;overflow:hidden}.trade-status-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 20px 12px}.trade-status-title{font-size:14px;font-weight:820;letter-spacing:-.02em}.trade-status-subtitle{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.5}.trade-status-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:0 18px 14px}.trade-status-card{border:1px solid var(--line);border-radius:14px;padding:14px 15px;background:linear-gradient(145deg,#fff,#fbfdfc);min-width:0}.trade-status-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}.trade-status-account{font-size:12px;font-weight:850;display:flex;align-items:center;gap:8px}.trade-status-letter{width:27px;height:27px;border-radius:9px;display:grid;place-items:center;background:#edf2f7;color:#53667c;font-weight:900}.trade-status-letter.b{background:#e5fbf1;color:#087b59}.trade-status-letter.c{background:#fff1dc;color:#b87415}.trade-status-pill{font-size:9px;font-weight:850;padding:5px 8px;border-radius:7px;background:#f1f4f7;color:#7d8a9a;white-space:nowrap}.trade-status-pill.good{background:#e7fbf1;color:#11805b}.trade-status-pill.warn{background:#fff3df;color:#a66a14}.trade-status-pill.bad{background:#fff0f0;color:#c44444}.trade-status-lines{display:grid;gap:10px}.trade-status-line{display:grid;grid-template-columns:102px minmax(0,1fr);gap:8px;align-items:start}.trade-status-label{font-size:10px;color:var(--muted);line-height:1.55}.trade-status-value{font-size:10px;color:#2f4056;font-weight:720;line-height:1.55;overflow-wrap:anywhere}.trade-status-value small{display:block;color:var(--muted);font-size:9px;font-weight:500;margin-top:2px}.trade-status-reasons{border-top:1px solid #edf1f2;margin-top:11px;padding-top:9px;display:grid;gap:5px}.trade-status-reason{font-size:9px;line-height:1.55;color:#62738a;overflow-wrap:anywhere}.trade-status-reason strong{color:#34465c}.trade-status-foot{padding:0 20px 15px;color:var(--muted);font-size:10px;line-height:1.6}.trade-status-foot strong{color:#53667c}
+@media(max-width:1350px){.trade-status-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.trade-status-line{grid-template-columns:92px minmax(0,1fr)}.modules{grid-template-columns:repeat(4,minmax(0,1fr))}.ab-strip{grid-template-columns:1.2fr .8fr .8fr}.ab-delta{grid-column:1/-1}.kpi{padding:16px}.kpi-corner{opacity:.55}}
+@media(max-width:1050px){.topbar{align-items:flex-start;flex-direction:column}.top-tags{justify-content:flex-start}.main-grid{grid-template-columns:1fr}.chart-panel,.log-panel{min-height:0}.log-list{max-height:390px}.ab-strip{grid-template-columns:1fr 1fr}.ab-intro{grid-column:1/-1}.ab-delta{grid-column:1/-1}}
+@media(max-width:700px){.trade-status-head{padding:14px 13px 10px;align-items:flex-start}.trade-status-grid{grid-template-columns:1fr;padding:0 11px 11px;gap:8px}.trade-status-card{padding:12px}.trade-status-line{grid-template-columns:88px minmax(0,1fr)}.trade-status-foot{padding:0 13px 13px}.app{padding:15px 12px 22px}.brand-icon{width:51px;height:51px;border-radius:16px}.brand-icon svg{width:32px;height:32px}.brand p{font-size:11px}.top-tags{gap:6px}.tag{font-size:10px;padding:8px 9px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.kpi{min-height:132px;padding:13px}.kpi-label{font-size:11px;gap:6px}.kpi-icon{width:26px;height:26px}.kpi-value{font-size:25px;margin-top:15px}.kpi-caption{font-size:10px;max-width:90%}.kpi-corner{display:none}.ring-wrap{gap:8px}.ring{width:54px;height:54px}.ring:before{inset:6px}.ring strong{font-size:13px}.panel-head{padding:14px 14px 11px}.panel-title{font-size:13px}.panel-subtitle{font-size:10px}.range-btn{padding:6px 7px;font-size:10px}.chart{height:250px}.chart-body{padding:0 10px 13px}.chart-foot{padding:5px 4px 0;font-size:10px}.log-tools{gap:5px}.select{max-width:120px;padding:7px;font-size:10px}.event-count{font-size:10px}.log-list{padding:0 12px 12px}.log-row{grid-template-columns:55px 59px minmax(0,1fr);gap:6px;padding:10px 0}.log-time{font-size:9px}.log-tag{font-size:8px;padding:4px 3px}.log-copy strong{font-size:10px}.log-copy small{font-size:9px}.ab-strip{grid-template-columns:1fr 1fr;padding:15px;gap:13px}.ab-title{font-size:12px}.ab-sub{font-size:9px}.ab-account{padding-left:11px}.ab-value{font-size:18px}.ab-delta{padding:11px}.modules{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.module{padding:11px}.module-title{font-size:11px}.module-desc{font-size:9px}.footer{flex-direction:column;align-items:flex-start}.foot-right{text-align:left}}
+.cw-panel.mn-panel{border-color:#d9ece2}.mn-badge{background:#e6f8ee;color:#0d7a55}.cw-panel.mn-panel{margin-bottom:17px;overflow:hidden;border-color:#dde8fb}.cw-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 20px 12px;flex-wrap:wrap}.cw-title{font-size:14px;font-weight:820;letter-spacing:-.02em;display:flex;align-items:center;gap:9px}.cw-badge{width:25px;height:25px;border-radius:8px;background:#eaf1ff;color:#3b6fd4;display:grid;place-items:center;font-size:11px;font-weight:900}.cw-sub{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.5}.cw-pill{font-size:9px;font-weight:850;padding:6px 9px;border-radius:8px;background:#f1f4f7;color:#7d8a9a;white-space:nowrap}.cw-pill.good{background:#e7fbf1;color:#11805b}.cw-pill.warn{background:#fff3df;color:#a66a14}.cw-pill.bad{background:#fff0f0;color:#c44444}.cw-body{display:grid;grid-template-columns:minmax(300px,.74fr) minmax(0,1.26fr);gap:12px;padding:0 18px 14px}.cw-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;align-content:start}.cw-stat{border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:linear-gradient(145deg,#fff,#fbfdff);min-width:0}.cw-stat-label{font-size:9px;color:var(--muted);letter-spacing:.03em}.cw-stat-value{font-size:16px;font-weight:820;letter-spacing:-.03em;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cw-stat-value.good{color:var(--green-dark)}.cw-stat-value.bad{color:var(--red)}.cw-stat-sub{font-size:9px;color:var(--muted);margin-top:3px;line-height:1.5;overflow-wrap:anywhere}.cw-flow{border:1px solid var(--line);border-radius:13px;background:#fcfefd;display:flex;flex-direction:column;min-width:0}.cw-flow-head{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;font-size:10px;font-weight:800;color:#4e6077;border-bottom:1px solid var(--line)}.cw-flow-head span{font-weight:600;color:var(--muted)}.cw-events{overflow:auto;max-height:238px;padding:3px 0}.cw-ev{display:grid;grid-template-columns:50px 58px minmax(0,1fr);gap:7px;padding:7px 12px;align-items:start}.cw-ev+.cw-ev{border-top:1px solid #f2f5f6}.cw-ev-time{font-family:var(--mono);font-size:9px;color:#8a9aaf;padding-top:2px}.cw-ev-tag{font-family:var(--mono);font-size:8px;font-weight:800;padding:3px 4px;border-radius:5px;text-align:center;background:#eff3f7;color:#5e7188;white-space:nowrap}.cw-ev-tag.watch{background:#eaf2ff;color:#2869c9}.cw-ev-tag.skip{background:#fff7dc;color:#a97616}.cw-ev-tag.paper{background:#e4fbf0;color:#087d59}.cw-ev-tag.exit{background:#eef6ff;color:#396fc4}.cw-ev-tag.promote{background:#f2ecff;color:#7a55ce}.cw-ev-tag.warn{background:#fff0f0;color:#c44444}.cw-ev-title{font-size:10px;font-weight:700;color:#2b3d53;line-height:1.5;overflow-wrap:anywhere}.cw-ev-detail{font-size:9px;color:var(--muted);line-height:1.5;margin-top:2px;overflow-wrap:anywhere}.cw-skips{display:flex;flex-wrap:wrap;gap:5px;padding:8px 12px;border-top:1px solid var(--line);background:#fffdf6}.cw-skip{font-size:9px;padding:3px 6px;border-radius:6px;background:#fff7dc;color:#8d6512;font-weight:700}.cw-foot{padding:0 20px 14px;font-size:9px;color:#91a0af;line-height:1.7}.cw-empty{padding:26px 14px;text-align:center;font-size:10px;color:var(--muted);line-height:1.8}
+@media(max-width:1050px){.cw-body{grid-template-columns:1fr}}
+@media(max-width:700px){.cw-body{grid-template-columns:1fr;padding:0 11px 11px;gap:9px}.cw-head{padding:14px 13px 10px}.cw-stat-value{font-size:14px}.cw-foot{padding:0 13px 12px}.cw-events{max-height:262px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+.engines{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.eng{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:3px 7px;border-radius:999px;background:#f2f5f7;color:#5b6b7f;border:1px solid #e3ebee}
+.eng i{width:6px;height:6px;border-radius:50%;background:#b9c5cf;flex:none}
+.eng.on{background:#e9f7f1;color:#0d7a5b;border-color:#c9ecdf}
+.eng.on i{background:#10a978;box-shadow:0 0 0 3px rgba(16,169,120,.16)}
+.eng.off{background:#fdf3e7;color:#a3711f;border-color:#f4e2c8}
+.eng.off i{background:#e0a04a}
+@media(max-width:700px){.eng{font-size:9px;padding:2px 6px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><rect x="8" y="13" width="32" height="25" rx="8" fill="#075c49"/><rect x="20.5" y="6" width="7" height="8" rx="3.5" fill="#075c49"/><path d="M24 11v3" stroke="#075c49" stroke-width="2.5" stroke-linecap="round"/><circle cx="18" cy="23" r="3" fill="#c9ffea"/><circle cx="30" cy="23" r="3" fill="#c9ffea"/><path d="M17 31c3.7 3.2 10.3 3.2 14 0" stroke="#c9ffea" stroke-width="2.5" stroke-linecap="round"/><path d="M4 22v8M44 22v8" stroke="#075c49" stroke-width="3" stroke-linecap="round"/></svg></div>
+      <div><h1>PaperTrade Agent</h1><p>AI Paper Trading Command Center</p></div>
+    </div>
+    <div class="top-tags" aria-label="系统模式">
+      <span class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7.5h15a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 19.5H5A2.5 2.5 0 0 1 2.5 17V6A2.5 2.5 0 0 1 5 3.5h12"/><path d="M15 12h5.5"/><circle cx="16" cy="12" r=".8" fill="currentColor"/></svg>Paper Trading</span>
+      <span class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 19v-1.5A4.5 4.5 0 0 1 7.5 13h3A4.5 4.5 0 0 1 15 17.5V19M16 5.5a3 3 0 0 1 0 5.8M18 13.5a4 4 0 0 1 3 3.9V19"/></svg>3 Accounts · 1 Watch</span>
+      <span class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M8 15h8"/></svg>Dry Run</span>
+      <span class="tag status snapshot" id="snapshot-badge"><i class="dot"></i><span id="snapshot-label">LOCAL SNAPSHOT</span></span>
+    </div>
+  </header>
+
+  <section class="kpis" aria-label="关键指标">
+    <article class="card kpi">
+      <div class="kpi-top"><div class="kpi-label"><span class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="15" rx="2.5"/><path d="M3 9h18M7 15h4"/></svg></span>全系统权益（A/B/C + D + E）</div></div>
+      <div class="kpi-value" id="kpi-start">--</div><div class="kpi-caption" id="kpi-start-caption">初始资金 $4,500 · 等待各账户账本</div>
+      <div class="engines" id="kpi-engines" aria-label="引擎运行状态"></div>
+      <div class="kpi-corner" aria-hidden="true"><svg class="sparkline" viewBox="0 0 90 40"><path d="M2 31 C14 28 15 30 24 22 S42 26 49 17 S63 20 72 9 S82 11 88 3" fill="none" stroke="#c3eedd" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+    </article>
+    <article class="card kpi">
+      <div class="kpi-top"><div class="kpi-label"><span class="kpi-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9M10 19V5M16 19v-7M22 19V2"/></svg></span>Total P&amp;L · 总盈亏</div></div>
+      <div class="kpi-value" id="kpi-pnl">--</div><div class="kpi-caption" id="kpi-pnl-caption">等待完整账户估值</div>
+      <div class="kpi-corner" aria-hidden="true"><svg class="sparkline" viewBox="0 0 90 40"><path d="M2 35 C15 34 17 30 26 31 S37 22 44 25 S56 18 63 19 S75 7 88 4" fill="none" stroke="#d0efe2" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+    </article>
+    <article class="card kpi">
+      <div class="kpi-top"><div class="kpi-label"><span class="kpi-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 20 6v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-5"/></svg></span>曲线回撤</div></div>
+      <div class="kpi-value" id="kpi-mdd">--</div><div class="kpi-caption">Agent B 账户权益快照 · 含浮动盈亏 · 自采样开始</div>
+      <div class="kpi-corner" aria-hidden="true"><svg class="gauge" viewBox="0 0 90 50"><path d="M8 42 A37 37 0 0 1 82 42" fill="none" stroke="#e9eef0" stroke-width="8" stroke-linecap="round"/><path id="mdd-arc" d="M8 42 A37 37 0 0 1 82 42" fill="none" stroke="#f0b25b" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 120"/><circle cx="45" cy="42" r="3.5" fill="#65768a"/></svg></div>
+    </article>
+    <article class="card kpi">
+      <div class="kpi-top"><div class="kpi-label"><span class="kpi-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/><path d="m16 8 4-4"/></svg></span>胜率</div></div>
+      <div class="ring-wrap"><div class="ring" id="win-ring" style="--progress:0deg"><strong id="kpi-win">--</strong></div><div class="ring-side"><strong id="kpi-wl">-- 胜 / -- 负</strong><small id="kpi-win-caption">按已读取平仓记录统计</small></div></div>
+    </article>
+  </section>
+
+  <section class="card trade-status-panel" aria-label="交易状态追踪">
+    <div class="trade-status-head">
+      <div><div class="trade-status-title">Why No Trade? · 交易状态追踪</div><div class="trade-status-subtitle">区分「程序在跑」「策略有候选」「币对被锁」「订单已成交」</div></div>
+      <span class="event-count" id="trade-status-updated">随页面每 15 秒刷新</span>
+    </div>
+    <div class="trade-status-grid" id="trade-status-grid" aria-live="polite"></div>
+    <div class="trade-status-foot"><strong>注意：</strong>「下次策略评估」仅表示下一根 K 线边界，不代表一定出现交易信号。锁状态无法读取时会显示「未知」，不会假定未锁定；没有成交记录时也不会生成虚构成交。</div>
+  </section>
+
+  <section class="card cw-panel mn-panel" aria-label="MemeHunter meme 币虚拟盘 E">
+    <div class="cw-head">
+      <div>
+        <div class="cw-title"><span class="cw-badge mn-badge">E</span>MemeHunter · meme 币虚拟盘<span style="font-weight:600;color:#8a9aaf;font-size:10px">独立账户 · 程序自选标的</span></div>
+        <div class="cw-sub">Jupiter 有机分榜单 → 生存否决（权限 / 集中度 / 深度 / 刷量 / 崩塌）→ 打分排序 → 独立虚拟账户模拟成交</div>
+      </div>
+      <span class="cw-pill" id="mn-status">尚未启动</span>
+    </div>
+    <div class="cw-body">
+      <div class="cw-stats" id="mn-stats"></div>
+      <div class="cw-flow">
+        <div class="cw-flow-head"><b>最近一轮候选</b><span id="mn-meta">等待账本</span></div>
+        <div class="cw-events" id="mn-picks"></div>
+        <div class="cw-skips" id="mn-veto"></div>
+      </div>
+    </div>
+    <div class="cw-foot">数据来源：Jupiter 公开接口（只读，无钱包、无签名、无真实下单）。成交价 = <b>发现时刻</b>报价 + 由池子深度估算的滑点，另计 120 bps 往返成本；退出规则为 +55% 止盈 / −22% 止损 / 峰值回落 30% / 180 分钟超时。E 账户资金独立，不并入 A/B/C/D 任何汇总。<b>注意：</b>进程停止时止盈止损不会触发，此时显示的是冻结快照而非实时权益。</div>
+  </section>
+
+  <section class="card cw-panel" aria-label="CopyWatch 链上跟单模拟实验 D">
+    <div class="cw-head">
+      <div>
+        <div class="cw-title"><span class="cw-badge">D</span>CopyWatch · 链上跟单模拟实验<span style="font-weight:600;color:#8a9aaf;font-size:10px">独立账户 · 事件驱动</span></div>
+        <div class="cw-sub">真实链上 swap 事件 → 钱包活跃度核验 → 成本/流动性/异常过滤 → 独立虚拟账户模拟成交</div>
+      </div>
+      <span class="cw-pill" id="cw-status">尚未启动</span>
+    </div>
+    <div class="cw-body">
+      <div class="cw-stats" id="cw-stats"></div>
+      <div class="cw-flow">
+        <div class="cw-flow-head"><b>实时事件流</b><span id="cw-flow-meta">等待账本</span></div>
+        <div class="cw-events" id="cw-events"><div class="cw-empty">等待 CopyWatch 账本与真实链上事件。</div></div>
+        <div class="cw-skips" id="cw-skips"></div>
+      </div>
+    </div>
+    <div class="cw-foot" id="cw-foot">数据来源：公开 DEX 池子接口（eth / base）· 只读 · 无签名、无私钥、无真实下单。PAPER 成交价 = <b>发现时刻</b>池价 + 5 bps 不利滑点，手续费与 gas 双向计入；「核验」只代表链上可验证的成交笔数与规模，不代表身份背书或收益承诺。D 账户资金独立，不并入 A/B/C 汇总。</div>
+  </section>
+
+  <section class="main-grid">
+    <article class="card panel chart-panel">
+      <div class="panel-head"><div class="panel-title-wrap"><span class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="m6 15 4-5 3 2 5-7"/><path d="M15 5h3v3"/></svg></span><div><div class="panel-title">Balance History</div><div class="panel-subtitle">账户权益历史 · 含已实现与浮动盈亏</div></div></div><div class="range-tabs" role="group" aria-label="曲线时间范围"><button class="range-btn" data-range="7">7D</button><button class="range-btn active" data-range="30">30D</button><button class="range-btn" data-range="90">90D</button><button class="range-btn" data-range="all">ALL</button></div></div>
+      <div class="chart-body"><div class="chart" id="balance-chart" aria-live="polite"></div><div class="chart-foot"><div class="legend"><span class="legend-item"><i class="legend-line"></i>基线策略 A</span><span class="legend-item"><i class="legend-line green"></i>Agent 风控 B</span></div><span class="legend-status" id="chart-status">等待已平仓记录</span></div></div>
+    </article>
+
+    <article class="card panel log-panel">
+      <div class="panel-head"><div class="panel-title-wrap"><span class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h8l5 5v13H7z"/><path d="M15 3v6h5M10 13h7M10 17h7"/></svg></span><div><div class="panel-title">Agent Activity Log</div><div class="panel-subtitle">交易、信号与安全状态 · 本地只读</div></div></div><div class="log-tools"><label class="sr-only" for="event-filter">事件类型</label><select class="select" id="event-filter"><option value="all">全部事件</option><option value="trade">交易记录</option><option value="signal">行情信号</option><option value="copywatch">链上事件</option><option value="ledger">账本状态</option><option value="risk">风控状态</option><option value="system">系统状态</option></select><span class="event-count" id="event-count">0 events</span></div></div>
+      <div class="log-list" id="event-list"></div>
+    </article>
+  </section>
+
+  <section class="card ab-strip" aria-label="A/B 对照实验">
+    <div class="ab-intro"><span class="ab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16M7 5 4 17h6L7 5ZM17 5l-3 12h6L17 5ZM12 2v3M8 20h8"/></svg></span><div><div class="ab-title">A/B Experiment: Baseline vs Agent-Assisted</div><div class="ab-sub">同初始资金 · 同市场数据 · 比较完整账户权益</div></div></div>
+    <div class="ab-account"><div class="ab-label"><i class="ab-dot"></i>Baseline Strategy A</div><div class="ab-value" id="ab-baseline">--</div><div class="ab-caption" id="ab-baseline-caption">尚未启动</div></div>
+    <div class="ab-account"><div class="ab-label"><i class="ab-dot green"></i>Agent-Assisted B</div><div class="ab-value" id="ab-hybrid">--</div><div class="ab-caption" id="ab-hybrid-caption">尚未启动</div></div>
+    <div class="ab-delta neutral" id="ab-delta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9M10 19V5M16 19v-7M22 19V2"/></svg><div><strong id="ab-delta-title">等待两组账本</strong><small id="ab-delta-caption">仅当两账户均可完整估值时比较。</small></div></div>
+  </section>
+
+  <section class="modules" id="module-grid" aria-label="系统模块">
+    <button class="module" data-module="market" type="button"><div class="module-top"><span class="module-icon">◎</span><span class="module-status info" id="module-market-status">WAIT</span></div><div class="module-title">Market Radar</div><div class="module-desc">行情雷达 · 公开数据</div><div class="module-metric" id="module-market-metric">已校验信号 0/2</div></button>
+    <button class="module" data-module="strategy" type="button"><div class="module-top"><span class="module-icon blue">⚗</span><span class="module-status info">READY</span></div><div class="module-title">Strategy Lab</div><div class="module-desc">策略实验室 · 规则信号</div><div class="module-metric">SMA20/50 + 动量</div></button>
+    <button class="module" data-module="risk" type="button"><div class="module-top"><span class="module-icon amber">⬡</span><span class="module-status good">GUARD</span></div><div class="module-title">Risk Guard</div><div class="module-desc">风险守卫 · 先审核后执行</div><div class="module-metric green">无效信号拒绝放行</div></button>
+    <button class="module" data-module="executor" type="button"><div class="module-top"><span class="module-icon purple">ϟ</span><span class="module-status" id="module-executor-status">WAIT</span></div><div class="module-title">Paper Executor</div><div class="module-desc">虚拟执行器 · Dry-run</div><div class="module-metric muted" id="module-executor-metric">账本 0/3</div></button>
+    <button class="module" data-module="replay" type="button"><div class="module-top"><span class="module-icon blue">◷</span><span class="module-status info" id="module-replay-status">READY</span></div><div class="module-title">Replay Analyst</div><div class="module-desc">复盘分析 · 对照评估</div><div class="module-metric muted" id="module-replay-metric">等待权益历史</div></button>
+    <button class="module" data-module="baseline" type="button"><div class="module-top"><span class="module-icon gray">A</span><span class="module-status" id="module-baseline-status">WAIT</span></div><div class="module-title">Baseline Bot</div><div class="module-desc">传统量化策略</div><div class="module-metric muted" id="module-baseline-metric">--</div></button>
+    <button class="module" data-module="hybrid" type="button"><div class="module-top"><span class="module-icon">B</span><span class="module-status" id="module-hybrid-status">WAIT</span></div><div class="module-title">Agent Bot</div><div class="module-desc">量化信号 + 风控否决</div><div class="module-metric muted" id="module-hybrid-metric">--</div></button>
+    <button class="module" data-module="fast" type="button"><div class="module-top"><span class="module-icon amber">15</span><span class="module-status info" id="module-fast-status">WAIT</span></div><div class="module-title">Fast Experiment</div><div class="module-desc">快速实验 C · 15m</div><div class="module-metric muted" id="module-fast-metric">--</div></button>
+    <button class="module" data-module="journal" type="button"><div class="module-top"><span class="module-icon pink">▤</span><span class="module-status info" id="module-journal-status">LOCAL</span></div><div class="module-title">Trade Journal</div><div class="module-desc">交易日志 · 可审计记录</div><div class="module-metric muted" id="module-journal-metric">暂无平仓记录</div></button>
+  </section>
+  <section class="module-detail" id="module-detail" aria-live="polite"><button type="button" id="module-detail-close">收起</button><h3 id="module-detail-title">系统模块说明</h3><p id="module-detail-body">点击底部模块卡片，查看职责、数据来源和安全边界。</p></section>
+
+  <footer class="footer"><span><strong>PAPERTRADE AGENT</strong> · PAPER ONLY · NO REAL ORDERS</span><span class="foot-right">快照生成：<b id="generated-at">__GENERATED_AT__</b><br>本地只读 · 缺失或过期行情时不展示总权益 · 不构成投资建议</span></footer>
+</div>
+<script id="state-data" type="application/json">__STATE_DATA__</script>
+<script>
+(() => {
+  'use strict';
+  const state = JSON.parse(document.getElementById('state-data').textContent);
+  const $ = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+  const accounts = state.accounts || {};
+  const baseline = accounts.baseline || {};
+  const hybrid = accounts.hybrid || {};
+  const fast = accounts.fast || {};
+  const fastStatus = state.fast_status || {valid:false,status:'尚未检测到运行心跳'};
+  const marks = state.marks || {};
+  const cw = state.copywatch || {};
+  const cwTagClass = tag => ({WATCH:'watch',SKIP:'skip',PAPER:'paper',EXIT:'exit',PROMOTE:'promote',WARN:'warn'}[tag] || '');
+  const cwReasonLabel = {WALLET_UNVERIFIED:'钱包未达跟踪门槛',ANOMALOUS:'异常交易',NO_FRESH_PRICE:'无新鲜池价',POOL_RESERVE:'池子流动性不足',PRICE_IMPACT:'名义额占比过高',COST_TOO_HIGH:'往返成本超限',INSUFFICIENT_CASH:'现金不足',MAX_POSITIONS:'持仓已满',ALREADY_OPEN:'同标的已有仓位',COOLDOWN:'冷却中',DAILY_LOSS:'当日亏损触顶'};
+  let chartRange = '30';
+  let eventFilter = 'all';
+  const modules = {
+    market: {title:'Market Radar · 行情雷达',body:'读取研究进程写入的公开行情信号文件，只接受 Kraken 来源、允许的交易对、1 小时时间框架以及未过期的结构化信号。页面本身不会请求交易所。'},
+    strategy: {title:'Strategy Lab · 策略实验室',body:'当前策略基线使用 SMA20/SMA50 趋势与动量规则。策略只产生候选信号，候选信号不是订单，也不是收益承诺。'},
+    risk: {title:'Risk Guard · 风险守卫',body:'Hybrid 账户只能否决基线买入，不能凭空创建交易。缺失、过期、来源不匹配或格式异常的信号都按 fail-closed 处理。止损与退出规则不依赖 LLM。'},
+    executor: {title:'Paper Executor · 虚拟执行器',body:'两个 Freqtrade 服务均应保持 dry_run=true、现货模式与空交易凭证。此页面只读本地账本，不提供下单、转账或密钥输入功能。'},
+    replay: {title:'Replay Analyst · 复盘分析',body:'当前曲线由每分钟权益快照构成：初始资金 + 已实现盈亏 + 持仓按新鲜公开行情估值后的浮动盈亏。任何持仓缺少有效标记时，该时点不进入曲线。'},
+    baseline: {title:'Baseline Bot · 基线策略 A',body:'独立的 1,000 USDT 虚拟账户，只运行确定性规则策略。它用于与 Agent 风控账户进行 A/B 对照，不代表真实账户余额。'},
+    hybrid: {title:'Agent Bot · Agent 风控策略 B',body:'使用与基线相同的候选策略，再增加信号校验和风险否决。Agent 不允许直接提交真实订单，也不应被解释为自动盈利系统。'},
+    fast: {title:'Fast Experiment · 快速实验 C',body:'独立的 1,000 USDT 虚拟账户，使用 15 分钟 EMA9/EMA21 趋势与 RSI 反弹候选规则，固定手续费、相同 5 bps 滑点和更紧的止损。它只用于更快检查成交/退出/记账链路，不纳入 A/B 主结果，也不保证频繁成交。'},
+    journal: {title:'Trade Journal · 交易日志',body:'读取 SQLite 中已平仓交易的时间、交易对与已实现盈亏。日志不会凭空生成成交；没有账本时会明确显示等待状态。'}
+  };
+  const fmtMoney = v => (v === null || v === undefined || !Number.isFinite(Number(v))) ? '--' : `${Number(v) >= 0 ? '+' : '-'}$${Math.abs(Number(v)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  const fmtBalance = v => `$${Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  const fmtPct = v => `${Number(v).toFixed(1)}%`;
+  const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const closedCount = a => Number.isFinite(a.closed_count) ? a.closed_count : 0;
+  const pnl = a => a.equity_complete === true && Number.isFinite(a.equity_change_usdt) ? a.equity_change_usdt : null;
+  const realizedPnl = a => Number.isFinite(a.realized_usdt) ? a.realized_usdt : null;
+  const unrealizedPnl = a => a.equity_complete === true && Number.isFinite(a.unrealized_usdt) ? a.unrealized_usdt : null;
+  const history = a => Array.isArray(a.equity_history) ? a.equity_history.filter(p => p && Number.isFinite(Number(p.equity)) && Number.isFinite(Date.parse(p.time))) : [];
+  const signalValues = Object.values(state.signals || {});
+  const validSignals = signalValues.filter(s => s.valid);
+  const allAccounts = [baseline, hybrid, fast];
+  const ledgers = allAccounts.filter(a => a.has_ledger);
+  const totalClosed = ledgers.reduce((sum,a)=>sum+closedCount(a),0);
+  const totalWins = ledgers.reduce((sum,a)=>sum+(Number(a.win_count)||0),0);
+  const totalLosses = ledgers.reduce((sum,a)=>sum+(Number(a.loss_count)||0),0);
+  const totalObservedPnl = ledgers.reduce((sum,a)=>sum+(realizedPnl(a) ?? 0),0);
+  const bothLedgers = Boolean(baseline.has_ledger && hybrid.has_ledger);
+  const bothFullyValued = Boolean(bothLedgers && pnl(baseline)!==null && pnl(hybrid)!==null);
+  const allFullyValued = allAccounts.every(a => a.has_ledger && pnl(a)!==null);
+
+  function setText(id, value) { const el=$('#'+id); if (el) el.textContent=value; }
+  function setPnlClass(el, value) { el.classList.remove('positive','negative'); if (value !== null && value > 0) el.classList.add('positive'); if (value !== null && value < 0) el.classList.add('negative'); }
+  function drawdown(series) {
+    if (!series || series.length < 2) return null;
+    let peak = Number(series[0].equity), mdd = 0;
+    for (const point of series) { const value=Number(point.equity); if (value>peak) peak=value; if (peak>0) mdd=Math.max(mdd,(peak-value)/peak); }
+    return mdd;
+  }
+  function renderKpis() {
+    const pf = state.portfolio || null;
+    const ft = pf ? pf.freqtrade : null;
+    const pfTotal = pf && Number.isFinite(Number(pf.total_usdt)) ? Number(pf.total_usdt) : null;
+    const totalEquity=Number.isFinite(state.equity_total_usdt)?state.equity_total_usdt:null;
+    setText('kpi-start', pfTotal!==null?fmtBalance(pfTotal):(totalEquity===null?'--':fmtBalance(totalEquity)));
+    if (pf && ft) {
+      const cwp=pf.copywatch||{}, mhp=pf.memehunter||{};
+      const bits=[
+        `A/B/C ${ft.equity_usdt===null||ft.equity_usdt===undefined?'--':fmtBalance(ft.equity_usdt)}${ft.frozen?' · 0 笔成交':''}`,
+        `D ${cwp.equity_usdt===null?'--':fmtBalance(cwp.equity_usdt)}${cwp.stale?' · 旧样本':''}`,
+        `E ${mhp.equity_usdt===null?'--':fmtBalance(mhp.equity_usdt)}${mhp.stale?' · 旧样本':''}`
+      ];
+      setText('kpi-start-caption', `初始 ${fmtBalance(pf.starting_total_usdt)} · ${bits.join(' · ')}`);
+      const engEl=$('#kpi-engines');
+      if (engEl) engEl.innerHTML=(pf.engines||[]).map(e=>`<span class="eng ${e.running?'on':'off'}" title="${escapeHtml(e.detail||'')}"><i></i>${escapeHtml((e.name||'').split(' · ')[0])}</span>`).join('');
+    } else {
+      setText('kpi-start-caption', `初始资金 ${fmtBalance(state.starting_cash_total_usdt)} · ${allFullyValued?'三账户均已完整估值':'等待三账户的新鲜行情标记'}`);
+    }
+    const pnlEl=$('#kpi-pnl');
+    if (pf && Number.isFinite(Number(pf.pnl_usdt))) {
+      const totalPnl=Number(pf.pnl_usdt);
+      pnlEl.textContent=fmtMoney(totalPnl); setPnlClass(pnlEl,totalPnl);
+      setText('kpi-pnl-caption', `全系统 5 账户含浮动 · ${fmtPct(pf.pnl_pct)} · ${pf.running_count}/${pf.engine_count} 引擎在跑`);
+    } else if (allFullyValued) {
+      const totalPnl=pnl(baseline)+pnl(hybrid)+pnl(fast);
+      pnlEl.textContent=fmtMoney(totalPnl); setPnlClass(pnlEl,totalPnl);
+      setText('kpi-pnl-caption', `三账户含浮动盈亏 · 已实现 ${fmtMoney(totalObservedPnl)} · 估值完整`);
+    } else { pnlEl.textContent='--'; setPnlClass(pnlEl,null); setText('kpi-pnl-caption', ledgers.length ? `已实现 ${fmtMoney(totalObservedPnl)} · 总权益等待新鲜行情标记` : '等待本地 Dry-run 账本和权益快照'); }
+    const ddValues=allAccounts.map(a => Number.isFinite(a.equity_max_drawdown)?a.equity_max_drawdown:drawdown(history(a))).filter(Number.isFinite);
+    const mdd=ddValues.length?Math.max(...ddValues):null;
+    setText('kpi-mdd', mdd===null?'--':`-${fmtPct(mdd*100)}`);
+    const arc=$('#mdd-arc');
+    if (arc) { const portion=mdd===null?0:Math.min(mdd/.2,1); arc.setAttribute('stroke-dasharray',`${(portion*116).toFixed(1)} 120`); }
+    if (totalClosed>0) {
+      const winRate=totalWins/totalClosed;
+      setText('kpi-win',fmtPct(winRate*100));
+      setText('kpi-wl',`${totalWins} 胜 / ${totalLosses} 负`);
+      setText('kpi-win-caption',`${totalClosed} 笔已平仓 · ${ledgers.length}/3 账本`);
+      $('#win-ring').style.setProperty('--progress',`${winRate*360}deg`);
+    } else {
+      setText('kpi-win','--'); setText('kpi-wl','-- 胜 / -- 负'); setText('kpi-win-caption','等待已平仓交易'); $('#win-ring').style.setProperty('--progress','0deg');
+    }
+  }
+  function dateMs(p) { const n=Date.parse(p.time); return Number.isFinite(n)?n:null; }
+  function filteredHistory(a) {
+    let rows=history(a); if (chartRange==='all' || !rows.length) return rows;
+    const days=Number(chartRange); const cutoff=Date.now()-days*86400000;
+    const old=rows.filter(p=>dateMs(p)!==null && dateMs(p)<cutoff);
+    const recent=rows.filter(p=>dateMs(p)!==null && dateMs(p)>=cutoff);
+    if (recent.length && old.length) recent.unshift(old[old.length-1]);
+    return recent;
+  }
+  function moneyAxis(v) { return '$'+Math.round(v).toLocaleString('en-US'); }
+  function renderChart() {
+    const el=$('#balance-chart');
+    const series=[{key:'baseline',label:'基线策略 A',color:'#4381e8',fill:'rgba(67,129,232,.07)',rows:filteredHistory(baseline)},{key:'hybrid',label:'Agent 风控 B',color:'#10a978',fill:'rgba(16,169,120,.12)',rows:filteredHistory(hybrid)},{key:'fast',label:'快速实验 C',color:'#df922a',fill:'rgba(223,146,42,.08)',rows:filteredHistory(fast)}].filter(s=>s.rows.length>=2);
+    if (!series.length) {
+      el.innerHTML=`<div class="chart-empty"><span class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 3v18h18"/><path d="M6 15h3l2-4 3 2 4-7" stroke-dasharray="3 3"/><circle cx="18" cy="6" r="2"/></svg></span><strong>还没有可展示的权益曲线</strong><p>启动权益采样器并获取新鲜公开行情标记后，这里会记录含浮动盈亏的账户权益。缺少持仓估值时不会补造曲线。</p></div>`;
+      setText('chart-status','等待完整权益快照'); return;
+    }
+    const all=series.flatMap(s=>s.rows.map(p=>({x:dateMs(p),y:Number(p.equity)})));
+    let minX=Math.min(...all.map(p=>p.x)),maxX=Math.max(...all.map(p=>p.x)); if (minX===maxX) {minX-=3600000;maxX+=3600000;}
+    let minY=Math.min(...all.map(p=>p.y)),maxY=Math.max(...all.map(p=>p.y));
+    if (minY===maxY) {minY-=25;maxY+=25;} const pad=(maxY-minY)*.12; minY-=pad;maxY+=pad;
+    const W=760,H=300,L=68,R=18,T=18,B=37,PW=W-L-R,PH=H-T-B;
+    const x=v=>L+((v-minX)/(maxX-minX))*PW; const y=v=>T+((maxY-v)/(maxY-minY))*PH;
+    let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="基线策略与 Agent 风控账户的完整权益曲线，含浮动盈亏">`;
+    for(let i=0;i<=4;i++){const val=maxY-(maxY-minY)*i/4,yy=y(val);svg+=`<line x1="${L}" y1="${yy}" x2="${W-R}" y2="${yy}" stroke="#e9eff1" stroke-dasharray="4 5"/><text x="${L-11}" y="${yy+4}" text-anchor="end" font-size="10" fill="#8b9bad">${moneyAxis(val)}</text>`;}
+    const first=series.reduce((best,s)=>s.rows[0].time<best?s.rows[0].time:best,series[0].rows[0].time);
+    const last=series.reduce((best,s)=>s.rows[s.rows.length-1].time>best? s.rows[s.rows.length-1].time:best,series[0].rows[series[0].rows.length-1].time);
+    const firstDate=new Date(first),lastDate=new Date(last); const dateLabel=d=>Number.isFinite(d.getTime())?d.toLocaleDateString(undefined,{month:'short',day:'numeric'}):'';
+    svg+=`<text x="${L}" y="${H-10}" font-size="10" fill="#8b9bad">${escapeHtml(dateLabel(firstDate))}</text><text x="${W-R}" y="${H-10}" text-anchor="end" font-size="10" fill="#8b9bad">${escapeHtml(dateLabel(lastDate))}</text>`;
+    for(const s of series){const pts=s.rows.map(p=>({x:x(dateMs(p)),y:y(Number(p.equity)),raw:Number(p.equity),time:p.time}));if(pts.length<2)continue;let d=`M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;for(let i=1;i<pts.length;i++){const prev=pts[i-1],cur=pts[i],cx=(prev.x+cur.x)/2;d+=` Q ${cx.toFixed(2)} ${prev.y.toFixed(2)} ${cur.x.toFixed(2)} ${cur.y.toFixed(2)}`;}if(s.key==='hybrid'){const area=d+` L ${pts[pts.length-1].x.toFixed(2)} ${T+PH} L ${pts[0].x.toFixed(2)} ${T+PH} Z`;svg+=`<path d="${area}" fill="${s.fill}" stroke="none"/>`;}svg+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>`;const p=pts[pts.length-1];svg+=`<circle cx="${p.x}" cy="${p.y}" r="4.8" fill="${s.color}" stroke="#fff" stroke-width="2.5"/><circle cx="${p.x}" cy="${p.y}" r="8" fill="none" stroke="${s.color}" stroke-opacity=".16" stroke-width="4"/>`;}
+    svg+='</svg>'; el.innerHTML=svg;
+    setText('chart-status',`${series.length}/3 条权益曲线 · 含浮动盈亏 · 每分钟采样`);
+  }
+  function fmtClock(value) { const ms=typeof value==='number'?value:Date.parse(value); if(!Number.isFinite(ms))return '--:--:--';return new Date(ms).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}); }
+  function fmtLocalDateTime(value) { const ms=typeof value==='number'?value:Date.parse(value); if(!Number.isFinite(ms))return '时间未知';return new Date(ms).toLocaleString([], {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}); }
+  function fmtElapsed(value) { if(!Number.isFinite(Number(value)))return '--';let n=Math.max(0,Math.floor(Number(value)));const d=Math.floor(n/86400);n%=86400;const h=Math.floor(n/3600);n%=3600;const m=Math.floor(n/60);const s=n%60;if(d)return `${d}天 ${h}小时`;if(h)return `${h}小时 ${m}分`;if(m)return `${m}分 ${s}秒`;return `${s}秒`; }
+  function strategyReason(a) { const rows=Object.entries(a.pair_statuses||{});if(!rows.length)return '策略尚未发布逐币状态';return rows.map(([pair,item])=>{const label=pair.replace('/USDT','');if(!item.valid)return `${label}：${item.status||'状态未知'}`;return `${label}：${item.action==='BUY'?'买入候选':'HOLD'} · ${item.reason}`;}).join('；'); }
+  function lockDescription(activity) { if(!activity.lock_data_available)return activity.lock_status||'锁状态未知';const locks=activity.active_locks||[];if(!locks.length)return '无活跃锁';return locks.map(lock=>`${lock.pair} · ${lock.reason} · ${fmtClock(lock.lock_end_at_ms)} 解锁（${fmtElapsed(lock.remaining_seconds)}）`).join('；'); }
+  function renderTradeStatus() {
+    const defs=[['baseline','A','基线策略 A','a'],['hybrid','B','Agent 风控 B','b'],['fast','C','快速实验 C','c']];
+    const html=defs.map(([key,letter,label,cls])=>{
+      const account=accounts[key]||{};const a=account.activity||{};const hb=a.heartbeat||{};
+      const running=hb.valid===true;const pillClass=running?'good':(hb.status&&hb.status.includes('过期')?'bad':'warn');
+      const pill=running?`运行中 · 心跳 ${Number(hb.age_seconds)||0}s`:(hb.status||'运行状态未知');
+      const fill=a.last_fill_at_ms!==null&&a.last_fill_at_ms!==undefined;
+      const sideMap={buy:'买入',sell:'卖出',stoploss:'止损'};
+      const fillMain=fill?`距上次成交 ${fmtElapsed(a.last_fill_age_seconds)}`:(a.last_fill_status||'暂无成交信息');
+      const fillSub=fill?`${sideMap[a.last_fill_side]||a.last_fill_side||'成交'} ${a.last_fill_pair||''} · ${fmtLocalDateTime(a.last_fill_at_ms)}`:'';
+      const lockClass=!a.lock_data_available?'warn':((a.active_locks||[]).length?'warn':'good');
+      const next=Number.isFinite(Number(a.next_evaluation_at_ms))?`${fmtClock(a.next_evaluation_at_ms)} · 约 ${fmtElapsed(a.seconds_to_next_evaluation)} 后`:'评估时间未知';
+      return `<article class="trade-status-card"><div class="trade-status-card-head"><div class="trade-status-account"><span class="trade-status-letter ${cls}">${letter}</span>${label} <span style="color:#91a0b1;font-weight:500">${escapeHtml(a.timeframe||'--')}</span></div><span class="trade-status-pill ${pillClass}">${escapeHtml(pill)}</span></div><div class="trade-status-lines"><div class="trade-status-line"><span class="trade-status-label">距上次成交</span><span class="trade-status-value">${escapeHtml(fillMain)}${fillSub?`<small>${escapeHtml(fillSub)}</small>`:''}</span></div><div class="trade-status-line"><span class="trade-status-label">当前锁状态</span><span class="trade-status-value"><span class="trade-status-pill ${lockClass}">${escapeHtml(a.lock_status||'未知')}</span><small>${escapeHtml(lockDescription(a))}</small></span></div><div class="trade-status-line"><span class="trade-status-label">下次策略评估</span><span class="trade-status-value">${escapeHtml(next)}<small>按 ${escapeHtml(a.timeframe||'当前')} K 线边界估算，不预测信号</small></span></div></div><div class="trade-status-reasons"><div class="trade-status-reason"><strong>策略观察：</strong>${escapeHtml(strategyReason(a))}</div></div></article>`;
+    }).join('');
+    const target=$('#trade-status-grid');if(target)target.innerHTML=html;
+    setText('trade-status-updated',`快照 ${fmtClock(state.generated_at_ms)} · 15 秒刷新`);
+  }
+  function numOr(value, fallback) { return (value === null || value === undefined || !Number.isFinite(Number(value))) ? fallback : value; }
+  function renderCopyWatch() {
+    const pill = $('#cw-status');
+    pill.textContent = cw.status || '尚未启动';
+    pill.className = 'cw-pill ' + (cw.status_level || 'warn');
+    pill.title = cw.status_detail || '';
+    const hasLedger = cw.has_ledger === true;
+    const equity = cw.equity_complete ? fmtBalance(cw.equity_usdt) : '--';
+    const realized = Number.isFinite(cw.realized_pnl_usd) ? cw.realized_pnl_usd : null;
+    const equitySub = hasLedger
+      ? (cw.equity_complete
+        ? `初始 ${fmtBalance(cw.starting_cash_usdt)} · 现金 ${fmtBalance(cw.cash_usdt)} · 持仓 ${numOr(cw.open_count, 0)}`
+        : `权益估值不完整${cw.equity_sample_age_seconds !== null && cw.equity_sample_age_seconds !== undefined ? ` · 样本 ${fmtElapsed(cw.equity_sample_age_seconds)} 前` : ''}`)
+      : (cw.status_detail || '等待账本');
+    const stats = [
+      {label:'D 账户权益', value:equity, cls:cw.equity_complete && realized !== null ? (realized > 0 ? 'good' : realized < 0 ? 'bad' : '') : '', sub:equitySub},
+      {label:'已实现盈亏', value:realized === null ? '--' : fmtMoney(realized), cls:realized === null ? '' : (realized > 0 ? 'good' : realized < 0 ? 'bad' : ''), sub:`${numOr(cw.closed_count, 0)} 笔平仓 · ${numOr(cw.win_count, 0)} 胜 / ${numOr(cw.loss_count, 0)} 负`},
+      {label:'跟踪钱包', value:cw.wallets_tracked === null || cw.wallets_tracked === undefined ? '--' : String(cw.wallets_tracked), cls:'', sub:`已观察 ${numOr(cw.wallets_observed, '--')} 个 · 门槛 3 笔且 ≥$2,000，或单笔 ≥$20,000`},
+      {label:'事件研判', value:cw.decisions === null || cw.decisions === undefined ? '--' : String(cw.decisions), cls:'', sub:`PAPER ${numOr(cw.paper_fills, 0)} · SKIP ${numOr(cw.skipped, 0)} · 链上事件 ${numOr(cw.swap_events, 0)}`}
+    ];
+    $('#cw-stats').innerHTML = stats.map(s => `<div class="cw-stat"><div class="cw-stat-label">${escapeHtml(s.label)}</div><div class="cw-stat-value ${s.cls}">${escapeHtml(s.value)}</div><div class="cw-stat-sub">${escapeHtml(s.sub)}</div></div>`).join('');
+    setText('cw-flow-meta', cw.last_poll_at_ms ? `轮询 ${fmtClock(cw.last_poll_at_ms)} · ${cw.running ? '运行中' : '已停止'}` : (cw.status_detail || '等待账本'));
+    const events = Array.isArray(cw.events) ? cw.events : [];
+    const list = $('#cw-events');
+    if (!events.length) {
+      list.innerHTML = `<div class="cw-empty">${escapeHtml(hasLedger ? '账本已建立，暂无可研判的链上事件（只记录，不补造活动）。' : '等待 CopyWatch 账本与真实链上事件。')}</div>`;
+    } else {
+      list.innerHTML = events.map(e => `<div class="cw-ev"><time class="cw-ev-time">${escapeHtml(fmtClock(e.ts_ms))}</time><span class="cw-ev-tag ${cwTagClass(e.tag)}">${escapeHtml(e.tag)}</span><div><div class="cw-ev-title">${escapeHtml(e.title)}</div><div class="cw-ev-detail">${escapeHtml(e.detail)}</div></div></div>`).join('');
+    }
+    const skips = Object.entries(cw.skip_breakdown || {});
+    $('#cw-skips').innerHTML = skips.length
+      ? skips.map(([code, n]) => `<span class="cw-skip">${escapeHtml(cwReasonLabel[code] || code)} ×${n}</span>`).join('')
+      : '<span class="cw-skip" style="background:#f1f5f3;color:#7c8b9a">暂无跳过统计</span>';
+  }
+  const mnReasonLabel = {
+    AUTHORITY_NOT_REVOKED:'权限未撤销', HOLDERS_TOO_CONCENTRATED:'筹码过度集中', TOO_FEW_HOLDERS:'持币人数太少',
+    LIQUIDITY_TOO_THIN:'流动性不足', NO_LIQUIDITY_FLOW:'无近期成交', TOO_LARGE_TO_BE_MEME:'市值过大非 meme',
+    VOLUME_IS_WASH_TRADED:'成交疑似刷量', NO_ORGANIC_DATA:'无有机成交数据', COLLAPSING:'正在崩塌', SCORE_BELOW_FLOOR:'分数未达门槛', PASS:'通过'
+  };
+  function renderMemeHunter() {
+    const e = state.memehunter || {};
+    const pill = $('#mn-status');
+    pill.textContent = e.status || '尚未启动';
+    pill.className = 'cw-pill ' + (e.status_level || 'warn');
+    pill.title = e.status_detail || '';
+    const hasLedger = e.has_ledger === true;
+    const pnl = Number.isFinite(e.pnl_usd) ? e.pnl_usd : null;
+    const stats = [
+      {label:'E 账户权益', value:hasLedger && Number.isFinite(e.equity_usdt) ? fmtBalance(e.equity_usdt) : '--',
+       cls:pnl === null ? '' : (pnl > 0 ? 'good' : pnl < 0 ? 'bad' : ''),
+       sub:hasLedger ? `初始 ${fmtBalance(e.starting_cash_usdt)} · 现金 ${fmtBalance(e.cash_usdt)} · 持仓 ${numOr(e.open_count, 0)}` : (e.status_detail || '等待账本')},
+      {label:'浮动盈亏', value:pnl === null ? '--' : `${pnl >= 0 ? '+' : ''}${fmtMoney(pnl)}`,
+       cls:pnl === null ? '' : (pnl > 0 ? 'good' : pnl < 0 ? 'bad' : ''),
+       sub:Number.isFinite(e.pnl_pct) ? `${e.pnl_pct >= 0 ? '+' : ''}${e.pnl_pct}% · 已实现 ${fmtMoney(numOr(e.realized_usd, 0))}` : '尚无估值'},
+      {label:'扫描与门槛', value:numOr(e.scans, '--'),
+       cls:'', sub:hasLedger ? `最近一轮 ${numOr(e.tokens_seen, '--')} 个代币 · 通过 ${numOr(e.tokens_eligible, '--')} 个` : '尚未扫描'},
+      {label:'已平仓', value:numOr(e.closed_count, 0),
+       cls:'', sub:Number.isFinite(e.win_rate) ? `胜率 ${e.win_rate}%` : '尚无平仓记录，不评估胜率'}
+    ];
+    $('#mn-stats').innerHTML = stats.map(s => `<div class="cw-stat"><div class="cw-stat-label">${escapeHtml(s.label)}</div><div class="cw-stat-value ${s.cls}">${escapeHtml(s.value)}</div><div class="cw-stat-sub">${escapeHtml(s.sub)}</div></div>`).join('');
+
+    setText('mn-meta', e.last_scan_age_seconds === null || e.last_scan_age_seconds === undefined
+      ? (e.status_detail || '等待账本')
+      : `扫描于 ${fmtElapsed(e.last_scan_age_seconds)} 前`);
+
+    const opens = Array.isArray(e.open_positions) ? e.open_positions : [];
+    const picks = Array.isArray(e.recent_picks) ? e.recent_picks : [];
+    const rows = [];
+    opens.forEach(p => rows.push({tag:'HOLD', cls:'paper', title:`${p.symbol} 持仓 ${p.change_pct >= 0 ? '+' : ''}${p.change_pct}%`,
+      detail:`入场 ${p.entry} → 现价 ${p.mark} · 峰值 ${p.peak_pct >= 0 ? '+' : ''}${p.peak_pct}% · 市值 ${fmtMoney(p.value_usd)} · 持有 ${Math.round(p.age_min)} 分钟 · 分 ${p.score}`}));
+    picks.forEach(c => {
+      const pass = c.eligible === true;
+      rows.push({tag: pass ? 'BUY' : 'SKIP', cls: pass ? 'paper' : 'skip',
+        title:`${c.symbol} 分 ${c.score}`,
+        detail: pass ? '通过全部门槛，可开仓' : (mnReasonLabel[c.reason] || c.reason || '未通过')});
+    });
+    $('#mn-picks').innerHTML = rows.length
+      ? rows.map(r => `<div class="cw-ev"><time class="cw-ev-time">${escapeHtml(r.tag)}</time><span class="cw-ev-tag ${r.cls}">${escapeHtml(r.tag)}</span><div><div class="cw-ev-title">${escapeHtml(r.title)}</div><div class="cw-ev-detail">${escapeHtml(r.detail)}</div></div></div>`).join('')
+      : `<div class="cw-empty">${escapeHtml(hasLedger ? '本轮没有候选通过生存否决——meme 币多数在被发现时已不合格，宁可不交易。' : '等待 MemeHunter 账本与首轮扫描。')}</div>`;
+
+    const vetoes = Object.entries(e.veto_breakdown || {});
+    $('#mn-veto').innerHTML = vetoes.length
+      ? vetoes.map(([code, n]) => `<span class="cw-skip">${escapeHtml(mnReasonLabel[code] || code)} ×${n}</span>`).join('')
+      : '<span class="cw-skip" style="background:#f1f5f3;color:#7c8b9a">暂无否决统计</span>';
+  }
+  function buildEvents() {
+    const ev=[]; const snap=state.generated_at_ms;
+    ev.push({time:snap,category:'system',tag:'SYSTEM',cls:'system',title:'本地只读快照已生成',detail:`快照时间 ${state.generated_at}；页面每15秒重建只读快照，不提供订单接口。`});
+    for(const pair of ['BTC/USDT','ETH/USDT']){const mark=marks[pair];if(mark){ev.push({time:mark.observed_at_ms,category:'signal',tag:'SCAN',cls:'scan',title:`${pair} · Kraken 公开行情已更新`,detail:`标记价 ${fmtBalance(mark.price)} · 数据年龄 ${mark.age_seconds}s · 只用于观测和持仓估值，不代表买入信号。`});}}
+    if(fastStatus.valid){ev.push({time:fastStatus.last_loop_at_ms,category:'system',tag:'FAST',cls:'system',title:'快速实验 C 正在运行',detail:`15m 策略循环心跳正常 · 最近 ${fastStatus.age_seconds}s 前 · 即使没有成交也会持续显示运行状态。`});}
+    else {ev.push({time:snap,category:'system',tag:'FAST',cls:'system',title:'快速实验 C 尚未确认运行',detail:fastStatus.status||'等待 Freqtrade 策略心跳。账户余额不会因演示动画而变化。'});}
+    for(const s of signalValues){if(s.valid)ev.push({time:s.observed_at_ms||snap,category:'signal',tag:'SIGNAL',cls:'signal',title:`${s.pair} · ${s.action}`,detail:`信号通过来源与时效校验 · ${s.observed_label} · ${s.risk_veto?'风险否决已触发':'仍需经过策略执行边界'}`});else ev.push({time:snap,category:'signal',tag:'SCAN',cls:'scan',title:`${s.pair} · ${s.status}`,detail:'没有通过校验的有效信号；不允许据此创建新的买入许可。'});}
+    const accountLabels={baseline:'基线 A',hybrid:'Agent B',fast:'快速实验 C'};
+    for(const [key,a] of [['baseline',baseline],['hybrid',hybrid],['fast',fast]]){
+      const label=accountLabels[key];
+      if(a.has_ledger){for(const trade of (a.recent_trades||[]).filter(t=>t.time).slice(0,10)){const value=Number(trade.pnl_usdt)||0;ev.push({time:trade.time,category:'trade',tag:'FILL',cls:'fill',title:`${label} · ${trade.pair||'已平仓交易'} · ${fmtMoney(value)}`,detail:'来自本地 SQLite 的已平仓记录；不是实时订单推送。'});}ev.push({time:snap,category:'ledger',tag:'LEDGER',cls:'system',title:`${label} 账本已读取`,detail:`已平仓 ${a.closed_count} 笔 · 持仓 ${a.open_count} 笔 · 已实现 ${fmtMoney(a.realized_usdt)} · 浮动 ${fmtMoney(a.unrealized_usdt)} · ${a.equity_complete?'权益估值完整':`有 ${a.unpriced_open_count||0} 笔持仓缺少有效标记`}。`});}
+      else ev.push({time:snap,category:'ledger',tag:'LEDGER',cls:'system',title:`${label} · 尚未启动`,detail:'尚未发现对应的本地 Dry-run SQLite 账本；账户指标保持空白。'});
+    }
+    ev.push({time:snap,category:'risk',tag:'RISK',cls:'risk',title:'风控规则：无效信号拒绝放行',detail:'缺失、过期或来源不匹配的信号按 fail-closed 处理。'});
+    for(const item of (Array.isArray(cw.events)?cw.events:[]).slice(0,16)){ev.push({time:item.ts_ms,category:'copywatch',tag:item.tag,cls:cwTagClass(item.tag)||'system',title:item.title,detail:item.detail});}
+    ev.push({time:snap,category:'system',tag:'DRYRUN',cls:'system',title:'执行模式为 Dry-run',detail:'当前项目仅用于模拟现货交易；网页无下单、转账或密钥接口。'});
+    return ev.sort((a,b)=>{const ta=typeof a.time==='number'?a.time:Date.parse(a.time)||0,tb=typeof b.time==='number'?b.time:Date.parse(b.time)||0;return tb-ta;});
+  }
+  const allEvents=buildEvents();
+  function renderEvents() {
+    const rows=allEvents.filter(e=>eventFilter==='all'||e.category===eventFilter);setText('event-count',`${rows.length} events`);
+    const el=$('#event-list');
+    if(!rows.length){el.innerHTML='<div class="log-empty">这个分类暂时没有记录。</div>';return;}
+    el.innerHTML=rows.map(e=>`<div class="log-row"><time class="log-time">${escapeHtml(fmtClock(e.time))}</time><span class="log-tag ${escapeHtml(e.cls)}">[${escapeHtml(e.tag)}]</span><div class="log-copy"><strong>${escapeHtml(e.title)}</strong><small>${escapeHtml(e.detail)}</small></div></div>`).join('');
+  }
+  function accountCaption(a) {if(!a.has_ledger)return '尚未启动 · 无本地账本';if(a.equity_complete)return `权益 ${fmtBalance(a.equity_usdt)} · 已实现 ${fmtMoney(a.realized_usdt)} · 浮动 ${fmtMoney(a.unrealized_usdt)} · ${a.closed_count}平仓/${a.open_count}持仓`;return `总权益暂不可完整估值 · 已实现 ${fmtMoney(a.realized_usdt)} · ${a.unpriced_open_count||0}笔持仓缺少新鲜行情`;}
+  function renderAB() {
+    for(const [key,a,id,captionId] of [['baseline',baseline,'ab-baseline','ab-baseline-caption'],['hybrid',hybrid,'ab-hybrid','ab-hybrid-caption']]){
+      const el=$('#'+id),value=a.has_ledger?pnl(a):null;el.textContent=fmtMoney(value);setPnlClass(el,value);setText(captionId,accountCaption(a));
+    }
+    const delta=$('#ab-delta');
+    if(bothFullyValued){const d=pnl(hybrid)-pnl(baseline);delta.classList.toggle('neutral',false);setText('ab-delta-title',`B 相对 A：${fmtMoney(d)}`);setText('ab-delta-caption','按完整账户权益比较，含浮动盈亏；不是盈利保证。');}
+    else {delta.classList.add('neutral');setText('ab-delta-title','等待完整权益估值');setText('ab-delta-caption','两组账本和所有持仓的新鲜行情标记齐全后才比较。');}
+  }
+  function renderModules() {
+    const n=validSignals.length;const freshMarks=Object.values(marks).filter(Boolean).length;setText('module-market-metric',freshMarks?`${freshMarks}/2 个行情标记 · ${n} 个有效信号`:`已校验信号 ${n}/2`);$('#module-market-status').textContent=freshMarks?'LIVE':(n?'SIGNAL':'WAIT');$('#module-market-status').className=`module-status ${freshMarks?'good':'info'}`;
+    const ledgerN=allAccounts.filter(a=>a.has_ledger).length;setText('module-executor-metric',`账本 ${ledgerN}/3`);$('#module-executor-status').textContent=ledgerN?'READ':'WAIT';$('#module-executor-status').className=`module-status ${ledgerN?'good':''}`;
+    const pointN=history(baseline).length+history(hybrid).length+history(fast).length;setText('module-replay-metric',pointN?`${pointN} 个权益点`:'等待权益历史');$('#module-replay-status').textContent=pointN?'DATA':'READY';$('#module-replay-status').className=`module-status ${pointN?'good':'info'}`;
+    for(const [key,a] of [['baseline',baseline],['hybrid',hybrid]]){const el=$('#module-'+key+'-metric');const value=a.has_ledger?pnl(a):null;el.textContent=value===null?'--':fmtMoney(value);el.className=`module-metric ${value===null?'muted':value>=0?'green':'muted'}`;const badge=$('#module-'+key+'-status');badge.textContent=a.has_ledger?'READ':'WAIT';badge.className=`module-status ${a.has_ledger?'good':''}`;}
+    const fastMetric=$('#module-fast-metric');fastMetric.textContent=fastStatus.valid?`15m · 心跳 ${fastStatus.age_seconds}s`:'等待运行心跳';fastMetric.className=`module-metric ${fastStatus.valid?'green':'muted'}`;$('#module-fast-status').textContent=fastStatus.valid?'LIVE':'WAIT';$('#module-fast-status').className=`module-status ${fastStatus.valid?'good':'info'}`;
+    const journalN=allAccounts.reduce((sum,a)=>sum+closedCount(a),0);setText('module-journal-metric',journalN?`${journalN} 笔已平仓`:'暂无平仓记录');$('#module-journal-status').textContent=journalN?'READ':'LOCAL';
+  }
+  function setRange(range) {chartRange=range;$$('.range-btn').forEach(b=>b.classList.toggle('active',b.dataset.range===range));renderChart();}
+  $$('.range-btn').forEach(b=>b.addEventListener('click',()=>setRange(b.dataset.range)));
+  $('#event-filter').addEventListener('change',e=>{eventFilter=e.target.value;renderEvents();});
+  $$('.module').forEach(button=>button.addEventListener('click',()=>{const item=modules[button.dataset.module];if(!item)return;setText('module-detail-title',item.title);setText('module-detail-body',item.body);$('#module-detail').classList.add('show');$('#module-detail').scrollIntoView({behavior:'smooth',block:'nearest'});}));
+  $('#module-detail-close').addEventListener('click',()=>$('#module-detail').classList.remove('show'));
+  setText('generated-at',state.generated_at||'--');
+  if(state.has_live_data){$('#snapshot-badge').classList.remove('snapshot');setText('snapshot-label','SNAPSHOT READY');}
+  renderKpis();renderChart();renderEvents();renderAB();renderModules();renderTradeStatus();renderMemeHunter();renderCopyWatch();
+})();
+</script>
+</body>
+</html>

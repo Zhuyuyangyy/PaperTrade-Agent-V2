@@ -1,0 +1,24 @@
+{
+  "_comment": "六 Agent 流水线配置。Paper only：无钱包、无签名、无真实订单。",
+  "mode": "dry_run",
+  "search": {
+    "max_candidates": 400
+  },
+  "risk": {
+    "top_n": 3,
+    "min_score": 45.0
+  },
+  "smart_money": {
+    "min_notional_usd": 20000.0,
+    "recent_hours": 24,
+    "limit": 12,
+    "score_boost": 6.0
+  },
+  "entry": {
+    "stop_loss_pct": -12.0,
+    "max_entries_per_round": 2
+  },
+  "exit": {
+    "enabled": true
+  }
+}

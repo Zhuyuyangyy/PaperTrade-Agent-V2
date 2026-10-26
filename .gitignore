@@ -1,0 +1,36 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+*.sqlite*
+*.db
+*.db-*
+data/*
+!data/.gitkeep
+!data/paper_dashboard.html
+user_data/signals/*
+!user_data/signals/.gitkeep
+user_data/data/
+user_data/logs/
+user_data/backtest_results/
+user_data/hyperopt_results/
+user_data/plot/
+
+# Runtime marks are fetched from public tickers and must not be committed.
+user_data/marks/*
+!user_data/marks/.gitkeep
+
+# Each Dry-run account has its own writable runtime directory.
+runtime/*/*.sqlite*
+runtime/*/*.json
+runtime/*/*.log
+!runtime/baseline/.gitkeep
+!runtime/hybrid/.gitkeep
+!runtime/fast/.gitkeep
+!runtime/copywatch/.gitkeep
+
+# MemeHunter E runtime artifacts
+runtime/memehunter/*.sh

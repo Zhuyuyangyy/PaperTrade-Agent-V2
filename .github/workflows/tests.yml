@@ -1,0 +1,22 @@
+name: Offline safety and strategy tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Syntax check
+        run: python -m compileall -q research scripts user_data/strategies
+      - name: Verify paper-only configs
+        run: python scripts/safety_check.py
+      - name: Run deterministic unit tests
+        run: python -m pytest -q tests
+      - name: Run V1 regression tests
+        run: python -m unittest discover -s legacy_v1/tests -p test_paper_agent.py
+      - name: Run synthetic safety smoke
+        run: python -m research.worker demo

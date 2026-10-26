@@ -1,0 +1,94 @@
+name: papertrade-agent-v2
+services:
+  research:
+    build:
+      context: .
+      dockerfile: research/Dockerfile
+    restart: unless-stopped
+    environment:
+      PYTHONPATH: /app
+    volumes:
+      - ./user_data/signals:/app/signals
+      - ./user_data/marks:/app/marks
+      - ./data:/app/data
+    command: ["python", "-m", "research.worker", "loop", "--out", "/app/signals", "--marks-out", "/app/marks", "--log", "/app/data/decisions.jsonl", "--ta-root", "/app/data/ta_bias", "--ta-policy", "off", "--poll-seconds", "120"]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  baseline:
+    image: freqtradeorg/freqtrade:2026.9
+    restart: unless-stopped
+    volumes:
+      - ./runtime/baseline:/freqtrade/user_data
+      - ./user_data/config.baseline.json:/freqtrade/config.baseline.json:ro
+      - ./user_data/strategies:/freqtrade/strategies:ro
+    command: ["trade", "--userdir", "/freqtrade/user_data", "--config", "/freqtrade/config.baseline.json", "--strategy-path", "/freqtrade/strategies", "--strategy", "PaperBaseline"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  hybrid:
+    image: freqtradeorg/freqtrade:2026.9
+    restart: unless-stopped
+    depends_on: [research]
+    environment:
+      PAPER_SIGNAL_DIR: /freqtrade/signals
+    volumes:
+      - ./runtime/hybrid:/freqtrade/user_data
+      - ./user_data/config.hybrid.json:/freqtrade/config.hybrid.json:ro
+      - ./user_data/strategies:/freqtrade/strategies:ro
+      - ./user_data/signals:/freqtrade/signals:ro
+    command: ["trade", "--userdir", "/freqtrade/user_data", "--config", "/freqtrade/config.hybrid.json", "--strategy-path", "/freqtrade/strategies", "--strategy", "PaperHybrid"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  fast:
+    image: freqtradeorg/freqtrade:2026.9
+    restart: unless-stopped
+    volumes:
+      - ./runtime/fast:/freqtrade/user_data
+      - ./user_data/config.fast.json:/freqtrade/config.fast.json:ro
+      - ./user_data/strategies:/freqtrade/strategies:ro
+    command: ["trade", "--userdir", "/freqtrade/user_data", "--config", "/freqtrade/config.fast.json", "--strategy-path", "/freqtrade/strategies", "--strategy", "PaperFast"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  copywatch:
+    build:
+      context: .
+      dockerfile: research/Dockerfile
+    restart: unless-stopped
+    environment:
+      PYTHONPATH: /app
+    volumes:
+      - ./user_data/config.copywatch.json:/app/user_data/config.copywatch.json:ro
+      - ./runtime/copywatch:/app/runtime/copywatch
+    command: ["python", "-m", "research.copywatch.agent", "loop", "--config", "/app/user_data/config.copywatch.json", "--db", "/app/runtime/copywatch/copywatch.sqlite", "--runtime", "/app/runtime/copywatch"]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+
+  equity-sampler:
+    build:
+      context: .
+      dockerfile: research/Dockerfile
+    restart: unless-stopped
+    depends_on: [baseline, hybrid, fast, research]
+    environment:
+      PYTHONPATH: /app
+    volumes:
+      - ./runtime/baseline:/app/runtime/baseline:ro
+      - ./runtime/hybrid:/app/runtime/hybrid:ro
+      - ./runtime/fast:/app/runtime/fast:ro
+      - ./user_data/config.baseline.json:/app/config/config.baseline.json:ro
+      - ./user_data/config.hybrid.json:/app/config/config.hybrid.json:ro
+      - ./user_data/config.fast.json:/app/config/config.fast.json:ro
+      - ./user_data/marks:/app/marks:ro
+      - ./data:/app/data
+    command: ["python", "-m", "research.equity_sampler", "loop", "--baseline-db", "/app/runtime/baseline/baseline.dryrun.sqlite", "--hybrid-db", "/app/runtime/hybrid/hybrid.dryrun.sqlite", "--baseline-config", "/app/config/config.baseline.json", "--hybrid-config", "/app/config/config.hybrid.json", "--fast-db", "/app/runtime/fast/fast.dryrun.sqlite", "--fast-config", "/app/config/config.fast.json", "--marks", "/app/marks", "--out", "/app/data/equity_snapshots.jsonl", "--interval-seconds", "60"]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]

@@ -1,0 +1,68 @@
+{
+  "dry_run": true,
+  "dry_run_wallet": 1000,
+  "trading_mode": "spot",
+  "margin_mode": "",
+  "max_open_trades": 2,
+  "stake_currency": "USDT",
+  "stake_amount": 100,
+  "tradable_balance_ratio": 1.0,
+  "fiat_display_currency": "USD",
+  "force_entry_enable": false,
+  "fee": 0.001,
+  "cancel_open_orders_on_exit": false,
+  "exchange": {
+    "name": "kraken",
+    "key": "",
+    "secret": "",
+    "password": "",
+    "pair_whitelist": [
+      "BTC/USDT",
+      "ETH/USDT"
+    ],
+    "pair_blacklist": [],
+    "ccxt_config": {
+      "enableRateLimit": true
+    }
+  },
+  "pairlists": [
+    {
+      "method": "StaticPairList"
+    }
+  ],
+  "telegram": {
+    "enabled": false,
+    "token": "",
+    "chat_id": "",
+    "authorized_users": []
+  },
+  "api_server": {
+    "enabled": false,
+    "listen_ip_address": "127.0.0.1",
+    "listen_port": 8080,
+    "username": "",
+    "password": "",
+    "jwt_secret_key": "NOT_A_SECRET_DISABLED_API_SCHEMA_KEY_FAST_2026"
+  },
+  "initial_state": "running",
+  "internals": {
+    "process_throttle_secs": 5
+  },
+  "unfilledtimeout": {
+    "entry": 10,
+    "exit": 10,
+    "exit_timeout_count": 0,
+    "unit": "minutes"
+  },
+  "entry_pricing": {
+    "price_side": "other",
+    "use_order_book": false,
+    "price_last_balance": 0.0
+  },
+  "exit_pricing": {
+    "price_side": "other",
+    "use_order_book": false
+  },
+  "bot_name": "PaperFast",
+  "db_url": "sqlite:////freqtrade/user_data/fast.dryrun.sqlite"
+}

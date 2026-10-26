@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PAPER DESK · BOT ROOM</title>
+<style>
+:root{
+  --bg:#070a10;--panel:#10151f;--panel2:#141b27;--line:#1f2a3a;--line2:#2a3a4e;
+  --txt:#e8eef7;--mut:#8ba0b6;--dim:#5d7086;
+  --dim:#5d7086;
+  --green:#35d07f;--teal:#2dd4bf;--amber:#f0a13a;--red:#f05252;--violet:#a78bfa;--blue:#4a9eff;
+  --glow:0 0 0 1px rgba(255,255,255,.03),0 8px 26px rgba(0,0,0,.42);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);
+  font-family:'JetBrains Mono',ui-monospace,'Cascadia Code',Consolas,'Courier New',monospace;
+  font-size:13px;-webkit-font-smoothing:antialiased}
+body{background:
+  radial-gradient(1100px 560px at 12% -12%,rgba(45,212,191,.10),transparent 62%),
+  radial-gradient(900px 500px at 86% -4%,rgba(167,139,250,.09),transparent 60%),
+  radial-gradient(700px 400px at 50% 108%,rgba(74,158,255,.06),transparent 60%)}
+.wrap{max-width:1640px;margin:0 auto;padding:14px 16px 28px}
+
+/* ---------- top ---------- */
+.top{display:flex;align-items:center;gap:14px;justify-content:space-between;
+  border:1px solid var(--line);background:linear-gradient(180deg,#131a26,#0c1118);
+  border-radius:14px;padding:12px 16px;box-shadow:var(--glow)}
+.brand{display:flex;align-items:center;gap:13px;min-width:0}
+.logo{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;
+  background:linear-gradient(140deg,#123c3c,#0d2036);border:1px solid #234a55;
+  color:var(--teal);font-weight:800;font-size:16px;letter-spacing:-1px;
+  box-shadow:inset 0 0 18px rgba(45,212,191,.18)}
+.brand h1{margin:0;font-size:15px;letter-spacing:2.4px;font-weight:800}
+.brand p{margin:3px 0 0;font-size:10.5px;color:var(--mut);letter-spacing:.6px}
+.top-right{display:flex;align-items:center;gap:14px;flex:none}
+.live{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:1.5px;
+  color:#06140e;background:linear-gradient(180deg,#4ce094,#2cb96d);padding:5px 11px;border-radius:6px}
+.live i{width:7px;height:7px;border-radius:50%;background:#063;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.clock{font-size:17px;font-weight:800;letter-spacing:1.2px;font-variant-numeric:tabular-nums}
+.clock small{display:block;font-size:9.5px;color:var(--mut);letter-spacing:1px;font-weight:600;margin-top:2px;text-align:right}
+.stamp{font-size:9.5px;color:var(--dim);letter-spacing:.7px;text-align:right;line-height:1.7}
+
+/* ---------- kpi ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+.kpi{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:14px;padding:14px 16px 13px;
+  background:linear-gradient(165deg,#131a26,#0d1219);box-shadow:var(--glow)}
+.kpi:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--teal)}
+.kpi.g:before{background:var(--green)}.kpi.a:before{background:var(--amber)}.kpi.v:before{background:var(--violet)}
+.kpi-l{font-size:9.5px;letter-spacing:1.6px;color:var(--mut);font-weight:700}
+.kpi-v{font-size:32px;font-weight:800;letter-spacing:-1.5px;margin-top:9px;font-variant-numeric:tabular-nums;line-height:1.02}
+.kpi-v.pos{color:var(--green)}.kpi-v.neg{color:var(--red)}
+.kpi-s{font-size:10px;color:var(--dim);margin-top:7px;letter-spacing:.3px;line-height:1.55}
+.lamps{display:flex;gap:5px;margin-top:10px}
+.lamp{flex:1;height:6px;border-radius:3px;background:#1c2735}
+.lamp.on{background:var(--green);box-shadow:0 0 10px rgba(53,208,127,.55)}
+.lamp.run{background:var(--teal);box-shadow:0 0 10px rgba(45,212,191,.5)}
+
+/* ---------- bot room ---------- */
+.room{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:12px}
+.bot{position:relative;border:1px solid var(--line);border-radius:14px;padding:13px 13px 12px;
+  background:linear-gradient(170deg,#131a26,#0c1118);box-shadow:var(--glow);overflow:hidden;
+  transition:border-color .25s,transform .25s}
+.bot:hover{border-color:var(--line2);transform:translateY(-2px)}
+.bot:before{content:"";position:absolute;inset:0;border-radius:14px;pointer-events:none;
+  background:radial-gradient(120px 80px at 50% 0%,var(--ac,#2dd4bf),transparent 70%);opacity:.09}
+.bot-head{display:flex;align-items:center;gap:10px}
+.bot-avatar{width:56px;height:56px;flex:none}
+.bot-id{min-width:0;flex:1}
+.bot-name{font-size:12px;font-weight:800;letter-spacing:1.4px;display:flex;align-items:center;gap:6px}
+.bot-role{font-size:9px;color:var(--mut);margin-top:3px;letter-spacing:.6px}
+.bot-state{font-size:8.5px;font-weight:800;letter-spacing:.6px;padding:3px 7px;border-radius:999px;flex:none}
+.bot-state.on{background:rgba(53,208,127,.14);color:var(--green);border:1px solid rgba(53,208,127,.35)}
+.bot-state.off{background:rgba(240,161,58,.13);color:var(--amber);border:1px solid rgba(240,161,58,.35)}
+.bot-work{margin-top:11px;padding-top:10px;border-top:1px solid #172130}
+.bot-metric{font-size:23px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1}
+.bot-metric small{font-size:10px;font-weight:700;color:var(--mut);letter-spacing:.4px;margin-left:4px}
+.bot-viz{margin-top:9px;min-height:26px}
+.bot-note{font-size:9px;color:var(--dim);margin-top:8px;line-height:1.55;letter-spacing:.2px;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+/* bot viz bits */
+.spark{display:flex;align-items:flex-end;gap:3px;height:26px}
+.spark i{flex:1;border-radius:2px 2px 0 0;min-height:3px;display:block;background:var(--ac,#2dd4bf);opacity:.85}
+.flowrow{display:flex;align-items:center;gap:6px;font-size:9.5px;color:var(--mut);font-weight:700}
+.flowrow b{color:var(--txt);font-size:13px;font-weight:800}
+.flowrow .arrow{color:var(--ac,#2dd4bf);font-size:12px}
+.wallets{display:flex;gap:2px;align-items:flex-end;height:26px}
+.wallets i{flex:1;border-radius:1px;background:var(--ac,#2dd4bf);opacity:.7;min-height:2px}
+.gapbar{height:6px;border-radius:3px;background:#182231;overflow:hidden;display:flex}
+.gapbar i{display:block;height:100%;background:var(--ac,#2dd4bf)}
+.gapbar i.no{background:#3a4a5e}
+.route{display:flex;align-items:center;gap:3px}
+.route span{width:7px;height:7px;border-radius:50%;background:var(--ac,#f0a13a);opacity:.35}
+.route span.done{opacity:1;box-shadow:0 0 7px var(--ac,#f0a13a)}
+.route em{color:#2a3a4e;font-style:normal;font-size:8px}
+.pillrow{display:flex;flex-wrap:wrap;gap:4px}
+.pill{font-size:8.5px;padding:2px 6px;border-radius:4px;background:#182231;color:var(--mut);border:1px solid #22303f;white-space:nowrap}
+.pill.bad{background:rgba(240,161,58,.12);color:var(--amber);border-color:rgba(240,161,58,.3)}
+.pill.good{background:rgba(53,208,127,.12);color:var(--green);border-color:rgba(53,208,127,.3)}
+
+/* ---------- robots ---------- */
+.rb-antenna{animation:none}
+.rb-signal{transform-box:fill-box;transform-origin:center;animation:ping 1.8s ease-out infinite}
+@keyframes ping{0%{transform:scale(.6);opacity:.9}70%{transform:scale(2.1);opacity:0}100%{transform:scale(2.1);opacity:0}}
+.rb-eye{transform-box:fill-box;transform-origin:center;animation:blinkEye 4.2s ease-in-out infinite}
+@keyframes blinkEye{0%,90%,100%{transform:scaleY(1)}93%{transform:scaleY(.12)}96%{transform:scaleY(1)}}
+.rb-lamp{transform-box:fill-box;transform-origin:center;animation:breathe 2.4s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.45}50%{opacity:1}}
+.rb-body{animation:bob 3.4s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.2px)}}
+.bot.off .rb-signal,.bot.off .rb-eye,.bot.off .rb-lamp,.bot.off .rb-body{animation:none;opacity:.75}
+
+/* ---------- panels ---------- */
+.grid-2{display:grid;grid-template-columns:1.15fr 1fr;gap:12px;margin-top:12px}
+.panel{border:1px solid var(--line);border-radius:14px;background:linear-gradient(170deg,#111825,#0c1118);
+  box-shadow:var(--glow);overflow:hidden}
+.ph{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,#141c29,#0e141d)}
+.ph h2{margin:0;font-size:11px;letter-spacing:1.7px;font-weight:800;color:#c6d5e4}
+.ph span{font-size:9.5px;color:var(--dim);letter-spacing:.7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pb{padding:12px 14px}
+
+/* chart */
+.chartbox{padding:14px 14px 6px}
+.chartbox svg{display:block;width:100%;height:auto}
+.clegend{display:flex;gap:18px;flex-wrap:wrap;padding:2px 14px 13px;font-size:9.5px;color:var(--mut);letter-spacing:.4px}
+.clegend b{font-weight:800;color:#b6c6d6}
+.lg{display:inline-flex;align-items:center;gap:7px}
+.lg i{width:18px;height:3px;border-radius:2px;display:inline-block}
+.lg i.dash{height:0;border-top:2px dashed}
+
+/* account ladder */
+.ladder{display:flex;flex-direction:column;gap:11px}
+.lrow{position:relative}
+.ltop{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:11px}
+.lname{display:inline-flex;align-items:center;gap:7px;color:#cfdcea;font-weight:800;letter-spacing:.4px;min-width:0}
+.lname em{font-style:normal;color:var(--dim);font-weight:600;font-size:8.5px;letter-spacing:1px;white-space:nowrap}
+.lval{font-variant-numeric:tabular-nums;font-weight:800;font-size:13.5px;white-space:nowrap;flex:none}
+.lval.up{color:var(--green)}.lval.down{color:var(--red)}
+.ltrack{height:7px;border-radius:4px;background:#151e2b;margin-top:6px;overflow:hidden;display:flex}
+.lfill{height:100%;border-radius:4px}
+.lsub{display:flex;justify-content:space-between;gap:8px;font-size:9px;color:var(--dim);margin-top:4px;letter-spacing:.2px}
+.lsub span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lsub span:last-child{flex:none}
+.lbadge{font-size:8.5px;padding:2px 6px;border-radius:4px;letter-spacing:.7px;font-weight:800;flex:none}
+.lbadge.frozen{background:rgba(240,161,58,.13);color:var(--amber);border:1px solid rgba(240,161,58,.3)}
+.lbadge.live{background:rgba(53,208,127,.13);color:var(--green);border:1px solid rgba(53,208,127,.32)}
+
+/* tape */
+.tape{max-height:428px;overflow:hidden;padding:0 0 6px}
+.tp{display:grid;grid-template-columns:54px 50px minmax(0,1fr) 64px;gap:8px;align-items:center;
+  padding:6px 14px;border-bottom:1px solid #131c27;font-size:10px}
+.tp:first-child{background:rgba(45,212,191,.06)}
+.tt{color:var(--dim);font-variant-numeric:tabular-nums;font-size:9.5px}
+.tag{font-size:8.5px;font-weight:800;letter-spacing:.5px;text-align:center;padding:3px 0;border-radius:4px;border:1px solid transparent}
+.tag.WATCH{color:#8fc0e4;background:rgba(74,158,255,.12);border-color:rgba(74,158,255,.3)}
+.tag.SKIP{color:#e0aa56;background:rgba(240,161,58,.12);border-color:rgba(240,161,58,.28)}
+.tag.PAPER{color:#3fd08a;background:rgba(53,208,127,.12);border-color:rgba(53,208,127,.3)}
+.tag.EXIT{color:#ee9090;background:rgba(240,82,82,.12);border-color:rgba(240,82,82,.28)}
+.tag.PROMOTE{color:#c0b2f6;background:rgba(167,139,250,.13);border-color:rgba(167,139,250,.3)}
+.tag.WARN{color:#ecc27a;background:rgba(240,161,58,.1);border-color:rgba(240,161,58,.24)}
+.tag.DEMOTE{color:#f09090;background:rgba(240,82,82,.14);border-color:rgba(240,82,82,.32)}
+.tmsg{color:#b3c3d3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tmsg b{color:var(--txt);font-weight:800}
+.tusd{text-align:right;color:var(--dim);font-variant-numeric:tabular-nums;font-size:9.5px}
+
+/* positions */
+table.p{width:100%;border-collapse:collapse;font-size:10.5px}
+table.p th{text-align:left;font-size:9px;letter-spacing:1.2px;color:var(--dim);font-weight:800;
+  padding:0 7px 8px;border-bottom:1px solid var(--line)}
+table.p th.r,table.p td.r{text-align:right}
+table.p td{padding:7px;border-bottom:1px solid #131c27;font-variant-numeric:tabular-nums}
+table.p tr:last-child td{border-bottom:0}
+.sym{font-weight:800;color:#e6f0f8;letter-spacing:.5px}
+.chg{font-weight:800}
+.chg.up{color:var(--green)}.chg.down{color:var(--red)}
+.bar{height:5px;border-radius:3px;background:#151e2b;position:relative;width:70px;display:inline-block;vertical-align:middle;overflow:hidden}
+.bar i{position:absolute;top:0;bottom:0;border-radius:3px}
+.bar .mid{position:absolute;left:50%;top:-1px;bottom:-1px;width:1px;background:#2c3d51}
+
+/* funnel */
+.vrow{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) 32px;gap:9px;align-items:center;margin-bottom:7px;font-size:10px}
+.vname{color:#b3c3d3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vname.pass{color:var(--green);font-weight:800}
+.vbar{height:8px;border-radius:4px;background:#151e2b;overflow:hidden}
+.vbar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#8a5220,#e09442)}
+.vbar i.pass{background:linear-gradient(90deg,#13794c,#35d07f)}
+.vn{text-align:right;color:#a6b8c9;font-variant-numeric:tabular-nums;font-weight:800}
+.hint{font-size:9.5px;color:var(--dim);margin-top:10px;line-height:1.65;letter-spacing:.3px}
+
+/* abc */
+.abc{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+.acard{border:1px solid rgba(240,161,58,.28);border-radius:12px;padding:12px 14px;background:linear-gradient(170deg,#161310,#0d1118)}
+.acard .ah{display:flex;align-items:center;justify-content:space-between;font-size:10px;letter-spacing:.9px;font-weight:800;color:#dcbf8e}
+.acard .av{font-size:21px;font-weight:800;margin-top:7px;font-variant-numeric:tabular-nums;color:#f5ebd9}
+.acard .as{font-size:9.5px;color:#8e8371;margin-top:6px;line-height:1.6}
+.acard .as{color:#8e8371}
+.chip{font-size:8.5px;padding:2px 6px;border-radius:4px;background:rgba(240,161,58,.14);border:1px solid rgba(240,161,58,.3);color:var(--amber);letter-spacing:.6px}
+
+.foot{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:14px;
+  font-size:9.5px;color:var(--dim);letter-spacing:.5px;padding:0 4px}
+
+@media(max-width:1500px){.room{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:1100px){
+  .room{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid-2{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .abc{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .room{grid-template-columns:1fr}
+  .top{flex-wrap:wrap;gap:10px}
+  .kpi-v{font-size:26px}
+  .tape{max-height:320px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">
+      <div class="logo">PS</div>
+      <div>
+        <h1>PAPER DESK · BOT ROOM</h1>
+        <p>6 AGENTS · 5 PAPER ACCOUNTS · NO REAL ORDERS · LOCAL LEDGERS</p>
+      </div>
+    </div>
+    <div class="top-right">
+      <div class="stamp" id="stamp">--</div>
+      <div class="clock"><span id="clock">--:--:--</span><small>LOCAL</small></div>
+      <div class="live"><i></i>LIVE</div>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-l">DESK EQUITY · 全系统权益</div>
+      <div class="kpi-v" id="k-eq">--</div><div class="kpi-s" id="k-eq-s">--</div></div>
+    <div class="kpi g"><div class="kpi-l">TOTAL P&amp;L · 总盈亏</div>
+      <div class="kpi-v" id="k-pnl">--</div><div class="kpi-s" id="k-pnl-s">--</div></div>
+    <div class="kpi a"><div class="kpi-l">BOTS ONLINE · 协作在线</div>
+      <div class="kpi-v" id="k-eng">--</div><div class="lamps" id="lamps"></div>
+      <div class="kpi-s" id="k-eng-s">--</div></div>
+    <div class="kpi v"><div class="kpi-l">WIN RATE · 胜率</div>
+      <div class="kpi-v" id="k-win">--</div><div class="kpi-s" id="k-win-s">--</div></div>
+  </div>
+
+  <div class="room" id="room"></div>
+
+  <section class="panel" style="margin-top:12px">
+    <div class="ph"><h2>EQUITY CURVE · D 账户权益</h2><span id="chart-note">--</span></div>
+    <div class="chartbox"><svg id="chart" viewBox="0 0 1000 260" role="img" aria-label="CopyWatch 账户权益折线图"></svg></div>
+    <div class="clegend" id="legend"></div>
+  </section>
+
+  <div class="grid-2">
+    <section class="panel">
+      <div class="ph"><h2>ACCOUNT LADDER</h2><span>5 个独立账本 · 条形=资金规模</span></div>
+      <div class="pb"><div class="ladder" id="ladder"></div></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2>EXECUTION TAPE</h2><span id="tape-note">--</span></div>
+      <div class="tape" id="tape"></div>
+    </section>
+  </div>
+
+  <div class="grid-2">
+    <section class="panel">
+      <div class="ph"><h2>E · OPEN POSITIONS</h2><span id="pos-note">--</span></div>
+      <div class="pb" style="padding:10px 14px 5px"><table class="p" id="pos"></table></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2>VETO FUNNEL · 生存否决</h2><span id="fun-note">--</span></div>
+      <div class="pb" id="funnel"></div>
+    </section>
+  </div>
+
+  <div class="abc" id="abc"></div>
+
+  <div class="foot">
+    <span>快照 <b id="gen">--</b> · 每 15 秒重建 · 只读本地 SQLite</span>
+    <span>曲线只画完整估值样本 · 灰色区为无采样 · 不补造</span>
+  </div>
+</div>
+
+<script id="state-data" type="application/json">__STATE_DATA__</script>
+<script>
+(() => {
+'use strict';
+const S = JSON.parse(document.getElementById('state-data').textContent);
+const pf = S.portfolio || {};
+const cw = S.copywatch || {};
+const mh = S.memehunter || {};
+const AC = S.accounts || {};
+const $ = s => document.querySelector(s);
+const esc = v => String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => (v === null || v === undefined || !Number.isFinite(Number(v))) ? null : Number(v);
+const money = v => { const n = num(v); return n === null ? '--' : (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+const signed = v => { const n = num(v); if (n === null) return '--'; return (n >= 0 ? '+$' : '-$') + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+const pct = v => { const n = num(v); return n === null ? '--' : (n >= 0 ? '+' : '') + n.toFixed(2) + '%'; };
+const clock = ms => { const n = num(ms); if (n === null) return '--:--:--'; return new Date(n).toLocaleTimeString('en-GB',{hour12:false}); };
+const ago = s => { const n = num(s); if (n === null) return '--'; if (n < 60) return Math.round(n) + 's'; if (n < 3600) return Math.round(n/60) + 'm'; return Math.round(n/3600) + 'h'; };
+const hhmm = ms => { const n = num(ms); if (n === null) return '--:--'; const d = new Date(n); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); };
+const abcLive = k => (AC[k] || {}).activity && (((AC[k] || {}).activity.heartbeat) || {}).valid;
+
+const nowMs = num(S.generated_at_ms) || Date.now();
+$('#clock').textContent = new Date().toLocaleTimeString('en-GB',{hour12:false});
+$('#stamp').textContent = new Date(nowMs).toLocaleString('en-GB',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+$('#gen').textContent = S.generated_at || '--';
+
+/* ---------- kpis ---------- */
+const total = num(pf.total_usdt);
+const pnl = num(pf.pnl_usdt);
+$('#k-eq').textContent = total === null ? '--' : money(total);
+$('#k-eq-s').textContent = '初始 ' + money(pf.starting_total_usdt) + ' · 5 个账本 · ' + (num(pf.running_count) || 0) + ' 个引擎在动';
+const pnlEl = $('#k-pnl');
+pnlEl.textContent = signed(pnl);
+pnlEl.className = 'kpi-v ' + (pnl === null ? '' : pnl >= 0 ? 'pos' : 'neg');
+$('#k-pnl-s').textContent = pnl === null ? '等待完整估值' : pct(pf.pnl_pct) + ' · 相对初始 ' + money(pf.starting_total_usdt);
+const engines = pf.engines || [];
+const running = num(pf.running_count) || 0;
+$('#k-eng').textContent = running + '/' + (num(pf.engine_count) || engines.length || 0);
+$('#lamps').innerHTML = engines.map(e => '<div class="lamp ' + (e.key === 'freqtrade' ? (e.running ? 'on' : '') : (e.running ? 'run' : '')) + '"></div>').join('');
+$('#k-eng-s').textContent = engines.filter(e => !e.running).map(e => (e.name || '').split(' · ')[0]).join(' / ') + (running === engines.length && engines.length ? ' · 全部在线' : ' · 已停');
+const closed = (num(cw.closed_count) || 0) + (num(mh.closed_count) || 0);
+const wins = (num(cw.win_count) || 0);
+$('#k-win').textContent = closed > 0 ? Math.round(wins / closed * 100) + '%' : '--';
+$('#k-win-s').textContent = closed > 0 ? wins + ' 胜 / ' + (closed - wins) + ' 负 · ' + closed + ' 笔平仓（D ' + (num(cw.closed_count)||0) + ' / E ' + (num(mh.closed_count)||0) + '）' : '尚无平仓 · D/E 持仓中';
+
+/* ---------- robots ---------- */
+function robot(color) {
+  return '<svg class="bot-avatar" viewBox="0 0 56 56" aria-hidden="true">'
+    + '<line x1="28" y1="11" x2="28" y2="4" stroke="' + color + '" stroke-width="1.6" stroke-linecap="round"/>'
+    + '<circle class="rb-signal" cx="28" cy="4.5" r="2.6" fill="' + color + '"/>'
+    + '<g class="rb-body">'
+    + '<rect x="11" y="11" width="34" height="24" rx="9" fill="#0d1520" stroke="' + color + '" stroke-width="1.8"/>'
+    + '<ellipse class="rb-eye" cx="21.5" cy="22" rx="3.1" ry="3.9" fill="' + color + '"/>'
+    + '<ellipse class="rb-eye" cx="34.5" cy="22" rx="3.1" ry="3.9" fill="' + color + '"/>'
+    + '<line x1="23" y1="30" x2="33" y2="30" stroke="' + color + '" stroke-width="1.5" stroke-linecap="round"/>'
+    + '</g>'
+    + '<rect x="14" y="37" width="28" height="15" rx="6" fill="#0d1520" stroke="' + color + '" stroke-width="1.5"/>'
+    + '<circle class="rb-lamp" cx="28" cy="44.5" r="3.3" fill="' + color + '"/>'
+    + '</svg>';
+}
+
+/* ---------- bot room ---------- */
+const PL = mh.pipeline || null;
+const steps = (PL && PL.steps) || [];
+const stepOf = name => steps.find(st => st.agent === name) || null;
+const COLORS = {SEARCH:'#2dd4bf', RISK:'#a78bfa', GMGN:'#4a9eff', GROK:'#f0a13a', FOMO:'#35d07f', EXIT:'#8fa3b6'};
+
+function botCard(key, name, role, live, metric, unit, viz, note) {
+  const col = COLORS[key] || '#8fa3b6';
+  return '<article class="bot' + (live ? '' : ' off') + '" style="--ac:' + col + '">'
+    + '<div class="bot-head">' + robot(col)
+    + '<div class="bot-id"><div class="bot-name" style="color:' + col + '">' + esc(name) + '</div>'
+    + '<div class="bot-role">' + esc(role) + '</div></div>'
+    + '<div class="bot-state ' + (live ? 'on' : 'off') + '">' + (live ? 'LIVE' : 'IDLE') + '</div></div>'
+    + '<div class="bot-work"><div class="bot-metric">' + esc(metric) + '<small>' + esc(unit) + '</small></div>'
+    + '<div class="bot-viz">' + viz + '</div>'
+    + '<div class="bot-note">' + esc(note) + '</div></div></article>';
+}
+
+function sparkBars(count, color) {
+  let html = '<div class="spark">';
+  for (let i = 0; i < count; i++) {
+    const h = 30 + ((i * 37) % 70);
+    html += '<i style="height:' + h + '%;background:' + color + ';opacity:' + (0.45 + (i % 4) * 0.16).toFixed(2) + '"></i>';
+  }
+  return html + '</div>';
+}
+
+const cards = [];
+
+/* 1 SEARCH */
+(function () {
+  const st = stepOf('SEARCH');
+  const seen = num(st && st.produced) || 0;
+  const bad = num(st && st.detail && st.detail.sources) || 0;
+  const okSrc = Math.max(0, 5 - bad);
+  const viz = '<div class="gapbar"><i style="width:' + (okSrc / 5 * 100) + '%;background:' + COLORS.SEARCH + '"></i>'
+    + '<i class="no" style="width:' + (bad / 5 * 100) + '%"></i></div>'
+    + '<div class="pillrow" style="margin-top:6px"><span class="pill good">' + okSrc + ' 个源正常</span>'
+    + (bad ? '<span class="pill bad">' + bad + ' 个源异常</span>' : '') + '</div>';
+  cards.push(botCard('SEARCH', 'SEARCH', '全市场扫描', !!st && st.ok, String(seen), '个代币',
+    viz, (st && st.summary) || '等待首轮运行'));
+})();
+
+/* 2 RISK */
+(function () {
+  const st = stepOf('RISK');
+  const pass = num(st && st.produced) || 0;
+  const vetoed = num(st && st.rejected) || 0;
+  const inAll = pass + vetoed;
+  const width = inAll ? Math.max(3, pass / inAll * 100) : 0;
+  const rejects = (st && st.detail && st.detail.rejects) || {};
+  const top = Object.keys(rejects).sort((a, b) => rejects[b] - rejects[a]).slice(0, 2);
+  const viz = '<div class="flowrow"><b>' + inAll + '</b><span class="arrow">→</span><b>' + pass + '</b><span>通过</span></div>'
+    + '<div class="gapbar" style="margin-top:7px"><i style="width:' + width + '%;background:' + COLORS.RISK + '"></i></div>'
+    + '<div class="pillrow" style="margin-top:6px">'
+    + top.map(k => '<span class="pill bad">' + esc(k) + '</span>').join('') + '</div>';
+  cards.push(botCard('RISK', 'RISK', '一票否决 + 打分', !!st && st.ok, String(pass), '个通过',
+    viz, (st && st.summary) || '等待首轮运行'));
+})();
+
+/* 3 GMGN */
+(function () {
+  const st = stepOf('GMGN');
+  const wallets = num(st && st.produced) || 0;
+  const buying = (st && st.detail && st.detail.buying) || [];
+  let bars = '<div class="wallets">';
+  const n = Math.min(14, Math.max(1, wallets));
+  for (let i = 0; i < n; i++) {
+    const h = 100 - (i / Math.max(1, n - 1)) * 62;
+    bars += '<i style="height:' + h.toFixed(0) + '%;background:' + COLORS.GMGN + '"></i>';
+  }
+  bars += '</div>';
+  const pills = buying.slice(0, 3).map(b => '<span class="pill">在买 ' + esc(b.symbol) + '</span>').join('')
+    + (num(cw.wallets_demoted) ? '<span class="pill bad">已淘汰 ' + (num(cw.wallets_demoted)||0) + '</span>' : '');
+  const viz = bars + '<div class="pillrow" style="margin-top:6px">' + pills + '</div>';
+  cards.push(botCard('GMGN', 'GMGN', '聪明钱分层', !!st && st.ok, String(wallets), '个钱包 ≥$20k',
+    viz, (st && st.summary) || '等待 CopyWatch 账本'));
+})();
+
+/* 4 GROK */
+(function () {
+  const totalMs = steps.reduce((s, st) => s + (num(st.elapsed_ms) || 0), 0);
+  const dots = ['SEARCH','RISK','GMGN','FOMO','EXIT'].map(k => {
+    const done = !!stepOf(k);
+    return '<span class="' + (done ? 'done' : '') + '"></span>' + (k === 'EXIT' ? '' : '<em>›</em>');
+  }).join('');
+  const viz = '<div class="route">' + dots + '</div>'
+    + '<div class="pillrow" style="margin-top:7px"><span class="pill">第 ' + ((PL && PL.run_id) || 0) + ' 轮</span>'
+    + '<span class="pill">' + steps.length + ' 个 agent</span>'
+    + '<span class="pill">' + (totalMs / 1000).toFixed(1) + 's</span></div>';
+  cards.push(botCard('GROK', 'GROK', '编排路由 · 不碰资金', !!(PL && PL.ok), (PL && PL.run_id) || 0, '轮调度',
+    viz, PL ? ('按顺序串联 ' + steps.length + ' 个 agent，记录每一步的产出') : '等待首轮运行'));
+})();
+
+/* 5 FOMO */
+(function () {
+  const st = stepOf('FOMO');
+  const opened = num(st && st.produced) || 0;
+  const entries = (st && st.detail && st.detail.entries) || [];
+  const skipped = (st && st.detail && st.detail.skipped) || [];
+  const pills = entries.map(e => '<span class="pill good">' + esc(e.symbol) + '</span>').join('')
+    + skipped.slice(0, 2).map(s => '<span class="pill bad">' + esc(s.symbol) + ':' + esc(s.reason) + '</span>').join('');
+  const viz = '<div class="gapbar"><i style="width:' + (opened ? 100 : 0) + '%;background:' + COLORS.FOMO + '"></i></div>'
+    + '<div class="pillrow" style="margin-top:6px">' + (pills || '<span class="pill">本轮无建仓</span>') + '</div>';
+  cards.push(botCard('FOMO', 'FOMO', '唯一建仓者 · −18% 止损', !!st && st.ok, String(opened), '笔开仓',
+    viz, (st && st.summary) || '等待首轮运行'));
+})();
+
+/* 6 EXIT */
+(function () {
+  const st = stepOf('EXIT');
+  const closedNow = num(st && st.produced) || 0;
+  const detail = (st && st.detail && st.detail.result) || {};
+  const closedList = detail.closed || [];
+  const pills = closedList.slice(0, 3).map(c =>
+    '<span class="pill ' + (num(c.pnl_usd) >= 0 ? 'good' : 'bad') + '">' + esc(c.symbol) + ' ' + esc(c.reason) + '</span>').join('');
+  const viz = '<div class="gapbar"><i style="width:' + (closedNow ? 100 : 0) + '%;background:' + COLORS.EXIT + '"></i></div>'
+    + '<div class="pillrow" style="margin-top:6px">' + (pills || '<span class="pill">本轮无平仓</span>') + '</div>';
+  cards.push(botCard('EXIT', 'EXIT', '唯一平仓者 · 移动止盈', !!st && st.ok, String(closedNow), '笔平仓',
+    viz, (st && st.summary) || '等待首轮运行'));
+})();
+
+$('#room').innerHTML = cards.join('');
+
+/* ---------- equity curve ---------- */
+const hist = (cw.equity_history || []).filter(pt => pt && Number.isFinite(Number(pt.v)));
+const GW = 1000, GH = 260, GL = 74, GR = 26, GT = 26, GB = 34;
+const GPW = GW - GL - GR, GPH = GH - GT - GB;
+let svg = '';
+if (hist.length < 2) {
+  svg = '<text x="' + (GW/2) + '" y="' + (GH/2) + '" text-anchor="middle" font-size="13" fill="#5d7086">权益样本不足，等待 D 账户采样</text>';
+} else {
+  const xs = hist.map(pt => num(pt.t) || 0), ys = hist.map(pt => num(pt.v) || 0);
+  const minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xs);
+  let minY = Math.min.apply(null, ys), maxY = Math.max.apply(null, ys);
+  const padY = Math.max((maxY - minY) * 0.35, 0.6);
+  minY -= padY; maxY += padY;
+  const X = v => GL + ((v - minX) / ((maxX - minX) || 1)) * GPW;
+  const Y = v => GT + ((maxY - v) / ((maxY - minY) || 1)) * GPH;
+  svg += '<defs><linearGradient id="areag" x1="0" y1="0" x2="0" y2="1">'
+    + '<stop offset="0%" stop-color="#2dd4bf" stop-opacity=".3"/><stop offset="100%" stop-color="#2dd4bf" stop-opacity="0"/></linearGradient></defs>';
+
+  // Shade the stretches with no samples: an engine stopped, not a crash.
+  const GAP = 20 * 60 * 1000;
+  for (let i = 1; i < hist.length; i++) {
+    const t0 = num(hist[i-1].t), t1 = num(hist[i].t);
+    if (t1 - t0 > GAP) {
+      svg += '<rect x="' + X(t0).toFixed(1) + '" y="' + GT + '" width="' + Math.max(2, X(t1) - X(t0)).toFixed(1)
+        + '" height="' + GPH + '" fill="#8ba0b6" opacity=".07"/>'
+        + '<text x="' + ((X(t0) + X(t1)) / 2).toFixed(1) + '" y="' + (GT + GPH / 2).toFixed(1)
+        + '" text-anchor="middle" font-size="9" fill="#6b8099">停机无采样</text>';
+    }
+  }
+  // y grid
+  for (let i = 0; i <= 4; i++) {
+    const val = maxY - (maxY - minY) * i / 4, yy = Y(val);
+    svg += '<line x1="' + GL + '" y1="' + yy.toFixed(1) + '" x2="' + (GW-GR) + '" y2="' + yy.toFixed(1) + '" stroke="#182231" stroke-dasharray="3 6"/>'
+      + '<text x="' + (GL-10) + '" y="' + (yy+4).toFixed(1) + '" text-anchor="end" font-size="10" fill="#6b8099">$' + Math.round(val) + '</text>';
+  }
+  // x axis
+  svg += '<line x1="' + GL + '" y1="' + (GT+GPH) + '" x2="' + (GW-GR) + '" y2="' + (GT+GPH) + '" stroke="#22303f"/>';
+  for (let i = 0; i <= 5; i++) {
+    const t = minX + (maxX - minX) * i / 5;
+    svg += '<text x="' + X(t).toFixed(1) + '" y="' + (GH-12) + '" text-anchor="middle" font-size="10" fill="#6b8099">' + hhmm(t) + '</text>';
+  }
+  // starting-cash reference line
+  const dStart = num((pf.copywatch||{}).start_usdt);
+  if (dStart !== null && dStart > minY && dStart < maxY) {
+    svg += '<line x1="' + GL + '" y1="' + Y(dStart).toFixed(1) + '" x2="' + (GW-GR) + '" y2="' + Y(dStart).toFixed(1)
+      + '" stroke="#f0a13a" stroke-width="1.2" stroke-dasharray="7 5" stroke-opacity=".85"/>';
+  }
+  // segments (break across sampling gaps so a gap is never drawn as a crash)
+  const segs = [];
+  let prevT = null;
+  hist.forEach(pt => {
+    const t = num(pt.t);
+    if (prevT === null || t - prevT > GAP) segs.push([]);
+    segs[segs.length-1].push({x: X(t).toFixed(2), y: Y(num(pt.v)).toFixed(2)});
+    prevT = t;
+  });
+  segs.forEach(seg => {
+    if (seg.length < 2) return;
+    let d = 'M ' + seg[0].x + ' ' + seg[0].y;
+    for (let i = 1; i < seg.length; i++) d += ' L ' + seg[i].x + ' ' + seg[i].y;
+    svg += '<path d="' + d + ' L ' + seg[seg.length-1].x + ' ' + (GT+GPH) + ' L ' + seg[0].x + ' ' + (GT+GPH) + ' Z" fill="url(#areag)"/>';
+    svg += '<path d="' + d + '" fill="none" stroke="#2dd4bf" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"/>';
+  });
+  // last point: dot above, value below, so it never collides with the ref line
+  const lastPt = hist[hist.length-1];
+  const lx = X(num(lastPt.t)), ly = Y(num(lastPt.v));
+  svg += '<circle cx="' + lx.toFixed(2) + '" cy="' + ly.toFixed(2) + '" r="5" fill="#2dd4bf" stroke="#07121a" stroke-width="2.5"/>';
+  const below = ly + 18 < GT + GPH - 6;
+  svg += '<text x="' + Math.min(lx, GW-GR-4).toFixed(2) + '" y="' + (below ? ly + 17 : ly - 11).toFixed(2)
+    + '" text-anchor="end" font-size="12" font-weight="800" fill="#e8f7f4">' + money(num(lastPt.v)) + '</text>';
+}
+$('#chart').innerHTML = svg;
+$('#chart-note').textContent = hist.length > 1
+  ? '跨度 ' + Math.round((num(hist[hist.length-1].t) - num(hist[0].t)) / 3600000) + ' 小时 · ' + hist.length + ' 个完整估值样本'
+  : '样本不足';
+$('#legend').innerHTML =
+  '<span class="lg"><i style="background:#2dd4bf"></i><b>D 权益</b> ' + money(cw.equity_usdt === null ? cw.equity_last_sample_usdt : cw.equity_usdt) + ' · 初始 ' + money((pf.copywatch||{}).start_usdt) + '</span>'
+  + '<span class="lg"><i class="dash" style="border-color:#f0a13a"></i><b>初始资金线</b> ' + money((pf.copywatch||{}).start_usdt) + '</span>'
+  + '<span class="lg"><i style="background:#8ba0b6"></i><b>灰区</b> 引擎停机，无采样</span>'
+  + '<span class="lg"><i style="background:#35d07f"></i><b>E 权益</b> ' + money(mh.equity_usdt) + ' · 无历史样本</span>';
+
+/* ---------- account ladder ---------- */
+const rows = [
+  {n:'A 基线', sub:'SMA20/50', v:(AC.baseline||{}).equity_usdt, start:(AC.baseline||{}).starting_cash_usdt, live:abcLive('baseline'), extra:((AC.baseline||{}).closed_count||0)+' 成交'},
+  {n:'B 风控', sub:'VETO', v:(AC.hybrid||{}).equity_usdt, start:(AC.hybrid||{}).starting_cash_usdt, live:abcLive('hybrid'), extra:((AC.hybrid||{}).closed_count||0)+' 成交'},
+  {n:'C 对照组', sub:'CONTROL', v:(S.counterpart||{}).equity_usdt, start:(S.counterpart||{}).starting_cash_usdt, live:!!(S.counterpart||{}).has_ledger, extra:((S.counterpart||{}).open_count||0)+' 仓 · organic 排序'},
+  {n:'D 跟单', sub:'CW', v:cw.equity_usdt, start:cw.starting_cash_usdt, live:!!cw.running, extra:(num(cw.decisions)||0)+' 决策 / '+(num(cw.open_count)||0)+' 仓'},
+  {n:'E 猎手', sub:'MH', v:mh.equity_usdt, start:mh.starting_cash_usdt, live:(mh.status_level==='good'), extra:(num(mh.open_count)||0)+' 仓 / '+(num(mh.veto_breakdown && mh.veto_breakdown.PASS)||0)+' 过线'}
+];
+const maxV = Math.max.apply(null, rows.map(r => num(r.v) || 0).concat([1]));
+$('#ladder').innerHTML = rows.map(r => {
+  const v = num(r.v), st = num(r.start);
+  const d = (v !== null && st !== null) ? v - st : null;
+  const p = (v !== null && st) ? (v / st - 1) * 100 : null;
+  const w = v === null ? 0 : Math.max(2, v / maxV * 100);
+  const col = r.live ? (d !== null && d < 0 ? 'var(--red)' : 'var(--green)') : '#3a4a5c';
+  return '<div class="lrow">'
+    + '<div class="ltop"><span class="lname">' + esc(r.n) + '<em>' + esc(r.sub) + '</em>'
+    + (r.live ? '<span class="lbadge live">LIVE</span>' : '<span class="lbadge frozen">FROZEN</span>') + '</span>'
+    + '<span class="lval ' + (d === null || !r.live ? '' : d >= 0 ? 'up' : 'down') + '">' + (v === null ? '--' : money(v)) + '</span></div>'
+    + '<div class="ltrack"><div class="lfill" style="width:' + w.toFixed(1) + '%;background:' + col + '"></div></div>'
+    + '<div class="lsub"><span>' + esc(r.extra) + '</span><span>' + (p === null ? '--' : pct(p)) + '</span></div>'
+    + '</div>';
+}).join('')
+ + '<div style="margin-top:13px;padding-top:11px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline">'
+ + '<span style="color:var(--mut);letter-spacing:1.3px;font-weight:800;font-size:10.5px">DESK TOTAL</span>'
+ + '<span class="' + (pnl === null ? '' : pnl >= 0 ? 'lval up' : 'lval down') + '" style="font-weight:800;font-size:15px;font-variant-numeric:tabular-nums">' + (total === null ? '--' : money(total)) + '</span></div>'
+ + '<div class="lsub" style="margin-top:3px"><span>5 个账本合计</span><span>初始 ' + money(pf.starting_total_usdt) + '</span></div>'
+ + riskBlock();
+
+/* ---------- risk summary ---------- */
+function riskBlock() {
+  const rows = [
+    {n:'D 链上跟单', r:cw.risk},
+    {n:'E 六 agent', r:mh.risk},
+    {n:'C 对照组', r:(S.counterpart||{}).risk}
+  ].filter(x => x.r && Number.isFinite(Number(x.r.sharpe)));
+  if (!rows.length) return '<div class="hint" style="margin-top:10px">风险指标样本积累中（需要 8 个以上完整估值样本）</div>';
+  let html = '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">'
+    + '<div style="font-size:9.5px;letter-spacing:1.4px;color:var(--mut);font-weight:800;margin-bottom:8px">RISK METRICS · 风险指标（empyrical）</div>'
+    + '<table style="width:100%;border-collapse:collapse;font-size:9.5px">'
+    + '<tr style="color:var(--dim);font-size:8.5px;letter-spacing:.8px">'
+    + '<td style="padding:2px 4px">账本</td><td style="text-align:right;padding:2px 4px">Sharpe</td>'
+    + '<td style="text-align:right;padding:2px 4px">Sortino</td><td style="text-align:right;padding:2px 4px">MDD</td>'
+    + '<td style="text-align:right;padding:2px 4px">VaR95</td><td style="text-align:right;padding:2px 4px">样本</td></tr>';
+  rows.forEach(x => {
+    const r = x.r;
+    const col = v => (Number(v) >= 0 ? 'var(--green)' : 'var(--red)');
+    html += '<tr>'
+      + '<td style="padding:3px 4px;color:#b3c3d3;font-weight:700">' + esc(x.n) + '</td>'
+      + '<td style="text-align:right;padding:3px 4px;color:' + col(r.sharpe) + ';font-weight:800">' + r.sharpe.toFixed(2) + '</td>'
+      + '<td style="text-align:right;padding:3px 4px;color:' + col(r.sortino) + '">' + r.sortino.toFixed(2) + '</td>'
+      + '<td style="text-align:right;padding:3px 4px;color:var(--red);font-weight:800">' + r.max_drawdown.toFixed(2) + '%</td>'
+      + '<td style="text-align:right;padding:3px 4px;color:var(--red)">' + r.var_95.toFixed(2) + '%</td>'
+      + '<td style="text-align:right;padding:3px 4px;color:var(--dim)">' + r.samples + '</td></tr>';
+  });
+  return html + '</table></div>';
+}
+
+/* ---------- tape ---------- */
+const ev = (cw.events || []).map(e => ({ts:num(e.ts_ms), tag:e.tag, msg:'<b>' + esc(e.symbol || '') + '</b> · ' + esc(e.title || ''), usd:e.usd}));
+const picks = (mh.recent_picks || []).map(p => ({ts:num(S.generated_at_ms) - 1000, tag:p.eligible ? 'PAPER' : 'SKIP', msg:'<b>' + esc(p.symbol) + '</b> · ' + (p.eligible ? '通过 · 评分 ' : '否决 · ') + esc(p.score) + (p.eligible ? '' : ' · ' + esc(p.reason)), usd:null}));
+const tape = ev.concat(picks).sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 16);
+$('#tape').innerHTML = tape.length ? tape.map(t =>
+  '<div class="tp"><span class="tt">' + clock(t.ts) + '</span><span class="tag ' + esc(t.tag) + '">' + esc(t.tag) + '</span>'
+  + '<span class="tmsg">' + t.msg + '</span><span class="tusd">' + (num(t.usd) === null ? '' : '$' + Math.round(num(t.usd))) + '</span></div>'
+).join('') : '<div class="tp"><span class="tt">--:--</span><span class="tag WARN">EMPTY</span><span class="tmsg">尚未产生链上事件</span><span class="tusd"></span></div>';
+$('#tape-note').textContent = (num(cw.events ? cw.events.length : 0) || 0) + ' 事件 · ' + (num(cw.decisions) || 0) + ' 研判';
+
+/* ---------- positions ---------- */
+const op = mh.open_positions || [];
+$('#pos-note').textContent = op.length + ' 笔 · 现金 ' + money(mh.cash_usdt);
+let tb = '<tr><th>SYMBOL</th><th class="r">ENTRY</th><th class="r">MARK</th><th class="r">CHG</th><th></th><th class="r">VALUE</th><th class="r">AGE</th></tr>';
+tb += op.map(p => {
+  const c = num(p.change_pct) || 0;
+  const w = Math.min(50, Math.abs(c) / 8 * 50);
+  const bar = c >= 0
+    ? '<span class="bar"><span class="mid"></span><i style="left:50%;width:' + w.toFixed(1) + '%;background:var(--green)"></i></span>'
+    : '<span class="bar"><span class="mid"></span><i style="right:50%;width:' + w.toFixed(1) + '%;background:var(--red)"></i></span>';
+  return '<tr><td class="sym">' + esc(p.symbol) + '</td>'
+    + '<td class="r">' + (num(p.entry) === null ? '--' : num(p.entry).toPrecision(4)) + '</td>'
+    + '<td class="r">' + (num(p.mark) === null ? '--' : num(p.mark).toPrecision(4)) + '</td>'
+    + '<td class="r chg ' + (c >= 0 ? 'up' : 'down') + '">' + pct(c) + '</td>'
+    + '<td>' + bar + '</td>'
+    + '<td class="r">' + money(p.value_usd) + '</td>'
+    + '<td class="r">' + (num(p.age_min) === null ? '--' : Math.round(num(p.age_min)) + 'm') + '</td></tr>';
+}).join('');
+if (!op.length) tb += '<tr><td colspan="7" style="color:var(--dim);padding:16px 7px">无持仓 · 等待候选通过否决</td></tr>';
+$('#pos').innerHTML = tb;
+
+/* ---------- funnel ---------- */
+const vb = mh.veto_breakdown || {};
+const vlist = Object.keys(vb).filter(k => k !== 'PASS').map(k => ({k:k, n:vb[k]})).sort((a, b) => b.n - a.n);
+const vmax = Math.max.apply(null, vlist.map(v => v.n).concat([1]));
+let fu = vlist.map(v =>
+  '<div class="vrow"><span class="vname">' + esc(v.k) + '</span><div class="vbar"><i style="width:' + (v.n / vmax * 100).toFixed(1) + '%"></i></div><span class="vn">' + v.n + '</span></div>'
+).join('');
+fu += '<div class="vrow"><span class="vname pass">PASS</span><div class="vbar"><i class="pass" style="width:' + ((vb.PASS || 0) / vmax * 100).toFixed(1) + '%"></i></div><span class="vn">' + (vb.PASS || 0) + '</span></div>';
+fu += '<div class="hint">' + (num(mh.tokens_seen) || 0) + ' 个代币 → ' + (num(mh.tokens_eligible) || 0) + ' 过生存否决 → 按分数排序建仓。否决是一票制，不参与打分。</div>';
+$('#funnel').innerHTML = fu;
+$('#fun-note').textContent = (num(mh.scans) || 0) + ' 轮扫描 · 最近 ' + ago(mh.last_scan_age_seconds) + '前' + (PL ? ' · 流水线第 ' + PL.run_id + ' 轮' : '');
+
+/* ---------- abc ---------- */
+const abcDefs = [
+  {t:'A · BASELINE', k:'baseline', note:'SMA20/50 趋势 · 1h · 4 币对'},
+  {t:'B · RISK GUARD', k:'hybrid', note:'同候选 + 信号校验否决'},
+  {t:'C · CONTROL', k:'counterpart', note:'同一批候选 · 纯 organic 排序 · 无否决'}
+];
+$('#abc').innerHTML = abcDefs.map(d => {
+  if (d.k === 'counterpart') {
+    const cp = S.counterpart || {};
+    const eh = num(mh.equity_usdt), ec = num(cp.equity_usdt);
+    const gap = (eh !== null && ec !== null) ? eh - ec : null;
+    return '<div class="acard" style="border-color:rgba(53,208,127,.3)"><div class="ah"><span>C · CONTROL 对照组</span>'
+      + '<span class="lbadge live">LIVE</span></div>'
+      + '<div class="av">' + money(cp.equity_usdt) + '</div>'
+      + '<div class="as">与 E 同一批候选、同一时刻，只用 organic 排序<br>'
+      + (num(cp.open_count)||0) + ' 仓 / ' + (num(cp.closed_count)||0) + ' 平仓'
+      + (gap !== null ? ' · <b style="color:' + (gap >= 0 ? 'var(--green)' : 'var(--red)') + '">E−C = ' + signed(gap) + '</b>' : '')
+      + '</div></div>';
+  }
+  const a = AC[d.k] || {};
+  const live = a.activity && (a.activity.heartbeat || {}).valid;
+  const next = (a.activity || {}).seconds_to_next_evaluation;
+  return '<div class="acard"><div class="ah"><span>' + esc(d.t) + '</span>'
+    + (live ? '<span class="lbadge live">LIVE</span>' : '<span class="chip">CONTAINER DOWN</span>') + '</div>'
+    + '<div class="av">' + money(a.equity_usdt) + '</div>'
+    + '<div class="as">' + esc(d.note) + '<br>' + (a.closed_count || 0) + ' 平仓 / ' + (a.open_count || 0) + ' 持仓 · '
+    + (live ? '下次评估 ' + Math.round((num(next) || 0) / 60) + 'm' : '权益冻结在初始值') + '</div></div>';
+}).join('');
+})();
+</script>
+</body>
+</html>

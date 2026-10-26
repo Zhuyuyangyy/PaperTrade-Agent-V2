@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "mode": "dry_run",
+  "starting_cash_usdt": 500.0,
+  "poll_seconds": 90,
+  "slippage_bps": 5.0,
+  "event_source": {
+    "provider": "geckoterminal",
+    "base_url": "https://api.geckoterminal.com/api/v2",
+    "min_trade_usd": 500.0,
+    "pools": [
+      {
+        "network": "base",
+        "pool": "0x72ab388e2e2f6facef59e3c3fa2c4e29011c2d38",
+        "base_symbol": "WETH",
+        "quote_symbol": "USDC",
+        "label": "WETH / USDC 0.01% · Base",
+        "fee_bps": 1.0,
+        "gas_usd": 0.02
+      },
+      {
+        "network": "eth",
+        "pool": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
+        "base_symbol": "WETH",
+        "quote_symbol": "USDC",
+        "label": "WETH / USDC 0.05% · Ethereum",
+        "fee_bps": 5.0,
+        "gas_usd": 2.4
+      }
+    ]
+  },
+  "wallet_policy": {
+    "min_swaps": 3,
+    "min_notional_usd": 2000.0,
+    "whale_usd": 20000.0
+  },
+  "risk": {
+    "notional_usdt": 100.0,
+    "max_cost_bps": 60.0,
+    "max_pool_impact_bps": 5.0,
+    "min_pool_reserve_usd": 250000.0,
+    "max_price_age_seconds": 180,
+    "cooldown_minutes": 20,
+    "max_open_positions": 2,
+    "max_daily_loss_usdt": 30.0
+  },
+  "exit": {
+    "take_profit_bps": 120.0,
+    "stop_loss_bps": 80.0,
+    "max_hold_minutes": 45
+  }
+}
