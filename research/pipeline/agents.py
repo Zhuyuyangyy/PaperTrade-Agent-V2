@@ -331,14 +331,13 @@ class JudgeAgent(BaseAgent):
     def run(self, ctx: Context) -> AgentResult:
         cfg = dict(ctx.cfg.get("judge") or {})
         survivors = list(ctx.get("survivors", []))
-        if not cfg.get("enabled") or not survivors:
+        probe_pool = list(ctx.get("probe_pool", []))
+        if not cfg.get("enabled") or (not survivors and not probe_pool):
             return AgentResult(agent=self.name, ok=True, summary="未启用或无候选可研判",
                                produced=0)
         limit = int(cfg.get("max_per_round", 3))
         judged: dict[str, dict] = {}
-        # Tier-2 candidates need the same opinion, so the probe pool is judged
-        # with whatever budget is left after the survivors.
-        probe = list(ctx.get("probe_pool", []))
+        probe = probe_pool
 
         def work():
             judge_mod.ensure_schema(ctx.desk.conn)
