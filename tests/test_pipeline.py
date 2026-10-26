@@ -233,3 +233,64 @@ def test_soft_gates_become_a_probe_pool_not_a_rejection() -> None:
     probe_symbols = [item[1].symbol for item in probe]
     assert "SOFT" in probe_symbols, "a soft gate must land in the probe pool"
     assert "RUGGED" not in probe_symbols, "a hard veto must never be probe-able"
+
+
+def test_confidence_tiers_scale_the_clip(tmp_path) -> None:
+    """Size follows the JUDGE score: high conviction gets a bigger clip, low
+    conviction gets a probe, and below the lowest tier nothing opens."""
+    import sys
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).resolve().parents[1]))
+    from research.pipeline.agents import EntryAgent, Context
+    from research.memehunter import Token
+
+    cfg = {
+        "smart_money": {"score_boost": 6.0},
+        "judge": {"rule_weight": 0.6, "llm_weight": 0.4},
+        "tiers": {"probe_enabled": False, "probe_reasons": [], "max_probe_positions": 2},
+        "entry": {"notional_usdt": 100.0, "max_entries_per_round": 5},
+        "sizing": {
+            "enabled": True,
+            "tiers": [{"min_score": 80, "mult": 1.5}, {"min_score": 60, "mult": 1.0}, {"min_score": 40, "mult": 0.4}],
+            "below_lowest": "skip",
+            "max_single_fill_pct": 15.0,
+        },
+    }
+
+    class _Desk:
+        cfg = {"starting_cash_usdt": 1000.0, "notional_usdt": 100.0,
+               "round_trip_cost_bps": 120.0, "stop_loss_pct": -12.0, "take_profit_pct": 55.0,
+               "timeout_minutes": 180, "trailing_giveback_pct": 30.0, "max_open_positions": 5,
+               "cooldown_minutes": 45}
+        opened: list = []
+        sizes: list = []
+
+        def open_position(self, token, why, notional=None):
+            _Desk.opened.append(token.symbol)
+            _Desk.sizes.append(notional)
+            return {"opened": True, "symbol": token.symbol, "score": 0}
+
+        def can_open(self, token, at):
+            return True, ""
+
+    _Desk.opened, _Desk.sizes = [], []
+    ctx = Context(root=_P("."), cfg=cfg, started_ms=0, desk=_Desk())
+    ctx.put("survivors", [(70.0, Token(mint="m1", symbol="HIGH", name="HIGH", price_usd=1.0,
+        liquidity_usd=1e6, fdv_usd=1e6, organic_score=70.0, organic_label="g", holder_count=5000,
+        top_holders_pct=10.0, mint_disabled=True, freeze_disabled=True, chg_5m=0.0, chg_1h=0.0,
+        chg_24h=0.0, organic_buy_5m=0.0, organic_sell_5m=0.0, organic_buy_1h=0.0, organic_sell_1h=0.0,
+        net_buyers_5m=0, net_buyers_1h=30, vol_1h=1e5, vol_24h=1e6))])
+    ctx.put("llm_judgments", {"m1": {"ok": True, "score": 85, "flags": [], "reason": "r"}})
+    result = EntryAgent().run(ctx)
+    assert result.ok
+    assert _Desk.sizes == [150.0], f"score 85 should scale 100 to 150, got {_Desk.sizes}"
+
+    _Desk.opened, _Desk.sizes = [], []
+    ctx.put("llm_judgments", {"m1": {"ok": True, "score": 30, "flags": [], "reason": "r"}})
+    EntryAgent().run(ctx)
+    assert _Desk.opened == [], f"score 30 is below the lowest tier and must not open, got {_Desk.opened}"
+
+    _Desk.opened, _Desk.sizes = [], []
+    ctx.put("llm_judgments", {})
+    EntryAgent().run(ctx)
+    assert _Desk.sizes == [100.0], "no opinion means the base clip, not zero"

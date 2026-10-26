@@ -82,6 +82,21 @@ DEFAULT_CONFIG: dict = {
         "rule_weight": 0.6,
         "llm_weight": 0.4,
     },
+    # Confidence-tiered sizing: the JUDGE score (structural health, NOT a return
+    # prediction) scales the clip. Tiers are config so calibration can retire a
+    # tier that fails to separate winners.
+    "sizing": {
+        "enabled": True,
+        "tiers": [
+            {"min_score": 80, "mult": 1.5},
+            {"min_score": 60, "mult": 1.0},
+            {"min_score": 40, "mult": 0.4},
+        ],
+        # A score below the lowest tier means no position at all.
+        "below_lowest": "skip",
+        # Never risk more than this fraction of the book on one fill.
+        "max_single_fill_pct": 15.0,
+    },
 }
 
 
@@ -405,10 +420,37 @@ class EntryAgent(BaseAgent):
         judgments = ctx.get("llm_judgments", {}) or {}
         judge_cfg = ctx.cfg.get("judge") or {}
         tiers_cfg = ctx.cfg.get("tiers") or {}
+        sizing_cfg = ctx.cfg.get("sizing") or {}
         notional = float(ctx.cfg["entry"].get("notional_usdt", 100.0))
         probe_quota = int(tiers_cfg.get("max_probe_positions", 2))
         probe_notional = float(tiers_cfg.get("probe_notional_usdt", 40.0))
         probe_min_llm = float(tiers_cfg.get("probe_min_llm", 55.0))
+
+        def _size_for(llm_score, base: float) -> float:
+            """Clip size from the confidence tiers.
+
+            JUDGE scores structural health, not expected return: a sound token
+            earns a bigger clip because it is unlikely to rug, a fragile one a
+            probe or nothing. "Bigger" is capped by a fraction of the book, so
+            conviction never turns a fill into an all-in.
+            """
+            size = base
+            constr = sizing_cfg.get("tiers") if isinstance(sizing_cfg.get("tiers"), list) else []
+            if sizing_cfg.get("enabled", True) and llm_score is not None and constr:
+                hit = sorted(
+                    [t for t in constr if float(t.get("min_score", 0)) <= llm_score],
+                    key=lambda t: float(t.get("min_score", 0)), reverse=True,
+                )[0] if any(float(t.get("min_score", 0)) <= llm_score for t in constr) else None
+                if hit:
+                    size = base * float(hit.get("mult", 1.0))
+                elif sizing_cfg.get("below_lowest", "skip") != "keep":
+                    size = 0.0
+            book = float(ctx.desk.cfg.get("starting_cash_usdt", 0.0)) or 0.0
+            cap = book * float(sizing_cfg.get("max_single_fill_pct", 15.0)) / 100.0
+            # No known book size means the cap cannot be computed; skip the cap
+            # rather than dividing by it into zero (a 0 cap vetoes everything).
+            return round(min(size, cap) if cap > 0 else size, 2)
+
         boosted = []
         for value, token in survivors:
             opinion = judgments.get(token.mint)
@@ -444,6 +486,14 @@ class EntryAgent(BaseAgent):
                 if size < notional and probes_opened >= probe_quota:
                     skipped.append({"symbol": token.symbol, "reason": "PROBE_QUOTA"})
                     continue
+                sized = _size_for(llm_score, size)
+                if sized <= 0:
+                    skipped.append({"symbol": token.symbol, "reason": "LLM_SCORE_TOO_LOW"})
+                    continue
+                if size < notional and probes_opened >= probe_quota:
+                    skipped.append({"symbol": token.symbol, "reason": "PROBE_QUOTA"})
+                    continue
+                size = sized
                 why = f"PIPELINE·rule={base:.1f}"
                 if llm_score is not None:
                     why += f"·llm={llm_score:.0f}"

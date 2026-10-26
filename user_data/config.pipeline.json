@@ -47,5 +47,25 @@
     ],
     "_note": "软门槛不再一票否决：只过硬否决的候选进 probe 池，JUDGE 打分 ≥55 才用 0 试探仓。硬否决（权限/集中度/崩塌/洗量）永不动。",
     "max_probe_positions": 2
+  },
+  "sizing": {
+    "enabled": true,
+    "tiers": [
+      {
+        "min_score": 80,
+        "mult": 1.5
+      },
+      {
+        "min_score": 60,
+        "mult": 1.0
+      },
+      {
+        "min_score": 40,
+        "mult": 0.4
+      }
+    ],
+    "below_lowest": "skip",
+    "max_single_fill_pct": 15.0,
+    "_note": "JUDGE 分数=结构健康度（非涨幅预测）。>=80 冲 1.5x；60-80 标准 1x；40-60 稳 0.4x；<40 不开。单笔不超过账本 15%。阈值可由 calibration 分桶调整。"
   }
 }
