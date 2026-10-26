@@ -21,6 +21,7 @@ import hashlib
 import json
 import sqlite3
 import urllib.request
+from pathlib import Path
 from datetime import datetime, timezone
 
 JUDGE_SCHEMA = """
@@ -52,7 +53,7 @@ DEFAULT_CONFIG: dict = {
     # The opinion only reorders survivors; the rule score keeps 60% of the say.
     "rule_weight": 0.6,
     "llm_weight": 0.4,
-    "max_tokens": 400,
+    "max_tokens": 1500,
 }
 
 SYSTEM_PROMPT = """你是保守的 meme 币风控分析师。只依据给定事实判断，不臆测。
@@ -82,25 +83,60 @@ def _now_ms() -> int:
     return int(datetime.now(timezone.utc).timestamp() * 1000)
 
 
-def judge_token(token, cfg: dict) -> dict | None:
-    """One judgement, or None when unavailable. Never raises."""
+def _local_override(root: Path | None = None) -> dict:
+    """user_data/judge.local.json holds the operator's key on this machine.
+
+    The file is git-ignored; the environment variable still wins when set, so a
+    deployed box can override a developer machine without touching the repo.
+    """
+    base = root or Path(__file__).resolve().parents[2]
+    path = base / "user_data" / "judge.local.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _resolve(cfg: dict) -> tuple[str, str, str]:
+    """(api_key, base_url, model) with env var first, local file second."""
     import os
 
-    key = os.environ.get(cfg.get("api_key_env", "DEEPSEEK_API_KEY"), "")
+    local = _local_override()
+    key = os.environ.get(cfg.get("api_key_env", "STEPFUN_API_KEY"), "") or str(local.get("api_key", ""))
+    base_url = str(local.get("base_url") or cfg.get("base_url", "https://api.stepfun.com/step_plan/v1"))
+    model = str(local.get("model") or cfg.get("model", "step-5-preview"))
+    return key, base_url, model
+
+
+def _extract_json(text: str) -> dict:
+    """Last JSON object in a blob of text. Raises when there is none."""
+    text = text.strip()
+    if text.startswith("{"):
+        return json.loads(text)
+    start = text.rfind("{")
+    end = text.rfind("}")
+    if start < 0 or end <= start:
+        raise ValueError("no JSON object in response")
+    return json.loads(text[start : end + 1])
+
+
+def judge_token(token, cfg: dict) -> dict | None:
+    """One judgement, or None when unavailable. Never raises."""
+    key, base_url, model = _resolve(cfg)
     if not key:
         return None
     body = json.dumps({
-        "model": cfg.get("model", "deepseek-chat"),
+        "model": model,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": _facts(token)},
         ],
         "temperature": 0.2,
-        "max_tokens": int(cfg.get("max_tokens", 400)),
-        "response_format": {"type": "json_object"},
+        "max_tokens": int(cfg.get("max_tokens", 1500)),
     }).encode("utf-8")
     request = urllib.request.Request(
-        f"{cfg['base_url'].rstrip('/')}/chat/completions",
+        f"{base_url.rstrip('/')}/chat/completions",
         data=body,
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"},
         method="POST",
@@ -113,8 +149,14 @@ def judge_token(token, cfg: dict) -> dict | None:
         return None
     latency = _now_ms() - started
     try:
-        content = payload["choices"][0]["message"]["content"]
-        parsed = json.loads(content)
+        message = payload["choices"][0]["message"]
+        # Reasoning models (step-5-preview) leave content empty and put the
+        # answer, plus its working, in reasoning. Take whichever is non-empty
+        # and pull the last JSON object out of it.
+        content = message.get("content") or ""
+        if not content.strip():
+            content = message.get("reasoning") or ""
+        parsed = _extract_json(content)
         score = int(parsed.get("score", 0))
         score = max(0, min(100, score))
         flags = parsed.get("flags") or []

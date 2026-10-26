@@ -38,3 +38,6 @@ runtime/memehunter/*.sh
 # Loop single-instance lock, machine local
 runtime/memehunter/.loop.pid
 runtime/copywatch/.loop.pid
+
+# Local LLM credentials, never commit
+user_data/judge.local.json

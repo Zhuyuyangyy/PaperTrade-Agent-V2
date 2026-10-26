@@ -310,6 +310,7 @@ class JudgeAgent(BaseAgent):
         judged: dict[str, dict] = {}
 
         def work():
+            judge_mod.ensure_schema(ctx.desk.conn)
             ensure_candidate_columns(ctx.desk.conn)
             out: dict[str, dict] = {}
             for value, token in survivors[:limit]:
@@ -329,21 +330,27 @@ class JudgeAgent(BaseAgent):
             return out
 
         judged, elapsed, ok = self._timed(ctx, work)
-        ctx.put("llm_judgments", judged)
-        summary = f"研判 {len(judged)}/{min(limit, len(survivors))} 个候选"
-        if judged:
-            best = max(judged.values(), key=lambda r: r.get("score", 0))
-            summary += f" · 最高 {best.get('score')} 分"
-            flags = [f for r in judged.values() for f in (r.get("flags") or [])][:3]
-            if flags:
-                summary += " · " + ", ".join(flags)
+        # _timed turns a raised error into {"error": ...}; never treat that as
+        # a judgement, and surface the message instead of crashing on it.
+        opinions = {k: v for k, v in judged.items() if isinstance(v, dict) and v.get("ok")}
+        ctx.put("llm_judgments", opinions)
+        if not ok:
+            summary = f"研判失败：{judged.get('error', 'unknown')}"
+        else:
+            summary = f"研判 {len(opinions)}/{min(limit, len(survivors))} 个候选"
+            if opinions:
+                best = max(opinions.values(), key=lambda r: r.get("score", 0))
+                summary += f" · 最高 {best.get('score')} 分"
+                flags = [f for r in opinions.values() for f in (r.get("flags") or [])][:3]
+                if flags:
+                    summary += " · " + ", ".join(flags)
         return AgentResult(
             agent=self.name,
             ok=ok,
             summary=summary,
-            produced=len(judged),
+            produced=len(opinions),
             elapsed_ms=elapsed,
-            detail={"judged": {k: {"score": v.get("score"), "flags": v.get("flags")} for k, v in judged.items()}},
+            detail={"judged": {k: {"score": v.get("score"), "flags": v.get("flags")} for k, v in opinions.items()}},
         )
 
 

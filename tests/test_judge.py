@@ -42,12 +42,16 @@ def test_blend_mixes_by_weight() -> None:
 
 
 def test_no_api_key_means_no_opinion(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("STEPFUN_API_KEY", raising=False)
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    # The operator's local key file must not leak into a unit test either.
+    monkeypatch.setattr(judge_mod, "_local_override", lambda root=None: {})
     assert judge_mod.judge_token(_token(), CFG) is None
 
 
 def test_bad_response_degrades_instead_of_raising(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    monkeypatch.setenv("STEPFUN_API_KEY", "test-key")
+    monkeypatch.setattr(judge_mod, "_local_override", lambda root=None: {})
 
     class FakeResponse:
         def __enter__(self):
@@ -67,7 +71,8 @@ def test_bad_response_degrades_instead_of_raising(monkeypatch: pytest.MonkeyPatc
 
 
 def test_score_is_clamped_and_flags_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
+    monkeypatch.setenv("STEPFUN_API_KEY", "test-key")
+    monkeypatch.setattr(judge_mod, "_local_override", lambda root=None: {})
     payload = {"choices": [{"message": {"content": json.dumps({
         "score": 900, "flags": [f"f{i}" for i in range(20)], "reason": "r" * 500,
     })}}]}
