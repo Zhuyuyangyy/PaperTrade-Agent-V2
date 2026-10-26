@@ -28,7 +28,7 @@ import sqlite3
 import time
 from typing import Any
 
-from ..memehunter import Desk, Token, fetch_universe, score, veto
+from ..memehunter import Desk, Token, fetch_universe, record_candidates, score, veto
 
 PIPELINE_VERSION = 1
 
@@ -112,6 +112,15 @@ class SearchAgent(BaseAgent):
 
         def work():
             tokens, errors = fetch_universe()
+            # Persist the snapshot, rejects included: the candidates table is the
+            # replay engine's only source of truth and must not go quiet when the
+            # pipeline is what produced the round.
+            scan_id = ctx.desk.conn.execute(
+                "INSERT INTO scans (scanned_at_ms, tokens_seen, tokens_eligible, errors) "
+                "VALUES (?,?,?,?)",
+                (ctx.started_ms, len(tokens), 0, json.dumps(errors, ensure_ascii=False)),
+            ).lastrowid
+            record_candidates(ctx.desk.conn, scan_id, ctx.started_ms, tokens, ctx.desk.cfg)
             return tokens[:limit], errors
 
         (tokens, errors), elapsed, ok = self._timed(ctx, work)

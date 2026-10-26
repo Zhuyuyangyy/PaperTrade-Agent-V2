@@ -420,6 +420,51 @@ def now_ms() -> int:
     return int(time.time() * 1000)
 
 
+def record_candidates(
+    conn: sqlite3.Connection, scan_id: int, started_ms: int, tokens: list, cfg: dict
+) -> dict:
+    """Persist one scan's full candidate snapshot, rejects included.
+
+    Both the pipeline's SEARCH agent and the standalone CLI go through here, so
+    the candidates table -- the replay engine's only source of truth -- keeps
+    recording no matter which entry point produced the round.
+    """
+    eligible = 0
+    ranked: list[tuple[Token, float]] = []
+    for token in tokens:
+        ok, reason = veto(token, cfg)
+        pts = score(token, cfg) if ok else 0.0
+        buyable = ok and pts >= float(cfg["min_score_to_buy"])
+        if buyable:
+            eligible += 1
+            ranked.append((token, pts))
+        organic_ratio = (
+            token.organic_buy_5m / token.organic_sell_5m
+            if token.organic_sell_5m > 0
+            else (99.0 if token.organic_buy_5m > 0 else 0.0)
+        )
+        conn.execute(
+            "INSERT INTO candidates (scan_id, scanned_at_ms, mint, symbol, price_usd, "
+            "liquidity_usd, fdv_usd, organic_score, organic_label, holder_count, "
+            "top_holders_pct, chg_5m, chg_1h, chg_24h, organic_buy_5m, organic_sell_5m, "
+            "net_buyers_5m, vol_1h, score, eligible, reject_reason) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                scan_id, started_ms, token.mint, token.symbol, token.price_usd,
+                token.liquidity_usd, token.fdv_usd, token.organic_score,
+                token.organic_label, token.holder_count, token.top_holders_pct,
+                token.chg_5m, token.chg_1h, token.chg_24h, token.organic_buy_5m,
+                token.organic_sell_5m, token.net_buyers_5m, token.vol_1h,
+                pts, 1 if buyable else 0,
+                reason or (None if buyable else "SCORE_BELOW_FLOOR"),
+            ),
+        )
+    conn.execute("UPDATE scans SET tokens_eligible=? WHERE id=?", (eligible, scan_id))
+    conn.commit()
+    ranked.sort(key=lambda pair: pair[1], reverse=True)
+    return {"scan_id": scan_id, "seen": len(tokens), "eligible": eligible, "ranked": ranked}
+
+
 class Desk:
     """Owns the E-account ledger. All money movement goes through here."""
 
@@ -459,55 +504,14 @@ class Desk:
     def scan(self) -> dict:
         started = now_ms()
         tokens, errors = fetch_universe()
-        scan_id = self.conn.execute(
+        result = record_candidates(self.conn, self.conn.execute(
             "INSERT INTO scans (scanned_at_ms, tokens_seen, tokens_eligible, errors) "
             "VALUES (?,?,?,?)",
             (started, len(tokens), 0, json.dumps(errors, ensure_ascii=False)),
-        ).lastrowid
-        eligible = 0
-        ranked: list[tuple[Token, float]] = []
-        for token in tokens:
-            ok, reason = veto(token, self.cfg)
-            pts = score(token, self.cfg) if ok else 0.0
-            buyable = ok and pts >= float(self.cfg["min_score_to_buy"])
-            if buyable:
-                eligible += 1
-                ranked.append((token, pts))
-            organic_ratio = (
-                token.organic_buy_5m / token.organic_sell_5m
-                if token.organic_sell_5m > 0
-                else (99.0 if token.organic_buy_5m > 0 else 0.0)
-            )
-            self.conn.execute(
-                "INSERT INTO candidates (scan_id, scanned_at_ms, mint, symbol, price_usd, "
-                "liquidity_usd, fdv_usd, organic_score, organic_label, holder_count, "
-                "top_holders_pct, chg_5m, chg_1h, chg_24h, organic_buy_5m, organic_sell_5m, "
-                "net_buyers_5m, vol_1h, score, eligible, reject_reason) "
-                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (
-                    scan_id, started, token.mint, token.symbol, token.price_usd,
-                    token.liquidity_usd, token.fdv_usd, token.organic_score,
-                    token.organic_label, token.holder_count, token.top_holders_pct,
-                    token.chg_5m, token.chg_1h, token.chg_24h, token.organic_buy_5m,
-                    token.organic_sell_5m, token.net_buyers_5m, token.vol_1h,
-                    pts, 1 if ok and pts >= float(self.cfg["min_score_to_buy"]) else 0,
-                    reason or (None if pts >= float(self.cfg["min_score_to_buy"]) else "SCORE_BELOW_FLOOR"),
-                ),
-            )
-        self.conn.execute(
-            "UPDATE scans SET tokens_eligible=? WHERE id=?", (eligible, scan_id)
-        )
-        self.conn.commit()
-        ranked.sort(key=lambda pair: pair[1], reverse=True)
-        return {
-            "scan_id": scan_id,
-            "seen": len(tokens),
-            "eligible": eligible,
-            "errors": errors,
-            "ranked": ranked,
-        }
+        ).lastrowid, started, tokens, self.cfg)
+        result["errors"] = errors
+        return result
 
-    # ---------- execution ----------
     def can_open(self, token: Token, at_ms: int) -> tuple[bool, str]:
         if len(self.open_positions()) >= int(self.cfg["max_open_positions"]):
             return False, "MAX_POSITIONS"

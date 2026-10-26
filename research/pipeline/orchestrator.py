@@ -161,8 +161,16 @@ class Pipeline:
             if agent.name == "RISK":
                 produced = int(getattr(result, "produced", 0) or 0)
                 self._kv_set("dry_streak", "0" if produced > 0 else str(dry_streak + 1))
-            if agent.name == "SEARCH" and self.cfg.get("counterpart", {}).get("enabled"):
-                self._run_counterpart(ctx)
+            if agent.name == "SEARCH":
+                # Shadow labels ride along with the scan: SEARCH already pulled
+                # every price, so marking pending candidates costs no API call.
+                try:
+                    from ..replay.labels import mark_from_tokens
+                    self.label_result = mark_from_tokens(self.desk.conn, ctx.get("tokens", []), ctx.started_ms)
+                except Exception as exc:  # noqa: BLE001 - labelling must never stop the desk
+                    self.label_error = f"{type(exc).__name__}: {exc}"
+                if self.cfg.get("counterpart", {}).get("enabled"):
+                    self._run_counterpart(ctx)
 
         self._record_targets(run_id, ctx)
         self.desk.conn.execute(
