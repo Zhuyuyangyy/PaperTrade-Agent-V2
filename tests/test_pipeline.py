@@ -97,9 +97,11 @@ def test_smart_money_boost_reorders_but_never_overrides_veto() -> None:
     class FakeDesk:
         cfg = {}
         opened: list[str] = []
+        sizes: list = []
 
-        def open_position(self, token: Token, why: str) -> dict:
+        def open_position(self, token: Token, why: str, notional: float | None = None) -> dict:
             FakeDesk.opened.append(token.symbol)
+            FakeDesk.sizes.append(notional)
             return {"opened": True, "symbol": token.symbol, "score": 0}
 
     ctx = Context(
@@ -151,3 +153,83 @@ def test_pipeline_writes_an_auditable_run(tmp_path: Path, monkeypatch: pytest.Mo
     assert summary["ok"]
     agents = [step["agent"] for step in summary["steps"]]
     assert agents == ["SEARCH", "RISK", "GMGN", "JUDGE", "FOMO", "EXIT"]
+
+
+def test_soft_gates_become_a_probe_pool_not_a_rejection() -> None:
+    """Quality gates are a preference: they shrink the position, they do not
+    veto. Hard vetoes (authority, concentration) still reject outright."""
+    from research.pipeline.agents import Context, RiskAgent
+    from research.memehunter import Token
+
+    def token(mint: str, symbol: str, **kw) -> Token:
+        base = dict(
+            mint=mint, symbol=symbol, name=symbol, price_usd=0.001, liquidity_usd=30_000.0,
+            fdv_usd=900_000.0, organic_score=70.0, organic_label="good", holder_count=150,
+            top_holders_pct=12.0, mint_disabled=True, freeze_disabled=True,
+            chg_5m=1.0, chg_1h=5.0, chg_24h=10.0, organic_buy_5m=100.0, organic_sell_5m=80.0,
+            organic_buy_1h=5000.0, organic_sell_1h=4000.0, net_buyers_5m=10, net_buyers_1h=40,
+            vol_1h=60_000.0, vol_24h=500_000.0,
+        )
+        base.update(kw)
+        return Token(**base)
+
+    from research.memehunter import DEFAULT_CONFIG as MH_DEFAULT
+
+    class _Desk:
+        cfg = dict(MH_DEFAULT)
+
+    soft = token("soft1", "SOFT")                       # holder_count 150 -> TOO_FEW_HOLDERS
+    rugged = token("hard1", "RUGGED", mint_disabled=False)  # authority not revoked
+    ctx = Context(
+        root=ROOT,
+        cfg=json.loads(json.dumps(DEFAULT_CONFIG)),
+        started_ms=0,
+        desk=_Desk(),
+    )
+    ctx.put("tokens", [soft, rugged])
+    RiskAgent().run(ctx)
+
+    probe = ctx.get("probe_pool", [])
+    probe_symbols = [item[1].symbol for item in probe]
+    assert "SOFT" in probe_symbols, "a soft gate must land in the probe pool"
+    assert "RUGGED" not in probe_symbols, "a hard veto must never be probe-able"
+
+
+def test_soft_gates_become_a_probe_pool_not_a_rejection() -> None:
+    """Quality gates are a preference: they shrink the position, they do not
+    veto. Hard vetoes (authority, concentration) still reject outright."""
+    from research.pipeline.agents import Context, RiskAgent
+    from research.memehunter import Token
+
+    def token(mint: str, symbol: str, **kw) -> Token:
+        base = dict(
+            mint=mint, symbol=symbol, name=symbol, price_usd=0.001, liquidity_usd=30_000.0,
+            fdv_usd=900_000.0, organic_score=70.0, organic_label="good", holder_count=150,
+            top_holders_pct=12.0, mint_disabled=True, freeze_disabled=True,
+            chg_5m=1.0, chg_1h=5.0, chg_24h=10.0, organic_buy_5m=100.0, organic_sell_5m=80.0,
+            organic_buy_1h=5000.0, organic_sell_1h=4000.0, net_buyers_5m=10, net_buyers_1h=40,
+            vol_1h=60_000.0, vol_24h=500_000.0,
+        )
+        base.update(kw)
+        return Token(**base)
+
+    from research.memehunter import DEFAULT_CONFIG as MH_DEFAULT
+
+    class _Desk:
+        cfg = dict(MH_DEFAULT)
+
+    soft = token("soft1", "SOFT")                       # holder_count 150 -> TOO_FEW_HOLDERS
+    rugged = token("hard1", "RUGGED", mint_disabled=False)  # authority not revoked
+    ctx = Context(
+        root=ROOT,
+        cfg=json.loads(json.dumps(DEFAULT_CONFIG)),
+        started_ms=0,
+        desk=_Desk(),
+    )
+    ctx.put("tokens", [soft, rugged])
+    RiskAgent().run(ctx)
+
+    probe = ctx.get("probe_pool", [])
+    probe_symbols = [item[1].symbol for item in probe]
+    assert "SOFT" in probe_symbols, "a soft gate must land in the probe pool"
+    assert "RUGGED" not in probe_symbols, "a hard veto must never be probe-able"

@@ -540,12 +540,12 @@ class Desk:
             return False, "INSUFFICIENT_CASH"
         return True, ""
 
-    def open_position(self, token: Token, why: str) -> dict:
+    def open_position(self, token: Token, why: str, notional: float | None = None) -> dict:
         at = now_ms()
         ok, reason = self.can_open(token, at)
         if not ok:
             return {"opened": False, "reason": reason, "symbol": token.symbol}
-        notional = float(self.cfg["notional_usdt"])
+        notional = float(notional if notional is not None else self.cfg["notional_usdt"])
         slip = entry_slippage_bps(notional, token.liquidity_usd)
         fill = token.price_usd * (1.0 + slip / 10_000.0)
         qty = notional / fill

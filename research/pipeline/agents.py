@@ -56,6 +56,22 @@ DEFAULT_CONFIG: dict = {
     "counterpart": {"enabled": True, "top_n": 3},
     # JUDGE: an LLM risk opinion that reorders survivors. It never overrides a
     # veto and never predicts price; it is one more replayable column.
+    # Quality gates become a smaller position instead of a rejection. Hard
+    # vetoes (authority, concentration, collapse, wash volume) never move.
+    "tiers": {
+        "probe_enabled": True,
+        "probe_notional_usdt": 40.0,
+        "probe_min_llm": 55.0,
+        # Only these reject reasons are survivable-by-sizing; everything else
+        # stays a hard rejection inside veto().
+        "probe_reasons": [
+            "TOO_FEW_HOLDERS",
+            "LIQUIDITY_TOO_THIN",
+            "NO_LIQUIDITY_FLOW",
+            "TOO_LARGE_TO_BE_MEME",
+            "SCORE_BELOW_FLOOR",
+        ],
+    },
     "judge": {
         "enabled": True,
         "base_url": "https://api.stepfun.com/v1",
@@ -173,24 +189,36 @@ class RiskAgent(BaseAgent):
         def work():
             ranked: list[tuple[float, Token]] = []
             rejects: dict[str, int] = {}
+            probe: list[tuple[float, Token, str]] = []
+            probe_reasons = set(ctx.cfg.get("tiers", {}).get("probe_reasons", []))
             for token in tokens:
                 ok, reason = veto(token, ctx.desk.cfg)
                 if not ok:
                     rejects[reason] = rejects.get(reason, 0) + 1
+                    if reason in probe_reasons:
+                        # A soft gate, not a survival line: keep it as a probe
+                        # candidate. veto() already refused it, so it never
+                        # reaches tier 1 -- JUDGE decides if it is worth $40.
+                        probe.append((score(token, ctx.desk.cfg), token, reason))
                     continue
                 value = score(token, ctx.desk.cfg)
                 if value < effective_min:
                     rejects["SCORE_BELOW_FLOOR"] = rejects.get("SCORE_BELOW_FLOOR", 0) + 1
+                    probe.append((value, token, "SCORE_BELOW_FLOOR"))
                     continue
                 ranked.append((value, token))
             ranked.sort(key=lambda pair: pair[0], reverse=True)
-            return ranked[:top_n], rejects, effective_min
+            probe.sort(key=lambda item: item[0], reverse=True)
+            return ranked[:top_n], rejects, effective_min, probe[: int(ctx.cfg.get("tiers", {}).get("probe_pool", 6))]
 
-        (ranked, rejects, effective_min), elapsed, ok = self._timed(ctx, work)
+        (ranked, rejects, effective_min, probe), elapsed, ok = self._timed(ctx, work)
         ctx.put("survivors", ranked)
         ctx.put("rejects", rejects)
+        ctx.put("probe_pool", probe)
         ctx.put("effective_min_score", effective_min)
         summary = f"{len(tokens)} → {len(ranked)} 个通过否决与分数线"
+        if probe and ctx.cfg.get("tiers", {}).get("probe_enabled"):
+            summary += f" · {len(probe)} 个软门槛候选待研判"
         if effective_min < min_score:
             summary += f"（分数线自适应 {min_score:.0f}→{effective_min:.0f}，连续 {streak} 轮空漏斗）"
         if rejects:
@@ -308,19 +336,26 @@ class JudgeAgent(BaseAgent):
                                produced=0)
         limit = int(cfg.get("max_per_round", 3))
         judged: dict[str, dict] = {}
+        # Tier-2 candidates need the same opinion, so the probe pool is judged
+        # with whatever budget is left after the survivors.
+        probe = list(ctx.get("probe_pool", []))
 
         def work():
             judge_mod.ensure_schema(ctx.desk.conn)
             ensure_candidate_columns(ctx.desk.conn)
             out: dict[str, dict] = {}
-            for value, token in survivors[:limit]:
+            queue = [(v, t, "tier1") for v, t in survivors[:limit]]
+            queue += [(v, t, "tier2") for v, t, _r in probe[:limit]]
+            for value, token, tier in queue:
                 candidate_id = judge_mod.candidate_id_for(ctx.desk.conn, token.mint)
                 result = judge_mod.judge_token(token, cfg)
                 if result is None:
                     continue
                 judge_mod.record_judgment(ctx.desk.conn, token, candidate_id, cfg, result)
                 if result.get("ok"):
-                    out[token.mint] = result
+                    entry = dict(result)
+                    entry["tier"] = tier
+                    out[token.mint] = entry
                     ctx.desk.conn.execute(
                         "UPDATE candidates SET llm_score=?, llm_flags=?, llm_reason=? WHERE id=?",
                         (result["score"], json.dumps(result.get("flags", []), ensure_ascii=False),
@@ -337,7 +372,7 @@ class JudgeAgent(BaseAgent):
         if not ok:
             summary = f"研判失败：{judged.get('error', 'unknown')}"
         else:
-            summary = f"研判 {len(opinions)}/{min(limit, len(survivors))} 个候选"
+            summary = f"研判 {len(opinions)}/{min(limit, len(survivors)) + min(limit, len(probe))} 个候选"
             if opinions:
                 best = max(opinions.values(), key=lambda r: r.get("score", 0))
                 summary += f" · 最高 {best.get('score')} 分"
@@ -370,31 +405,62 @@ class EntryAgent(BaseAgent):
         buying = {str(row["symbol"]).upper() for row in ctx.get("smart_buying", [])}
         judgments = ctx.get("llm_judgments", {}) or {}
         judge_cfg = ctx.cfg.get("judge") or {}
+        tiers_cfg = ctx.cfg.get("tiers") or {}
+        notional = float(ctx.cfg["entry"].get("notional_usdt", 100.0))
+        probe_quota = int(tiers_cfg.get("max_probe_positions", 2))
+        probe_notional = float(tiers_cfg.get("probe_notional_usdt", 40.0))
+        probe_min_llm = float(tiers_cfg.get("probe_min_llm", 55.0))
         boosted = []
         for value, token in survivors:
             opinion = judgments.get(token.mint)
             llm_score = float(opinion["score"]) if opinion and opinion.get("ok") else None
             base = judge_mod.blend(value, llm_score, judge_cfg)
             mark = base + (boost if token.symbol.upper() in buying else 0.0)
-            boosted.append((mark, base, token, llm_score))
+            boosted.append((mark, base, token, llm_score, notional))
+        # Tier 2: soft-gate survivors, probe size, and only with a good opinion.
+        # A quota caps how much of the book may be probes at once, so a run of
+        # soft-gate tokens cannot crowd out full-size convictions.
+        probe_reason: dict[str, str] = {}
+        if tiers_cfg.get("probe_enabled"):
+            for value, token, reason in ctx.get("probe_pool", []):
+                opinion = judgments.get(token.mint)
+                if not opinion or not opinion.get("ok"):
+                    continue
+                llm_score = float(opinion["score"])
+                if llm_score < probe_min_llm:
+                    continue
+                mark = judge_mod.blend(value, llm_score, judge_cfg)
+                boosted.append((mark, mark, token, llm_score, probe_notional))
+                probe_reason[token.mint] = reason
+        ctx.put("probe_reason", probe_reason)
         boosted.sort(key=lambda item: item[0], reverse=True)
 
         def work():
             opened, skipped = [], []
-            for mark, base, token, llm_score in boosted:
+            probes_opened = 0
+            for mark, base, token, llm_score, size in boosted:
                 if len(opened) >= max_entries:
                     skipped.append({"symbol": token.symbol, "reason": "ROUND_QUOTA"})
+                    continue
+                if size < notional and probes_opened >= probe_quota:
+                    skipped.append({"symbol": token.symbol, "reason": "PROBE_QUOTA"})
                     continue
                 why = f"PIPELINE·rule={base:.1f}"
                 if llm_score is not None:
                     why += f"·llm={llm_score:.0f}"
                 if mark > base:
                     why += "·SMART_MONEY"
-                result = ctx.desk.open_position(token, why)
+                if size < notional:
+                    why += f"·PROBE${size:.0f}({ctx.get('probe_reason', {}).get(token.mint, 'soft_gate')})"
+                result = ctx.desk.open_position(token, why, notional=size)
                 if result.get("opened"):
                     result["score"] = round(base, 1)
                     result["llm_score"] = llm_score
+                    result["notional"] = size
+                    result["tier"] = "probe" if size < notional else "full"
                     result["smart_boosted"] = mark > base
+                    if size < notional:
+                        probes_opened += 1
                     opened.append(result)
                 else:
                     skipped.append({"symbol": token.symbol, "reason": result.get("reason")})
@@ -403,6 +469,9 @@ class EntryAgent(BaseAgent):
         (opened, skipped), elapsed, ok = self._timed(ctx, work)
         ctx.put("entries", opened)
         summary = f"开仓 {len(opened)} 笔"
+        probes = [e for e in opened if e.get("tier") == "probe"]
+        if probes:
+            summary += f" · 其中 {len(probes)} 笔试探仓（软门槛 + LLM 放行）"
         if any(e.get("smart_boosted") for e in opened):
             summary += " · 含聪明钱加成"
         if skipped:

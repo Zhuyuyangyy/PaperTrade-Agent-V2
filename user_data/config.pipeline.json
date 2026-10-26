@@ -32,5 +32,20 @@
     "llm_weight": 0.4,
     "_note": "LLM 只研判通过 veto 的候选，只重排不放行；无 key 或失败自动降级为规则分。OpenAI 兼容，换服务商只改 base_url/model/api_key_env。",
     "max_tokens": 1500
+  },
+  "tiers": {
+    "probe_enabled": true,
+    "probe_notional_usdt": 40.0,
+    "probe_min_llm": 55.0,
+    "probe_pool": 6,
+    "probe_reasons": [
+      "TOO_FEW_HOLDERS",
+      "LIQUIDITY_TOO_THIN",
+      "NO_LIQUIDITY_FLOW",
+      "TOO_LARGE_TO_BE_MEME",
+      "SCORE_BELOW_FLOOR"
+    ],
+    "_note": "软门槛不再一票否决：只过硬否决的候选进 probe 池，JUDGE 打分 ≥55 才用 0 试探仓。硬否决（权限/集中度/崩塌/洗量）永不动。",
+    "max_probe_positions": 2
   }
 }
