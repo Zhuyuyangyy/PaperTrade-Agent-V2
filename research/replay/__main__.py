@@ -30,7 +30,7 @@ def _connect(root: Path) -> sqlite3.Connection:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Replay Engine V1 (paper only, offline)")
-    parser.add_argument("command", choices=["labels", "replay", "cost", "calibration"], nargs="?", default="replay")
+    parser.add_argument("command", choices=["labels", "replay", "cost", "calibration", "signals", "dmarks"], nargs="?", default="replay")
     parser.add_argument("--params", default="", help="JSON file with replay params")
     args = parser.parse_args(argv)
 
@@ -68,6 +68,17 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "cost":
         print(cost_sensitivity(root, params))
+        return 0
+
+    if args.command == "signals":
+        from .signals import compare
+        r = compare(root)
+        print(json.dumps({k: v for k, v in r.items() if k != "scored"}, ensure_ascii=False, default=str))
+        return 0
+
+    if args.command == "dmarks":
+        from .signals import collect_d_marks
+        print(json.dumps(collect_d_marks(root), ensure_ascii=False))
         return 0
 
     if args.command == "calibration":
