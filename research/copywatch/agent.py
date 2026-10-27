@@ -360,7 +360,7 @@ class CopyWatchAgent:
         slip_bps = float(self.config["slippage_bps"])
         min_usd = float(source_cfg.get("min_trade_usd", 0) or 0)
         summary = {"pools": len(pools_cfg), "fetched": 0, "new_swaps": 0, "actionable": 0,
-                   "papers": 0, "skips": 0, "exits": 0, "demotions": 0, "errors": []}
+                   "papers": 0, "skips": 0, "exits": 0, "demotions": [], "errors": []}
         # Discover trending pools first so this round already trades them.
         self._maybe_discover_pools(conn, source_cfg, now_ms, summary)
         discovery = source_cfg.get("pool_discovery") or {}

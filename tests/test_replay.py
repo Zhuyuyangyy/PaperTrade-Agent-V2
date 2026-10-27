@@ -171,3 +171,50 @@ def test_report_states_coverage_before_any_number(ledger: Path) -> None:
     assert "标注覆盖" in text.splitlines()[0]
     assert "不构成" not in text  # the report does not pretend to a verdict
     assert "未计入平仓统计" in text or "无平仓" in text
+
+
+def test_old_ledger_migrates_to_one_mark_per_interval(tmp_path: Path) -> None:
+    """A ledger whose candidate_marks had candidate_id as the sole PRIMARY KEY
+    could only ever hold ONE price per candidate -- the birth price. The
+    migration rebuilds the table with the composite key and keeps every row,
+    so a candidate finally gets a 5m/15m/30m/1h curve instead of a dot.
+    """
+    import sqlite3
+
+    from research.replay.labels import ensure_schema
+
+    db = tmp_path / "legacy.sqlite"
+    conn = sqlite3.connect(db)
+    conn.executescript(
+        "CREATE TABLE candidates (id INTEGER PRIMARY KEY, scan_id INTEGER,"
+        " scanned_at_ms INTEGER, mint TEXT, symbol TEXT, price_usd REAL,"
+        " liquidity_usd REAL, fdv_usd REAL, organic_score REAL, organic_label TEXT,"
+        " holder_count INTEGER, top_holders_pct REAL, chg_5m REAL, chg_1h REAL,"
+        " chg_24h REAL, organic_buy_5m REAL, organic_sell_5m REAL, net_buyers_5m INTEGER,"
+        " vol_1h REAL, score REAL, eligible INTEGER, reject_reason TEXT);"
+        # the legacy shape: single-column primary key
+        "CREATE TABLE candidate_marks (candidate_id INTEGER PRIMARY KEY,"
+        " marked_at_ms INTEGER, price_usd REAL, source TEXT);"
+    )
+    t0 = 1_700_000_000_000
+    conn.execute("INSERT INTO candidates VALUES (1,1,?,'m','S',1.0,1e5,1e6,60,'good',5000,10,"
+                 "0,0,0,1,1,10,1e5,60,1,NULL)", (t0,))
+    conn.execute("INSERT INTO candidate_marks VALUES (1,?,1.0,'jupiter')", (t0,))
+    conn.commit()
+
+    ensure_schema(conn)
+
+    pk = {row[1]: row[5] for row in conn.execute("PRAGMA table_info(candidate_marks)")}
+    assert pk.get("marked_at_ms") == 2, "marked_at_ms must be part of the primary key"
+    # the historical row survived
+    assert conn.execute("SELECT COUNT(*) FROM candidate_marks").fetchone()[0] == 1
+    # and now the same candidate can hold a second, later price
+    conn.execute(
+        "INSERT OR REPLACE INTO candidate_marks (candidate_id, marked_at_ms, price_usd, source)"
+        " VALUES (1,?,1.5,'jupiter')",
+        (t0 + 15 * 60_000,),
+    )
+    conn.commit()
+    marks = conn.execute("SELECT price_usd FROM candidate_marks ORDER BY marked_at_ms").fetchall()
+    assert [m[0] for m in marks] == [1.0, 1.5], "both prices must coexist"
+    conn.close()

@@ -36,11 +36,50 @@ CREATE INDEX IF NOT EXISTS idx_marks_time ON candidate_marks(marked_at_ms);
 DEFAULT_LOOKBACK_MINUTES = 70
 # 1-in-N of rejected candidates gets a shadow price, deterministically by mint.
 DEFAULT_REJECT_SAMPLE = 10
+# One shadow price per candidate per this interval; the desk scans every ~100s,
+# so 90s means "every round", which is what builds a horizon curve.
+MARK_INTERVAL_MS = 90_000
 JUP_PRICE = "https://quote-api.jup.ag/price/v3"
 
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(MARKS_SCHEMA)
+    conn.commit()
+    _migrate_single_column_pk(conn)
+
+
+def _migrate_single_column_pk(conn: sqlite3.Connection) -> None:
+    """Ledgers created before (candidate_id, marked_at_ms) was the key.
+
+    With candidate_id alone as PRIMARY KEY, every new INSERT OR REPLACE
+    overwrote the row, so a candidate could only ever hold ONE shadow price --
+    the one from its birth round. No horizon past one round could be measured,
+    which is why every calibration run reported n=0. Rebuild the table with the
+    composite key and keep every historical row.
+    """
+    columns = {row[1]: row[5] for row in conn.execute("PRAGMA table_info(candidate_marks)")}
+    if not columns:
+        return
+    if columns.get("marked_at_ms"):
+        return  # already composite: marked_at_ms carries a pk index
+    conn.executescript(
+        """
+        CREATE TABLE candidate_marks_migrated (
+            candidate_id INTEGER NOT NULL,
+            marked_at_ms INTEGER NOT NULL,
+            price_usd REAL NOT NULL,
+            source TEXT NOT NULL DEFAULT 'jupiter',
+            PRIMARY KEY (candidate_id, marked_at_ms)
+        );
+        INSERT OR REPLACE INTO candidate_marks_migrated
+            (candidate_id, marked_at_ms, price_usd, source)
+            SELECT candidate_id, marked_at_ms, price_usd, source FROM candidate_marks;
+        DROP TABLE candidate_marks;
+        ALTER TABLE candidate_marks_migrated RENAME TO candidate_marks;
+        CREATE INDEX IF NOT EXISTS idx_marks_candidate ON candidate_marks(candidate_id);
+        CREATE INDEX IF NOT EXISTS idx_marks_time ON candidate_marks(marked_at_ms);
+        """
+    )
     conn.commit()
 
 
@@ -59,6 +98,10 @@ def pending_candidates(
     sample.
     """
     cutoff = now_ms - lookback_minutes * 60_000
+    # A candidate needs a mark only if it has none within the last sampling
+    # interval -- "never marked" alone meant each row got exactly one price, at
+    # birth, so no horizon past one round could ever be measured.
+    stale_before = now_ms - MARK_INTERVAL_MS
     rows = conn.execute(
         "SELECT c.id, c.mint, c.symbol, c.scanned_at_ms, c.eligible"
         " FROM candidates c"
@@ -66,8 +109,9 @@ def pending_candidates(
         "   AND NOT EXISTS ("
         "     SELECT 1 FROM candidate_marks m"
         "     WHERE m.candidate_id = c.id AND m.marked_at_ms > c.scanned_at_ms"
+        "       AND m.marked_at_ms >= ?"
         "   )",
-        (cutoff,),
+        (cutoff, stale_before),
     ).fetchall()
     out = []
     for row in rows:
@@ -109,6 +153,8 @@ def mark_from_tokens(conn: sqlite3.Connection, tokens: list, now_ms: int,
     ensure_schema(conn)
     by_mint = {t.mint: t for t in tokens if getattr(t, "price_usd", 0) > 0}
     pending = pending_candidates(conn, now_ms, lookback_minutes, reject_sample)
+    # Every round re-marks the whole lookback window (one price per interval)
+    # so a candidate's 5m/15m/30m/1h future is recorded, not assumed.
     marked = 0
     for row in pending:
         token = by_mint.get(row["mint"])

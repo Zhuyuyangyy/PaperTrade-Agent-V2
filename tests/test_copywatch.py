@@ -402,58 +402,6 @@ def test_swap_price_takes_the_base_token_on_both_sides(monkeypatch):
     assert all(event.price_usd > 1000 for event in events), "no quote-token price may leak in"
 
 
-def test_swap_price_takes_the_base_token_on_both_sides(monkeypatch):
-    """A sell's USD price lives in price_from_in_usd, not price_to_in_usd.
-
-    Reading one field for both directions recorded the quote token's ~1.00 USD
-    price on every sell. That is a 100% corruption rate on one side of the tape,
-    and it silently turned every replayed signal into a -99% trade.
-    """
-    payload = {
-        "data": [
-            {
-                "id": "t-buy",
-                "attributes": {
-                    "tx_from_address": WALLET_A,
-                    "tx_hash": "0xbuy",
-                    "kind": "buy",
-                    "volume_in_usd": "1500",
-                    "block_timestamp": "2026-10-24T18:00:00Z",
-                    "price_from_in_usd": "1.0002",
-                    "price_to_in_usd": "2360.5",
-                },
-            },
-            {
-                "id": "t-sell",
-                "attributes": {
-                    "tx_from_address": WALLET_B,
-                    "tx_hash": "0xsell",
-                    "kind": "sell",
-                    "volume_in_usd": "900",
-                    "block_timestamp": "2026-10-24T18:01:00Z",
-                    "price_from_in_usd": "2362.75",
-                    "price_to_in_usd": "1.0006",
-                },
-            },
-        ]
-    }
-    monkeypatch.setattr(sources, "_http_json", lambda url, timeout=0: payload)
-
-    events = sources.fetch_swaps(
-        network="base",
-        pool=BASE_POOL["pool"],
-        base_symbol="WETH",
-        quote_symbol="USDC",
-        min_usd=100,
-        base_url="https://example.invalid",
-        now_ms=START_MS,
-    )
-    by_kind = {event.kind: event for event in events}
-    assert by_kind["buy"].price_usd == pytest.approx(2360.5)
-    assert by_kind["sell"].price_usd == pytest.approx(2362.75), "sell must price the base token"
-    assert all(event.price_usd > 1000 for event in events), "no quote-token price may leak in"
-
-
 
 
 def test_same_symbol_keeps_only_the_largest_wallet(tmp_path) -> None:
@@ -489,34 +437,41 @@ def test_same_symbol_keeps_only_the_largest_wallet(tmp_path) -> None:
     conn.close()
 
 
-def test_same_symbol_keeps_only_the_largest_wallet(tmp_path) -> None:
-    """Duplicated buys of one token by many tracked wallets are one signal."""
+def test_demotion_appends_to_the_summary_list(tmp_path) -> None:
+    """The poll summary initialises demotions as a list; appending a demoted
+    wallet to an int is what crashed D for three hours."""
     import sys
     from pathlib import Path as _P
     sys.path.insert(0, str(_P(__file__).resolve().parents[1]))
     from research.copywatch import agent as agent_mod, store
 
-    db = _P(tmp_path) / "dedupe.sqlite"
+    db = _P(tmp_path) / "demote.sqlite"
     conn = store.connect(db)
     store.ensure_schema(conn)
-    for address, notional in (("0xbig", 9_000_000.0), ("0xmid", 500_000.0), ("0xsmall", 20_000.0)):
+    conn.execute(
+        "INSERT INTO wallets(address, network, first_seen_ms, last_seen_ms, swaps, buys,"
+        " sells, notional_usd, tracked, demoted_at_ms) VALUES(?,?,?,?,?,?,?,?,?,?)",
+        ("0xlucky", "base", 1, 1, 9, 5, 4, 900_000.0, 1, None),
+    )
+    for i in range(2):
         conn.execute(
-            "INSERT INTO wallets(address, network, first_seen_ms, last_seen_ms, swaps, buys,"
-            " sells, notional_usd) VALUES(?,?,?,?,?,?,?,?)",
-            (address, "base", 1, 1, 10, 10, 0, notional),
+            "INSERT INTO positions(event_id, wallet, network, pool, symbol, signal_class,"
+            " fee_bps, gas_usd, opened_at_ms, entry_ref_price, entry_fill_price, qty,"
+            " notional_usd, entry_fee_usd, entry_gas_usd, entry_cost_usd, signal_price_usd,"
+            " drift_bps, latency_ms, status, pnl_usd)"
+            " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (f"ev{i}", "0xlucky", "base", "p1", f"SYM{i}", "retail", 30.0, 1.0,
+             1_700_000_000_000, 1.0, 1.0, 100.0, 100.0, 0.3, 1.0, 1.3, 1.0, 0, 100, "closed", -5.0),
         )
     conn.commit()
 
-    class _Ev:
-        def __init__(self, wallet: str, symbol: str):
-            self.wallet = wallet
-            self.network = "base"
-            self.base_symbol = symbol
-            self.usd = 1000.0
-
-    events = [_Ev("0xsmall", "PEPE"), _Ev("0xbig", "PEPE"), _Ev("0xmid", "PEPE"), _Ev("0xbig", "DOGE")]
+    position = conn.execute(
+        "SELECT wallet, network, symbol FROM positions WHERE status='closed' LIMIT 1"
+    ).fetchone()
+    summary = {"pools": 1, "fetched": 0, "new_swaps": 0, "actionable": 0,
+               "papers": 0, "skips": 0, "exits": 0, "demotions": [], "errors": []}
     desk = agent_mod.CopyWatchAgent.__new__(agent_mod.CopyWatchAgent)
-    kept, dropped = desk._dedupe_by_symbol(conn, events, 1)
-    assert [e.wallet for e in kept] == ["0xbig", "0xbig"]
-    assert sorted(e.wallet for e in dropped) == ["0xmid", "0xsmall"]
+    desk._maybe_demote(conn, position, realized=-5.0, now_ms=1_700_000_000_000,
+                       policy={"demote_after_losses": 2}, summary=summary)
+    assert summary["demotions"] == ["0xlucky"], summary
     conn.close()

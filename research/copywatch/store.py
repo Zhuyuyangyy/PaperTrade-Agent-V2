@@ -123,10 +123,13 @@ MAX_EVENT_ROWS = 3000
 
 def connect(path: Path) -> sqlite3.Connection:
     path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(path), timeout=5.0)
+    # 30s busy timeout: the dashboard reads this ledger while the agent writes
+    # it every 45s, and a 5s wait lost whole rounds to SQLITE_BUSY.
+    conn = sqlite3.connect(str(path), timeout=30.0)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA busy_timeout=30000")
     return conn
 
 
