@@ -398,3 +398,52 @@ def test_identical_proposals_are_deduplicated(tmp_path) -> None:
     assert first is not None
     assert second is None, "an identical pending proposal must not be filed twice"
     conn.close()
+
+
+def test_adaptive_floor_only_moves_when_the_bar_is_the_bottleneck() -> None:
+    """Nine dry rounds at floor 28 taught the desk nothing: vetoes were doing
+    the rejecting, so a lower score floor changed no outcome. The floor now
+    moves only when SCORE_BELOW_FLOOR is the top reject reason."""
+    import sys
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).resolve().parents[1]))
+    from research.pipeline.agents import Context, RiskAgent
+    from research.memehunter import Token
+
+    def token(mint: str, symbol: str, **kw) -> Token:
+        base = dict(
+            mint=mint, symbol=symbol, name=symbol, price_usd=0.001, liquidity_usd=30_000.0,
+            fdv_usd=900_000.0, organic_score=70.0, organic_label="good", holder_count=150,
+            top_holders_pct=12.0, mint_disabled=True, freeze_disabled=True,
+            chg_5m=1.0, chg_1h=5.0, chg_24h=10.0, organic_buy_5m=100.0, organic_sell_5m=80.0,
+            organic_buy_1h=5000.0, organic_sell_1h=4000.0, net_buyers_5m=10, net_buyers_1h=40,
+            vol_1h=60_000.0, vol_24h=500_000.0,
+        )
+        base.update(kw)
+        return Token(**base)
+
+    cfg = json.loads(json.dumps(DEFAULT_CONFIG))
+    cfg["risk"]["min_score"] = 45.0
+    cfg["risk"]["adaptive_dry_rounds"] = 3
+    cfg["risk"]["adaptive_decay"] = 4.0
+    cfg["risk"]["adaptive_floor"] = 28.0
+
+    from research.memehunter import DEFAULT_CONFIG as MH_DEFAULT
+
+    from research.memehunter import DEFAULT_CONFIG as MH_DEFAULT
+
+    class _Desk:
+        cfg = dict(MH_DEFAULT)
+
+    def run_risk(rejects: dict):
+        ctx = Context(root=ROOT, cfg=cfg, started_ms=0, desk=_Desk())
+        ctx.put("tokens", [token("soft1", "SOFT")])
+        ctx.put("dry_streak", 5)
+        ctx.put("rejects", rejects)
+        RiskAgent().run(ctx)
+        return ctx.get("effective_min_score")
+
+    veto_dominant = {"TOO_FEW_HOLDERS": 45, "AUTHORITY_NOT_REVOKED": 30, "SCORE_BELOW_FLOOR": 2}
+    assert run_risk(veto_dominant) == 45.0, "a veto-dominated round must not lower the bar"
+    score_dominant = {"SCORE_BELOW_FLOOR": 40, "TOO_FEW_HOLDERS": 3}
+    assert run_risk(score_dominant) == 33.0, "a score-dominated round should decay the bar"

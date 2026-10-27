@@ -22,6 +22,6 @@
   "min_score_to_buy": 52.0,
   "take_profit_pct": 55.0,
   "stop_loss_pct": -12.0,
-  "timeout_minutes": 180,
+  "timeout_minutes": 45,
   "trailing_giveback_pct": 30.0
 }

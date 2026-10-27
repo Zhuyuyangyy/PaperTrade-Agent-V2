@@ -171,6 +171,17 @@ class SearchAgent(BaseAgent):
             return tokens[:limit], errors
 
         (tokens, errors), elapsed, ok = self._timed(ctx, work)
+        if not ok:
+            # _timed turns a raised error into {"error": ...}; unpacking that
+            # as a pair raises a second, misleading ValueError ("expected 2,
+            # got 1") that hides the real failure. Surface the real one.
+            ctx.put("tokens", [])
+            ctx.put("source_errors", [])
+            return AgentResult(
+                agent=self.name, ok=False,
+                summary=f"拉取代币失败：{(tokens or {}).get('error', 'unknown')}",
+                produced=0, elapsed_ms=elapsed, detail={"failed": True},
+            )
         ctx.put("tokens", tokens)
         ctx.put("source_errors", errors)
         summary = f"{len(tokens)} 个代币入池"
@@ -191,6 +202,14 @@ class RiskAgent(BaseAgent):
 
     name = "RISK"
 
+    def _floor_is_the_bottleneck(self, ctx: Context) -> bool:
+        """True when last round's rejects were mostly score, not veto."""
+        rejects = ctx.get("rejects", {}) or {}
+        if not rejects:
+            return True
+        top = max(rejects.items(), key=lambda kv: kv[1])
+        return top[0] == "SCORE_BELOW_FLOOR"
+
     def run(self, ctx: Context) -> AgentResult:
         tokens: list[Token] = ctx.get("tokens", [])
         top_n = int(ctx.cfg["risk"]["top_n"])
@@ -201,7 +220,11 @@ class RiskAgent(BaseAgent):
         decay = float(ctx.cfg["risk"].get("adaptive_decay", 4.0))
         floor = float(ctx.cfg["risk"].get("adaptive_floor", 28.0))
         effective_min = min_score
-        if streak >= trigger:
+        if streak >= trigger and self._floor_is_the_bottleneck(ctx):
+            # Lower the bar only when the bar is what is rejecting candidates.
+            # When vetoes (holders, liquidity, authority) are the main filter,
+            # a lower floor changes nothing -- the desk saw nine dry rounds at
+            # floor 28 and called it adapting. It was not; it was self-deception.
             effective_min = max(min_score - decay * (streak - trigger + 1), floor)
 
         def work():
