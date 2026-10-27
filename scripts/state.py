@@ -143,6 +143,22 @@ def _wallet(conn: sqlite3.Connection) -> dict:
     }
 
 
+def _unavailable(label: str, file: str) -> dict:
+    """A book that could not be read still gets a row.
+
+    Four processes write these ledgers and a reader loses the race now and
+    then. Dropping the row is how five books quietly become four -- and the
+    page's own promise is that a book is never allowed to disappear.
+    """
+    return {
+        "label": label, "file": file, "unavailable": True,
+        "equity": 0.0, "cash": 0.0, "holdings": 0.0, "pnl_vs_start": 0.0,
+        "pnl_pct": 0.0, "open": 0, "closed": 0, "gross": 0.0,
+        "realized_net": 0.0, "unrealized": 0.0, "reasons": {}, "positions": [],
+        "history": [], "trades": [], "run_id": None, "steps": {}, "note": "",
+    }
+
+
 def _history(conn: sqlite3.Connection, points: int = 60) -> list[list[float]]:
     """Equity over time, thinned to `points`, oldest first.
 
@@ -280,12 +296,7 @@ def build_state(root: Path | None = None) -> dict:
         try:
             conn = _connect(path)
         except sqlite3.Error:
-            # A book that cannot be read for a moment still shows up, flagged.
-            # Silently dropping it is how an experiment quietly loses a row.
-            wallets.append({
-                "label": _label(path, root), "file": path.name, "unavailable": True,
-                "equity": 0.0, "open": 0, "closed": 0, "reasons": {}, "positions": [],
-            })
+            wallets.append(_unavailable(_label(path, root), path.name))
             continue
         try:
             if conn.execute(
@@ -307,7 +318,9 @@ def build_state(root: Path | None = None) -> dict:
             })
             feed.extend(_feed(conn, label))
         except sqlite3.Error:
-            continue
+            # Same deal as a failed open: four writers, one reader, and a
+            # lost race must not delete a book from the comparison.
+            wallets.append(_unavailable(_label(path, root), path.name))
         finally:
             conn.close()
     # Baseline and control first, then the arms -- a reader should hit the

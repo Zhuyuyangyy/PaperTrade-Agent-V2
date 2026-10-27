@@ -71,5 +71,19 @@ def test_a_book_with_no_pipeline_is_not_an_error(house: Path):
     assert control["steps"] == {}
 
 
+def test_a_ledger_that_cannot_be_read_still_gets_a_row(house: Path):
+    """Four writers, one reader: a lost race must not delete a book.
+
+    A corrupt file is the same code path as an unreadable one, and it is the
+    only way to force the failure deterministically.
+    """
+    (house / "runtime" / "memehunter" / "broken.sqlite").write_bytes(b"not a database at all")
+    state = build_state(house)
+    labels = {w["label"] for w in state["wallets"]}
+    assert "broken" in labels, "the book silently disappeared from the comparison"
+    broken = next(w for w in state["wallets"] if w["label"] == "broken")
+    assert broken["unavailable"] is True
+
+
 def test_state_is_json_serialisable(house: Path):
     json.dumps(build_state(house), ensure_ascii=False)
