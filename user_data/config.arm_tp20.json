@@ -80,6 +80,7 @@
     "started": "2026-10-27",
     "baseline": "memehunter.sqlite (E 现役)",
     "change": "把止盈从 +55% 降到 +20%（其余一律不动）",
-    "target_trades": 60
+    "target_trades": 60,
+    "label": "低止盈 +20%"
   }
 }

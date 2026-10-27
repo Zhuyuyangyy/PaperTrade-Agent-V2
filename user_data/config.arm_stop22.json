@@ -79,6 +79,7 @@
     "started": "2026-10-27",
     "baseline": "memehunter.sqlite (E 现役)",
     "change": "把硬止损从 -12% 放宽到 -22%（其余一律不动）",
-    "target_trades": 60
+    "target_trades": 60,
+    "label": "宽止损 -22%"
   }
 }

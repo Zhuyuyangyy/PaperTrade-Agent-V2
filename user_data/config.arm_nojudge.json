@@ -79,6 +79,7 @@
     "started": "2026-10-27",
     "baseline": "memehunter.sqlite (E 现役)",
     "change": "关掉 JUDGE 研判与试探仓（其余一律不动）",
-    "target_trades": 60
+    "target_trades": 60,
+    "label": "关掉研判"
   }
 }

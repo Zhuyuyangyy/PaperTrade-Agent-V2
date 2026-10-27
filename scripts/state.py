@@ -87,11 +87,16 @@ def _ledgers(root: Path | None = None) -> list[Path]:
     return sorted(p for p in runtime.glob("*.sqlite") if not p.name.endswith(("-wal", "-shm")))
 
 
-def _label(path: Path) -> str:
+def _label(path: Path, root: Path | None = None) -> str:
+    """What the operator sees. An arm names itself in its own config, so the
+    page never has to explain a bare file name."""
     if path.name == DEFAULT_DB:
         return "E 现役"
     if path.name == CONTROL_DB:
         return "C 对照组"
+    info = _arm_info(root, path.name.replace(".sqlite", ""))
+    if info and info.get("label"):
+        return str(info["label"])
     return path.name.replace(".sqlite", "")
 
 
@@ -278,7 +283,7 @@ def build_state(root: Path | None = None) -> dict:
             # A book that cannot be read for a moment still shows up, flagged.
             # Silently dropping it is how an experiment quietly loses a row.
             wallets.append({
-                "label": _label(path), "file": path.name, "unavailable": True,
+                "label": _label(path, root), "file": path.name, "unavailable": True,
                 "equity": 0.0, "open": 0, "closed": 0, "reasons": {}, "positions": [],
             })
             continue
@@ -288,7 +293,7 @@ def build_state(root: Path | None = None) -> dict:
             ).fetchone() is None:
                 continue
             wallet = _wallet(conn)
-            label = _label(path)
+            label = _label(path, root)
             wallets.append({
                 "label": label,
                 "file": path.name,
@@ -305,6 +310,10 @@ def build_state(root: Path | None = None) -> dict:
             continue
         finally:
             conn.close()
+    # Baseline and control first, then the arms -- a reader should hit the
+    # thing being measured before the things measuring it.
+    order = {DEFAULT_DB: 0, CONTROL_DB: 1}
+    wallets.sort(key=lambda w: (order.get(w["file"], 2), w["label"]))
     feed.sort(key=lambda e: e["ms"], reverse=True)
     return {
         "now_ms": int(time.time() * 1000),
