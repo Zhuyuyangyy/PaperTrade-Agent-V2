@@ -175,6 +175,30 @@ def _feed(conn: sqlite3.Connection, label: str, limit: int = 6) -> list[dict]:
     return events[:limit]
 
 
+def _trades(conn: sqlite3.Connection, limit: int = 40) -> list[dict]:
+    """The closed-trade ledger for the detail panel: what was bought, how long
+    it was held, why it ended, and what it paid."""
+    out = []
+    for r in conn.execute(
+        "SELECT symbol, notional_usd, opened_at_ms, exit_at_ms, exit_reason, pnl_usd, pnl_pct"
+        " FROM positions WHERE status='closed' AND exit_at_ms IS NOT NULL"
+        " ORDER BY exit_at_ms DESC LIMIT ?", (limit,),
+    ):
+        opened = int(r[2] or 0)
+        exit_at = int(r[3] or 0)
+        out.append({
+            "symbol": str(r[0]),
+            "notional": round(float(r[1] or 0), 0),
+            "opened_ms": opened,
+            "exit_ms": exit_at,
+            "hold_min": round((exit_at - opened) / 60000) if opened and exit_at else 0,
+            "reason": str(r[4]),
+            "pnl": round(float(r[5] or 0), 2),
+            "pct": round(float(r[6] or 0), 1),
+        })
+    return out
+
+
 def _agents(conn: sqlite3.Connection) -> dict:
     """The latest round's six steps, plus when the desk last moved.
 
@@ -246,6 +270,7 @@ def build_state(root: Path | None = None) -> dict:
                 **wallet,
                 **_agents(conn),
                 "history": _history(conn),
+                "trades": _trades(conn),
             })
             feed.extend(_feed(conn, label))
         except sqlite3.Error:

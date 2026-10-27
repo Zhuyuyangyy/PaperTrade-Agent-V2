@@ -95,6 +95,32 @@
   .lg{display:inline-flex;align-items:center;gap:6px}
   .sw{width:9px;height:9px;border-radius:50%}
 
+  /* ---------- stage: office + trade detail ---------- */
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:14px;align-items:start;margin-top:18px}
+  @media (max-width:1120px){.stage{grid-template-columns:1fr}}
+  .trades{max-height:556px;overflow-y:auto;padding:4px 12px 10px}
+  .trades::-webkit-scrollbar{width:8px}
+  .trades::-webkit-scrollbar-thumb{background:#232e40;border-radius:4px}
+  .trow{padding:8px 0;border-bottom:1px solid #17202d}
+  .trow .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .trow .sym{font-size:12.5px;font-weight:600}
+  .trow .pnl{font-size:12.5px;font-weight:650;font-variant-numeric:tabular-nums}
+  .tmeta{margin-top:2px;display:flex;gap:6px;flex-wrap:wrap;color:var(--dim2);font-size:10px}
+  .pill{border-radius:4px;padding:0 5px;background:#1c2534;color:var(--dim);font-size:9.5px}
+  .pill.tp{background:rgba(34,197,94,.14);color:#4ade80}
+  .pill.sl{background:rgba(255,92,92,.14);color:#ff8080}
+  .openbox{padding:8px 12px;border-bottom:1px solid var(--line);font-size:11.5px;color:var(--dim)}
+  .openbox b{color:var(--ink);font-weight:600}
+
+  /* ---------- summary ---------- */
+  .sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:12px 14px 14px}
+  @media (max-width:900px){.sumgrid{grid-template-columns:1fr}}
+  svg.sum{display:block;width:100%;height:250px;background:linear-gradient(180deg,#151c29,#111722);border-radius:10px}
+  .sbar{stroke:none}
+  .slbl{fill:#8794a8;font-size:10px}
+  .sval{font-size:9.5px;font-weight:600}
+  .stitle{fill:#5d6b80;font-size:10px;font-weight:600;letter-spacing:.4px}
+
   /* ---------- feed ---------- */
   .feed{margin-top:16px;background:linear-gradient(180deg,var(--panel2),var(--panel));
         border:1px solid var(--line);border-radius:14px;padding:12px 14px}
@@ -142,6 +168,7 @@
   <div class="lgd" id="legend"></div>
 </section>
 
+<div class="stage">
 <section class="panel">
   <div class="pbar">
     <span class="t" id="floor-title">办公室</span>
@@ -154,7 +181,27 @@
     <span class="lg"><span class="sw" style="background:#3f4d6b"></span>刚做完（本轮内）</span>
     <span class="lg"><span class="sw" style="background:#ff5c5c"></span>这一步失败</span>
     <span class="lg"><span class="sw" style="background:#3a4457"></span>待命区（本轮没它的活）</span>
-    <span class="lg" style="margin-left:auto">HEAD 沿着虚线走 = 当前一轮的进度</span>
+    <span class="lg" style="margin-left:auto">光点沿着虚线走 = 当前一轮的进度</span>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="pbar">
+    <span class="t">交易明细</span>
+    <span class="m" id="trade-book"></span>
+  </div>
+  <div class="openbox" id="openbox"></div>
+  <div class="trades" id="trades"></div>
+</section>
+</div>
+
+<h2 class="sec-title" style="margin-top:18px">汇总 · 钱去哪了 / 为什么出场</h2>
+<section class="panel">
+  <div class="pbar"><span class="t">按账本分解</span>
+    <span class="m">毛利是价格变动，成本是过路费，两者相减才是已实现净</span></div>
+  <div class="sumgrid">
+    <svg class="sum" id="sum-money" viewBox="0 0 520 250"></svg>
+    <svg class="sum" id="sum-reasons" viewBox="0 0 520 250"></svg>
   </div>
 </section>
 
@@ -342,6 +389,96 @@ function renderChart(){
   }).join("");
 }
 
+/* ---------- trade detail ---------- */
+function renderTrades(){
+  const w=state.wallets.find(x=>x.file===current)||state.wallets.find(x=>x.run_id)||state.wallets[0];
+  if(!w) return;
+  document.getElementById("trade-book").textContent = w.label+" · 最近 "+(w.trades||[]).length+" 笔";
+  const pos=(w.positions||[]).map(p=>`${p.symbol} ${p.pct>=0?"+":""}${p.pct}%`).join(" · ");
+  document.getElementById("openbox").innerHTML =
+    `持仓中 <b>${w.open}</b> 笔 · 浮盈 <b class="${cls(w.unrealized||0)}">${sg(w.unrealized||0)}</b><br>${cut(pos||"空仓",64)}`;
+  const rows=(w.trades||[]);
+  document.getElementById("trades").innerHTML = rows.length ? rows.map(t=>{
+    const rc = t.reason==="TAKE_PROFIT"?"tp":(t.reason==="STOP_LOSS"?"sl":"");
+    return `<div class="trow">
+      <div class="top"><span class="sym">${esc(t.symbol)}</span>
+        <span class="pnl ${cls(t.pnl)}">${sg(t.pnl)} <span style="font-weight:400">(${t.pct>=0?"+":""}${t.pct}%)</span></span></div>
+      <div class="tmeta"><span class="pill ${rc}">${t.reason}</span>
+        <span>${t.hold_min} 分钟</span><span>$${t.notional}</span><span>${ago(t.exit_ms)}</span></div>
+    </div>`;
+  }).join("") : `<div class="trow" style="color:var(--dim2)">这本账还没有平仓</div>`;
+}
+
+/* ---------- summary charts ---------- */
+function fitViewBox(svg,h){
+  const w=Math.max(420, Math.round(svg.clientWidth||520));
+  svg.setAttribute("viewBox","0 0 "+w+" "+h);
+  return w;
+}
+function renderSummary(){
+  const books=state.wallets.filter(w=>!w.unavailable);
+  if(!books.length) return;
+
+  // --- where the money went: gross, toll, realised net, per book ---
+  const svg=document.getElementById("sum-money"); const H=250; const W=fitViewBox(svg,H);
+  const ml=86,mr=64,mt=30,mb=16, iw=W-ml-mr;
+  // toll is whatever sits between the price move and the booked result
+  const tollOf=w=>(w.gross||0)-(w.realized_net||0);
+  const vals=[]; books.forEach(w=>{vals.push(w.gross||0, -tollOf(w), w.realized_net||0);});
+  const lo=Math.min(0,...vals), hi=Math.max(0,...vals), span=(hi-lo)||1;
+  const zx=ml+(-lo/span)*iw;
+  const X=v=>ml+((v-lo)/span)*iw;
+  const rowH=(H-mt-mb)/books.length;
+  let g=`<text class="stitle" x="${ml}" y="16">每本账：毛利 / 成本 / 已实现净</text>`;
+  g+=`<line class="zero" x1="${zx}" y1="${mt-6}" x2="${zx}" y2="${H-mb}"/>`;
+  books.forEach((w,i)=>{
+    const y0=mt+i*rowH, bh=Math.min(7,rowH/5);
+    const rows=[
+      {v:w.gross||0, c:"#38bdf8"}, {v:-tollOf(w), c:"#5d6b80"}, {v:w.realized_net||0, c:"#a78bfa"}
+    ];
+    g+=`<text class="slbl" x="${ml-8}" y="${y0+rowH/2+2}" text-anchor="end">${w.label}</text>`;
+    rows.forEach((r,k)=>{
+      const y=y0+rowH/2-1.5*bh+k*(bh+2)-bh;
+      const x1=Math.min(zx,X(r.v)), x2=Math.max(zx,X(r.v));
+      g+=`<rect class="sbar" x="${x1}" y="${y}" width="${Math.max(1,x2-x1)}" height="${bh}" rx="2" fill="${r.c}"/>`;
+    });
+    const nv=w.realized_net||0;
+    g+=`<text class="sval" x="${W-mr+6}" y="${y0+rowH/2+3}" fill="${nv>=0?'#4ade80':'#ff8080'}">${sg(nv)}</text>`;
+  });
+  svg.innerHTML=g;
+
+  // --- why trades ended: stacked counts per book ---
+  const svg2=document.getElementById("sum-reasons"); const W2=fitViewBox(svg2,H);
+  const ml2=86,mr2=54, iw2=W2-ml2-mr2;
+  const kinds=["TAKE_PROFIT","TIMEOUT","STOP_LOSS"];
+  const col={TAKE_PROFIT:"#22c55e",TIMEOUT:"#3f4d6b",STOP_LOSS:"#ff5c5c"};
+  const tot=books.map(w=>kinds.reduce((a,k)=>a+((w.reasons||{})[k]||0),0));
+  const mx=Math.max(1,...tot);
+  let g2=`<text class="stitle" x="${ml2}" y="16">出场原因构成（笔数）</text>`;
+  books.forEach((w,i)=>{
+    const y0=mt+i*rowH, bh=Math.min(16,rowH*0.5);
+    g2+=`<text class="slbl" x="${ml2-8}" y="${y0+rowH/2+3}" text-anchor="end">${w.label}</text>`;
+    let x=ml2;
+    kinds.forEach(k=>{
+      const n=(w.reasons||{})[k]||0; if(!n) return;
+      const bw=(n/mx)*iw2;
+      g2+=`<rect class="sbar" x="${x}" y="${y0+rowH/2-bh/2}" width="${Math.max(1,bw)}" height="${bh}" fill="${col[k]}"/>`;
+      if(bw>18) g2+=`<text x="${x+bw/2}" y="${y0+rowH/2+3.5}" text-anchor="middle" fill="#0b0f16"
+        font-size="9.5" font-weight="700">${n}</text>`;
+      x+=bw;
+    });
+    g2+=`<text class="sval" x="${W2-mr2+6}" y="${y0+rowH/2+3}" fill="#8794a8">${tot[i]}</text>`;
+  });
+  // legend
+  let lx=ml2;
+  kinds.forEach(k=>{
+    g2+=`<rect x="${lx}" y="${H-12}" width="9" height="9" rx="2" fill="${col[k]}"/>
+         <text class="slbl" x="${lx+13}" y="${H-4}">${k}</text>`;
+    lx+= 24+ k.length*6;
+  });
+  svg2.innerHTML=g2;
+}
+
 /* ---------- the room ---------- */
 function room(){
   let s="";
@@ -450,7 +587,7 @@ async function tick(){
     if(!current){const f=state.wallets.find(w=>w.run_id); if(f) current=f.file;}
     document.getElementById("live").textContent="实时 "+new Date().toLocaleTimeString();
     document.getElementById("dot").className="dot";
-    renderWallets(); renderChart(); renderTabs(); renderFeed(); draw();
+    renderWallets(); renderChart(); renderTabs(); renderFeed(); draw(); renderTrades(); renderSummary();
   }catch(e){
     document.getElementById("live").textContent="连接失败";
     document.getElementById("dot").className="dot bad";
