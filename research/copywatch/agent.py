@@ -407,6 +407,13 @@ class CopyWatchAgent:
             return {**summary, "status": "waiting_for_data"}
 
         actionable_window_ms = max(10 * 60_000, int(self.config["poll_seconds"]) * 1000 * 12)
+        # Symbol policy for signals, not just discovery: stables and wrapped
+        # assets can never be meme momentum, and copying them wastes slots.
+        # The list lives in event_source.pool_discovery.exclude_symbols.
+        excluded_symbols = {
+            str(x).upper()
+            for x in ((source_cfg.get("pool_discovery") or {}).get("exclude_symbols") or [])
+        }
 
         for pool_cfg in pools_cfg:
             cursor_key = f"cursor:{pool_cfg['network']}:{pool_cfg['pool']}"
@@ -457,6 +464,19 @@ class CopyWatchAgent:
                                    f"${float(policy['min_notional_usd']):,.0f}）",
                         )
                 if actionable and event.kind == "buy" and float(event.usd) >= min_usd:
+                    # exclude_symbols used to filter only pool discovery, so a
+                    # configured pool's WETH/USDC flow was still copied. The
+                    # exclusion list is a symbol policy; it applies to signals.
+                    if event.base_symbol.upper() in excluded_symbols:
+                        summary["skips"] += 1
+                        store.add_event(
+                            conn, ts_ms=now_ms, tag="SKIP", wallet=event.wallet,
+                            symbol=event.base_symbol, usd=event.usd,
+                            title=f"[SKIP] {event.base_symbol} 在排除列表",
+                            detail="event_source.exclude_symbols 命中的标的不产生跟单信号"
+                                   "（稳定币/封装资产不可能是 meme 动量）",
+                        )
+                        continue
                     cooling = self._symbol_cooling(
                         conn, event.base_symbol, event.network, now_ms,
                         int(policy.get("symbol_cooldown_minutes", 30)) * 60_000,

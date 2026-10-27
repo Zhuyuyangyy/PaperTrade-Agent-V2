@@ -17,7 +17,7 @@ START_MS = 1_790_000_000_000
 BASE_POOL = {
     "network": "base",
     "pool": "0x72ab388e2e2f6facef59e3c3fa2c4e29011c2d38",
-    "base_symbol": "WETH",
+    "base_symbol": "PEPE",
     "quote_symbol": "USDC",
     "fee_bps": 1.0,
     "gas_usd": 0.02,
@@ -25,7 +25,7 @@ BASE_POOL = {
 ETH_POOL = {
     "network": "eth",
     "pool": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
-    "base_symbol": "WETH",
+    "base_symbol": "PEPE",
     "quote_symbol": "USDC",
     "fee_bps": 5.0,
     "gas_usd": 2.4,

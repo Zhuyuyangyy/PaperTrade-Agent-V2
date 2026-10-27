@@ -79,8 +79,12 @@ DEFAULT_CONFIG: dict = {
         "model": "step-5-preview",
         "timeout_seconds": 25,
         "max_per_round": 3,
-        "rule_weight": 0.6,
-        "llm_weight": 0.4,
+        # 0.85/0.15: the first calibration run (2026-10-27) showed no monotonic
+        # separation (15m Spearman -0.17, 30m middle-bucket-best, 60m flat), so
+        # the opinion is a tiebreaker until it earns more. Restore 0.6/0.4 only
+        # on consecutive days of positive rank correlation.
+        "rule_weight": 0.85,
+        "llm_weight": 0.15,
     },
     # Evaluators propose config changes; a human applies them. Auto-tuning is
     # automated overfitting, so nothing here edits config by itself.

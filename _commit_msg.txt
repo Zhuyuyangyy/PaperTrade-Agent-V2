@@ -1,0 +1,32 @@
+evaluate + fix: JUDGE loses its unearned weight, exclusion list finally applies
+
+The operator asked for an evaluation and optimisation. The evaluation found
+the first JUDGE calibration data (n=27/30/20 across 15m/30m/60m) and it is
+not flattering:
+
+  15m: Spearman -0.17 (inverted: the 40-60 bucket beat 60-80 by 13.5pp)
+  30m: Spearman +0.25 but the MIDDLE bucket is best, not the top
+  60m: indistinguishable (0.10)
+
+No monotonic separation at any horizon. A 0.4 weight on that opinion was
+given before any calibration existed. It is now 0.15 -- a tiebreaker, not a
+co-pilot -- with the restore condition written into config and code: bring
+back 0.4 only on consecutive days of positive rank correlation.
+
+The calibration report gained the question that actually matches what JUDGE
+claims to measure. It scores STRUCTURAL HEALTH (authority, holders,
+liquidity), not "this will pump", so "do high scores earn more" was always
+the wrong test. It now also reports the left tail: worst return and >=30%
+crash counts for the low-score side vs the high-score side. First data: no
+discriminating power yet (zero crashes in the sample window) -- the opinion
+is neither convicted nor acquitted, which is why the weight went to a
+tiebreaker and not to zero.
+
+Fixed: exclude_symbols never applied to signals. The list lives in
+event_source.pool_discovery.exclude_symbols, but the new signal filter read
+it from event_source top level, where it does not exist -- so D kept copying
+WETH/USDC flow all week (the "WETH 未排除" open item). The filter now reads
+the right section; the tape shows [SKIP] WETH 在排除列表. Test fixtures that
+traded WETH moved to PEPE so they test the risk gate, not the exclusion.
+
+153 tests pass.

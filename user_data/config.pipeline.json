@@ -28,10 +28,11 @@
     "model": "step-5-preview",
     "timeout_seconds": 25,
     "max_per_round": 3,
-    "rule_weight": 0.6,
-    "llm_weight": 0.4,
+    "rule_weight": 0.85,
+    "llm_weight": 0.15,
     "_note": "LLM 只研判通过 veto 的候选，只重排不放行；无 key 或失败自动降级为规则分。OpenAI 兼容，换服务商只改 base_url/model/api_key_env。",
-    "max_tokens": 1500
+    "max_tokens": 1500,
+    "weight_note": "0.4 was given before any calibration existed. First calibration data (2026-10-27 16:00, n=27/30/20 across 15m/30m/60m) shows NO monotonic separation: 15m Spearman -0.17 (inverted), 30m +0.25 with the MIDDLE bucket best, 60m indistinguishable. Until the calibration shows a monotonic positive rank correlation across three consecutive days, the opinion is a tiebreaker at most. Restore 0.4 only on that evidence, not on hope."
   },
   "tiers": {
     "probe_enabled": true,
