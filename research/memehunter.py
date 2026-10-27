@@ -24,6 +24,7 @@ Everything is paper. No wallet, no key, no signing.
 from __future__ import annotations
 
 import json
+import socket
 import sqlite3
 import time
 import urllib.error
@@ -32,6 +33,11 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+# Bound every socket operation, reads included: on a flaky network a
+# half-open connection can hold a scan for tens of minutes (urlopen's timeout
+# only covers the connect), and the desk loop looks dead while it waits.
+socket.setdefaulttimeout(30.0)
 
 JUP = "https://lite-api.jup.ag"
 # Search terms are rotated rather than looped so one scan stays inside the

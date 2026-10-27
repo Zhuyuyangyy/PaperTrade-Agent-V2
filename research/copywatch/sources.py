@@ -6,11 +6,16 @@ no wallet, no private key, and no signing code in this module.
 from __future__ import annotations
 
 import json
+import socket
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
+
+# Same reason as the E desk: urlopen's timeout covers the connect only, and a
+# read on a half-open socket once held the D loop for hours. Bound the reads.
+socket.setdefaulttimeout(30.0)
 
 DEFAULT_TIMEOUT = 12.0
 USER_AGENT = "PaperTrade-CopyWatch/0.1 (paper-only research; read-only public data)"

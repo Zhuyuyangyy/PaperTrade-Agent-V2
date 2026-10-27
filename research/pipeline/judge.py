@@ -19,10 +19,19 @@ from __future__ import annotations
 
 import hashlib
 import json
+import socket
 import sqlite3
+import time
 import urllib.request
 from pathlib import Path
 from datetime import datetime, timezone
+
+# A flaky network does not just fail a call, it HANGS it: urlopen's timeout
+# covers the connection, but resp.read() on a half-open socket can block for
+# tens of minutes until the OS gives up -- which is how the desk loop looked
+# "dead" while it was actually waiting on a read. A default socket timeout
+# makes every later socket operation (including read) bounded too.
+socket.setdefaulttimeout(60.0)
 
 JUDGE_SCHEMA = """
 CREATE TABLE IF NOT EXISTS llm_judgments (
@@ -142,9 +151,17 @@ def judge_token(token, cfg: dict) -> dict | None:
         method="POST",
     )
     started = _now_ms()
+    t0 = time.monotonic()
+    budget_s = float(cfg.get("timeout_seconds", 25))
     try:
-        with urllib.request.urlopen(request, timeout=float(cfg.get("timeout_seconds", 25))) as resp:
-            payload = json.loads(resp.read().decode("utf-8"))
+        # Per-call socket timeout AND a wall-clock budget for the whole call
+        # (connect + read + parse). The socket timeout alone once let a
+        # half-open connection hold the desk loop for 35 minutes.
+        with urllib.request.urlopen(request, timeout=budget_s) as resp:
+            raw = resp.read()
+        if time.monotonic() - t0 > budget_s * 3:
+            return None
+        payload = json.loads(raw.decode("utf-8"))
     except Exception:  # noqa: BLE001 - any failure degrades to "no opinion"
         return None
     latency = _now_ms() - started
