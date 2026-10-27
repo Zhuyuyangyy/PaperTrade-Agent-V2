@@ -180,6 +180,19 @@ class Pipeline:
                     self.label_result = mark_from_tokens(self.desk.conn, ctx.get("tokens", []), ctx.started_ms)
                 except Exception as exc:  # noqa: BLE001 - labelling must never stop the desk
                     self.label_error = f"{type(exc).__name__}: {exc}"
+                # Money-flow shadows: what D's tracked wallets are buying right
+                # now, recorded without trading it. Every 20th round only --
+                # it copies D's ledger to read it, and this is evidence
+                # gathering, not a signal path.
+                if run_id % 20 == 0:
+                    try:
+                        from ..replay.moneyflow import collect_signals, mark_signals
+                        self.moneyflow_result = {
+                            "collected": collect_signals(self.root),
+                            "marked": mark_signals(self.root),
+                        }
+                    except Exception as exc:  # noqa: BLE001 - shadow recording must never stop the desk
+                        self.moneyflow_error = f"{type(exc).__name__}: {exc}"
                 if self.cfg.get("counterpart", {}).get("enabled"):
                     self._run_counterpart(ctx)
 

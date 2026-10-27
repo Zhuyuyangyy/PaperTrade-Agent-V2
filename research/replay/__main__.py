@@ -30,7 +30,7 @@ def _connect(root: Path) -> sqlite3.Connection:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Replay Engine V1 (paper only, offline)")
-    parser.add_argument("command", choices=["labels", "replay", "cost", "calibration", "signals", "dmarks"], nargs="?", default="replay")
+    parser.add_argument("command", choices=["labels", "replay", "cost", "calibration", "signals", "dmarks", "timeout", "moneyflow", "mfmarks"], nargs="?", default="replay")
     parser.add_argument("--params", default="", help="JSON file with replay params")
     args = parser.parse_args(argv)
 
@@ -68,6 +68,23 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "cost":
         print(cost_sensitivity(root, params))
+        return 0
+
+    if args.command == "moneyflow":
+        from .moneyflow import collect_signals, mark_signals, compare_sources, format_compare
+        print(json.dumps(collect_signals(root), ensure_ascii=False))
+        print(json.dumps(mark_signals(root), ensure_ascii=False))
+        print(format_compare(compare_sources(root)))
+        return 0
+
+    if args.command == "mfmarks":
+        from .moneyflow import mark_signals
+        print(json.dumps(mark_signals(root), ensure_ascii=False))
+        return 0
+
+    if args.command == "timeout":
+        from .timeout_replay import counterfactual, format_report
+        print(format_report(counterfactual(root)))
         return 0
 
     if args.command == "signals":
