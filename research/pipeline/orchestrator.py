@@ -17,6 +17,7 @@ from typing import Any
 from ..counterpart import CounterpartDesk
 from ..memehunter import Desk
 from .agents import AGENT_ORDER, AgentResult, Context, PIPELINE_VERSION, load_config, utc_now_ms
+from .roundlock import acquire as acquire_round, release as release_round
 
 KV_SCHEMA = """
 CREATE TABLE IF NOT EXISTS pipeline_kv (
@@ -403,11 +404,21 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "once":
-            summary = pipe.run_once()
-            for step in summary["steps"]:
-                flag = "ok " if step["ok"] else "ERR"
-                print(f"[{flag}] {step['agent']:<9} {step['summary']}")
-            print(f"[run {summary['run_id']}] equity={summary['equity_usdt']}")
+            # A manual round must not pile onto a running one. The watchdog's
+            # liveness probes have been seen running two at a time, and two
+            # rounds on one ledger is how "database is locked" reaches JUDGE.
+            ok, why = acquire_round(root)
+            if not ok:
+                print(f"[once] 跳过：{why}", flush=True)
+                return 0
+            try:
+                summary = pipe.run_once()
+                for step in summary["steps"]:
+                    flag = "ok " if step["ok"] else "ERR"
+                    print(f"[{flag}] {step['agent']:<9} {step['summary']}", flush=True)
+                print(f"[run {summary['run_id']}] equity={summary['equity_usdt']}", flush=True)
+            finally:
+                release_round(root)
             return 0
         # status: latest run per agent
         rows = pipe.desk.conn.execute(
