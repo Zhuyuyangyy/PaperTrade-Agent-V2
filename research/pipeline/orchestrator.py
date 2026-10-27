@@ -249,17 +249,79 @@ def _default_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def exit_round(pipe: "Pipeline") -> dict:
+    """One mark-and-exit pass: the only work that has to run every minute.
+
+    An entry needs a whole round -- scan, veto, judge, fill. A stop-loss needs
+    none of that, only a price. Running marks inside the entry round meant a
+    -12% stop was only checked every 4-5 minutes, so a token that gapped from
+    -8% to -21% between two checks filled at -21%: seven of those fills cost
+    the book about $100, three times what all 62 timeouts paid in fees.
+
+    It goes through ExitAgent like every other round -- the orchestrator still
+    has no money powers of its own, it just decides how often the agent runs.
+    """
+    from .agents import ExitAgent
+
+    ctx = Context(root=pipe.root, cfg=pipe.cfg, started_ms=utc_now_ms(), desk=pipe.desk)
+    result = ExitAgent().run(ctx)
+    if not result.ok:
+        return {"marked": 0, "closed": [], "stale": [], "error": result.detail.get("error")}
+    return result.detail.get("result") or {}
+
+
+def run_exit_loop(root: Path, interval: int = 60) -> int:
+    """Mark and exit on their own clock, independent of the entry pipeline."""
+    import time
+
+    from ..guards import guard_round
+
+    log_path = root / "runtime" / "memehunter" / "loop.log"
+    pipe = Pipeline(root)
+    print(f"[exit-loop] every {interval}s · Ctrl-C or a STOP file to stop", flush=True)
+    try:
+        while True:
+            may_run, note = guard_round(root, log_path)
+            if not may_run:
+                print(f"[exit-loop] halted: {note}", flush=True)
+                return 0
+            try:
+                result = exit_round(pipe)
+            except Exception as exc:  # noqa: BLE001 - a bad pass must not kill the loop
+                print(f"[exit-loop] pass failed: {type(exc).__name__}: {exc}", flush=True)
+                try:
+                    pipe.desk.conn.rollback()
+                except Exception:  # noqa: BLE001 - rollback is best effort
+                    pass
+                time.sleep(interval)
+                continue
+            for closed in result.get("closed") or []:
+                print(
+                    f"[exit] {closed['symbol']} {closed['reason']} {closed['pnl_usd']:+.2f}",
+                    flush=True,
+                )
+            stale = result.get("stale") or []
+            if stale:
+                print(f"[exit] 无报价：{', '.join(stale[:3])}", flush=True)
+            time.sleep(interval)
+    finally:
+        pipe.close()
+
+
 def main(argv: list[str] | None = None) -> int:
     import argparse
 
     parser = argparse.ArgumentParser(description="Six-agent paper desk pipeline")
-    parser.add_argument("command", choices=["once", "loop", "status", "proposals"], nargs="?", default="once")
+    parser.add_argument("command", choices=["once", "loop", "status", "proposals", "exit-loop"], nargs="?", default="once")
     parser.add_argument("--sleep", type=int, default=100, help="loop interval seconds")
+    parser.add_argument("--interval", type=int, default=60, help="exit-loop seconds between mark passes")
     args = parser.parse_args(argv)
 
     root = _default_root()
     pipe = Pipeline(root)
     try:
+        if args.command == "exit-loop":
+            return run_exit_loop(root, interval=args.interval)
         if args.command == "loop":
             import time
             from ..guards import guard_round
@@ -280,6 +342,14 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"[run {summary['run_id']}] equity={summary['equity_usdt']}", flush=True)
                 except Exception as exc:  # noqa: BLE001 - a bad round must not kill the loop
                     print(f"[loop] round failed: {type(exc).__name__}: {exc}", flush=True)
+                    # A failed statement leaves the connection inside a
+                    # transaction, and an open transaction holds the WAL write
+                    # lock -- so one bad round would lock out the exit loop for
+                    # as long as it took to notice. Roll back before retrying.
+                    try:
+                        pipe.desk.conn.rollback()
+                    except Exception:  # noqa: BLE001 - rollback is best effort
+                        pass
                 time.sleep(args.sleep)
         if args.command == "proposals":
             from .evaluators import ensure_schema

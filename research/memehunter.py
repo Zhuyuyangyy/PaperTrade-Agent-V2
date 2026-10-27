@@ -423,8 +423,15 @@ def entry_slippage_bps(notional: float, liquidity_usd: float) -> float:
 
 
 def connect(path: Path) -> sqlite3.Connection:
-    conn = sqlite3.connect(str(path), timeout=10.0)
+    # WAL is not optional: the mark/exit loop and the entry pipeline both write
+    # this ledger, and a rollback journal makes the second writer wait on an
+    # exclusive lock -- which is how a -12% stop becomes a "database is locked"
+    # message and then a -21% fill. The long busy timeout is the other half:
+    # writers still serialise, they just wait instead of failing.
+    conn = sqlite3.connect(str(path), timeout=15.0)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=15000")
     conn.executescript(SCHEMA)
     return conn
 
@@ -634,6 +641,11 @@ class Desk:
                 closed.append(self._close(pos, price, reason, at))
         self.conn.commit()
         self._sample_equity(at)
+        # The equity sample is a write too. Committing it is not tidiness: an
+        # uncommitted transaction holds the WAL write lock until the next
+        # commit, which on the exit loop is a full minute later -- long enough
+        # for every entry round in between to fail with "database is locked".
+        self.conn.commit()
         return {"marked": marked, "closed": closed, "stale": stale}
 
     def _close(self, pos: sqlite3.Row, price: float, reason: str, at: int) -> dict:
