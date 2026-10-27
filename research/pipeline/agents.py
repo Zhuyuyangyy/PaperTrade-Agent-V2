@@ -144,6 +144,26 @@ class BaseAgent:
         raise NotImplementedError
 
     # ---------- helpers ----------
+    def _failed(self, ctx: Context, result, elapsed: int, defaults: dict, what: str) -> AgentResult:
+        """Turn a swallowed exception into the step's real verdict.
+
+        `_timed` returns {"error": ...} on failure, so unpacking it as a tuple
+        raises a second ValueError ("expected 2, got 1") that buries the actual
+        cause and leaves ctx half-populated. Every agent goes through here
+        instead, and leaves downstream agents a well-formed empty hand.
+        """
+        for key, value in defaults.items():
+            ctx.put(key, value)
+        err = result.get("error", "unknown") if isinstance(result, dict) else str(result)
+        return AgentResult(
+            agent=self.name,
+            ok=False,
+            summary=f"{what}失败：{err}",
+            produced=0,
+            elapsed_ms=elapsed,
+            detail={"failed": True, "error": err},
+        )
+
     def _timed(self, ctx: Context, fn):
         started = time.monotonic()
         try:
@@ -174,18 +194,14 @@ class SearchAgent(BaseAgent):
             record_candidates(ctx.desk.conn, scan_id, ctx.started_ms, tokens, ctx.desk.cfg)
             return tokens[:limit], errors
 
-        (tokens, errors), elapsed, ok = self._timed(ctx, work)
+        result, elapsed, ok = self._timed(ctx, work)
         if not ok:
-            # _timed turns a raised error into {"error": ...}; unpacking that
-            # as a pair raises a second, misleading ValueError ("expected 2,
-            # got 1") that hides the real failure. Surface the real one.
-            ctx.put("tokens", [])
-            ctx.put("source_errors", [])
-            return AgentResult(
-                agent=self.name, ok=False,
-                summary=f"拉取代币失败：{(tokens or {}).get('error', 'unknown')}",
-                produced=0, elapsed_ms=elapsed, detail={"failed": True},
+            return self._failed(
+                ctx, result, elapsed,
+                {"tokens": [], "source_errors": []},
+                "拉取代币",
             )
+        tokens, errors = result
         ctx.put("tokens", tokens)
         ctx.put("source_errors", errors)
         summary = f"{len(tokens)} 个代币入池"
@@ -256,7 +272,14 @@ class RiskAgent(BaseAgent):
             probe.sort(key=lambda item: item[0], reverse=True)
             return ranked[:top_n], rejects, effective_min, probe[: int(ctx.cfg.get("tiers", {}).get("probe_pool", 6))]
 
-        (ranked, rejects, effective_min, probe), elapsed, ok = self._timed(ctx, work)
+        result, elapsed, ok = self._timed(ctx, work)
+        if not ok:
+            return self._failed(
+                ctx, result, elapsed,
+                {"survivors": [], "rejects": {}, "probe_pool": [], "effective_min_score": min_score},
+                "过滤候选",
+            )
+        ranked, rejects, effective_min, probe = result
         ctx.put("survivors", ranked)
         ctx.put("rejects", rejects)
         ctx.put("probe_pool", probe)
@@ -322,7 +345,14 @@ class SmartMoneyAgent(BaseAgent):
                 conn.close()
             return wallets, buying, ""
 
-        (wallets, buying, note), elapsed, ok = self._timed(ctx, work)
+        result, elapsed, ok = self._timed(ctx, work)
+        if not ok:
+            return self._failed(
+                ctx, result, elapsed,
+                {"smart_wallets": [], "smart_buying": [], "smart_from_pool": []},
+                "读取聪明钱",
+            )
+        wallets, buying, note = result
 
         # The on-chain swap ledger only covers the pools CopyWatch watches
         # (WETH/USDC and friends), which never overlap the meme universe E
@@ -545,7 +575,14 @@ class EntryAgent(BaseAgent):
                     skipped.append({"symbol": token.symbol, "reason": result.get("reason")})
             return opened, skipped
 
-        (opened, skipped), elapsed, ok = self._timed(ctx, work)
+        result, elapsed, ok = self._timed(ctx, work)
+        if not ok:
+            return self._failed(
+                ctx, result, elapsed,
+                {"entries": [], "probe_reason": {}},
+                "开仓",
+            )
+        opened, skipped = result
         ctx.put("entries", opened)
         summary = f"开仓 {len(opened)} 笔"
         probes = [e for e in opened if e.get("tier") == "probe"]
