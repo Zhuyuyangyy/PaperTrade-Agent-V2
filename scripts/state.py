@@ -112,7 +112,7 @@ def _wallet(conn: sqlite3.Connection) -> dict:
     }
 
 
-def _history(conn: sqlite3.Connection, points: int = 40) -> list[list[float]]:
+def _history(conn: sqlite3.Connection, points: int = 60) -> list[list[float]]:
     """Equity over time, thinned to `points`, oldest first.
 
     A wallet card with only a current number cannot show whether an arm has
@@ -120,15 +120,22 @@ def _history(conn: sqlite3.Connection, points: int = 40) -> list[list[float]]:
     question the comparison exists to answer.
     """
     rows = list(conn.execute(
-        "SELECT at_ms, equity_usd FROM equity ORDER BY at_ms DESC LIMIT 400"
+        "SELECT at_ms, equity_usd FROM equity ORDER BY at_ms DESC LIMIT 3000"
     ))
     if not rows:
         return []
     rows.reverse()
-    step = max(1, len(rows) // points)
-    out = [[int(r[0]), round(float(r[1] or 0), 2)] for r in rows[::step]]
-    if out[-1][0] != int(rows[-1][0]):
-        out.append([int(rows[-1][0]), round(float(rows[-1][1] or 0), 2)])
+    # Even thinning across two days leaves five points in the last hour, which
+    # is useless for the one-hour window the chart opens on. Keep the newest
+    # stretch at full resolution and thin only the older part.
+    recent_n = min(len(rows), 150)
+    recent = rows[-recent_n:]
+    older = rows[: len(rows) - recent_n]
+    out: list[list[float]] = []
+    if older:
+        step = max(1, len(older) // max(1, points - recent_n))
+        out += [[int(r[0]), round(float(r[1] or 0), 2)] for r in older[::step]]
+    out += [[int(r[0]), round(float(r[1] or 0), 2)] for r in recent]
     return out
 
 
