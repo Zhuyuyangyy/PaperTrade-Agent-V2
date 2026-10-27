@@ -18,8 +18,18 @@ if str(ROOT) not in sys.path:
 
 from scripts.dashboard import build_html
 from scripts.room import build_room_html
+from scripts.state import build_state
 
 REFRESH_META = '<meta http-equiv="refresh" content="15">'
+
+
+def render_office_page() -> str:
+    """The office wall: static shell plus a 3-second poll of /api/state."""
+    path = ROOT / "templates" / "office.html"
+    page = path.read_text(encoding="utf-8")
+    if "</body>" not in page:
+        raise RuntimeError("Office template is incomplete")
+    return page
 
 
 def render_live_page() -> str:
@@ -49,9 +59,26 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_json(self, payload: dict) -> None:
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store, max-age=0")
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_GET(self) -> None:  # noqa: N802 - stdlib handler interface
-        if self.path in ("/", "/index.html"):
+        # The office wall is the front page now: wallets side by side and the
+        # six agents on a floor you can watch. The old report pages stay put.
+        if self.path in ("/", "/index.html", "/office", "/office/"):
+            self._send_html(render_office_page())
+            return
+        if self.path in ("/classic", "/classic/"):
             self._send_html(render_live_page())
+            return
+        if self.path == "/api/state":
+            self._send_json(build_state())
             return
         if self.path in ("/room", "/room/", "/room.html"):
             self._send_html(render_room_page())
@@ -85,7 +112,7 @@ def main() -> None:
     if not 1024 <= port <= 65535:
         raise SystemExit("PAPER_DASHBOARD_PORT must be between 1024 and 65535")
     server = ThreadingHTTPServer(("127.0.0.1", port), DashboardHandler)
-    print(f"PaperTrade read-only dashboard: http://127.0.0.1:{port}", flush=True)
+    print(f"PaperTrade read-only dashboard: http://127.0.0.1:{port}  (/office = 办公室, /classic = 报表)", flush=True)
     print("Bound to localhost only; refreshes every 15 seconds; no order endpoints.", flush=True)
     try:
         server.serve_forever(poll_interval=0.5)
