@@ -136,12 +136,12 @@ def test_pipeline_writes_an_auditable_run(tmp_path: Path, monkeypatch: pytest.Mo
 
     real_desk_init = mh.Desk.__init__
 
-    def fake_init(self, root, cfg=None):
+    def fake_init(self, root, cfg=None, db_name="memehunter.sqlite"):
         self.root = tmp_path
         self.cfg = {**mh.DEFAULT_CONFIG, **(cfg or {})}
         (tmp_path / "runtime" / "memehunter").mkdir(parents=True, exist_ok=True)
         self.runtime = tmp_path / "runtime" / "memehunter"
-        self.db_path = self.runtime / "memehunter.sqlite"
+        self.db_path = self.runtime / db_name
         self.conn = mh.connect(self.db_path)
 
     monkeypatch.setattr(mh.Desk, "__init__", fake_init)

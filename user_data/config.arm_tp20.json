@@ -1,0 +1,83 @@
+{
+  "_comment": "实验臂 arm_tp20（Paper only）。",
+  "mode": "dry_run",
+  "search": {
+    "max_candidates": 400
+  },
+  "risk": {
+    "top_n": 3,
+    "min_score": 45.0
+  },
+  "smart_money": {
+    "min_notional_usd": 20000.0,
+    "recent_hours": 24,
+    "limit": 12,
+    "score_boost": 6.0
+  },
+  "entry": {
+    "stop_loss_pct": -12.0,
+    "max_entries_per_round": 2
+  },
+  "exit": {
+    "enabled": true
+  },
+  "judge": {
+    "enabled": true,
+    "base_url": "https://api.stepfun.com/step_plan/v1",
+    "api_key_env": "STEPFUN_API_KEY",
+    "model": "step-5-preview",
+    "timeout_seconds": 25,
+    "max_per_round": 3,
+    "rule_weight": 0.85,
+    "llm_weight": 0.15,
+    "_note": "LLM 只研判通过 veto 的候选，只重排不放行；无 key 或失败自动降级为规则分。OpenAI 兼容，换服务商只改 base_url/model/api_key_env。",
+    "max_tokens": 1500,
+    "weight_note": "0.4 was given before any calibration existed. First calibration data (2026-10-27 16:00, n=27/30/20 across 15m/30m/60m) shows NO monotonic separation: 15m Spearman -0.17 (inverted), 30m +0.25 with the MIDDLE bucket best, 60m indistinguishable. Until the calibration shows a monotonic positive rank correlation across three consecutive days, the opinion is a tiebreaker at most. Restore 0.4 only on that evidence, not on hope."
+  },
+  "tiers": {
+    "probe_enabled": true,
+    "probe_notional_usdt": 40.0,
+    "probe_min_llm": 55.0,
+    "probe_pool": 6,
+    "probe_reasons": [
+      "TOO_FEW_HOLDERS",
+      "LIQUIDITY_TOO_THIN",
+      "NO_LIQUIDITY_FLOW",
+      "TOO_LARGE_TO_BE_MEME",
+      "SCORE_BELOW_FLOOR"
+    ],
+    "_note": "软门槛不再一票否决：只过硬否决的候选进 probe 池，JUDGE 打分 ≥55 才用 0 试探仓。硬否决（权限/集中度/崩塌/洗量）永不动。",
+    "max_probe_positions": 2
+  },
+  "sizing": {
+    "enabled": true,
+    "tiers": [
+      {
+        "min_score": 80,
+        "mult": 1.5
+      },
+      {
+        "min_score": 60,
+        "mult": 1.0
+      },
+      {
+        "min_score": 40,
+        "mult": 0.4
+      }
+    ],
+    "below_lowest": "skip",
+    "max_single_fill_pct": 15.0,
+    "_note": "JUDGE 分数=结构健康度（非涨幅预测）。>=80 冲 1.5x；60-80 标准 1x；40-60 稳 0.4x；<40 不开。单笔不超过账本 15%。阈值可由 calibration 分桶调整。"
+  },
+  "counterpart": {
+    "enabled": false
+  },
+  "take_profit_pct": 20.0,
+  "_arm": {
+    "name": "arm_tp20",
+    "hypothesis": "止盈从 +55% 降到 +20%。60 分钟窗口里只有 0.6% 的候选能摸到 +55%，96% 的交易因此交给超时；降到 +20% 让更多仓位在窗口内兑现。",
+    "falsify": "累计 60 笔平仓后，本臂净盈亏不高于 E 基线 → 说明兑现率高但收益不够，回退 +55%。",
+    "started": "2026-10-27",
+    "baseline": "memehunter.sqlite (E 现役)"
+  }
+}

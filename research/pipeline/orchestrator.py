@@ -63,10 +63,21 @@ CREATE INDEX IF NOT EXISTS idx_pipeline_targets_run ON pipeline_targets(run_id);
 
 
 class Pipeline:
-    """Runs the six-agent desk once (or forever) against the E paper account."""
+    """Runs the six-agent desk once (or forever) against a paper account.
 
-    def __init__(self, root: Path, config_path: Path | None = None):
+    `db_name` is what makes an experiment arm possible: every arm runs the
+    same six agents over the same universe at the same moment, but writes to
+    its own ledger, so a parameter can be varied one at a time without the
+    arms contaminating each other. The name is recorded in the run row, so a
+    report can always tell which arm a number came from.
+    """
+
+    def __init__(self, root: Path, config_path: Path | None = None, db_name: str = "memehunter.sqlite"):
         self.root = root
+        self.db_name = db_name
+        # The arm is the ledger's name, so a report can always tell which
+        # experiment a run row belongs to. Empty for the live desk.
+        self.arm_name = "" if db_name == "memehunter.sqlite" else db_name.replace(".sqlite", "")
         self.config_path = config_path or (root / "user_data" / "config.pipeline.json")
         self.cfg = load_config(self.config_path)
         if self.cfg.get("mode") != "dry_run":
@@ -74,16 +85,26 @@ class Pipeline:
         # The entry hard stop lives in the desk config so EXIT enforces it.
         self.desk_cfg = dict(self.cfg)
         self.desk_cfg["stop_loss_pct"] = float(self.cfg["entry"]["stop_loss_pct"])
-        self.desk = Desk(root, self.desk_cfg)
+        self.desk = Desk(root, self.desk_cfg, db_name=db_name)
         self.counterpart_result: dict | None = None
         self._counterpart_error: str | None = None
         self._ensure_schema()
+        self._ensure_arm_column()
 
     # ---------- ledger ----------
     def _ensure_schema(self) -> None:
         self.desk.conn.executescript(PIPELINE_SCHEMA)
         self.desk.conn.executescript(KV_SCHEMA)
         self.desk.conn.commit()
+
+    def _ensure_arm_column(self) -> None:
+        """pipeline_runs gained `arm` after the first ledger existed; an old
+        table keeps working because CREATE TABLE IF NOT EXISTS never upgrades
+        one (the same trap the candidate_marks primary key fell into)."""
+        columns = {row[1] for row in self.desk.conn.execute("PRAGMA table_info(pipeline_runs)")}
+        if "arm" not in columns:
+            self.desk.conn.execute("ALTER TABLE pipeline_runs ADD COLUMN arm TEXT")
+            self.desk.conn.commit()
 
     def _kv_get(self, key: str, default: str = "0") -> str:
         row = self.desk.conn.execute("SELECT v FROM pipeline_kv WHERE k = ?", (key,)).fetchone()
@@ -142,7 +163,8 @@ class Pipeline:
             dry_streak = 0
         ctx.put("dry_streak", dry_streak)
         cur = self.desk.conn.execute(
-            "INSERT INTO pipeline_runs (started_ms, version, ok) VALUES (?,?,1)", (started, PIPELINE_VERSION)
+            "INSERT INTO pipeline_runs (started_ms, version, ok, arm) VALUES (?,?,1,?)",
+            (started, PIPELINE_VERSION, self.arm_name),
         )
         run_id = int(cur.lastrowid)
         self.desk.conn.commit()
@@ -270,25 +292,27 @@ def exit_round(pipe: "Pipeline") -> dict:
     return result.detail.get("result") or {}
 
 
-def run_exit_loop(root: Path, interval: int = 60) -> int:
+def run_exit_loop(root: Path, interval: int = 60, config_path: Path | None = None,
+                  db_name: str = "memehunter.sqlite") -> int:
     """Mark and exit on their own clock, independent of the entry pipeline."""
     import time
 
     from ..guards import guard_round
 
     log_path = root / "runtime" / "memehunter" / "loop.log"
-    pipe = Pipeline(root)
-    print(f"[exit-loop] every {interval}s · Ctrl-C or a STOP file to stop", flush=True)
+    pipe = Pipeline(root, config_path, db_name=db_name)
+    tag = f"[{pipe.arm_name}] " if pipe.arm_name else ""
+    print(f"{tag}[exit-loop] every {interval}s · Ctrl-C or a STOP file to stop", flush=True)
     try:
         while True:
             may_run, note = guard_round(root, log_path)
             if not may_run:
-                print(f"[exit-loop] halted: {note}", flush=True)
+                print(f"{tag}[exit-loop] halted: {note}", flush=True)
                 return 0
             try:
                 result = exit_round(pipe)
             except Exception as exc:  # noqa: BLE001 - a bad pass must not kill the loop
-                print(f"[exit-loop] pass failed: {type(exc).__name__}: {exc}", flush=True)
+                print(f"{tag}[exit-loop] pass failed: {type(exc).__name__}: {exc}", flush=True)
                 try:
                     pipe.desk.conn.rollback()
                 except Exception:  # noqa: BLE001 - rollback is best effort
@@ -297,12 +321,12 @@ def run_exit_loop(root: Path, interval: int = 60) -> int:
                 continue
             for closed in result.get("closed") or []:
                 print(
-                    f"[exit] {closed['symbol']} {closed['reason']} {closed['pnl_usd']:+.2f}",
+                    f"{tag}[exit] {closed['symbol']} {closed['reason']} {closed['pnl_usd']:+.2f}",
                     flush=True,
                 )
             stale = result.get("stale") or []
             if stale:
-                print(f"[exit] 无报价：{', '.join(stale[:3])}", flush=True)
+                print(f"{tag}[exit] 无报价：{', '.join(stale[:3])}", flush=True)
             time.sleep(interval)
     finally:
         pipe.close()
@@ -315,18 +339,30 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("command", choices=["once", "loop", "status", "proposals", "exit-loop"], nargs="?", default="once")
     parser.add_argument("--sleep", type=int, default=100, help="loop interval seconds")
     parser.add_argument("--interval", type=int, default=60, help="exit-loop seconds between mark passes")
+    parser.add_argument("--config", default="", help="pipeline config file (default user_data/config.pipeline.json)")
+    parser.add_argument("--db-name", default="memehunter.sqlite", help="ledger file under runtime/memehunter; the arm's identity")
     args = parser.parse_args(argv)
 
     root = _default_root()
-    pipe = Pipeline(root)
+    pipe = Pipeline(
+        root,
+        Path(args.config) if args.config else None,
+        db_name=args.db_name,
+    )
     try:
         if args.command == "exit-loop":
-            return run_exit_loop(root, interval=args.interval)
+            return run_exit_loop(
+                root,
+                interval=args.interval,
+                config_path=Path(args.config) if args.config else None,
+                db_name=args.db_name,
+            )
         if args.command == "loop":
             import time
             from ..guards import guard_round
             log_path = root / "runtime" / "memehunter" / "loop.log"
-            print(f"[pipeline] loop every {args.sleep}s · Ctrl-C or a STOP file to stop", flush=True)
+            tag = f"[{pipe.arm_name}] " if pipe.arm_name else ""
+            print(f"{tag}[pipeline] loop every {args.sleep}s · Ctrl-C or a STOP file to stop", flush=True)
             while True:
                 may_run, note = guard_round(root, log_path)
                 if not may_run:
