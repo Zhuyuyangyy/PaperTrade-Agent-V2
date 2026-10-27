@@ -143,9 +143,11 @@ DEFAULT_CONFIG: dict[str, Any] = {
     # --- exits ---
     "take_profit_pct": 55.0,
     "stop_loss_pct": -12.0,
-    # A meme that has not moved in 45 minutes is not moving on our signal;
-    # holding it only blocks a slot a live candidate could use.
-    "timeout_minutes": 45,
+    # NOT tuned: the only positive-expectancy hold bucket in the ledger is
+    # 90-180m (+9.8% mean, n=8). Setting this to 45 because dead positions
+    # 'felt' too slow was fitting a symptom. Change it only from a
+    # counterfactual replay, not from a hunch.
+    "timeout_minutes": 180,
     "trailing_giveback_pct": 30.0,
 }
 
