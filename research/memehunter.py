@@ -166,22 +166,41 @@ _last_call = 0.0
 _MIN_GAP_S = 1.2
 
 
-def _get(url: str, timeout: float = 20.0) -> Any:
+def _get(url: str, timeout: float = 20.0, retries: int = 2) -> Any:
+    """One GET, throttled, and patient about 429.
+
+    A scan fires eight of these back to back, and Jupiter answers some of them
+    with 429. Dropping the source on the first 429 is why every scan reported
+    "数据源异常" -- the desk was not losing data to the market, it was losing
+    it to its own impatience. Now it honours Retry-After and backs off.
+    """
     global _last_call
-    gap = time.time() - _last_call
-    if gap < _MIN_GAP_S:
-        time.sleep(_MIN_GAP_S - gap)
-    _last_call = time.time()
-    request = urllib.request.Request(
-        url, headers={"User-Agent": "PaperTrade-MemeHunter/0.2 (paper research)"}
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            return json.load(response)
-    except urllib.error.HTTPError as exc:
-        raise SourceError(f"HTTP {exc.code}") from exc
-    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
-        raise SourceError(f"数据源不可达: {exc}") from exc
+    for attempt in range(retries + 1):
+        gap = time.time() - _last_call
+        if gap < _MIN_GAP_S:
+            time.sleep(_MIN_GAP_S - gap)
+        _last_call = time.time()
+        request = urllib.request.Request(
+            url, headers={"User-Agent": "PaperTrade-MemeHunter/0.2 (paper research)"}
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return json.load(response)
+        except urllib.error.HTTPError as exc:
+            if exc.code == 429 and attempt < retries:
+                wait = 0.0
+                headers = getattr(exc, "headers", None)
+                if headers is not None:
+                    try:
+                        wait = float(headers.get("Retry-After") or 0.0)
+                    except (TypeError, ValueError):
+                        wait = 0.0
+                time.sleep(min(max(wait, 1.5 * (attempt + 1)), 10.0))
+                continue
+            raise SourceError(f"HTTP {exc.code}") from exc
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            raise SourceError(f"数据源不可达: {exc}") from exc
+    raise SourceError("HTTP 429 重试后仍失败")
 
 
 def _f(value: Any, default: float = 0.0) -> float:
