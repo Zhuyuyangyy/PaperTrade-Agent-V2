@@ -70,6 +70,12 @@ DEFAULT_CONFIG: dict = {
     },
     "risk": {
         "notional_usdt": 100.0,
+        # Copy sizing: the clip scales with the target wallet's own fill
+        # (0.5x), floored at $25 so a small signal is still worth filling and
+        # capped at $150 so one whale cannot empty a $500 book.
+        "copy_ratio": 0.5,
+        "min_notional_usdt": 25.0,
+        "max_notional_usdt": 150.0,
         "max_cost_bps": 60.0,
         "max_pool_impact_bps": 5.0,
         "min_pool_reserve_usd": 250_000.0,
@@ -533,7 +539,9 @@ class CopyWatchAgent:
                 if decision.verdict == "PAPER" and view.get("price_usd"):
                     ref_price = float(view["price_usd"])
                     fill_price = ref_price * (1 + slip_bps / 10_000)
-                    notional = float(risk_cfg["notional_usdt"])
+                    # The exact size the gates checked, so impact and cost
+                    # were verified against the clip actually being filled.
+                    notional = float(decision.notional)
                     qty = notional / fill_price
                     fee_usd = notional * fee_bps / 10_000
                     cost = qty * fill_price + fee_usd + gas_usd
@@ -548,8 +556,9 @@ class CopyWatchAgent:
                         conn, ts_ms=now_ms, tag="PAPER", wallet=event.wallet, symbol=event.base_symbol,
                         usd=notional,
                         title=f"[PAPER] 模拟买入 {event.base_symbol} @ ${fill_price:,.4f}",
-                        detail=f"{decision.signal_class} 信号 · 名义 ${notional:,.2f} · 手续费 ${fee_usd:.3f} · "
-                               f"gas ${gas_usd:.2f} · 滑点 {slip_bps:.0f}bps · 相对源成交价偏离 {drift:+.1f}bps",
+                        detail=f"{decision.signal_class} 信号 · 名义 ${notional:,.2f}（{decision.size_note}）· "
+                               f"手续费 ${fee_usd:.3f} · gas ${gas_usd:.2f} · 滑点 {slip_bps:.0f}bps · "
+                               f"相对源成交价偏离 {drift:+.1f}bps",
                     )
                 else:
                     summary["skips"] += 1

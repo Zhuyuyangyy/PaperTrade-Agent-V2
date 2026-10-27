@@ -92,7 +92,10 @@ def env(tmp_path):
         },
         "wallet_policy": {"min_swaps": 3, "min_notional_usd": 2000.0, "whale_usd": 20000.0},
         "risk": {"notional_usdt": 100.0, "max_cost_bps": 60.0, "cooldown_minutes": 20,
-                 "max_open_positions": 2, "max_daily_loss_usdt": 30.0},
+                 "max_open_positions": 2, "max_daily_loss_usdt": 30.0,
+                 # this fixture tests cost accounting at a FIXED clip; dynamic
+                 # copy sizing has its own test below
+                 "copy_ratio": None},
         "exit": {"take_profit_bps": 120.0, "stop_loss_bps": 80.0, "max_hold_minutes": 45},
     }
     config_path = tmp_path / "user_data" / "config.copywatch.json"
@@ -475,3 +478,57 @@ def test_demotion_appends_to_the_summary_list(tmp_path) -> None:
                        policy={"demote_after_losses": 2}, summary=summary)
     assert summary["demotions"] == ["0xlucky"], summary
     conn.close()
+
+
+def test_copy_position_scales_with_the_target_wallet_fill() -> None:
+    """A wallet putting $5k behind a token says more than one putting $50; the
+    clip follows the wallet, bounded by a floor and a cap."""
+    import sys
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).resolve().parents[1]))
+    from research.copywatch.sizing import dynamic_notional
+
+    risk = {"notional_usdt": 100.0, "copy_ratio": 0.5,
+            "min_notional_usdt": 25.0, "max_notional_usdt": 150.0}
+
+    assert dynamic_notional(200.0, risk) == (100.0, "0.5x $200")
+    # a small signal is still worth filling, but only at the floor
+    n, note = dynamic_notional(40.0, risk)
+    assert n == 25.0 and "floor" in note
+    # a whale cannot empty the book: the cap wins
+    n, note = dynamic_notional(20_000.0, risk)
+    assert n == 150.0 and "cap" in note
+    # unset ratio keeps the fixed clip (backward compatible)
+    assert dynamic_notional(1_000.0, {"notional_usdt": 100.0}) == (100.0, "fixed")
+
+
+def test_impact_gate_uses_the_size_that_gets_filled() -> None:
+    """The decision must carry the notional its own gates checked, so the fill
+    can never trade a different size than the one that passed PRICE_IMPACT."""
+    import sys
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).resolve().parents[1]))
+    from research.copywatch import risk as risk_mod
+
+    class _Ev:
+        usd = 20_000.0
+        anomalous = False
+        price_usd = 1.0
+        base_symbol = "PEPE"
+
+    decision = risk_mod.evaluate(
+        event=_Ev(),
+        pool={"price_usd": 1.0, "fetched_at_ms": 1_700_000_000_000, "reserve_usd": 100_000.0},
+        wallet=None,
+        policy={"whale_usd": 20_000.0},
+        risk={"notional_usdt": 100.0, "copy_ratio": 0.5, "min_notional_usdt": 25.0,
+              "max_notional_usdt": 150.0, "max_cost_bps": 60.0, "max_pool_impact_bps": 5.0,
+              "min_pool_reserve_usd": 250_000.0, "max_price_age_seconds": 180,
+              "cooldown_minutes": 20, "max_open_positions": 3, "max_daily_loss_usdt": 30.0},
+        slippage_bps=50.0, fee_bps=30.0, gas_usd=1.0,
+        context={"now_ms": 1_700_000_000_000, "cash_usd": 500.0, "open_count": 0,
+                 "has_open_symbol": False, "last_open_ms": 0, "today_realized": 0.0},
+    )
+    # the whale-sized signal caps at 150 and the decision reports that size
+    assert decision.notional == 150.0
+    assert decision.size_note and "cap" in decision.size_note

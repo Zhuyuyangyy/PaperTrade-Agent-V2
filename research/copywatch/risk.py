@@ -39,6 +39,11 @@ class Decision:
     signal_class: str | None
     checks: list[Check] = field(default_factory=list)
     cost_bps: float = 0.0
+    # The notional every gate was evaluated against. The fill must use this
+    # same number: checking impact at one size and trading at another is how a
+    # position slips past its own risk gate.
+    notional: float = 0.0
+    size_note: str = ""
 
     @property
     def primary_code(self) -> str | None:
@@ -82,7 +87,12 @@ def evaluate(
 ) -> Decision:
     """Run every gate and return a decision; never mutates state."""
     checks: list[Check] = []
-    notional = float(risk["notional_usdt"])
+    from .sizing import dynamic_notional
+
+    # The clip scales with the target wallet's own fill: a wallet putting $5k
+    # behind a token says more than one putting $50, and a fixed size discards
+    # that. Bounds live in sizing.dynamic_notional.
+    notional, size_note = dynamic_notional(float(event.usd), risk)
     whale_usd = float(policy.get("whale_usd", 0) or 0)
     tracked = bool(wallet and wallet.get("tracked"))
     pinned = bool(wallet and (wallet.get("note") or "").startswith("pinned"))
@@ -167,4 +177,5 @@ def evaluate(
     ))
 
     verdict = "PAPER" if all(item.ok for item in checks) else "SKIP"
-    return Decision(verdict=verdict, signal_class=signal_class, checks=checks, cost_bps=cost_bps)
+    return Decision(verdict=verdict, signal_class=signal_class, checks=checks, cost_bps=cost_bps,
+                    notional=notional, size_note=size_note)
