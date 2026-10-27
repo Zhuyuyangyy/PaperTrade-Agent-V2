@@ -39,7 +39,17 @@ DEFAULT_REJECT_SAMPLE = 10
 # One shadow price per candidate per this interval; the desk scans every ~100s,
 # so 90s means "every round", which is what builds a horizon curve.
 MARK_INTERVAL_MS = 90_000
-JUP_PRICE = "https://quote-api.jup.ag/price/v3"
+# Per-round budget for quoting candidates that dropped out of the universe.
+# 60 a round at ~100s cadence is ~2100/hour: enough to keep every recent
+# candidate's curve alive without hammering the price API.
+QUOTE_BATCH_PER_ROUND = 60
+# Per-round budget for quoting candidates that dropped out of the universe.
+# 60 a round at ~100s cadence is ~2100/hour: enough to keep every recent
+# candidate's curve alive without hammering the price API.
+QUOTE_BATCH_PER_ROUND = 60
+# quote-api.jup.ag is the QUOTE host and 404s on /price; the price API
+# lives at api.jup.ag (lite-api.jup.ag answers too).
+JUP_PRICE = "https://api.jup.ag/price/v3"
 
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
@@ -132,23 +142,32 @@ def quote_mints(mints: list[str], timeout: float = 20.0) -> dict[str, float]:
     except Exception:  # noqa: BLE001 - a failed quote is a skipped round, not a crash
         return {}
     out: dict[str, float] = {}
-    data = payload.get("data") if isinstance(payload, dict) else None
-    if isinstance(data, dict):
-        for mint, row in data.items():
-            price = (row or {}).get("price")
-            if isinstance(price, (int, float)) and float(price) > 0:
-                out[mint] = float(price)
+    if not isinstance(payload, dict):
+        return out
+    # v3 answers {mint: row} at the top level; v2 wrapped it in "data".
+    rows = payload["data"] if isinstance(payload.get("data"), dict) else payload
+    for mint, row in rows.items():
+        # The v3 payload names it usdPrice; reading "price" silently
+        # returned nothing and starved every quote-based path.
+        price = (row or {}).get("usdPrice", (row or {}).get("price"))
+        if isinstance(price, (int, float)) and float(price) > 0:
+            out[mint] = float(price)
     return out
 
 
 def mark_from_tokens(conn: sqlite3.Connection, tokens: list, now_ms: int,
                      lookback_minutes: int = DEFAULT_LOOKBACK_MINUTES,
                      reject_sample: int = DEFAULT_REJECT_SAMPLE) -> dict:
-    """Shadow-mark pending candidates from prices the desk already fetched.
+    """Shadow-mark pending candidates, in-universe or not.
 
     SEARCH pulls the whole universe every round; reusing those prices costs no
-    extra API call, so labelling rides along with the scan that produced the
-    candidates in the first place.
+    extra API call, so in-universe candidates ride along with the scan. A
+    candidate that has since dropped out of the ranking has no token in this
+    round -- without help its price history froze at its last in-universe
+    price, which is why only 2-5 of every candidate's points were recorded and
+    no horizon past a few minutes could be measured. Those candidates are now
+    quoted directly from Jupiter (oldest first, bounded batch), so a curve
+    survives the token leaving the ranking.
     """
     ensure_schema(conn)
     by_mint = {t.mint: t for t in tokens if getattr(t, "price_usd", 0) > 0}
@@ -156,18 +175,40 @@ def mark_from_tokens(conn: sqlite3.Connection, tokens: list, now_ms: int,
     # Every round re-marks the whole lookback window (one price per interval)
     # so a candidate's 5m/15m/30m/1h future is recorded, not assumed.
     marked = 0
+    quoted = 0
     for row in pending:
         token = by_mint.get(row["mint"])
-        if token is None:
-            continue
-        conn.execute(
-            "INSERT OR REPLACE INTO candidate_marks"
-            " (candidate_id, marked_at_ms, price_usd, source) VALUES (?,?,?,?)",
-            (row["id"], now_ms, float(token.price_usd), "scan-reuse"),
-        )
-        marked += 1
+        if token is not None:
+            conn.execute(
+                "INSERT OR REPLACE INTO candidate_marks"
+                " (candidate_id, marked_at_ms, price_usd, source) VALUES (?,?,?,?)",
+                (row["id"], now_ms, float(token.price_usd), "scan-reuse"),
+            )
+            marked += 1
+
+    # Candidates no longer in the universe: quote them so the curve continues.
+    # Oldest first -- the earliest gap is what breaks a horizon measurement.
+    orphaned = sorted(
+        (row for row in pending if row["mint"] not in by_mint),
+        key=lambda r: int(r["scanned_at_ms"]),
+    )
+    for start in range(0, min(len(orphaned), QUOTE_BATCH_PER_ROUND), 20):
+        chunk = orphaned[start:start + 20]
+        prices = quote_mints([row["mint"] for row in chunk])
+        for row in chunk:
+            price = prices.get(row["mint"])
+            if price is None:
+                continue  # no quote: unknown, never assumed
+            conn.execute(
+                "INSERT OR REPLACE INTO candidate_marks"
+                " (candidate_id, marked_at_ms, price_usd, source) VALUES (?,?,?,?)",
+                (row["id"], now_ms, price, "jupiter-quote"),
+            )
+            marked += 1
+            quoted += 1
     conn.commit()
-    return {"pending": len(pending), "marked": marked, "source": "scan-reuse"}
+    return {"pending": len(pending), "marked": marked, "quoted": quoted,
+            "source": "scan-reuse+jupiter-quote"}
 
 
 def collect_once(
