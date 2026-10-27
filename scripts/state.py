@@ -112,6 +112,62 @@ def _wallet(conn: sqlite3.Connection) -> dict:
     }
 
 
+def _history(conn: sqlite3.Connection, points: int = 40) -> list[list[float]]:
+    """Equity over time, thinned to `points`, oldest first.
+
+    A wallet card with only a current number cannot show whether an arm has
+    been leading all night or caught up in the last hour, which is the entire
+    question the comparison exists to answer.
+    """
+    rows = list(conn.execute(
+        "SELECT at_ms, equity_usd FROM equity ORDER BY at_ms DESC LIMIT 400"
+    ))
+    if not rows:
+        return []
+    rows.reverse()
+    step = max(1, len(rows) // points)
+    out = [[int(r[0]), round(float(r[1] or 0), 2)] for r in rows[::step]]
+    if out[-1][0] != int(rows[-1][0]):
+        out.append([int(rows[-1][0]), round(float(rows[-1][1] or 0), 2)])
+    return out
+
+
+def _feed(conn: sqlite3.Connection, label: str, limit: int = 6) -> list[dict]:
+    """The last few things this book did: agent steps and closed trades."""
+    events: list[dict] = []
+    try:
+        has = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='pipeline_steps'"
+        ).fetchone()
+        if has:
+            for r in conn.execute(
+                "SELECT agent, ok, summary, decided_at_ms FROM pipeline_steps"
+                " ORDER BY id DESC LIMIT ?", (limit,),
+            ):
+                events.append({
+                    "wallet": label, "kind": "step", "who": str(r[0]),
+                    "text": str(r[1] and r[2] or (r[2] or "")), "ok": bool(r[1]),
+                    "ms": int(r[3] or 0),
+                })
+    except sqlite3.Error:
+        pass
+    try:
+        for r in conn.execute(
+            "SELECT symbol, exit_reason, pnl_usd, exit_at_ms FROM positions"
+            " WHERE status='closed' AND exit_at_ms IS NOT NULL ORDER BY exit_at_ms DESC LIMIT ?",
+            (limit,),
+        ):
+            events.append({
+                "wallet": label, "kind": "trade", "who": str(r[0]),
+                "text": f"{r[1]} · 净 {float(r[2] or 0):+.2f}",
+                "ok": float(r[2] or 0) > 0, "ms": int(r[3] or 0),
+            })
+    except sqlite3.Error:
+        pass
+    events.sort(key=lambda e: e["ms"], reverse=True)
+    return events[:limit]
+
+
 def _agents(conn: sqlite3.Connection) -> dict:
     """The latest round's six steps, plus when the desk last moved.
 
@@ -157,6 +213,7 @@ def _agents(conn: sqlite3.Connection) -> dict:
 def build_state(root: Path | None = None) -> dict:
     """Every wallet and every agent's last move. `root` exists for tests."""
     wallets = []
+    feed: list[dict] = []
     for path in _ledgers(root):
         try:
             conn = _connect(path)
@@ -173,22 +230,28 @@ def build_state(root: Path | None = None) -> dict:
                 "SELECT name FROM sqlite_master WHERE type='table' AND name='positions'"
             ).fetchone() is None:
                 continue
+            wallet = _wallet(conn)
+            label = _label(path)
             wallets.append({
-                "label": _label(path),
+                "label": label,
                 "file": path.name,
                 "arm": "" if path.name == DEFAULT_DB else path.name.replace(".sqlite", ""),
-                **_wallet(conn),
+                **wallet,
                 **_agents(conn),
+                "history": _history(conn),
             })
+            feed.extend(_feed(conn, label))
         except sqlite3.Error:
             continue
         finally:
             conn.close()
+    feed.sort(key=lambda e: e["ms"], reverse=True)
     return {
         "now_ms": int(time.time() * 1000),
         "agent_order": AGENT_ORDER,
         "agent_jobs": AGENT_JOBS,
         "wallets": wallets,
+        "feed": feed[:14],
     }
 
 
