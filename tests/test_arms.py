@@ -89,6 +89,10 @@ def test_every_arm_config_leaves_the_control_group_alone(name: str):
     assert cfg.get("counterpart", {}).get("enabled") is False
     assert cfg["_arm"]["hypothesis"], "an arm without a hypothesis is just a hunch"
     assert cfg["_arm"]["falsify"], "an arm without a falsify rule can never be retired"
+    # The dashboard shows these; an empty one renders a blank row and the
+    # operator cannot tell what the arm is testing.
+    assert cfg["_arm"]["change"], "say in one line what this arm changes"
+    assert int(cfg["_arm"]["target_trades"]) > 0, "and how many trades settle it"
 
 
 @pytest.mark.parametrize("name", ARMS)

@@ -77,6 +77,8 @@
     "hypothesis": "关掉 JUDGE 与试探仓。JUDGE 的 15m Spearman 是 -0.17（无区分度），权重已砍到 0.15；这一臂测的是整个 LLM 层是否值得它的调用成本。",
     "falsify": "累计 60 笔平仓后，本臂净盈亏不低于 E 基线的 90% → LLM 层不值得，永久关闭。",
     "started": "2026-10-27",
-    "baseline": "memehunter.sqlite (E 现役)"
+    "baseline": "memehunter.sqlite (E 现役)",
+    "change": "关掉 JUDGE 研判与试探仓（其余一律不动）",
+    "target_trades": 60
   }
 }

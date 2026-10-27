@@ -10,6 +10,7 @@ Read-only, loopback, and it never touches a config or an order path.
 """
 from __future__ import annotations
 
+import json
 import sqlite3
 import time
 from pathlib import Path
@@ -31,6 +32,31 @@ AGENT_JOBS = {
     "EXIT": "盯盘：标记、止盈止损、超时",
 }
 STARTING_CASH = 1000.0
+
+
+# What each book is, in plain words. The arms carry their own file; these two
+# are the baseline and the control, and they need saying too -- a row of
+# unnamed ledgers is how an experiment stops being readable.
+BOOK_NOTES = {
+    DEFAULT_DB: "六 agent 全开：扫盘 → 否决打分 → 聪明钱 → LLM 研判 → 开仓 → 盯盘。"
+                "所有实验臂的基线，改任何一个参数之前先看它。",
+    CONTROL_DB: "同一个候选池、同一时刻，唯一规则：按 organic_score 取前 3 买入——"
+                "没有否决、没有分数线、没有聪明钱加成、没有冷却。"
+                "E 与 C 的差就是六 agent 管线带来的价值，或者证明它没带来。",
+}
+
+
+def _arm_info(root: Path | None, arm: str) -> dict | None:
+    """An arm's hypothesis and falsify rule, read from its config file."""
+    if not arm:
+        return None
+    path = (root or ROOT) / "user_data" / f"config.{arm}.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    info = data.get("_arm")
+    return info if isinstance(info, dict) else None
 
 
 def _connect(path: Path) -> sqlite3.Connection:
@@ -271,6 +297,8 @@ def build_state(root: Path | None = None) -> dict:
                 **_agents(conn),
                 "history": _history(conn),
                 "trades": _trades(conn),
+                "note": BOOK_NOTES.get(path.name, ""),
+                "arm_info": _arm_info(root, path.name.replace(".sqlite", "") if path.name != DEFAULT_DB else ""),
             })
             feed.extend(_feed(conn, label))
         except sqlite3.Error:

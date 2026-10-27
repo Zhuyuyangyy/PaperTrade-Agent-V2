@@ -78,6 +78,8 @@
     "hypothesis": "止盈从 +55% 降到 +20%。60 分钟窗口里只有 0.6% 的候选能摸到 +55%，96% 的交易因此交给超时；降到 +20% 让更多仓位在窗口内兑现。",
     "falsify": "累计 60 笔平仓后，本臂净盈亏不高于 E 基线 → 说明兑现率高但收益不够，回退 +55%。",
     "started": "2026-10-27",
-    "baseline": "memehunter.sqlite (E 现役)"
+    "baseline": "memehunter.sqlite (E 现役)",
+    "change": "把止盈从 +55% 降到 +20%（其余一律不动）",
+    "target_trades": 60
   }
 }
