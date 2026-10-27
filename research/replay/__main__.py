@@ -88,10 +88,19 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "selectivity":
-        from .selectivity import audit, decomposition, format_audit, format_decomposition
+        from .selectivity import (
+            audit,
+            decomposition,
+            excursions,
+            format_audit,
+            format_decomposition,
+            format_excursions,
+        )
         print(format_decomposition(decomposition(root)))
         print()
         print(format_audit(audit(root)))
+        print()
+        print(format_excursions(excursions(root, horizon_min=60)))
         return 0
 
     if args.command == "signals":

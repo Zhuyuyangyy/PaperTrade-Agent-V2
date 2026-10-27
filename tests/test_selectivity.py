@@ -17,7 +17,10 @@ from research.replay.selectivity import (  # noqa: E402
     _round_trip,
     _stats,
     audit,
+    decomposition,
+    excursions,
     format_audit,
+    format_decomposition,
 )
 
 T0 = 1_700_000_000_000
@@ -44,6 +47,11 @@ def desk(tmp_path: Path):
         CREATE TABLE candidate_marks (
             candidate_id INTEGER, marked_at_ms INTEGER, price_usd REAL, source TEXT,
             PRIMARY KEY (candidate_id, marked_at_ms)
+        );
+        CREATE TABLE positions (
+            id INTEGER PRIMARY KEY, symbol TEXT, status TEXT, qty REAL,
+            entry_fill_price REAL, exit_fill_price REAL, notional_usd REAL,
+            entry_cost_usd REAL, exit_cost_usd REAL, pnl_usd REAL, exit_reason TEXT
         );
         """
     )
@@ -73,6 +81,16 @@ def desk(tmp_path: Path):
     )
     conn.execute("INSERT INTO candidate_marks VALUES (3, ?, 1.0, 'scan-reuse')", (T0 + 20 * MIN,))
     conn.execute("INSERT INTO candidate_marks VALUES (3, ?, 1.2, 'scan-reuse')", (T0 + 25 * MIN,))
+    conn.executemany(
+        "INSERT INTO positions (symbol, status, qty, entry_fill_price, exit_fill_price,"
+        " notional_usd, entry_cost_usd, exit_cost_usd, pnl_usd, exit_reason)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?)",
+        [
+            ("AAA", "closed", 100.0, 1.0, 1.5, 100.0, 0.6, 0.6, 48.8, "TAKE_PROFIT"),
+            ("BBB", "closed", 100.0, 1.0, 1.0, 100.0, 0.6, 0.6, -1.2, "TIMEOUT"),
+            ("CCC", "open", 100.0, 1.0, None, 100.0, 0.6, None, None, None),
+        ],
+    )
     conn.commit()
     conn.close()
     return tmp_path
@@ -112,3 +130,25 @@ def test_audit_counts_cohorts_and_survives_a_missing_horizon(desk: Path):
     assert sixty["all"]["mean_pct"] > 50
     assert "选择性审计" in format_audit(result)
     assert "score>0" in format_audit(result)
+
+
+def test_excursions_measure_the_window_not_the_close(desk: Path):
+    # Candidate 1 runs 1.0 -> 2.0 inside the hour, so +60% is reachable even
+    # though the audit only ever reads one mark per horizon. Candidate 2's
+    # 90s mark is too early for a horizon fill but is still a real price.
+    rep = excursions(desk, horizon_min=60)
+    assert rep["n"] == 2
+    assert rep["thresholds"][0.60]["up_pct"] == pytest.approx(50.0)
+    assert rep["thresholds"][0.05]["down_pct"] == 0.0
+    assert rep["median_up_pct"] == pytest.approx(100.0)
+
+
+def test_decomposition_splits_gross_from_the_toll(desk: Path):
+    rep = decomposition(desk)
+    total = rep["total"]
+    assert total["n"] == 2  # the open position is excluded
+    assert total["gross"] == pytest.approx(50.0)
+    assert total["toll"] == pytest.approx(2.4)
+    assert total["net"] == pytest.approx(47.6)
+    assert rep["by_reason"]["TIMEOUT"]["net"] == pytest.approx(-1.2)
+    assert "已平仓账单分解" in format_decomposition(rep)

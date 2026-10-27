@@ -34,6 +34,7 @@ MIN_ENTRY_LAG_S = 600     # buying later than this is not a fill, it is a wish
 MIN_FORWARD_S = 120       # never the same round as the entry
 BOOTSTRAP = 2000
 SEED = 42
+EXCURSION_THRESHOLDS = (0.05, 0.10, 0.15, 0.30, 0.60)
 
 
 def _ratio(row: sqlite3.Row, num: str, den: str) -> float | None:
@@ -102,18 +103,18 @@ def _marks(conn: sqlite3.Connection) -> dict[int, list[tuple[int, float]]]:
     return out
 
 
-def _round_trip(path: list[tuple[int, float]], scanned_ms: int, horizon_min: int):
-    """(entry, forward) prices for one candidate at one horizon, or None."""
-    if not path:
-        return None
-    entry = None
+def _entry_point(path: list[tuple[int, float]], scanned_ms: int):
+    """First mark at or after the scan, and only if we could have paid it."""
     for t, p in path:
         if t >= scanned_ms:
-            entry = (t, p)
-            break
+            return (t, p) if t - scanned_ms <= MIN_ENTRY_LAG_S * 1000 else None
+    return None
+
+
+def _round_trip(path: list[tuple[int, float]], scanned_ms: int, horizon_min: int):
+    """(entry, forward) prices for one candidate at one horizon, or None."""
+    entry = _entry_point(path, scanned_ms)
     if entry is None:
-        return None
-    if entry[0] - scanned_ms > MIN_ENTRY_LAG_S * 1000:
         return None
     target = entry[0] + horizon_min * 60_000
     tol = horizon_min * 60_000 * TOLERANCE
@@ -242,6 +243,73 @@ def audit(root: Path, horizons: Iterable[int] = HORIZONS, db_name: str = "memehu
             cohorts.append(st)
         out["horizons"][f"{h}m"] = {"all": base, "cohorts": cohorts, "n_all": len(pairs)}
     return out
+
+
+def excursions(root: Path, horizon_min: int = 60, db_name: str = "memehunter.sqlite") -> dict:
+    """How far prices actually travel inside a hold window.
+
+    The take-profit and stop-loss are only reachable if the distribution gets
+    there. This measures the best and worst price seen in the window, so a
+    barrier can be checked against the moves that exist instead of the moves
+    the desk hopes for. Same entry rule as the audit (no retroactive fills).
+    """
+    conn, tmp_dir = _load(root, db_name)
+    try:
+        marks = _marks(conn)
+        rows = [
+            (int(r["id"]), int(r["scanned_at_ms"]))
+            for r in conn.execute(
+                "SELECT id, scanned_at_ms FROM candidates WHERE id IN"
+                " (SELECT DISTINCT candidate_id FROM candidate_marks)"
+            )
+        ]
+    finally:
+        conn.close()
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    ups: list[float] = []
+    downs: list[float] = []
+    for cid, scanned in rows:
+        entry = _entry_point(marks.get(cid, []), scanned)
+        if entry is None:
+            continue
+        t0, p0 = entry
+        if p0 <= 0:
+            continue
+        window = [p for t, p in marks.get(cid, []) if t0 < t <= t0 + horizon_min * 60_000]
+        if not window:
+            continue
+        ups.append(max(window) / p0 - 1.0)
+        downs.append(min(window) / p0 - 1.0)
+    n = len(ups)
+    out = {"horizon_min": horizon_min, "n": n, "thresholds": {}}
+    if not n:
+        return out
+    ups_s, downs_s = sorted(ups), sorted(downs)
+    for thr in EXCURSION_THRESHOLDS:
+        out["thresholds"][thr] = {
+            "up_pct": sum(1 for x in ups if x >= thr) / n * 100,
+            "down_pct": sum(1 for x in downs if x <= -thr) / n * 100,
+        }
+    out["median_up_pct"] = ups_s[n // 2] * 100
+    out["p90_up_pct"] = ups_s[min(n - 1, int(n * 0.9))] * 100
+    out["median_down_pct"] = downs_s[n // 2] * 100
+    out["p10_down_pct"] = downs_s[max(0, int(n * 0.1))] * 100
+    return out
+
+
+def format_excursions(rep: dict) -> str:
+    if not rep.get("n"):
+        return f"{rep['horizon_min']}m 窗口：无样本"
+    lines = [
+        f"{rep['horizon_min']}m 持有的实际波动 · n={rep['n']} · "
+        f"最大有利中位 {rep['median_up_pct']:+.1f}% / p90 {rep['p90_up_pct']:+.1f}% · "
+        f"最大不利中位 {rep['median_down_pct']:+.1f}% / p10 {rep['p10_down_pct']:+.1f}%"
+    ]
+    lines.append(f"  {'幅度':>6}{'摸到涨的概率':>14}{'摸到跌的概率':>14}")
+    for thr, v in rep["thresholds"].items():
+        lines.append(f"  {thr*100:>5.0f}%{v['up_pct']:>13.1f}%{v['down_pct']:>13.1f}%")
+    return "\n".join(lines)
 
 
 def decomposition(root: Path, db_name: str = "memehunter.sqlite") -> dict:
