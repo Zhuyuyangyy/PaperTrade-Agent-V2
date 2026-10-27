@@ -23,10 +23,23 @@ def _state(html: str) -> dict:
 
 
 def test_room_page_embeds_the_same_state_as_the_dashboard() -> None:
-    html = build_room_html(datetime(2026, 10, 25, 15, 0, tzinfo=timezone.utc))
+    now = datetime(2026, 10, 25, 15, 0, tzinfo=timezone.utc)
+    html = build_room_html(now)
     state = _state(html)
     for key in ("portfolio", "accounts", "copywatch", "memehunter"):
         assert key in state
+    # The invariant is equality with the dashboard's own state, not a magic
+    # number: equities depend on which ledgers exist on the machine. The room
+    # page must embed what the dashboard would show, byte for byte.
+    from scripts.dashboard import build_state
+
+    live = build_state(now)
+    assert state["portfolio"] == live["portfolio"]
+    assert state["copywatch"] == live["copywatch"]
+    assert state["memehunter"] == live["memehunter"]
+    # The opening balance, though, is config-declared: a fresh clone with no
+    # runtime/ at all must still report the full desk (this caught CI showing
+    # 2500 because E and C had no ledger yet).
     assert state["portfolio"]["starting_total_usdt"] == pytest.approx(4500.0)
 
 

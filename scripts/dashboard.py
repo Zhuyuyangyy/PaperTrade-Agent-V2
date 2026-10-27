@@ -714,11 +714,15 @@ def memehunter_snapshot(now_ms: int) -> dict:
     """
     runtime_dir = ROOT / "runtime" / "memehunter"
     db_path = runtime_dir / "memehunter.sqlite"
+    # The opening balance is a config fact, not a ledger fact: a fresh clone
+    # with no runtime/ yet must still report the book's real size, otherwise
+    # starting_total silently shrinks by 1000 on any machine that has not
+    # traded yet (CI saw 2500 where the desk is 4500).
     result = {
         "kind": "memehunter",
         "label": "尚未启动",
         "has_ledger": False,
-        "starting_cash_usdt": None,
+        "starting_cash_usdt": _memehunter_starting_cash(),
         "cash_usdt": None,
         "positions_usd": None,
         "equity_usdt": None,
@@ -1046,8 +1050,14 @@ def counterpart_snapshot() -> dict:
     a plausible 1,000.00.
     """
     db_path = ROOT / "runtime" / "memehunter" / "counterpart.sqlite"
+    # Same rule as memehunter: the control group's opening balance is a config
+    # fact. A machine that never ran it must still count its 1000, or the desk
+    # total shrinks by exactly the books that have not started yet.
+    from research.counterpart import DEFAULT_CONFIG as CP_DEFAULT
+
     empty = {
-        "kind": "counterpart", "has_ledger": False, "starting_cash_usdt": None,
+        "kind": "counterpart", "has_ledger": False,
+        "starting_cash_usdt": float(CP_DEFAULT["starting_cash_usdt"]),
         "cash_usdt": None, "equity_usdt": None, "pnl_usd": None, "pnl_pct": None,
         "open_count": 0, "closed_count": 0, "win_count": 0, "realized_usd": None,
         "open_positions": [],
