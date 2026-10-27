@@ -28,7 +28,16 @@ import sqlite3
 import time
 from typing import Any
 
-from ..memehunter import Desk, Token, ensure_candidate_columns, fetch_universe, record_candidates, score, veto
+from ..memehunter import (
+    Desk,
+    SourceError,
+    Token,
+    ensure_candidate_columns,
+    fetch_universe,
+    record_candidates,
+    score,
+    veto,
+)
 from . import judge as judge_mod
 
 PIPELINE_VERSION = 1
@@ -322,8 +331,21 @@ class SmartMoneyAgent(BaseAgent):
             if not db_path.is_file():
                 return [], [], "未发现 CopyWatch 账本"
             uri = f"file:{db_path.resolve()}?mode=ro"
-            conn = sqlite3.connect(uri, uri=True, timeout=0.5)
-            conn.row_factory = sqlite3.Row
+            # CopyWatch writes this ledger every 90 seconds; a half-second
+            # timeout meant GMGN failed the whole round on a lost race, which
+            # is why "读取聪明钱失败: unable to open database file" kept showing
+            # up next to a healthy D desk.
+            last: Exception | None = None
+            for _ in range(3):
+                try:
+                    conn = sqlite3.connect(uri, uri=True, timeout=5.0)
+                    conn.row_factory = sqlite3.Row
+                    break
+                except sqlite3.Error as exc:  # noqa: PERF203 - bounded retry
+                    last = exc
+                    time.sleep(0.5)
+            else:
+                raise SourceError(f"CopyWatch 账本被占用：{last}")
             try:
                 wallets = list(
                     conn.execute(
