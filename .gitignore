@@ -43,3 +43,4 @@ runtime/copywatch/.loop.pid
 user_data/judge.local.json
 _backups/
 runtime/memehunter/loop.sh
+STOP
