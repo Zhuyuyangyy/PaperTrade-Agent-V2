@@ -293,6 +293,26 @@ def exit_round(pipe: "Pipeline") -> dict:
     return result.detail.get("result") or {}
 
 
+def _heartbeat(root: Path, pipe: "Pipeline", interval: int) -> None:
+    """Write a liveness file for this exit loop.
+
+    Judging liveness by querying the ledger is fragile: the reader can lose the
+    race to a writer and conclude "dead" for a loop that is fine -- which is
+    how two exit loops stayed dead for 3.7 hours while a watchdog looked at
+    the wrong signal. A file this process owns cannot be misread that way.
+    """
+    path = root / "runtime" / "memehunter" / f"exit.{pipe.db_name}.heartbeat.json"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps({"arm": pipe.arm_name, "db": pipe.db_name, "interval_s": interval,
+                        "last_pass_ms": utc_now_ms()}, ensure_ascii=False),
+            encoding="utf-8",
+        )
+    except OSError:
+        pass  # a heartbeat is a convenience; never fail a pass over it
+
+
 def run_exit_loop(root: Path, interval: int = 60, config_path: Path | None = None,
                   db_name: str = "memehunter.sqlite") -> int:
     """Mark and exit on their own clock, independent of the entry pipeline."""
@@ -320,6 +340,7 @@ def run_exit_loop(root: Path, interval: int = 60, config_path: Path | None = Non
                     pass
                 time.sleep(interval)
                 continue
+            _heartbeat(root, pipe, interval)
             for closed in result.get("closed") or []:
                 print(
                     f"{tag}[exit] {closed['symbol']} {closed['reason']} {closed['pnl_usd']:+.2f}",

@@ -222,6 +222,17 @@ def _feed(conn: sqlite3.Connection, label: str, limit: int = 6) -> list[dict]:
     return events[:limit]
 
 
+def _exit_heartbeat(root: Path | None, db_name: str) -> dict | None:
+    """The exit loop's own liveness file. Reading the ledger to decide whether
+    the loop that writes the ledger is alive is circular and racy."""
+    path = (root or ROOT) / "runtime" / "memehunter" / f"exit.{db_name}.heartbeat.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
 def _trades(conn: sqlite3.Connection, limit: int = 40) -> list[dict]:
     """The closed-trade ledger for the detail panel: what was bought, how long
     it was held, why it ended, and what it paid."""
@@ -314,6 +325,7 @@ def build_state(root: Path | None = None) -> dict:
                 "history": _history(conn),
                 "trades": _trades(conn),
                 "note": BOOK_NOTES.get(path.name, ""),
+                "exit_heartbeat": _exit_heartbeat(root, path.name),
                 "arm_info": _arm_info(root, path.name.replace(".sqlite", "") if path.name != DEFAULT_DB else ""),
             })
             feed.extend(_feed(conn, label))
