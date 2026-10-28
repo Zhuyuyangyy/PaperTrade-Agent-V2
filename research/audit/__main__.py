@@ -71,7 +71,7 @@ def _cmd_run(args) -> int:
     for worst in assumptions:
         for strat in wanted:
             print(f"\n=== {strat.name} · {'最坏' if worst else '最好'} bar 解析 ===", flush=True)
-            book = run(market, strat, since_ms=since, worst_case=worst)
+            book = run(market, strat, since_ms=since, worst_case=worst, fee_rate=args.fee)
             print(format_book(book, worst), flush=True)
     market.close()
     return 0
@@ -84,6 +84,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--assume", choices=["both", "worst", "best"], default="both",
                         help="which bar-resolution assumption to run; a full both-pass "
                              "run on TrendRider outlives a foreground shell")
+    parser.add_argument("--fee", type=float, default=0.0005,
+                        help="per-side fee as a fraction: 0.0005 taker, 0.0002 maker")
     args = parser.parse_args(argv)
     if args.command == "prefill":
         return _cmd_prefill(args)

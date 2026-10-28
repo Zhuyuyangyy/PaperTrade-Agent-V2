@@ -222,7 +222,18 @@
         <td>realm520/FreqBot</td>
         <td class="num">2095</td><td class="num">43%</td><td class="num">-0.03%</td>
         <td class="num">0.88</td><td class="num">-0.05%</td>
-        <td><span class="verdict lead">唯一赢对照 +0.025%/笔 · 线索</span></td>
+        <td><span class="verdict lead">三档费率全赢对照 · 见下方敏感度</span></td>
+      </tr>
+      <tr>
+        <td class="name" style="padding-left:22px">└ 费率敏感度<small>盈亏平衡 ≈ 3bps/边</small></td>
+        <td>同一策略，只改费率</td>
+        <td class="num" colspan="4" style="white-space:normal">
+          taker 5bps/边 → 笔均 <b class="down">-0.046%</b> PF 0.80 ·
+          taker 4bps/边 → <b class="down">-0.026%</b> PF 0.88 ·
+          <b class="up">maker 2bps/边 → +0.014% PF 1.07（翻正）</b>
+        </td>
+        <td class="num">每档都赢对照<br><small>+0.110 / +0.025 / +0.007%</small></td>
+        <td><span class="verdict lead">唯一候选 · 待 dry-run</span></td>
       </tr>
     </table>
     <div class="audit-note">
@@ -232,8 +243,11 @@
       <b>仪器校准：</b>CascadeFader 的仓库公布了 3.3 年实验室数字（PF 1.62，按 per-pair edge 精选名单）；
       我们用他们公布的排除规则重建名单、同样窗口重放，得到 PF 1.12——方向和量级吻合、我们更保守。
       仪器读得出同一个信号，也读得出精选名单带来的虚高。<br>
-      <b>下一步：</b>FundingRate 是唯一跑赢对照组的——费率里有价格里没有的信息，只是盖不住 4bps/边的 taker 成本。
-      值得测 maker 单（成本减半）或只做高费率币种。
+      <b>最终判定（费率敏感度测完后）：</b>FundingRate 的盈亏平衡点约在 <b>3bps/边</b>——taker 5bps 下笔均 -0.046%（PF 0.80），
+      maker 2bps 下 +0.014%（PF 1.07，四个测量对象里唯一通过自己证伪规则的）。它在每一档费率下都赢随机对照组，
+      证明费率信号里确有价格之外的信息；但它活在一个"手续费 ≤3bps/边"的世界，而零售 taker 是 5bps。
+      maker 路径的两个假设回放验证不了（挂单 100% 成交、成交价=挂单价），真实结果大概率落在 taker 与 maker 之间。
+      <b>结论：不淘汰，标记为唯一值得 dry-run 的候选；不上钱。</b>
     </div>
   </div>
 </section>

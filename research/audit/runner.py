@@ -84,8 +84,10 @@ def _random_entries(candles: list[dict], exits: dict[int, str], n: int, side: st
 
 
 def run(market: Market, strategy, *, since_ms: int, worst_case: bool = True,
-        control: bool = True, log=print) -> Book:
+        control: bool = True, fee_rate: float = 0.0005, log=print) -> Book:
+    """fee_rate is PER SIDE. Binance USDT-perps: taker 5bps, maker 2bps."""
     book = Book(label=strategy.name, source=strategy.source, pairs=len(strategy.pairs))
+    book.notes.append(f"费率假设：{fee_rate*10000:.1f} bps/边（往返 {(fee_rate*2)*10000:.0f} bps）")
     exit_rule = strategy.exit_rule
     venue = getattr(strategy, "venue", "spot")
 
@@ -120,7 +122,7 @@ def run(market: Market, strategy, *, since_ms: int, worst_case: bool = True,
             continue
         rule = Exit(**{**exit_rule.__dict__, "exit_signals": exits})
         res = simulate(candles, signals, rule, symbol=pair, worst_case=worst_case,
-                       funding_series=funding)
+                       funding_series=funding, fee_rate=fee_rate)
         book.fills.extend(res.fills)
         book.open_signals += res.open_signals
         if control:
@@ -132,7 +134,7 @@ def run(market: Market, strategy, *, since_ms: int, worst_case: bool = True,
                              exit_signals=exits)
             cres = simulate(candles, _random_entries(candles, exits, CONTROL_ENTRIES),
                             ctrl_rule, symbol=pair, worst_case=worst_case,
-                            funding_series=funding)
+                            funding_series=funding, fee_rate=fee_rate)
             book.control.extend(cres.fills)
         log(f"  {pair:<14} 信号 {len(signals):>3} → 成交 {len(res.fills):>3} 笔")
     return book
