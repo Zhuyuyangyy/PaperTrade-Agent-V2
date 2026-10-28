@@ -69,16 +69,15 @@ class FundingRateEnhanced(Strategy):
 
     # ---------- funding mapped onto bars ----------
     def _funding_on_bars(self, candles: list[dict], funding: list[dict]) -> tuple:
+        """The funding print in force at each bar: last print at or before it."""
         times = pd.Series([c["t"] for c in candles])
-        rate = pd.Series([float("nan")] * len(candles))
-        if funding:
-            f_series = pd.Series([f["rate"] for f in funding],
-                                 index=[f["t"] for f in funding])
-            # value in force: last funding print at or before each bar
-            joined = pd.merge_asof(times.sort_values(), f_series.sort_index(),
-                                   left_index=True, right_index=True,
-                                   direction="backward")
-            rate = joined.set_index(times.sort_values().values)[0.0].reindex(times.values)
+        if not funding:
+            return times, pd.Series([float("nan")] * len(candles))
+        f_index = pd.Index([f["t"] for f in funding])
+        f_values = pd.Series([f["rate"] for f in funding], index=f_index, name="rate")
+        # reindex onto the bar timestamps, then carry the last known print
+        # forward: a print governs the interval until the next one appears.
+        rate = f_values.reindex(f_index.union(times)).ffill().reindex(times)
         return times, rate.reset_index(drop=True)
 
     def signals(self, candles: list[dict], funding: list[dict] | None = None,

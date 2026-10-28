@@ -66,7 +66,9 @@ def _cmd_run(args) -> int:
     since = int((time.time() * 1000) - THREE_YEARS_MS)
     wanted = [s for s in default_candidates()
               if not args.strategy or args.strategy.lower() in s.name.lower()]
-    for worst in (True, False):
+    assumptions = (True, False) if args.assume == "both" else (
+        (True,) if args.assume == "worst" else (False,))
+    for worst in assumptions:
         for strat in wanted:
             print(f"\n=== {strat.name} · {'最坏' if worst else '最好'} bar 解析 ===", flush=True)
             book = run(market, strat, since_ms=since, worst_case=worst)
@@ -79,6 +81,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Audit external strategies with our instruments")
     parser.add_argument("command", choices=["prefill", "run", "list"], nargs="?", default="run")
     parser.add_argument("--strategy", default="")
+    parser.add_argument("--assume", choices=["both", "worst", "best"], default="both",
+                        help="which bar-resolution assumption to run; a full both-pass "
+                             "run on TrendRider outlives a foreground shell")
     args = parser.parse_args(argv)
     if args.command == "prefill":
         return _cmd_prefill(args)

@@ -181,27 +181,40 @@ class Market:
 
     # ---------- funding rate ----------
     def funding(self, symbol: str, start_ms: int | None = None) -> list[dict]:
-        have = self.conn.execute(
-            "SELECT MIN(funding_time), MAX(funding_time), COUNT(*) FROM funding"
-            " WHERE symbol=?", (symbol,),
-        ).fetchone()
-        if not have[2]:
-            self._download_funding(symbol)
+        """Funding prints, downloading whatever part of the window is missing.
+
+        The cache is checked at BOTH ends: a window that reaches further back
+        than the oldest cached print needs the older history downloaded, not
+        just the newer.
+        """
+        want_start = int(start_ms) if start_ms else 0
+        oldest = self.conn.execute(
+            "SELECT MIN(funding_time) FROM funding WHERE symbol=?", (symbol,)
+        ).fetchone()[0]
+        if oldest is None or (want_start and int(oldest) > want_start):
+            try:
+                self._download_funding(symbol, want_start)
+            except DataError:
+                # A rejected incremental fetch must not kill a historical
+                # replay: the newest few prints are the ones we lose, and
+                # they sit outside every window this audit measures.
+                pass
         out = self.conn.execute(
             "SELECT funding_time, funding_rate FROM funding WHERE symbol=?"
             " ORDER BY funding_time", (symbol,),
         ).fetchall()
-        if start_ms is not None:
-            out = [r for r in out if int(r[0]) >= start_ms]
+        if want_start:
+            out = [r for r in out if int(r[0]) >= want_start]
         return [{"t": int(r[0]), "rate": float(r[1])} for r in out]
 
     def _download_funding(self, symbol: str, since_ms: int | None = None) -> None:
+        """Page forward from the window start.
+
+        The endpoint ignores startTime=0 (returns the newest prints instead),
+        so paging starts from the requested window and walks forward until a
+        short page says the rest is already cached or does not exist.
+        """
         cursor = int(since_ms) if since_ms else 0
-        newest = self.conn.execute(
-            "SELECT MAX(funding_time) FROM funding WHERE symbol=?", (symbol,)
-        ).fetchone()[0]
-        if newest:
-            cursor = max(cursor, int(newest) + 1)
         while True:
             url = (f"{FUTURES}/fundingRate?symbol={symbol}&limit=1000"
                    + (f"&startTime={cursor}" if cursor else ""))
@@ -215,7 +228,11 @@ class Market:
                 [(symbol, int(r["fundingTime"]), float(r["fundingRate"])) for r in rows],
             )
             self.conn.commit()
-            if len(rows) < 1000:
+            # The endpoint caps a page well below the requested limit, so page
+            # until it answers with nothing; a page that fails to advance the
+            # cursor is the other way out.
+            last_t = int(rows[-1]["fundingTime"])
+            if last_t < cursor:
                 break
-            cursor = int(rows[-1]["fundingTime"]) + 1
+            cursor = last_t + 1
             time.sleep(0.25)

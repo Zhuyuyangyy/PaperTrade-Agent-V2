@@ -131,7 +131,7 @@ class TrendRider(Strategy):
         # enter on the next bar: the signal is only known at bar close
         return {int(i) + 1: "long" for i in df.index[entries.fillna(False)] if i + 1 < len(df)}
 
-    def exit_signals(self, candles: list[dict]) -> dict[int, str]:
+    def exit_signals(self, candles: list[dict], **kwargs) -> dict[int, str]:
         """Signal-based exits, keyed by bar index, filling at that bar's close."""
         if len(candles) < 250:
             return {}

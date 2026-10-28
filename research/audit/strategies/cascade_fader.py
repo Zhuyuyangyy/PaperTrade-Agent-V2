@@ -25,9 +25,14 @@ import pandas as pd
 from .base import Strategy
 from ..pathsim import Exit
 
-PAIRS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT",
-         "AVAXUSDT", "DOTUSDT", "LINKUSDT", "MATICUSDT", "LTCUSDT",
-         "ATOMUSDT", "NEARUSDT"]
+# Their curated whitelist, not ours: the lab excluded BCH (n=1, 0% WR),
+# DOGE (-0.33% avg), XRP (-0.21% avg), LINK (+0.05% marginal) and TRX
+# (historic 30% WR). Running our own guess at the list instead of theirs is
+# how a port quietly stops being the thing it claims to measure -- the first
+# run did exactly that and came in below their published PF.
+PAIRS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "ADAUSDT", "AVAXUSDT",
+         "DOTUSDT", "MATICUSDT", "LTCUSDT", "ATOMUSDT", "NEARUSDT",
+         "SUIUSDT", "APTUSDT"]
 
 
 class CascadeFader(Strategy):
