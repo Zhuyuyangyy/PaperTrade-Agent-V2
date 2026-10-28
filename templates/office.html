@@ -58,6 +58,22 @@
         border-radius:5px;padding:1px 6px}
   .holds{margin-top:8px;padding-top:7px;border-top:1px solid #1b2331;font-size:11px;color:var(--dim2)}
 
+  /* ---------- data-source alarm ---------- */
+  /* A book that scans every minute and sees nothing draws a flat line that
+     looks exactly like a book with no ideas. The wall must say which. */
+  #alarm{display:none;margin:0 0 14px;padding:11px 14px;border-radius:11px;
+    background:rgba(255,92,92,.10);border:1px solid rgba(255,92,92,.42);
+    color:#ffb4b4;font-size:12.5px;line-height:1.65}
+  #alarm.on{display:block}
+  #alarm b{color:#ff8080}
+  #alarm .fix{margin-top:5px;color:var(--dim)}
+  .src{margin-top:7px;padding-top:7px;border-top:1px solid #17202d;display:flex;
+    align-items:center;gap:6px;font-size:10.5px;color:var(--dim2)}
+  .src .led{width:6px;height:6px;border-radius:50%;flex:none;background:#3f4d6b}
+  .src.ok .led{background:#22c55e}
+  .src.blind .led{background:#ff5c5c;box-shadow:0 0 6px rgba(255,92,92,.8)}
+  .src.blind{color:#ff9a9a}
+
   /* ---------- chart ---------- */
   .ctrls{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
   .ctl{background:#1a2231;border:1px solid #242f41;color:var(--dim);border-radius:7px;
@@ -147,6 +163,8 @@
     <div class="stat"><b id="s-closed">—</b><span>累计平仓</span></div>
   </div>
 </header>
+
+<div id="alarm"></div>
 
 <h2 class="sec-title">钱包实时对比</h2>
 <section class="wallets" id="wallets"></section>
@@ -252,6 +270,32 @@ function sparkline(hist,up){
   </svg>`;
 }
 
+/* ---------- is the desk blind, or just quiet? ---------- */
+const BLIND_MS = 30*60*1000;      // 30 minutes without a token = blind
+function srcState(w){
+  const h=w.sources||{};
+  const ok=h.last_ok_ms;
+  if(!ok) return {cls:"", txt:"尚无成功扫描"};
+  const age=state.now_ms-ok;
+  if(age<=BLIND_MS) return {cls:"ok", txt:"数据源正常 · 刚见到代币"};
+  return {cls:"blind", txt:"数据源不可达 · 已 "+Math.round(age/60000)+" 分钟没见到代币"};
+}
+function renderAlarm(){
+  const blind=state.wallets.filter(w=>!w.unavailable && (w.sources||{}).last_ok_ms
+             && state.now_ms-w.sources.last_ok_ms>BLIND_MS);
+  const box=document.getElementById("alarm");
+  if(!blind.length){ box.className=""; box.innerHTML=""; return; }
+  const worst=Math.max(...blind.map(w=>state.now_ms-w.sources.last_ok_ms));
+  const hrs=(worst/3600000);
+  const dur = hrs>=1 ? hrs.toFixed(1)+" 小时" : Math.round(worst/60000)+" 分钟";
+  box.className="on";
+  box.innerHTML=`<b>⚠ 外网数据源不可达，已持续 ${dur}</b>（${blind.length}/${state.wallets.length} 本账）——
+    <b>曲线是平的是因为根本没有行情进来，不是因为系统停了。</b>
+    六个 agent 每分钟都在认真扫盘，但 Jupiter / DexScreener 连不上（DNS 被污染或代理工具掉线），
+    所以没有新候选、没有新开仓、平掉的仓位也补不上；已有持仓取不到新价，浮盈只能冻结。
+    <div class="fix">恢复办法：打开代理工具/VPN，或换一个能解析境外域名的 DNS。网络恢复后无需重启，下一轮扫描自动继续。</div>`;
+}
+
 function renderWallets(){
   const sorted=[...state.wallets].filter(w=>!w.unavailable).sort((a,b)=>b.equity-a.equity);
   document.getElementById("s-total").textContent = state.wallets.reduce((a,b)=>a+(b.equity||0),0).toFixed(0);
@@ -277,6 +321,7 @@ function renderWallets(){
       </div>
       <div class="chips">${Object.entries(w.reasons||{}).map(([k,v])=>`<span class="chip">${k}×${v}</span>`).join("")||'<span class="chip">尚无平仓</span>'}</div>
       <div class="holds">${cut((w.positions||[]).map(p=>`${p.symbol} ${p.pct>=0?"+":""}${p.pct}%`).join(" · ")||"空仓",44)}</div>
+      <div class="src ${srcState(w).cls}"><span class="led"></span>${srcState(w).txt}</div>
     </div>`;
   }).join("");
 }
@@ -587,7 +632,7 @@ async function tick(){
     if(!current){const f=state.wallets.find(w=>w.run_id); if(f) current=f.file;}
     document.getElementById("live").textContent="实时 "+new Date().toLocaleTimeString();
     document.getElementById("dot").className="dot";
-    renderWallets(); renderChart(); renderTabs(); renderFeed(); draw(); renderTrades(); renderSummary();
+    renderAlarm(); renderWallets(); renderChart(); renderTabs(); renderFeed(); draw(); renderTrades(); renderSummary();
   }catch(e){
     document.getElementById("live").textContent="连接失败";
     document.getElementById("dot").className="dot bad";

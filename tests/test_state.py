@@ -85,5 +85,62 @@ def test_a_ledger_that_cannot_be_read_still_gets_a_row(house: Path):
     assert broken["unavailable"] is True
 
 
+def test_source_health_tells_blind_from_quiet(house: Path):
+    """A book that scans and sees nothing must not look like a book with no ideas.
+
+    This is the difference between "flat line because the market is closed"
+    and "flat line because the network is gone" -- the two need opposite
+    responses, and only one of them is a bug in the desk.
+    """
+    import time
+
+    conn = sqlite3.connect(house / "runtime" / "memehunter" / "memehunter.sqlite")
+    now = int(time.time() * 1000)
+    # twelve blind scans, newest first as the query returns them
+    for i in range(12):
+        conn.execute(
+            "INSERT INTO scans (scanned_at_ms, tokens_seen, tokens_eligible, errors)"
+            " VALUES (?,?,?,?)",
+            (now - i * 60_000, 0, 0, json.dumps(["organic5m: 数据源不可达: 502"])),
+        )
+    # the desk last actually saw a token eight hours ago
+    conn.execute(
+        "INSERT INTO scans (scanned_at_ms, tokens_seen, tokens_eligible, errors)"
+        " VALUES (?,?,?,'[]')", (now - 8 * 3600_000, 40, 3),
+    )
+    conn.commit()
+    conn.close()
+
+    state = build_state(house)
+    live = next(w for w in state["wallets"] if w["label"] == "E 现役")
+    health = live["sources"]
+    assert health["scans"] == 12
+    assert health["empty_scans"] == 12, "every recent scan came back empty"
+    assert health["ok"] is False, "the newest scan saw nothing"
+    assert health["last_ok_ms"] is not None
+    assert state["now_ms"] - health["last_ok_ms"] > 7 * 3600_000, "and it was 8h ago"
+    assert health["last_errors"], "carry the reason so the wall can explain itself"
+
+
+def test_source_health_is_green_when_the_desk_sees_the_market(house: Path):
+    import time
+
+    conn = sqlite3.connect(house / "runtime" / "memehunter" / "memehunter.sqlite")
+    now = int(time.time() * 1000)
+    for i in range(6):
+        conn.execute(
+            "INSERT INTO scans (scanned_at_ms, tokens_seen, tokens_eligible, errors)"
+            " VALUES (?,?,?,'[]')", (now - i * 60_000, 120, 9),
+        )
+    conn.commit()
+    conn.close()
+
+    state = build_state(house)
+    live = next(w for w in state["wallets"] if w["label"] == "E 现役")
+    assert live["sources"]["ok"] is True
+    assert live["sources"]["empty_scans"] == 0
+    assert state["now_ms"] - live["sources"]["last_ok_ms"] < 60_000
+
+
 def test_state_is_json_serialisable(house: Path):
     json.dumps(build_state(house), ensure_ascii=False)

@@ -233,6 +233,45 @@ def _exit_heartbeat(root: Path | None, db_name: str) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
+def _source_health(conn: sqlite3.Connection) -> dict:
+    """Is the desk actually seeing the market, or drawing a flat line?
+
+    A book with no candidates for hours looks exactly like a book with no
+    ideas. This tells the two apart: how many of the last scans returned
+    tokens, and what the sources are saying when they do not.
+    """
+    try:
+        rows = list(conn.execute(
+            "SELECT scanned_at_ms, tokens_seen, errors FROM scans"
+            " ORDER BY scanned_at_ms DESC LIMIT 12"
+        ))
+        last_ok_row = conn.execute(
+            "SELECT MAX(scanned_at_ms) FROM scans WHERE tokens_seen > 0"
+        ).fetchone()
+    except sqlite3.Error:
+        return {"scans": 0, "empty_scans": 0, "ok": None, "last_errors": [],
+                "last_ok_ms": None}
+    if not rows:
+        return {"scans": 0, "empty_scans": 0, "ok": None, "last_errors": [],
+                "last_ok_ms": int(last_ok_row[0]) if last_ok_row and last_ok_row[0] else None}
+    empty = sum(1 for r in rows if not (r[1] or 0))
+    newest = rows[0]
+    try:
+        errors = json.loads(newest[2] or "[]")
+    except (TypeError, ValueError):
+        errors = []
+    return {
+        "scans": len(rows),
+        "empty_scans": empty,
+        "ok": bool(newest[1] or 0),
+        "last_scan_ms": int(newest[0] or 0),
+        # The number that matters: when the desk last actually saw a token.
+        # A loop that scans every minute and sees nothing is blind, not idle.
+        "last_ok_ms": int(last_ok_row[0]) if last_ok_row and last_ok_row[0] else None,
+        "last_errors": [str(e)[:110] for e in errors[:3]],
+    }
+
+
 def _trades(conn: sqlite3.Connection, limit: int = 40) -> list[dict]:
     """The closed-trade ledger for the detail panel: what was bought, how long
     it was held, why it ended, and what it paid."""
@@ -325,6 +364,7 @@ def build_state(root: Path | None = None) -> dict:
                 "history": _history(conn),
                 "trades": _trades(conn),
                 "note": BOOK_NOTES.get(path.name, ""),
+                "sources": _source_health(conn),
                 "exit_heartbeat": _exit_heartbeat(root, path.name),
                 "arm_info": _arm_info(root, path.name.replace(".sqlite", "") if path.name != DEFAULT_DB else ""),
             })
