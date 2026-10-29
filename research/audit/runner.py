@@ -40,6 +40,7 @@ class Book:
     fills: list = field(default_factory=list)
     control: list = field(default_factory=list)
     open_signals: int = 0
+    unfilled_entries: int = 0    # maker limit orders the market never crossed
     pairs: int = 0
     notes: list = field(default_factory=list)
 
@@ -61,6 +62,7 @@ class Book:
         ctrl = self.net(self.control)
         return {
             "n": len(net),
+            "unfilled": self.unfilled_entries,
             "win_rate": len(wins) / len(net),
             "net_mean": statistics.mean(net),
             "net_median": statistics.median(net),
@@ -84,10 +86,17 @@ def _random_entries(candles: list[dict], exits: dict[int, str], n: int, side: st
 
 
 def run(market: Market, strategy, *, since_ms: int, worst_case: bool = True,
-        control: bool = True, fee_rate: float = 0.0005, log=print) -> Book:
-    """fee_rate is PER SIDE. Binance USDT-perps: taker 5bps, maker 2bps."""
+        control: bool = True, fee_rate: float = 0.0005,
+        fill_model: str = "taker", log=print) -> Book:
+    """fee_rate is PER SIDE. Binance USDT-perps: taker 5bps, maker 2bps.
+
+    fill_model 'maker' additionally measures execution uncertainty: entries
+    and take-profits are limit orders that only fill on a cross, so the run
+    reports how many signals never became trades at all.
+    """
     book = Book(label=strategy.name, source=strategy.source, pairs=len(strategy.pairs))
-    book.notes.append(f"费率假设：{fee_rate*10000:.1f} bps/边（往返 {(fee_rate*2)*10000:.0f} bps）")
+    book.notes.append(f"费率假设：{fee_rate*10000:.1f} bps/边（往返 {(fee_rate*2)*10000:.0f} bps）"
+                      + (f" · 成交模型：{fill_model}" if fill_model != "taker" else ""))
     exit_rule = strategy.exit_rule
     venue = getattr(strategy, "venue", "spot")
 
@@ -122,9 +131,10 @@ def run(market: Market, strategy, *, since_ms: int, worst_case: bool = True,
             continue
         rule = Exit(**{**exit_rule.__dict__, "exit_signals": exits})
         res = simulate(candles, signals, rule, symbol=pair, worst_case=worst_case,
-                       funding_series=funding, fee_rate=fee_rate)
+                       funding_series=funding, fee_rate=fee_rate, fill_model=fill_model)
         book.fills.extend(res.fills)
         book.open_signals += res.open_signals
+        book.unfilled_entries += getattr(res, "unfilled_entries", 0)
         if control:
             ctrl_rule = Exit(stop_loss=exit_rule.stop_loss,
                              take_profit=exit_rule.take_profit,
@@ -134,7 +144,8 @@ def run(market: Market, strategy, *, since_ms: int, worst_case: bool = True,
                              exit_signals=exits)
             cres = simulate(candles, _random_entries(candles, exits, CONTROL_ENTRIES),
                             ctrl_rule, symbol=pair, worst_case=worst_case,
-                            funding_series=funding, fee_rate=fee_rate)
+                            funding_series=funding, fee_rate=fee_rate,
+                            fill_model=fill_model)
             book.control.extend(cres.fills)
         log(f"  {pair:<14} 信号 {len(signals):>3} → 成交 {len(res.fills):>3} 笔")
     return book
@@ -145,10 +156,11 @@ def format_book(book: Book, worst_case: bool) -> str:
     if not s.get("n"):
         return f"{book.label}: 无成交\n" + ("\n".join(f"  ! {n}" for n in book.notes) if book.notes else "")
     ctrl = f"{s['control_mean']*100:+.3f}%" if s["control_mean"] is not None else "—"
+    unfilled = f" · 未成交挂单 {s['unfilled']}" if s.get("unfilled") else ""
     lines = [
         f"{book.label}（{'最坏' if worst_case else '最好'} bar 解析）",
         f"  成交 {s['n']} 笔 · 胜率 {s['win_rate']*100:.0f}% · 笔均净 {s['net_mean']*100:+.3f}%"
-        f" · 中位 {s['net_median']*100:+.3f}% · PF {s['profit_factor']:.2f}",
+        f" · 中位 {s['net_median']*100:+.3f}% · PF {s['profit_factor']:.2f}{unfilled}",
         f"  最好 {s['best']*100:+.2f}% · 最差 {s['worst']*100:+.2f}%"
         f" · 去掉最好一笔 {s['ex_best']*100:+.2f}%",
         f"  对照组（随机入场 {s['control_n']} 笔）笔均 {ctrl}"

@@ -101,6 +101,79 @@ def test_funding_is_charged_at_each_8h_boundary_crossed():
     assert res_short.fills[0].funding_pct == pytest.approx(0.001, abs=0.0002)
 
 
+def test_a_maker_limit_order_fills_only_when_the_market_crosses_it():
+    """A touch is not a fill: resting orders are filled by price crossing them.
+
+    This is the difference between the maker row and the taker row of the
+    funding-rate study -- and the replay has to be able to tell them apart.
+    """
+    # signal bar closes at 100; next bar dips to exactly 100.0 (a touch)
+    touch = _candles([(100, 101, 99, 100, 10), (100, 101, 100.0, 100.5, 10),
+                      (100, 101, 99, 100, 10)])
+    res_touch = simulate(touch, {0: "long"}, Exit(timeout_bars=1), fill_model="maker")
+    assert res_touch.closed == 0, "a touch must not fill a resting buy"
+    assert res_touch.unfilled_entries == 1, "and the unfilled order is counted"
+
+    # next bar dips to 99.9: a real cross
+    cross = _candles([(100, 101, 99, 100, 10), (100, 101, 99.9, 100.5, 10),
+                      (100, 101, 99, 100, 10)])
+    res_cross = simulate(cross, {0: "long"}, Exit(timeout_bars=1), fill_model="maker")
+    assert res_cross.closed == 1
+    assert res_cross.unfilled_entries == 0
+    assert res_cross.fills[0].entry_price == 100.0, "filled at OUR limit price"
+
+
+def test_maker_entry_is_a_price_improvement_over_the_market_open():
+    """Filling at the limit beats paying the next open -- when it fills.
+
+    Priced in a rising market on purpose: in a falling one, "buying at your
+    own higher limit" is a disadvantage, and that is a different lesson.
+    """
+    candles = _candles([
+        (100, 101, 99, 100, 10),      # 0 signal, close 100
+        (105, 106, 99.5, 105, 10),    # 1 opens at 105 but dips through 100
+        (105, 108, 104, 107, 10),     # 2 closes 107
+    ])
+    taker = simulate(candles, {0: "long"}, Exit(timeout_bars=1), fill_model="taker")
+    maker = simulate(candles, {0: "long"}, Exit(timeout_bars=1), fill_model="maker")
+    assert taker.fills[0].entry_price == 105.0
+    assert maker.fills[0].entry_price == 100.0, "the limit filled at 100, not the 105 open"
+    assert maker.fills[0].gross_pct > taker.fills[0].gross_pct
+
+
+def test_take_profit_as_maker_needs_a_cross_too():
+    """The same discipline on the way out: TP fills on a cross, not a touch."""
+    # entry 100, TP at 110; a bar that touches exactly 110 must NOT fill it
+    candles = _candles([
+        (100, 101, 99, 100, 10),      # 0 signal
+        (100, 101, 99.5, 100.5, 10),  # 1 crosses 100 -> entry at 100
+        (100, 110.0, 100, 105, 10),   # 2 touches TP exactly, no cross
+        (105, 111, 104, 108, 10),     # 3 crosses 110 -> TP fills at 110
+        (108, 109, 107, 108, 10),
+    ])
+    rule = Exit(take_profit=0.10, timeout_bars=5)
+    res = simulate(candles, {0: "long"}, rule, fill_model="maker", worst_case=True)
+    assert res.closed == 1
+    assert res.fills[0].reason == "take_profit"
+    assert res.fills[0].exit_i == 3, "the touch bar did not fill the resting TP"
+    assert res.fills[0].exit_price == pytest.approx(110.0)
+
+
+def test_a_stop_is_always_a_market_order_even_in_maker_mode():
+    """A resting stop is the order that does not fill when it matters."""
+    candles = _candles([
+        (100, 101, 99, 100, 10),      # 0 signal
+        (100, 101, 99.5, 100.5, 10),  # 1 entry at 100
+        (100, 101, 90, 95, 10),       # 2 blows through the -8% stop
+        (95, 96, 94, 95, 10),
+    ])
+    rule = Exit(stop_loss=-0.08, timeout_bars=5)
+    res = simulate(candles, {0: "long"}, rule, fill_model="maker", worst_case=True)
+    assert res.closed == 1
+    assert res.fills[0].reason == "stop_loss", "stops stay market orders in maker mode"
+    assert res.fills[0].gross_pct == pytest.approx(-0.08, abs=0.001)
+
+
 def test_cascade_fader_fires_on_a_deep_recovered_wick_with_volume():
     """The ported signal: >=8% wick, >40% recovered, >2x volume."""
     strat = CascadeFader()

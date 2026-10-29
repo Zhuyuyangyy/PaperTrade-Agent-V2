@@ -222,18 +222,18 @@
         <td>realm520/FreqBot</td>
         <td class="num">2095</td><td class="num">43%</td><td class="num">-0.03%</td>
         <td class="num">0.88</td><td class="num">-0.05%</td>
-        <td><span class="verdict lead">三档费率全赢对照 · 见下方敏感度</span></td>
+        <td><span class="verdict lead">三种执行假设全赢对照 · 见下方</span></td>
       </tr>
       <tr>
-        <td class="name" style="padding-left:22px">└ 费率敏感度<small>盈亏平衡 ≈ 3bps/边</small></td>
-        <td>同一策略，只改费率</td>
+        <td class="name" style="padding-left:22px">└ 费率 × 成交模型<small>maker 优势被成交不确定性吃光</small></td>
+        <td>同一策略，改执行假设</td>
         <td class="num" colspan="4" style="white-space:normal">
-          taker 5bps/边 → 笔均 <b class="down">-0.046%</b> PF 0.80 ·
-          taker 4bps/边 → <b class="down">-0.026%</b> PF 0.88 ·
-          <b class="up">maker 2bps/边 → +0.014% PF 1.07（翻正）</b>
+          taker 5bps → 笔均 <b class="down">-0.046%</b> PF 0.80 ·
+          maker 理想成交 → <b class="up">+0.014%</b> PF 1.07 ·
+          <b>maker 真实成交（穿越才成交，107/2095 未成交）→ -0.001% PF 1.00</b>
         </td>
-        <td class="num">每档都赢对照<br><small>+0.110 / +0.025 / +0.007%</small></td>
-        <td><span class="verdict lead">唯一候选 · 待 dry-run</span></td>
+        <td class="num">三种假设全赢对照<br><small>+0.110 / +0.007 / +0.027%</small></td>
+        <td><span class="verdict fail">期望≈0 · 不值得 dry-run</span></td>
       </tr>
     </table>
     <div class="audit-note">
@@ -243,11 +243,11 @@
       <b>仪器校准：</b>CascadeFader 的仓库公布了 3.3 年实验室数字（PF 1.62，按 per-pair edge 精选名单）；
       我们用他们公布的排除规则重建名单、同样窗口重放，得到 PF 1.12——方向和量级吻合、我们更保守。
       仪器读得出同一个信号，也读得出精选名单带来的虚高。<br>
-      <b>最终判定（费率敏感度测完后）：</b>FundingRate 的盈亏平衡点约在 <b>3bps/边</b>——taker 5bps 下笔均 -0.046%（PF 0.80），
-      maker 2bps 下 +0.014%（PF 1.07，四个测量对象里唯一通过自己证伪规则的）。它在每一档费率下都赢随机对照组，
-      证明费率信号里确有价格之外的信息；但它活在一个"手续费 ≤3bps/边"的世界，而零售 taker 是 5bps。
-      maker 路径的两个假设回放验证不了（挂单 100% 成交、成交价=挂单价），真实结果大概率落在 taker 与 maker 之间。
-      <b>结论：不淘汰，标记为唯一值得 dry-run 的候选；不上钱。</b>
+      <b>最终判定（maker 成交模型测完后）：</b>FundingRate 在每一种执行假设下都赢随机对照——费率信号里确有价格之外的信息。
+      但把 maker 单当限价单处理（只在价格<b>穿越</b>挂单价时成交），2095 个信号里 107 个从未成交，
+      <b>那 15bp/笔的 maker 优势正好被成交不确定性吃光，PF 落在 1.00</b>。
+      仪器在一小时内推翻了自己上一版"唯一候选"的结论——这正是仪器该做的事。
+      <b>判定：不值得 dry-run（期望 ≈0），除非有费率折扣或队列优势。市场化验证的阶梯已备好（research/live/，规则事前写死、降级自动、升级需人），等下一个候选。</b>
     </div>
   </div>
 </section>

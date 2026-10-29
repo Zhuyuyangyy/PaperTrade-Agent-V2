@@ -57,6 +57,7 @@ class Fill:
 class SimResult:
     fills: list[Fill] = field(default_factory=list)
     open_signals: int = 0        # entries that never resolved
+    unfilled_entries: int = 0    # maker limit orders the market never crossed
     bars: int = 0
 
     @property
@@ -77,8 +78,17 @@ def simulate(
     funding_series: list[dict] | None = None,   # [{'t': ms, 'rate': per 8h}]
     worst_case: bool = True,
     max_entries: int | None = None,
+    fill_model: str = "taker",      # 'taker' (market) or 'maker' (limit, crossed)
 ) -> SimResult:
     """Replay entries over candles, resolving each bar in a disclosed order.
+
+    fill_model='maker' prices entries and take-profits as LIMIT orders: they
+    fill only when the market trades THROUGH the limit price (not merely
+    touches it), they fill AT the limit price (a price improvement over the
+    market order), and an entry that never gets crossed never becomes a trade
+    at all -- counted as unfilled, not silently dropped. Stops stay market
+    orders: a resting stop is exactly the order that does not fill when it
+    matters, so modelling it as one would flatter the strategy.
 
     funding: a position pays/receives the funding rate in force at each 8h
     boundary it crosses, prorated by how much of the interval it was open.
@@ -86,6 +96,7 @@ def simulate(
     result = SimResult(bars=len(candles))
     funding = funding_series or []
     taken = 0
+    stats = {"unfilled": 0}
 
     for i, side in sorted(entries.items()):
         if i >= len(candles) - 1:
@@ -99,22 +110,46 @@ def simulate(
         fill = _one_trade(
             candles, i, side, exit_rule, symbol=symbol,
             fee_rate=fee_rate, funding=funding, worst_case=worst_case,
+            fill_model=fill_model, stats=stats,
         )
         if fill is not None:
             result.fills.append(fill)
         else:
             result.open_signals += 1
+    result.unfilled_entries = stats["unfilled"]
     return result
 
 
-def _one_trade(candles, i, side, rule: Exit, *, symbol, fee_rate, funding, worst_case):
-    entry_bar = candles[i]
+def _crossed(bar: dict, price: float, side: str) -> bool:
+    """Did the market trade THROUGH the limit price inside this bar?
+
+    A touch is not enough: a resting order is filled by price crossing it.
+    """
+    return bar["l"] < price if side == "long" else bar["h"] > price
+
+
+def _one_trade(candles, i, side, rule: Exit, *, symbol, fee_rate, funding, worst_case,
+               fill_model="taker", stats=None):
+    signal_bar = candles[i]
     # Entry fills at the next bar's open: the signal is only known once the
     # bar closes, and acting inside the bar that produced it is look-ahead.
     j = i + 1
     if j >= len(candles):
         return None
-    entry_price = candles[j]["o"]
+
+    if fill_model == "maker":
+        # The limit order rests at the signal bar's close. If the next bar
+        # never trades through it, the signal simply did not become a trade.
+        limit = signal_bar["c"]
+        if not limit:
+            return None
+        if not _crossed(candles[j], limit, side):
+            if stats is not None:
+                stats["unfilled"] += 1
+            return None
+        entry_price = limit      # filled at OUR price: a price improvement
+    else:
+        entry_price = candles[j]["o"]
     entry_t = candles[j]["t"]
     if not entry_price:
         return None
@@ -164,7 +199,16 @@ def _one_trade(candles, i, side, rule: Exit, *, symbol, fee_rate, funding, worst
                         or (side == "short" and trail_price < sl_price):
                     sl_price = trail_price
 
-        tp_hit = tp_price is not None and (high >= tp_price if side == "long" else low <= tp_price)
+        if fill_model == "maker":
+            # A take-profit is the OPPOSITE order from the entry: a long's TP
+            # rests ABOVE the market as a sell, so it needs the high to cross
+            # it -- reusing the entry's cross direction here silently inverted
+            # the whole maker model.
+            tp_hit = tp_price is not None and (
+                (high > tp_price) if side == "long" else (low < tp_price)
+            )
+        else:
+            tp_hit = tp_price is not None and (high >= tp_price if side == "long" else low <= tp_price)
         sl_hit = sl_price is not None and (low <= sl_price if side == "long" else high >= sl_price)
 
         if tp_hit and sl_hit:
