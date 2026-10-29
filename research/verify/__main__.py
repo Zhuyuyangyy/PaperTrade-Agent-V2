@@ -1,0 +1,159 @@
+"""CLI: run the falsification battery from the command line.
+
+    python -m research.verify --list-market
+    python -m research.verify --spec spec.json [--candles klines.csv] [--out report.md]
+    python -m research.verify --demo [--out report.md]
+
+Data resolution order for candles: --candles CSV first, then the local market
+cache (runtime/audit/market.sqlite) filtered by the spec's symbol/interval/
+venue. Signals come from the spec: kind=csv reads --signals (or signals.path),
+kind=rule computes from the candles, kind=random is the control by itself.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+from . import data, report
+from .spec import Spec, SpecError
+
+ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_MARKET = ROOT / "runtime" / "audit" / "market.sqlite"
+
+DEMO_SPEC = {
+    "name": "rsi-dip-btc-1h-demo",
+    "hypothesis": "BTC 1 小时 RSI(14) 低于 30 后做多，捕捉均值回复",
+    "source": "内置演示（规则信号，无需外部信号文件）",
+    "symbol": "BTCUSDT",
+    "interval": "1h",
+    "venue": "futures",
+    "fee_rate": 0.0004,
+    "fill_model": "taker",
+    "funding": True,
+    "exit": {"take_profit": 0.03, "stop_loss": -0.08, "timeout_bars": 24},
+    "signals": {"kind": "rule", "rule": "rsi_below", "period": 14, "threshold": 30, "side": "long"},
+    "control": {"enabled": True, "n_random": 200, "seed": 42},
+    "fee_multiples": [1, 2, 5],
+    "falsify_if": {
+        "control_lift_ci_includes_zero": True,
+        "net_negative_at_fee_multiple": 2,
+        "worst_case_net_negative": True,
+        "min_fills": 30,
+    },
+}
+
+
+def _load_candles(args, spec: Spec) -> list[dict]:
+    if args.candles:
+        return data.load_candles_csv(args.candles)
+    market = Path(args.market) if args.market else DEFAULT_MARKET
+    if not market.is_file():
+        raise data.CandleError(
+            f"找不到行情缓存 {market}。请用 --candles 提供 CSV（列 t,o,h,l,c），"
+            "或用 --list-market 查看可用缓存。"
+        )
+    return data.load_candles_market(market, spec.symbol, spec.interval, spec.venue)
+
+
+def _build_entries(args, spec: Spec, candles: list[dict]) -> dict[int, str]:
+    from . import signals as sig
+
+    if spec.signals.kind == "rule":
+        entries = sig.rule_signals(
+            candles, rule=spec.signals.rule, period=spec.signals.period,
+            threshold=spec.signals.threshold, side=spec.signals.side,
+        )
+        if not entries:
+            raise SpecError(f"规则 {spec.signals.rule} 在窗口内没有产生任何信号（阈值 {spec.signals.threshold}）")
+        return entries
+    if spec.signals.kind == "random":
+        return sig.random_signals(candles, spec.signals.n_random, spec.signals.seed, side=spec.signals.side)
+    path = args.signals or spec.signals.path
+    if not path:
+        raise SpecError("signals.kind='csv' 需要 --signals 或 spec.signals.path")
+    entries, stats = data.load_signals_csv(path, candles)
+    if stats["total"] and not entries:
+        raise data.CandleError(
+            f"信号文件 {path} 有 {stats['total']} 行但无一映射到 K 线窗口内"
+            f"（窗口 {candles[0]['t']} → {candles[-1]['t']}）"
+        )
+    if stats["bad_rows"] or stats["skipped_after_end"] or stats["skipped_before_start"]:
+        print(
+            f"[信号提示] 共 {stats['total']} 行：映射 {stats['mapped']}，"
+            f"窗口外跳过 {stats['skipped_after_end'] + stats['skipped_before_start']}，"
+            f"坏行 {stats['bad_rows']}",
+            file=sys.stderr,
+        )
+    return entries
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(prog="research.verify", description="策略证伪引擎：path-aware 回放 + 成本敏感性 + 障碍可达性 + 随机对照组")
+    ap.add_argument("--spec", help="策略 spec JSON 路径")
+    ap.add_argument("--demo", action="store_true", help="运行内置演示（BTC 1h RSI 规则，数据取自本地行情缓存）")
+    ap.add_argument("--candles", help="K 线 CSV（列 t,o,h,l,c），优先于行情缓存")
+    ap.add_argument("--signals", help="信号 CSV（列 t[,side]），kind=csv 时使用")
+    ap.add_argument("--market", help=f"行情缓存 sqlite（默认 {DEFAULT_MARKET}）")
+    ap.add_argument("--out", help="报告输出路径（markdown）；缺省打印到 stdout")
+    ap.add_argument("--json", action="store_true", help="额外输出机器可读 JSON（与 --out 同名 .json）")
+    ap.add_argument("--list-market", action="store_true", help="列出本地行情缓存内容后退出")
+    args = ap.parse_args(argv)
+
+    market = Path(args.market) if args.market else DEFAULT_MARKET
+    if args.list_market:
+        try:
+            rows = data.describe_market_cache(market)
+        except Exception as exc:  # noqa: BLE001 - CLI boundary, message is the product
+            print(f"无法读取行情缓存 {market}: {exc}", file=sys.stderr)
+            return 2
+        print(f"{market} · {len(rows)} 组序列")
+        print(f"{'symbol':<12}{'interval':<10}{'venue':<10}{'bars':>8}  from → to")
+        import datetime as _dt
+
+        for sym, itv, ven, n, t0, t1 in rows:
+            f = lambda ms: _dt.datetime.fromtimestamp(ms / 1000).strftime("%Y-%m-%d")
+            print(f"{sym:<12}{itv:<10}{ven:<10}{n:>8}  {f(t0)} → {f(t1)}")
+        return 0
+
+    try:
+        if args.demo:
+            spec = Spec.from_dict(DEMO_SPEC)
+        elif args.spec:
+            spec = Spec.load(args.spec)
+        else:
+            ap.error("必须提供 --spec 或 --demo（或用 --list-market 查看缓存）")
+        candles = _load_candles(args, spec)
+        entries = _build_entries(args, spec, candles)
+        funding = None
+        if spec.funding:
+            funding = data.load_funding(market, spec.symbol)
+            if not funding and not args.candles:
+                print("[提示] 缓存中没有该 symbol 的资金费数据，按 0 处理", file=sys.stderr)
+        from . import verify as run_verify
+
+        result = run_verify(spec, candles, entries, funding=funding)
+    except (SpecError, data.CandleError, ValueError) as exc:
+        print(f"[输入错误] {exc}", file=sys.stderr)
+        return 2
+
+    md = report.render(result)
+    if args.out:
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(md, encoding="utf-8")
+        print(f"报告已写入 {out}")
+        if args.json:
+            jpath = out.with_suffix(".json")
+            jpath.write_text(report.render_json(result), encoding="utf-8")
+            print(f"JSON 已写入 {jpath}")
+    else:
+        print(md)
+        if args.json:
+            print(report.render_json(result))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

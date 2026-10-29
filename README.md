@@ -163,6 +163,31 @@ python -m research.astock audit --limit 60    # 先跑 60 只
 python -m research.astock audit --limit 0     # 全量（732 只老券，约 20 分钟）
 ```
 
+## 产品化：策略证伪引擎（`research/verify/`）
+
+赚钱线停了，仪器活着——而且被市场调研证明有真实需求（`docs/market-scan-2026-10-29.md`：backtest→实盘中位差 -14.3pp 是行业第一痛点，而市面服务只会"画曲线"）。`research/verify/` 把整个项目淬炼出的四件仪器打包成一个 CLI：**输入一份策略 spec，输出一份试图杀死它的报告。**
+
+```bash
+python -m research.verify --demo --out report.md          # 内置演示（真实 BTC 1h 缓存数据）
+python -m research.verify --spec spec.json --candles klines.csv --signals sig.csv --out report.md --json
+python -m research.verify --list-market                   # 本地行情缓存里有什么
+```
+
+四件仪器，一个裁决：
+
+| 仪器 | 回答的问题 |
+|---|---|
+| path-aware 回放 | 同一批信号，逐 bar 走价（bar 内 SL/TP 同现判 SL），最坏/最好口径并列——你赚的是价差还是假设？ |
+| 成本敏感性 | 费率 ×1/×2/×5 重放——edge 付不付得起自己的 toll？（本项目实测：$100 单 60bps，其中 50bps 是 LP 地板） |
+| 障碍可达性 | 止盈/止损位在持仓窗口内到底被摸到过几次——还是彩票结构？ |
+| 随机入场对照组 | 同窗口同退出规则随机入场，bootstrap CI 比均值——打不过抛硬币的策略，绝对收益数字没有意义 |
+
+**裁决不是分数，是事前证伪规则的判定结果**：`falsify_if` 写在 spec 里、先于任何数字存在（对照/证伪规则触发→FALSIFIED；样本不足→INCONCLUSIVE，不下结论；否则 NOT_FALSIFIED，并附"未被证伪≠被证实"）。报告固定含"未建模事项"一节——不知道仪器边界的人会滥用仪器。
+
+样例报告（真实数据，RSI 抄底 BTC 策略 3 年 1310 笔）：`docs/verify-sample-report.md`——裁决 FALSIFIED：基线即亏损、×2 成本净 -610%、且**显著差于随机入场**（差值 -0.37%，95% CI [-0.70%, -0.03%]）。spec 模板：`research/verify/samples/demo_spec.json`。
+
+**测试**：`tests/test_verify.py` 36 个用例（spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/CLI 端到端）。修复了 pathsim 一个真 bug：maker 未成交单曾被同时计入 unfilled 和 open_signals，虚低成交率。
+
 ## 运维：这个系统活着的时候经历过什么
 
 实验期间的真实事故与修复，全部有提交记录：
@@ -180,7 +205,7 @@ python -m research.astock audit --limit 0     # 全量（732 只老券，约 20 
 | 停止后循环反复复活 | `loop.sh` while true 守护 + 排队后台任务到点自启 | STOP 文件 kill switch（幂等） |
 | 后台任务约 3 小时被系统回收 | 环境事实 | 主+副班双看门狗，故障窗口 30 分钟 |
 
-**220 个测试，全部通过。**
+**272 个测试，全部通过**（含 verify 引擎 36 个；`test_convertible` 因环境缺 akshare 跳过收集）。
 
 ---
 
@@ -206,6 +231,10 @@ $PY -m research.audit prefill                                  # 拉取 Binance 
 $PY -m research.audit run --strategy funding --fee 0.0002      # maker 假设
 $PY -m research.replay selectivity                             # 桌面选择性审计
 $PY -m research.replay fees                                    # 成本校准
+
+# 策略证伪引擎（产品线，见 docs/market-scan-2026-10-29.md）
+$PY -m research.verify --demo --out report.md --json           # 样例报告
+$PY -m research.verify --spec research/verify/samples/demo_spec.json --out r.md
 ```
 
 ## 数据资产
@@ -224,3 +253,5 @@ $PY -m research.replay fees                                    # 成本校准
 **这个项目证明了一套特定方法在特定成本结构下不成立，并且把"证明"本身做成了可复用的仪器。** 它不是一个亏钱的交易机器人——亏钱的机器人满街都是，能拿出证据链的没几个。
 
 市场化验证的阶梯已经备好（`research/live/`）：规则事前写死、降级自动、升级需人、停机优先。今天没有策略够资格站上去——FundingRate 三档执行假设全赢对照但恰好被摩擦吃平（PF 1.00），这是仪器给出的最终答案，而阶梯是给下一个候选准备的。
+
+**归档之后**：仪器没有跟着归档。`research/verify/` 把四件仪器产品化为"策略证伪即服务"——市场调研（`docs/market-scan-2026-10-29.md`）显示这是个人在这个生态里少数被验证有真实付费需求的方向：别人卖"收益率曲线"，我们卖"这条曲线是不是幻觉"。

@@ -107,6 +107,7 @@ def simulate(
         if max_entries is not None and taken >= max_entries:
             break
         taken += 1
+        before = stats["unfilled"]
         fill = _one_trade(
             candles, i, side, exit_rule, symbol=symbol,
             fee_rate=fee_rate, funding=funding, worst_case=worst_case,
@@ -114,6 +115,11 @@ def simulate(
         )
         if fill is not None:
             result.fills.append(fill)
+        elif stats["unfilled"] > before:
+            # A maker limit the market never crossed: already counted as
+            # unfilled. Counting it as open too would double-book the same
+            # signal and quietly shrink the fill rate.
+            pass
         else:
             result.open_signals += 1
     result.unfilled_entries = stats["unfilled"]

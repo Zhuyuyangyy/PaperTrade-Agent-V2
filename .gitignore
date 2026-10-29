@@ -44,3 +44,6 @@ user_data/judge.local.json
 _backups/
 runtime/memehunter/loop.sh
 STOP
+
+# runtime lock artifacts
+*.pid
