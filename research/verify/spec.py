@@ -17,11 +17,14 @@ Example:
       "signals": {"kind": "rule", "rule": "rsi_below", "period": 14, "threshold": 30},
       "control": {"enabled": true, "n_random": 200, "seed": 42},
       "walk_forward": {"enabled": true, "folds": 3},
+      "param_grid": {"axes": {"take_profit": [0.02, 0.03, 0.04],
+                              "stop_loss": [-0.06, -0.08, -0.10]}},
       "fee_multiples": [1, 2, 5],
       "falsify_if": {
         "control_lift_ci_includes_zero": true,
         "net_negative_at_fee_multiple": 2,
         "worst_case_net_negative": false,
+        "grid_positive_ratio_min": 0.5,
         "min_fills": 30
       }
     }
@@ -40,6 +43,10 @@ class SpecError(ValueError):
 VALID_FILL_MODELS = ("taker", "maker")
 VALID_RULES = ("rsi_below", "rsi_above")
 VALID_SIGNAL_KINDS = ("csv", "random", "rule")
+# Exit parameters the sensitivity grid may move. Signal parameters are NOT
+# gridable here: changing them changes the entry set itself, which is a
+# different experiment (and a different control group), not a sensitivity.
+GRIDABLE_PARAMS = ("take_profit", "stop_loss", "timeout_bars", "trailing")
 
 
 @dataclass
@@ -120,6 +127,57 @@ class WalkForwardSpec:
 
 
 @dataclass
+class ParamGridSpec:
+    """Grid the exit parameters and replay EVERY cell: an edge that exists
+    only at one exact take-profit/stop-loss combination is a curve fit, not
+    an edge.
+
+    The grid values are declared in the spec BEFORE anyone sees a number --
+    the same discipline as `control` and `walk_forward`; a grid chosen after
+    reading the report is marketing. Each cell replays the SAME entries
+    under the SAME headline convention (the spec's worst/best-case flag,
+    base fee); only the declared axes move. At most two axes: the report
+    renders the grid as a two-dimensional heat table, and a three-axis
+    product is a reading problem, not a measurement problem.
+    """
+
+    enabled: bool = False
+    axes: dict[str, list] = field(default_factory=dict)
+    max_cells: int = 64
+
+    def validate(self) -> None:
+        if not self.axes:
+            raise SpecError(
+                "param_grid 至少要声明一个参数轴（如 \"take_profit\": [0.02, 0.03]）"
+            )
+        if len(self.axes) > 2:
+            raise SpecError(
+                f"param_grid 最多支持 2 个参数轴（热力表是二维的），得到 {len(self.axes)} 个："
+                f"{list(self.axes)}——想扫更多维度就分多次运行，每次的规则都事前声明"
+            )
+        total = 1
+        for key, values in self.axes.items():
+            if key not in GRIDABLE_PARAMS:
+                raise SpecError(f"param_grid 参数名必须是 {GRIDABLE_PARAMS} 之一，得到 {key!r}")
+            if len(values) < 2:
+                raise SpecError(f"param_grid 轴 {key!r} 至少 2 个值（1 个值不成网格）")
+            if len(set(values)) != len(values):
+                raise SpecError(f"param_grid 轴 {key!r} 的值有重复：{values}")
+            if key in ("take_profit", "trailing") and any(v <= 0 for v in values):
+                raise SpecError(f"param_grid.{key} 的值必须是正数，得到 {values}")
+            if key == "stop_loss" and any(v >= 0 for v in values):
+                raise SpecError(f"param_grid.stop_loss 的值必须是负数，得到 {values}")
+            if key == "timeout_bars" and any(int(v) != v or v < 1 for v in values):
+                raise SpecError(f"param_grid.timeout_bars 的值必须是 ≥1 的整数，得到 {values}")
+            total *= len(values)
+        if total > self.max_cells:
+            raise SpecError(
+                f"param_grid 共 {total} 格，超过 max_cells={self.max_cells}——"
+                f"网格是组合爆炸的，先缩小轴范围，或想清楚再看再调大 max_cells"
+            )
+
+
+@dataclass
 class Spec:
     name: str
     symbol: str
@@ -133,6 +191,7 @@ class Spec:
     signals: SignalSpec = field(default_factory=SignalSpec)
     control: ControlSpec = field(default_factory=ControlSpec)
     walk_forward: WalkForwardSpec = field(default_factory=WalkForwardSpec)
+    param_grid: ParamGridSpec = field(default_factory=ParamGridSpec)
     fee_multiples: tuple[float, ...] = (1.0, 2.0, 5.0)
     falsify_if: dict = field(default_factory=dict)
     hypothesis: str = ""
@@ -155,10 +214,23 @@ class Spec:
             raise SpecError("fee_multiples 不能为空")
         if 1.0 not in self.fee_multiples:
             raise SpecError("fee_multiples 必须包含 1（基准成本），否则敏感性表没有锚点")
+        min_ratio = self.falsify_if.get("grid_positive_ratio_min")
+        if min_ratio is not None:
+            try:
+                min_ratio = float(min_ratio)
+            except (TypeError, ValueError):
+                raise SpecError("falsify_if.grid_positive_ratio_min 必须是 (0, 1] 内的数字")
+            if not 0 < min_ratio <= 1:
+                raise SpecError(
+                    f"falsify_if.grid_positive_ratio_min 必须在 (0, 1] 内，得到 {min_ratio}"
+                )
         self.exit.validate()
         self.signals.validate()
         self.control.validate()
         self.walk_forward.validate()
+        # an absent block is "not declared"; a declared block must be valid
+        if self.param_grid.enabled:
+            self.param_grid.validate()
 
     # -- (de)serialisation ---------------------------------------------------
     def to_dict(self) -> dict:
@@ -200,6 +272,11 @@ class Spec:
                 "enabled": self.walk_forward.enabled,
                 "folds": self.walk_forward.folds,
             },
+            "param_grid": {
+                "enabled": self.param_grid.enabled,
+                "axes": {k: list(v) for k, v in self.param_grid.axes.items()},
+                "max_cells": self.param_grid.max_cells,
+            },
             "fee_multiples": list(self.fee_multiples),
             "falsify_if": self.falsify_if,
         }
@@ -215,6 +292,7 @@ class Spec:
         sig_d = d.get("signals") or {}
         ctrl_d = d.get("control") or {}
         wf_d = d.get("walk_forward") or {}
+        pg_d = d.get("param_grid") or {}
         spec = cls(
             name=str(d["name"]),
             symbol=str(d["symbol"]).upper(),
@@ -250,6 +328,11 @@ class Spec:
             walk_forward=WalkForwardSpec(
                 enabled=bool(wf_d.get("enabled", True)) if "walk_forward" in d else False,
                 folds=int(wf_d.get("folds", 3)),
+            ),
+            param_grid=ParamGridSpec(
+                enabled=bool(pg_d.get("enabled", True)) if "param_grid" in d else False,
+                axes=_grid_axes(pg_d.get("axes") or {}),
+                max_cells=int(pg_d.get("max_cells", 64)),
             ),
             fee_multiples=tuple(float(m) for m in d.get("fee_multiples", (1.0, 2.0, 5.0))),
             falsify_if=dict(d.get("falsify_if") or {}),
@@ -287,3 +370,28 @@ def _opt_int(v, field_name: str) -> int | None:
         return int(v)
     except (TypeError, ValueError) as exc:
         raise SpecError(f"{field_name} 必须是整数或 null") from exc
+
+
+def _grid_axes(raw: dict) -> dict:
+    """Coerce declared grid axis values to their parameter's type (bar counts
+    are ints; the rest are fractions). A bad value is a SpecError naming the
+    axis, never a silent coercion."""
+    axes: dict = {}
+    for key, values in raw.items():
+        if not isinstance(values, (list, tuple)) or not values:
+            raise SpecError(f"param_grid 轴 {key!r} 必须是非空数组，得到 {values!r}")
+        if key == "timeout_bars":
+            out = []
+            for v in values:
+                f = _opt_float(v, f"param_grid.{key}")
+                if f is None or int(f) != f or f < 1:
+                    raise SpecError(
+                        f"param_grid.timeout_bars 的值必须是 ≥1 的整数，得到 {v!r}"
+                    )
+                out.append(int(f))
+            axes[key] = out
+        else:
+            axes[key] = [_opt_float(v, f"param_grid.{key}") for v in values]
+            if any(v is None for v in axes[key]):
+                raise SpecError(f"param_grid 轴 {key!r} 含有 null 值：{values}")
+    return axes

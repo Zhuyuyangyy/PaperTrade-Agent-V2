@@ -24,6 +24,71 @@ def _pct(v: float | None, digits: int = 2) -> str:
     return f"{v:+.{digits}f}%" if v is not None else "—"
 
 
+def _fmt_axis(key: str, v) -> str:
+    """Axis values read like the spec declares them: bar counts are counts,
+    the rest are signed percentages."""
+    if key == "timeout_bars":
+        return f"{int(v)} 根"
+    return f"{v * 100:+.1f}%"
+
+
+def _params_txt(params: dict) -> str:
+    return " · ".join(f"{k}={_fmt_axis(k, v)}" for k, v in params.items())
+
+
+def _render_grid_scope(g: dict, spec: dict, verdict: dict, a) -> None:
+    """One grid scope: the distribution line, the heat table, and -- only
+    when the PRE-DECLARED rule fired -- the overfit flag. No threshold is
+    invented here; the flag quotes the spec's own declared minimum."""
+    axes, order = g["axes"], g["axis_order"]
+    case_label = "最坏优先" if spec["worst_case"] else "最好优先"
+    if g["cells_with_fills"] == 0:
+        a(f"- {g['n_cells']} 格全部无成交——该范围无法评估参数敏感性（裁决见第 7 节）。")
+    else:
+        a(f"- 分布：{g['cells_with_fills']} 格有成交 · {g['positive_cells']} 格净收益为正"
+          f"（{g['positive_ratio']:.0%}）· {case_label}口径中位 {_pct(g['median_net_pct'])} · "
+          f"最好 {_pct(g['best']['net_sum_pct'])}（{_params_txt(g['best']['params'])}）· "
+          f"最差 {_pct(g['worst']['net_sum_pct'])}（{_params_txt(g['worst']['params'])}）")
+        if g["no_fill_cells"]:
+            a(f"- 另有 {g['no_fill_cells']} 格无成交，不计入占比——无证据的格子既不算赢也不算输")
+    a("")
+    if len(order) == 2:
+        r_ax, c_ax = order
+        a(f"| {r_ax} ↓ ＼ {c_ax} → | " + " | ".join(_fmt_axis(c_ax, v) for v in axes[c_ax]) + " |")
+        a("|" + "---|" * (len(axes[c_ax]) + 1))
+        cell_map = {(c["params"][r_ax], c["params"][c_ax]): c for c in g["cells"]}
+        best_key = ((g["best"]["params"][r_ax], g["best"]["params"][c_ax])
+                    if g["best"] else None)
+        for rv in axes[r_ax]:
+            row = [f"`{_fmt_axis(r_ax, rv)}`"]
+            for cv in axes[c_ax]:
+                c = cell_map[(rv, cv)]
+                txt = "无成交" if c["fills"] == 0 else _pct(c["net_sum_pct"])
+                row.append(f"**{txt}**" if (rv, cv) == best_key else txt)
+            a("| " + " | ".join(row) + " |")
+    else:
+        a(f"| {order[0]} | 净收益（{case_label}） | 成交 |")
+        a("|---|---|---:|")
+        cell_map = {c["params"][order[0]]: c for c in g["cells"]}
+        for v in axes[order[0]]:
+            c = cell_map[v]
+            txt = "无成交" if c["fills"] == 0 else _pct(c["net_sum_pct"])
+            a(f"| `{_fmt_axis(order[0], v)}` | {txt} | {c['fills']} |")
+    fired = [c for c in verdict["checks"]
+             if c.get("rule") == "grid_positive_ratio_min"
+             and c.get("triggered") and c.get("scope") == g["scope"]]
+    if fired:
+        min_ratio = float(spec["falsify_if"]["grid_positive_ratio_min"])
+        a("")
+        if g["positive_cells"] == 0:
+            a(f"> 全部 {g['cells_with_fills']} 格均为负——网格内没有任何参数组合赚钱，"
+              f"edge 在这个参数空间里不存在，更谈不上稳健；按事前声明规则 "
+              f"`grid_positive_ratio_min`（下限 {min_ratio:.0%}）触发证伪，见第 7 节。")
+        else:
+            a(f"> 只有 {g['positive_cells']}/{g['cells_with_fills']} 格为正——edge 的存在依赖一小撮参数组合，"
+              f"这是过拟合的典型签名；按事前声明规则 `grid_positive_ratio_min`（下限 {min_ratio:.0%}）触发证伪，见第 7 节。")
+
+
 def render(result: dict) -> str:
     spec = result["spec"]
     v = result["verdict"]
@@ -59,6 +124,16 @@ def render(result: dict) -> str:
     if wf:
         oos_v = (wf.get("out_sample") or {}).get("verdict", {}).get("outcome", "无信号")
         a(f"- Walk-forward：{wf['folds']} 折（样本外界界 {wf['boundary_ts']}，第 {wf['boundary_bar']} 根）· 样本外段裁决 {oos_v}")
+    pg = result.get("param_grid")
+    if pg:
+        dims = " × ".join(f"{k}({len(pg['axes'][k])})" for k in pg["axis_order"])
+        parts = []
+        for g in pg["scopes"]:
+            if g["cells_with_fills"]:
+                parts.append(f"{g['scope']} {g['positive_cells']}/{g['cells_with_fills']} 格为正")
+            else:
+                parts.append(f"{g['scope']} 无成交")
+        a(f"- 参数网格：{dims} 共 {pg['scopes'][0]['n_cells']} 格 · " + " · ".join(parts))
     a("")
 
     # -- 1. replay ----------------------------------------------------------
@@ -183,8 +258,34 @@ def render(result: dict) -> str:
             a("> 样本外段触发了事前证伪规则——按裁决规则，整体判 FALSIFIED：只在看得见的地方成立的 edge 不是 edge。")
             a("")
 
-    # -- 6. criteria --------------------------------------------------------
-    a("## 6. 事前证伪规则判定")
+    # -- 6. parameter grid ---------------------------------------------------
+    if pg:
+        a("## 6. 参数敏感性网格")
+        a("")
+        decl = " × ".join(
+            f"`{k}` [{', '.join(_fmt_axis(k, v) for v in pg['axes'][k])}]"
+            for k in pg["axis_order"]
+        )
+        a(f"- 事前声明：{decl}（共 {pg['scopes'][0]['n_cells']} 格；网格值写于 spec，先于本报告存在）")
+        if wf:
+            a("- walk-forward 已启用：样本内 / 样本外两段各跑一遍全网格（两段入场之和 = 全体入场）；"
+              "每格按 spec 声明的成交口径、基准费率 ×1、同一入场集回放——成本敏感性见第 2 节，"
+              "网格只回答「edge 是否依赖精确的参数组合」")
+        else:
+            a("- 测量口径：每格按 spec 声明的成交口径、基准费率 ×1、同一入场集回放——"
+              "成本敏感性见第 2 节，网格只回答「edge 是否依赖精确的参数组合」；"
+              "网格在全体入场上测量，本身是窗口内（样本内）结果")
+        for g in pg["scopes"]:
+            if len(pg["scopes"]) > 1:
+                seg_label = ("样本内（前 %d 折）" % (wf["folds"] - 1) if g["scope"] == "样本内"
+                             else "样本外（最后 1 折）" if g["scope"] == "样本外" else g["scope"])
+                a("")
+                a(f"**{seg_label}**")
+            _render_grid_scope(g, spec, v, a)
+        a("")
+
+    # -- 7. criteria --------------------------------------------------------
+    a("## 7. 事前证伪规则判定")
     a("")
     if v["checks"]:
         a("| 规则 | 范围 | 结果 | 明细 |")
@@ -197,12 +298,14 @@ def render(result: dict) -> str:
     a("")
 
     # -- disclosure ---------------------------------------------------------
-    a("## 7. 未建模事项（阅读前必读）")
+    a("## 8. 未建模事项（阅读前必读）")
     a("")
     for t in [
         "滑点与部分成交：只按费率+成交模型计成本，真实盘口的排队与部分成交不在模型内；",
         ("样本外表现：walk-forward 已启用——最后一段按时间切出作样本外，但引擎无法验证策略参数是否曾用全窗口数据调优；"
          "若调参时已看过最后一段，'样本外'名不副实。" if wf else
+         "样本外表现：walk-forward 未启用——所有数字都是窗口内的样本内结果；参数网格已启用，"
+         "但它测量的是参数脆弱性而非时间维度上的稳健性，且网格本身也在窗口内测量，不能替代样本外验证。" if pg else
          "样本外表现：所有数字都是窗口内的样本内结果，walk-forward 与参数敏感性不在本引擎射程内；"),
         "资金容量：等权回放，单笔金额对盘口的冲击（除费率外）未建模；",
         "同时持仓相关性：信号逐一独立回放，重叠持仓的相关性风险不计入；",

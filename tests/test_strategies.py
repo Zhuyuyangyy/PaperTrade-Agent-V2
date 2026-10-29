@@ -64,15 +64,22 @@ def test_baseline_buys_but_hybrid_never_enters_without_current_agent(tmp_path):
 def test_hybrid_approves_only_last_matching_candle(tmp_path):
     # Live clocks: the hybrid validates signal freshness against its own
     # datetime.now(), so the signal must be written with a real recent time.
-    # The one exception is the closed-candle check, anchored 60s back -- the
-    # same convention run_demo uses -- because inside the first 30s after an
-    # hour boundary an hour-aligned feed has no candle that is both settled
-    # and fresh (the dead zone, pinned by the test below).
+    # The anchor is the hour boundary + 30s: the previous hour's candle is
+    # settled exactly then, and anchoring there (instead of a blind now-60s)
+    # keeps the signal's candle_open_ms equal to the df's LAST candle for the
+    # whole hour. A blind 60s-back anchor crosses the boundary inside the
+    # first 60s of every hour and the candle mismatches -- that flake failed
+    # this test ~once an hour until it was pinned here.
+    # Inside the first 30s after a boundary no candle is both settled and
+    # fresh (the dead zone U1 pinned); the test does not apply there.
     now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
-    df = make_df(now_ms)
-    safe_ms = now_ms - 60_000
-    bars = checked_closed_candles(fake_closed_rows(safe_ms), safe_ms)
-    d = build_decision("BTC/USDT", bars, safe_ms)
+    boundary = now_ms // 3_600_000 * 3_600_000
+    if now_ms < boundary + 30_000:
+        pytest.skip("整点后 30s 死区：不存在既沉淀又新鲜的信号（engine skips the tick there）")
+    anchor = boundary + 30_000
+    df = make_df(anchor)
+    bars = checked_closed_candles(fake_closed_rows(anchor), anchor)
+    d = build_decision("BTC/USDT", bars, anchor)
     atomic_write_json(tmp_path / "BTC_USDT.json", d)
     s = new_strategy(PaperHybrid, tmp_path)
     assert s.process_only_new_candles is False

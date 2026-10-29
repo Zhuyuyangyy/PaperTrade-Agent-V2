@@ -44,11 +44,14 @@ DEMO_SPEC = {
     "signals": {"kind": "rule", "rule": "rsi_below", "period": 14, "threshold": 30, "side": "long"},
     "control": {"enabled": True, "n_random": 200, "seed": 42},
     "walk_forward": {"enabled": True, "folds": 3},
+    "param_grid": {"axes": {"take_profit": [0.02, 0.03, 0.04],
+                            "stop_loss": [-0.06, -0.08, -0.10]}},
     "fee_multiples": [1, 2, 5],
     "falsify_if": {
         "control_lift_ci_includes_zero": True,
         "net_negative_at_fee_multiple": 2,
         "worst_case_net_negative": True,
+        "grid_positive_ratio_min": 0.5,
         "min_fills": 30,
     },
 }

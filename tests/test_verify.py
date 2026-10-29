@@ -409,6 +409,21 @@ def _overfit_candles() -> list[dict]:
     return _dip_recovery_candles(1000) + _grind_down_candles(500)
 
 
+def _free_fall_candles(n: int) -> list[dict]:
+    """Monotonic -1%/bar crash: every dip entry loses at EVERY parameter
+    combination -- the grid has no positive cell anywhere, which is a
+    stronger statement than knife-edge and deserves its own sentence."""
+    out, px = [], 100.0
+    t0 = 1_700_000_000_000
+    for i in range(n):
+        px *= 0.99
+        o = px * 1.001
+        c = px
+        out.append({"t": t0 + i * 3_600_000, "o": o, "h": o, "l": px * 0.999,
+                    "c": c, "v": 1000.0})
+    return out
+
+
 class TestWalkForward:
     def test_single_fold_rejected(self):
         with pytest.raises(SpecError, match="至少为 2"):
@@ -535,7 +550,7 @@ class TestWalkForward:
         text = report.render(verify(spec, candles, entries))
         assert "## 5. Walk-forward（样本内 / 样本外）" in text
         assert "样本内（前 2 折）" in text and "样本外（最后 1 折）" in text
-        assert "## 6. 事前证伪规则判定" in text
+        assert "## 7. 事前证伪规则判定" in text
         assert "| 规则 | 范围 | 结果 | 明细 |" in text
         assert "无法验证策略参数是否曾用全窗口数据调优" in text
         assert "只在看得见的地方成立的 edge 不是 edge" in text
@@ -549,8 +564,215 @@ class TestWalkForward:
         entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
         text = report.render(verify(spec, candles, entries))
         assert "## 5. Walk-forward" not in text
-        assert "## 6. 事前证伪规则判定" in text  # criteria renumbered, still last
+        assert "## 7. 事前证伪规则判定" in text  # criteria renumbered, still last
         assert "walk-forward 与参数敏感性不在本引擎射程内" in text
+
+
+# --------------------------------------------------------------------------
+# parameter sensitivity grid
+# --------------------------------------------------------------------------
+
+class TestParamGrid:
+    def _grid_spec(self, **over):
+        d = dict(BASE_SPEC)
+        d["control"] = {"enabled": False}
+        d["param_grid"] = {"axes": {"take_profit": [0.02, 0.03, 0.04],
+                                    "stop_loss": [-0.06, -0.08, -0.10]}}
+        d.update(over)
+        return Spec.from_dict(d)
+
+    def test_declaring_block_enables_and_roundtrips(self):
+        on = self._grid_spec()
+        assert on.param_grid.enabled is True
+        rt = on.to_dict()["param_grid"]
+        assert rt["axes"]["take_profit"] == [0.02, 0.03, 0.04]
+        assert rt["max_cells"] == 64
+        off = Spec.from_dict({
+            "name": "t", "symbol": "X", "interval": "1h",
+            "exit": {"timeout_bars": 5}, "signals": {"kind": "random"},
+        })
+        assert off.param_grid.enabled is False
+        assert off.to_dict()["param_grid"]["axes"] == {}
+
+    def test_axis_validation_errors(self):
+        base = {"name": "t", "symbol": "X", "interval": "1h",
+                "exit": {"timeout_bars": 5}, "signals": {"kind": "random"}}
+        with pytest.raises(SpecError, match="参数名必须是"):
+            Spec.from_dict({**base, "param_grid": {"axes": {"rsi_period": [7, 14]}}})
+        with pytest.raises(SpecError, match="至少 2 个值"):
+            Spec.from_dict({**base, "param_grid": {"axes": {"take_profit": [0.03]}}})
+        with pytest.raises(SpecError, match="最多支持 2 个参数轴"):
+            Spec.from_dict({**base, "param_grid": {"axes": {
+                "take_profit": [0.02, 0.03], "stop_loss": [-0.06, -0.08],
+                "timeout_bars": [6, 12]}}})
+        with pytest.raises(SpecError, match="take_profit 的值必须是正数"):
+            Spec.from_dict({**base, "param_grid": {"axes": {"take_profit": [-0.02, 0.03]}}})
+        with pytest.raises(SpecError, match="stop_loss 的值必须是负数"):
+            Spec.from_dict({**base, "param_grid": {"axes": {"stop_loss": [0.06, -0.08]}}})
+        with pytest.raises(SpecError, match="有重复"):
+            Spec.from_dict({**base, "param_grid": {"axes": {"take_profit": [0.03, 0.03]}}})
+        with pytest.raises(SpecError, match="max_cells"):
+            Spec.from_dict({**base, "param_grid": {
+                "axes": {"take_profit": [0.01, 0.02, 0.03, 0.04]}, "max_cells": 3}})
+        with pytest.raises(SpecError, match="≥1 的整数"):
+            Spec.from_dict({**base, "param_grid": {"axes": {"timeout_bars": [6, 12.5]}}})
+
+    def test_grid_positive_ratio_min_validated(self):
+        base = {"name": "t", "symbol": "X", "interval": "1h",
+                "exit": {"timeout_bars": 5}, "signals": {"kind": "random"}}
+        with pytest.raises(SpecError, match="grid_positive_ratio_min"):
+            Spec.from_dict({**base, "falsify_if": {"grid_positive_ratio_min": 1.5}})
+        with pytest.raises(SpecError, match="grid_positive_ratio_min"):
+            Spec.from_dict({**base, "falsify_if": {"grid_positive_ratio_min": "half"}})
+
+    def test_grid_covers_every_combo_and_the_base_cell_reproduces_the_headline(self):
+        """The cell matching the declared exit must reproduce the headline
+        worst-case number EXACTLY -- the grid moves parameters, never the
+        measurement convention."""
+        candles = make_candles(1200, seed=21)
+        spec = self._grid_spec()
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        r = verify(spec, candles, entries)
+        g = r["param_grid"]["scopes"][0]
+        assert g["n_cells"] == 9 and len(g["cells"]) == 9
+        combos = {(c["params"]["take_profit"], c["params"]["stop_loss"]) for c in g["cells"]}
+        assert len(combos) == 9
+        base_cell = next(c for c in g["cells"]
+                         if c["params"] == {"take_profit": 0.03, "stop_loss": -0.08})
+        assert base_cell["net_sum_pct"] == pytest.approx(
+            r["runs"]["worst_case"]["stats"]["sum_pct"])
+        # the summary is a recount of the cells, not a second source of truth
+        traded = [c for c in g["cells"] if c["fills"] > 0]
+        assert g["cells_with_fills"] == len(traded)
+        assert g["positive_cells"] == sum(1 for c in traded if c["net_sum_pct"] > 0)
+        assert g["positive_ratio"] == pytest.approx(g["positive_cells"] / len(traded))
+
+    def test_declared_rule_fires_and_undeclared_rule_invents_nothing(self):
+        """Same series, same grid: with the rule declared a knife-edge grid
+        falsifies; without it the grid is still measured but no threshold
+        appears out of thin air."""
+        candles = _grind_down_candles(800)
+        d = dict(BASE_SPEC)
+        d["control"] = {"enabled": False}
+        d["signals"] = {"kind": "rule", "rule": "rsi_below", "period": 14, "threshold": 45}
+        d["param_grid"] = {"axes": {"take_profit": [0.01, 0.03, 0.05],
+                                    "stop_loss": [-0.04, -0.08]}}
+        d["falsify_if"] = {"min_fills": 10, "grid_positive_ratio_min": 0.5}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=45)
+        r = verify(spec, candles, entries)
+        g = r["param_grid"]["scopes"][0]
+        checks = [c for c in r["verdict"]["checks"]
+                  if c["rule"] == "grid_positive_ratio_min"]
+        assert checks and all(c["triggered"] for c in checks)
+        assert r["verdict"]["outcome"] == "FALSIFIED"
+        assert f"{g['positive_cells']}/{g['cells_with_fills']}" in checks[0]["detail"]
+        assert "曲线拟合不是 edge" in checks[0]["detail"]
+        d2 = dict(d)
+        d2["falsify_if"] = {"min_fills": 10}
+        r2 = verify(Spec.from_dict(d2), candles, entries)
+        assert not any(c["rule"] == "grid_positive_ratio_min"
+                       for c in r2["verdict"]["checks"])
+        assert r2["param_grid"]["scopes"][0]["positive_ratio"] == g["positive_ratio"]
+
+    def test_grid_follows_the_walk_forward_segments(self):
+        """The grid runs per segment when walk-forward is on; a knife-edge
+        OUT-OF-SAMPLE grid falsifies the whole strategy, and the in-sample
+        segment verdict sees its own grid."""
+        candles = _overfit_candles()
+        d = dict(BASE_SPEC)
+        d["signals"] = {"kind": "rule", "rule": "rsi_below", "period": 14, "threshold": 45}
+        d["control"] = {"enabled": False}
+        d["walk_forward"] = {"folds": 3}
+        d["param_grid"] = {"axes": {"take_profit": [0.01, 0.03, 0.05],
+                                    "stop_loss": [-0.04, -0.08]}}
+        d["falsify_if"] = {"min_fills": 10, "grid_positive_ratio_min": 0.5}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=45)
+        r = verify(spec, candles, entries)
+        pg = r["param_grid"]
+        assert [g["scope"] for g in pg["scopes"]] == ["样本内", "样本外"]
+        is_g, oos_g = pg["scopes"]
+        # the seeded series: dip-buying works in-sample and bleeds out-of-sample
+        assert is_g["positive_cells"] > 0
+        assert oos_g["positive_cells"] < is_g["positive_cells"]
+        v = r["verdict"]
+        oos_checks = [c for c in v["checks"]
+                      if c["rule"] == "grid_positive_ratio_min" and c["scope"] == "样本外"]
+        assert oos_checks and oos_checks[0]["triggered"]
+        assert "样本外段（第 1000 根起）" in oos_checks[0]["detail"]
+        # the segment's own verdict must agree with the criteria table
+        assert r["walk_forward"]["out_sample"]["verdict"]["outcome"] == "FALSIFIED"
+
+    def test_grid_where_nothing_trades_is_inconclusive(self):
+        """A grid with no fills anywhere carries no evidence: INCONCLUSIVE,
+        never a pass and never a falsification."""
+        candles = make_candles(40)
+        spec = self._grid_spec(falsify_if={"min_fills": 10, "grid_positive_ratio_min": 0.5})
+        r = verify(spec, candles, {len(candles) - 1: "long"})  # last bar: nothing can close
+        g = r["param_grid"]["scopes"][0]
+        assert g["cells_with_fills"] == 0 and g["positive_ratio"] is None
+        v = r["verdict"]
+        assert v["outcome"] == "INCONCLUSIVE"
+        assert not any(c.get("triggered") for c in v["checks"])
+        ins = [c for c in v["checks"]
+               if c["rule"] == "grid_positive_ratio_min" and c.get("insufficient")]
+        assert ins and "无法评估参数敏感性" in ins[0]["detail"]
+
+    def test_zero_positive_grid_says_the_edge_does_not_exist(self):
+        """0 positive cells is not 'knife-edge' -- the honest sentence is
+        that no combination in the declared space makes money."""
+        candles = _free_fall_candles(200)
+        d = dict(BASE_SPEC)
+        d["control"] = {"enabled": False}
+        d["signals"] = {"kind": "rule", "rule": "rsi_below", "period": 14, "threshold": 45}
+        d["param_grid"] = {"axes": {"take_profit": [0.01, 0.03, 0.05],
+                                    "stop_loss": [-0.04, -0.08]}}
+        d["falsify_if"] = {"min_fills": 10, "grid_positive_ratio_min": 0.5}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=45)
+        r = verify(spec, candles, entries)
+        g = r["param_grid"]["scopes"][0]
+        assert g["positive_cells"] == 0 and g["cells_with_fills"] == 6
+        check = next(c for c in r["verdict"]["checks"]
+                     if c["rule"] == "grid_positive_ratio_min")
+        assert check["triggered"]
+        assert "没有任何参数组合赚钱" in check["detail"]
+        assert "曲线拟合" not in check["detail"]  # 0 cells is not knife-edge
+        text = report.render(r)
+        assert "全部 6 格均为负" in text
+
+    def test_report_renders_heatmap_and_renumbers_sections(self):
+        candles = _overfit_candles()
+        d = dict(BASE_SPEC)
+        d["signals"] = {"kind": "rule", "rule": "rsi_below", "period": 14, "threshold": 45}
+        d["control"] = {"enabled": False}
+        d["walk_forward"] = {"folds": 3}
+        d["param_grid"] = {"axes": {"take_profit": [0.01, 0.03, 0.05],
+                                    "stop_loss": [-0.04, -0.08]}}
+        d["falsify_if"] = {"min_fills": 10, "grid_positive_ratio_min": 0.5}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=45)
+        text = report.render(verify(spec, candles, entries))
+        assert "## 6. 参数敏感性网格" in text
+        assert "## 7. 事前证伪规则判定" in text
+        assert "## 8. 未建模事项" in text
+        assert "take_profit ↓ ＼ stop_loss →" in text
+        assert "**样本内（前 2 折）**" in text and "**样本外（最后 1 折）**" in text
+        # seeded numbers (real execution): in-sample 6/6 positive, oos 2/6
+        assert "6 格有成交 · 6 格净收益为正（100%）" in text
+        assert "6 格有成交 · 2 格净收益为正（33%）" in text
+        assert "只有 2/6 格为正" in text  # the flag quotes the measured ratio
+        assert "曲线拟合不是 edge" in text  # the declared rule fired -> the flag shows
+        # grid off: no section 6, criteria still 7, old disclosure intact
+        d2 = dict(d)
+        d2.pop("param_grid")
+        d2.pop("walk_forward")
+        d2["falsify_if"] = {"min_fills": 10}
+        text2 = report.render(verify(Spec.from_dict(d2), candles, entries))
+        assert "## 6. 参数敏感性网格" not in text2
+        assert "## 7. 事前证伪规则判定" in text2
+        assert "walk-forward 与参数敏感性不在本引擎射程内" in text2
 
 
 # --------------------------------------------------------------------------
@@ -622,6 +844,24 @@ class TestCLI:
         assert payload["walk_forward"]["folds"] == 4
         assert payload["walk_forward"]["boundary_bar"] == 900
 
+    def test_cli_spec_with_param_grid_renders_heatmap(self, tmp_path):
+        candles = make_candles(1200, seed=21)
+        kpath = write_csv(tmp_path / "k.csv", [
+            {"t": c["t"], "o": c["o"], "h": c["h"], "l": c["l"], "c": c["c"]} for c in candles
+        ], ["t", "o", "h", "l", "c"])
+        d = dict(BASE_SPEC)
+        d["param_grid"] = {"axes": {"take_profit": [0.02, 0.03, 0.04],
+                                    "stop_loss": [-0.06, -0.08, -0.10]}}
+        spec_path = tmp_path / "spec.json"
+        spec_path.write_text(json.dumps(d), encoding="utf-8")
+        out = tmp_path / "r.md"
+        rc = main(["--spec", str(spec_path), "--candles", str(kpath), "--out", str(out), "--json"])
+        assert rc == 0
+        text = out.read_text(encoding="utf-8")
+        assert "## 6. 参数敏感性网格" in text
+        payload = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+        assert payload["param_grid"]["scopes"][0]["n_cells"] == 9
+
     def test_bad_spec_exits_2_with_message(self, tmp_path, capsys):
         spec_path = tmp_path / "bad.json"
         spec_path.write_text('{"name": "x"}', encoding="utf-8")
@@ -653,3 +893,8 @@ class TestCLI:
         text = out.read_text(encoding="utf-8")
         assert "裁决" in text and "FALSIFIED" in text or "NOT_FALSIFIED" in text
         assert "不含资金费" in text  # the bundle ships no funding series; disclosed
+        # the bundled run also exercises the parameter grid (seeded bundle,
+        # deterministic): in-sample grid has no positive cell, oos has all
+        assert "## 6. 参数敏感性网格" in text
+        assert "全部 9 格均为负" in text
+        assert "9 格净收益为正（100%）" in text

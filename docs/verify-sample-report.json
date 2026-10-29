@@ -37,6 +37,22 @@
       "enabled": true,
       "folds": 3
     },
+    "param_grid": {
+      "enabled": true,
+      "axes": {
+        "take_profit": [
+          0.02,
+          0.03,
+          0.04
+        ],
+        "stop_loss": [
+          -0.06,
+          -0.08,
+          -0.1
+        ]
+      },
+      "max_cells": 64
+    },
     "fee_multiples": [
       1.0,
       2.0,
@@ -46,6 +62,7 @@
       "control_lift_ci_includes_zero": true,
       "net_negative_at_fee_multiple": 2,
       "worst_case_net_negative": true,
+      "grid_positive_ratio_min": 0.5,
       "min_fills": 30
     }
   },
@@ -3021,7 +3038,7 @@
   },
   "verdict": {
     "outcome": "FALSIFIED",
-    "reason": "5 条事前证伪规则被触发：最坏优先口径净收益 -505.65% ≤ 0；成本 ×2（8bps 往返）时净收益 -610.45% ≤ 0，edge 付不起 toll；样本外段（第 19564 根起）：最坏优先口径净收益 -265.31% ≤ 0；样本外段（第 19564 根起）：成本 ×2（8bps 往返）时净收益 -308.59% ≤ 0，edge 付不起 toll；样本外段（第 19564 根起）：策略 − 随机对照组 = -0.34%，95% 区间 [-0.71, +0.07] 跨 0，未能证明选择性",
+    "reason": "7 条事前证伪规则被触发：最坏优先口径净收益 -505.65% ≤ 0；成本 ×2（8bps 往返）时净收益 -610.45% ≤ 0，edge 付不起 toll；参数网格 0/9 格为正（0%）< 声明下限 50%——edge 只在一小撮参数组合下存在，是曲线拟合不是 edge；样本外段（第 19564 根起）：参数网格 0/9 格为正（0%）< 声明下限 50%——edge 只在一小撮参数组合下存在，是曲线拟合不是 edge；样本外段（第 19564 根起）：最坏优先口径净收益 -265.31% ≤ 0；样本外段（第 19564 根起）：成本 ×2（8bps 往返）时净收益 -308.59% ≤ 0，edge 付不起 toll；样本外段（第 19564 根起）：策略 − 随机对照组 = -0.34%，95% 区间 [-0.71, +0.07] 跨 0，未能证明选择性",
     "checks": [
       {
         "rule": "worst_case_net_negative",
@@ -3033,6 +3050,18 @@
         "rule": "net_negative_at_fee_multiple=2",
         "scope": "全窗口",
         "detail": "成本 ×2（8bps 往返）时净收益 -610.45% ≤ 0，edge 付不起 toll",
+        "triggered": true
+      },
+      {
+        "rule": "grid_positive_ratio_min",
+        "scope": "样本内",
+        "detail": "参数网格 0/9 格为正（0%）< 声明下限 50%——edge 只在一小撮参数组合下存在，是曲线拟合不是 edge",
+        "triggered": true
+      },
+      {
+        "rule": "grid_positive_ratio_min",
+        "scope": "样本外",
+        "detail": "样本外段（第 19564 根起）：参数网格 0/9 格为正（0%）< 声明下限 50%——edge 只在一小撮参数组合下存在，是曲线拟合不是 edge",
         "triggered": true
       },
       {
@@ -4945,7 +4974,7 @@
       },
       "verdict": {
         "outcome": "FALSIFIED",
-        "reason": "3 条事前证伪规则被触发：最坏优先口径净收益 -240.34% ≤ 0；成本 ×2（8bps 往返）时净收益 -301.86% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.30%，95% 区间 [-0.65, +0.06] 跨 0，未能证明选择性",
+        "reason": "4 条事前证伪规则被触发：最坏优先口径净收益 -240.34% ≤ 0；成本 ×2（8bps 往返）时净收益 -301.86% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.30%，95% 区间 [-0.65, +0.06] 跨 0，未能证明选择性；参数网格 0/9 格为正（0%）< 声明下限 50%——edge 只在一小撮参数组合下存在，是曲线拟合不是 edge",
         "checks": [
           {
             "rule": "worst_case_net_negative",
@@ -4963,6 +4992,12 @@
             "rule": "control_lift_ci_includes_zero",
             "scope": "样本内",
             "detail": "策略 − 随机对照组 = -0.30%，95% 区间 [-0.65, +0.06] 跨 0，未能证明选择性",
+            "triggered": true
+          },
+          {
+            "rule": "grid_positive_ratio_min",
+            "scope": "样本内",
+            "detail": "参数网格 0/9 格为正（0%）< 声明下限 50%——edge 只在一小撮参数组合下存在，是曲线拟合不是 edge",
             "triggered": true
           }
         ]
@@ -6393,7 +6428,7 @@
       },
       "verdict": {
         "outcome": "FALSIFIED",
-        "reason": "3 条事前证伪规则被触发：最坏优先口径净收益 -265.31% ≤ 0；成本 ×2（8bps 往返）时净收益 -308.59% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.34%，95% 区间 [-0.71, +0.07] 跨 0，未能证明选择性",
+        "reason": "4 条事前证伪规则被触发：最坏优先口径净收益 -265.31% ≤ 0；成本 ×2（8bps 往返）时净收益 -308.59% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.34%，95% 区间 [-0.71, +0.07] 跨 0，未能证明选择性；参数网格 0/9 格为正（0%）< 声明下限 50%——edge 只在一小撮参数组合下存在，是曲线拟合不是 edge",
         "checks": [
           {
             "rule": "worst_case_net_negative",
@@ -6412,9 +6447,628 @@
             "scope": "样本外",
             "detail": "策略 − 随机对照组 = -0.34%，95% 区间 [-0.71, +0.07] 跨 0，未能证明选择性",
             "triggered": true
+          },
+          {
+            "rule": "grid_positive_ratio_min",
+            "scope": "样本外",
+            "detail": "参数网格 0/9 格为正（0%）< 声明下限 50%——edge 只在一小撮参数组合下存在，是曲线拟合不是 edge",
+            "triggered": true
           }
         ]
       }
+    },
+    "in_sample_grid": {
+      "scope": "样本内",
+      "axes": {
+        "take_profit": [
+          0.02,
+          0.03,
+          0.04
+        ],
+        "stop_loss": [
+          -0.06,
+          -0.08,
+          -0.1
+        ]
+      },
+      "axis_order": [
+        "take_profit",
+        "stop_loss"
+      ],
+      "n_cells": 9,
+      "cells_with_fills": 9,
+      "no_fill_cells": 0,
+      "positive_cells": 0,
+      "positive_ratio": 0.0,
+      "median_net_pct": -284.5878,
+      "best": {
+        "params": {
+          "take_profit": 0.03,
+          "stop_loss": -0.08
+        },
+        "fills": 769,
+        "net_sum_pct": -240.33579999999998,
+        "mean_pct": -0.3125302990897269,
+        "win_pct": 50.32509752925878,
+        "profit_factor": 0.7519873145393243
+      },
+      "worst": {
+        "params": {
+          "take_profit": 0.02,
+          "stop_loss": -0.06
+        },
+        "fills": 769,
+        "net_sum_pct": -341.01500000000004,
+        "mean_pct": -0.44345253576072824,
+        "win_pct": 53.44603381014304,
+        "profit_factor": 0.6433382489828788
+      },
+      "cells": [
+        {
+          "params": {
+            "take_profit": 0.02,
+            "stop_loss": -0.06
+          },
+          "fills": 769,
+          "net_sum_pct": -341.01500000000004,
+          "mean_pct": -0.44345253576072824,
+          "win_pct": 53.44603381014304,
+          "profit_factor": 0.6433382489828788
+        },
+        {
+          "params": {
+            "take_profit": 0.02,
+            "stop_loss": -0.08
+          },
+          "fills": 769,
+          "net_sum_pct": -284.5878,
+          "mean_pct": -0.3700751625487647,
+          "win_pct": 54.0962288686606,
+          "profit_factor": 0.6870070231772106
+        },
+        {
+          "params": {
+            "take_profit": 0.02,
+            "stop_loss": -0.1
+          },
+          "fills": 769,
+          "net_sum_pct": -318.4943,
+          "mean_pct": -0.41416684005201565,
+          "win_pct": 54.35630689206762,
+          "profit_factor": 0.6636752055973895
+        },
+        {
+          "params": {
+            "take_profit": 0.03,
+            "stop_loss": -0.06
+          },
+          "fills": 769,
+          "net_sum_pct": -308.5486,
+          "mean_pct": -0.4012335500650195,
+          "win_pct": 49.80494148244473,
+          "profit_factor": 0.6992675271881226
+        },
+        {
+          "params": {
+            "take_profit": 0.03,
+            "stop_loss": -0.08
+          },
+          "fills": 769,
+          "net_sum_pct": -240.33579999999998,
+          "mean_pct": -0.3125302990897269,
+          "win_pct": 50.32509752925878,
+          "profit_factor": 0.7519873145393243
+        },
+        {
+          "params": {
+            "take_profit": 0.03,
+            "stop_loss": -0.1
+          },
+          "fills": 769,
+          "net_sum_pct": -274.2543,
+          "mean_pct": -0.35663758127438233,
+          "win_pct": 50.585175552665795,
+          "profit_factor": 0.7281337998884002
+        },
+        {
+          "params": {
+            "take_profit": 0.04,
+            "stop_loss": -0.06
+          },
+          "fills": 769,
+          "net_sum_pct": -317.73920000000004,
+          "mean_pct": -0.4131849154746424,
+          "win_pct": 48.11443433029909,
+          "profit_factor": 0.6973874050023681
+        },
+        {
+          "params": {
+            "take_profit": 0.04,
+            "stop_loss": -0.08
+          },
+          "fills": 769,
+          "net_sum_pct": -244.18100000000004,
+          "mean_pct": -0.31753055916775036,
+          "win_pct": 48.634590377113135,
+          "profit_factor": 0.7535261523851783
+        },
+        {
+          "params": {
+            "take_profit": 0.04,
+            "stop_loss": -0.1
+          },
+          "fills": 769,
+          "net_sum_pct": -272.4294,
+          "mean_pct": -0.3542644993498049,
+          "win_pct": 48.89466840052016,
+          "profit_factor": 0.7346702406351332
+        }
+      ]
+    },
+    "out_sample_grid": {
+      "scope": "样本外",
+      "axes": {
+        "take_profit": [
+          0.02,
+          0.03,
+          0.04
+        ],
+        "stop_loss": [
+          -0.06,
+          -0.08,
+          -0.1
+        ]
+      },
+      "axis_order": [
+        "take_profit",
+        "stop_loss"
+      ],
+      "n_cells": 9,
+      "cells_with_fills": 9,
+      "no_fill_cells": 0,
+      "positive_cells": 0,
+      "positive_ratio": 0.0,
+      "median_net_pct": -244.3203,
+      "best": {
+        "params": {
+          "take_profit": 0.02,
+          "stop_loss": -0.1
+        },
+        "fills": 541,
+        "net_sum_pct": -229.46390000000002,
+        "mean_pct": -0.4241476894639557,
+        "win_pct": 53.41959334565619,
+        "profit_factor": 0.6407301949349236
+      },
+      "worst": {
+        "params": {
+          "take_profit": 0.03,
+          "stop_loss": -0.06
+        },
+        "fills": 541,
+        "net_sum_pct": -277.078,
+        "mean_pct": -0.5121589648798521,
+        "win_pct": 48.428835489833645,
+        "profit_factor": 0.5963723947491323
+      },
+      "cells": [
+        {
+          "params": {
+            "take_profit": 0.02,
+            "stop_loss": -0.06
+          },
+          "fills": 541,
+          "net_sum_pct": -234.65370000000001,
+          "mean_pct": -0.4337406654343808,
+          "win_pct": 52.495378927911275,
+          "profit_factor": 0.6300311579329749
+        },
+        {
+          "params": {
+            "take_profit": 0.02,
+            "stop_loss": -0.08
+          },
+          "fills": 541,
+          "net_sum_pct": -234.5382,
+          "mean_pct": -0.43352717190388174,
+          "win_pct": 52.865064695009245,
+          "profit_factor": 0.6323739149939269
+        },
+        {
+          "params": {
+            "take_profit": 0.02,
+            "stop_loss": -0.1
+          },
+          "fills": 541,
+          "net_sum_pct": -229.46390000000002,
+          "mean_pct": -0.4241476894639557,
+          "win_pct": 53.41959334565619,
+          "profit_factor": 0.6407301949349236
+        },
+        {
+          "params": {
+            "take_profit": 0.03,
+            "stop_loss": -0.06
+          },
+          "fills": 541,
+          "net_sum_pct": -277.078,
+          "mean_pct": -0.5121589648798521,
+          "win_pct": 48.428835489833645,
+          "profit_factor": 0.5963723947491323
+        },
+        {
+          "params": {
+            "take_profit": 0.03,
+            "stop_loss": -0.08
+          },
+          "fills": 541,
+          "net_sum_pct": -265.3145,
+          "mean_pct": -0.49041497227356745,
+          "win_pct": 48.79852125693161,
+          "profit_factor": 0.6101464244093482
+        },
+        {
+          "params": {
+            "take_profit": 0.03,
+            "stop_loss": -0.1
+          },
+          "fills": 541,
+          "net_sum_pct": -257.8144,
+          "mean_pct": -0.4765515711645102,
+          "win_pct": 49.35304990757856,
+          "profit_factor": 0.6218900802874061
+        },
+        {
+          "params": {
+            "take_profit": 0.04,
+            "stop_loss": -0.06
+          },
+          "fills": 541,
+          "net_sum_pct": -258.0838,
+          "mean_pct": -0.47704953789279114,
+          "win_pct": 47.689463955637706,
+          "profit_factor": 0.6253094730062883
+        },
+        {
+          "params": {
+            "take_profit": 0.04,
+            "stop_loss": -0.08
+          },
+          "fills": 541,
+          "net_sum_pct": -244.3203,
+          "mean_pct": -0.4516086876155268,
+          "win_pct": 48.059149722735675,
+          "profit_factor": 0.6422163405243386
+        },
+        {
+          "params": {
+            "take_profit": 0.04,
+            "stop_loss": -0.1
+          },
+          "fills": 541,
+          "net_sum_pct": -233.8202,
+          "mean_pct": -0.4321999999999999,
+          "win_pct": 48.613678373382626,
+          "profit_factor": 0.6582439906637635
+        }
+      ]
     }
+  },
+  "param_grid": {
+    "axes": {
+      "take_profit": [
+        0.02,
+        0.03,
+        0.04
+      ],
+      "stop_loss": [
+        -0.06,
+        -0.08,
+        -0.1
+      ]
+    },
+    "axis_order": [
+      "take_profit",
+      "stop_loss"
+    ],
+    "max_cells": 64,
+    "scopes": [
+      {
+        "scope": "样本内",
+        "axes": {
+          "take_profit": [
+            0.02,
+            0.03,
+            0.04
+          ],
+          "stop_loss": [
+            -0.06,
+            -0.08,
+            -0.1
+          ]
+        },
+        "axis_order": [
+          "take_profit",
+          "stop_loss"
+        ],
+        "n_cells": 9,
+        "cells_with_fills": 9,
+        "no_fill_cells": 0,
+        "positive_cells": 0,
+        "positive_ratio": 0.0,
+        "median_net_pct": -284.5878,
+        "best": {
+          "params": {
+            "take_profit": 0.03,
+            "stop_loss": -0.08
+          },
+          "fills": 769,
+          "net_sum_pct": -240.33579999999998,
+          "mean_pct": -0.3125302990897269,
+          "win_pct": 50.32509752925878,
+          "profit_factor": 0.7519873145393243
+        },
+        "worst": {
+          "params": {
+            "take_profit": 0.02,
+            "stop_loss": -0.06
+          },
+          "fills": 769,
+          "net_sum_pct": -341.01500000000004,
+          "mean_pct": -0.44345253576072824,
+          "win_pct": 53.44603381014304,
+          "profit_factor": 0.6433382489828788
+        },
+        "cells": [
+          {
+            "params": {
+              "take_profit": 0.02,
+              "stop_loss": -0.06
+            },
+            "fills": 769,
+            "net_sum_pct": -341.01500000000004,
+            "mean_pct": -0.44345253576072824,
+            "win_pct": 53.44603381014304,
+            "profit_factor": 0.6433382489828788
+          },
+          {
+            "params": {
+              "take_profit": 0.02,
+              "stop_loss": -0.08
+            },
+            "fills": 769,
+            "net_sum_pct": -284.5878,
+            "mean_pct": -0.3700751625487647,
+            "win_pct": 54.0962288686606,
+            "profit_factor": 0.6870070231772106
+          },
+          {
+            "params": {
+              "take_profit": 0.02,
+              "stop_loss": -0.1
+            },
+            "fills": 769,
+            "net_sum_pct": -318.4943,
+            "mean_pct": -0.41416684005201565,
+            "win_pct": 54.35630689206762,
+            "profit_factor": 0.6636752055973895
+          },
+          {
+            "params": {
+              "take_profit": 0.03,
+              "stop_loss": -0.06
+            },
+            "fills": 769,
+            "net_sum_pct": -308.5486,
+            "mean_pct": -0.4012335500650195,
+            "win_pct": 49.80494148244473,
+            "profit_factor": 0.6992675271881226
+          },
+          {
+            "params": {
+              "take_profit": 0.03,
+              "stop_loss": -0.08
+            },
+            "fills": 769,
+            "net_sum_pct": -240.33579999999998,
+            "mean_pct": -0.3125302990897269,
+            "win_pct": 50.32509752925878,
+            "profit_factor": 0.7519873145393243
+          },
+          {
+            "params": {
+              "take_profit": 0.03,
+              "stop_loss": -0.1
+            },
+            "fills": 769,
+            "net_sum_pct": -274.2543,
+            "mean_pct": -0.35663758127438233,
+            "win_pct": 50.585175552665795,
+            "profit_factor": 0.7281337998884002
+          },
+          {
+            "params": {
+              "take_profit": 0.04,
+              "stop_loss": -0.06
+            },
+            "fills": 769,
+            "net_sum_pct": -317.73920000000004,
+            "mean_pct": -0.4131849154746424,
+            "win_pct": 48.11443433029909,
+            "profit_factor": 0.6973874050023681
+          },
+          {
+            "params": {
+              "take_profit": 0.04,
+              "stop_loss": -0.08
+            },
+            "fills": 769,
+            "net_sum_pct": -244.18100000000004,
+            "mean_pct": -0.31753055916775036,
+            "win_pct": 48.634590377113135,
+            "profit_factor": 0.7535261523851783
+          },
+          {
+            "params": {
+              "take_profit": 0.04,
+              "stop_loss": -0.1
+            },
+            "fills": 769,
+            "net_sum_pct": -272.4294,
+            "mean_pct": -0.3542644993498049,
+            "win_pct": 48.89466840052016,
+            "profit_factor": 0.7346702406351332
+          }
+        ]
+      },
+      {
+        "scope": "样本外",
+        "axes": {
+          "take_profit": [
+            0.02,
+            0.03,
+            0.04
+          ],
+          "stop_loss": [
+            -0.06,
+            -0.08,
+            -0.1
+          ]
+        },
+        "axis_order": [
+          "take_profit",
+          "stop_loss"
+        ],
+        "n_cells": 9,
+        "cells_with_fills": 9,
+        "no_fill_cells": 0,
+        "positive_cells": 0,
+        "positive_ratio": 0.0,
+        "median_net_pct": -244.3203,
+        "best": {
+          "params": {
+            "take_profit": 0.02,
+            "stop_loss": -0.1
+          },
+          "fills": 541,
+          "net_sum_pct": -229.46390000000002,
+          "mean_pct": -0.4241476894639557,
+          "win_pct": 53.41959334565619,
+          "profit_factor": 0.6407301949349236
+        },
+        "worst": {
+          "params": {
+            "take_profit": 0.03,
+            "stop_loss": -0.06
+          },
+          "fills": 541,
+          "net_sum_pct": -277.078,
+          "mean_pct": -0.5121589648798521,
+          "win_pct": 48.428835489833645,
+          "profit_factor": 0.5963723947491323
+        },
+        "cells": [
+          {
+            "params": {
+              "take_profit": 0.02,
+              "stop_loss": -0.06
+            },
+            "fills": 541,
+            "net_sum_pct": -234.65370000000001,
+            "mean_pct": -0.4337406654343808,
+            "win_pct": 52.495378927911275,
+            "profit_factor": 0.6300311579329749
+          },
+          {
+            "params": {
+              "take_profit": 0.02,
+              "stop_loss": -0.08
+            },
+            "fills": 541,
+            "net_sum_pct": -234.5382,
+            "mean_pct": -0.43352717190388174,
+            "win_pct": 52.865064695009245,
+            "profit_factor": 0.6323739149939269
+          },
+          {
+            "params": {
+              "take_profit": 0.02,
+              "stop_loss": -0.1
+            },
+            "fills": 541,
+            "net_sum_pct": -229.46390000000002,
+            "mean_pct": -0.4241476894639557,
+            "win_pct": 53.41959334565619,
+            "profit_factor": 0.6407301949349236
+          },
+          {
+            "params": {
+              "take_profit": 0.03,
+              "stop_loss": -0.06
+            },
+            "fills": 541,
+            "net_sum_pct": -277.078,
+            "mean_pct": -0.5121589648798521,
+            "win_pct": 48.428835489833645,
+            "profit_factor": 0.5963723947491323
+          },
+          {
+            "params": {
+              "take_profit": 0.03,
+              "stop_loss": -0.08
+            },
+            "fills": 541,
+            "net_sum_pct": -265.3145,
+            "mean_pct": -0.49041497227356745,
+            "win_pct": 48.79852125693161,
+            "profit_factor": 0.6101464244093482
+          },
+          {
+            "params": {
+              "take_profit": 0.03,
+              "stop_loss": -0.1
+            },
+            "fills": 541,
+            "net_sum_pct": -257.8144,
+            "mean_pct": -0.4765515711645102,
+            "win_pct": 49.35304990757856,
+            "profit_factor": 0.6218900802874061
+          },
+          {
+            "params": {
+              "take_profit": 0.04,
+              "stop_loss": -0.06
+            },
+            "fills": 541,
+            "net_sum_pct": -258.0838,
+            "mean_pct": -0.47704953789279114,
+            "win_pct": 47.689463955637706,
+            "profit_factor": 0.6253094730062883
+          },
+          {
+            "params": {
+              "take_profit": 0.04,
+              "stop_loss": -0.08
+            },
+            "fills": 541,
+            "net_sum_pct": -244.3203,
+            "mean_pct": -0.4516086876155268,
+            "win_pct": 48.059149722735675,
+            "profit_factor": 0.6422163405243386
+          },
+          {
+            "params": {
+              "take_profit": 0.04,
+              "stop_loss": -0.1
+            },
+            "fills": 541,
+            "net_sum_pct": -233.8202,
+            "mean_pct": -0.4321999999999999,
+            "win_pct": 48.613678373382626,
+            "profit_factor": 0.6582439906637635
+          }
+        ]
+      }
+    ]
   }
 }

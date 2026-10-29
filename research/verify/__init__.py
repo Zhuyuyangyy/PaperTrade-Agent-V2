@@ -26,6 +26,12 @@ real data:
                              number-one cause of backtest->live decay
                              (median -14.3pp) is an edge that only existed
                              where its parameters were chosen.
+  6. parameter grid        -- the exit parameters are gridded (values declared
+                             in the spec, before the numbers) and every cell
+                             is replayed. An edge that survives at one exact
+                             TP/SL combination and nowhere else is a curve
+                             fit; the distribution across cells, not the best
+                             cell, is the measurement.
 
 The verdict is not a score. It is the outcome of falsification criteria that
 were written into the spec BEFORE the numbers were read. That ordering is the
@@ -58,6 +64,11 @@ def verify(spec: Spec, candles: list[dict], entries: dict[int, str],
     of the earlier folds. A criterion firing on the out-of-sample segment
     falsifies the whole strategy: surviving only where you looked is the
     failure mode this instrument exists to catch.
+
+    With spec.param_grid.enabled the declared exit parameters are gridded and
+    every cell replayed. The grid follows the same scope convention as the
+    rest of the engine: the full entry set when walk-forward is off, the
+    in-sample and out-of-sample segments when it is on.
     """
     if not candles:
         raise ValueError("没有 K 线数据")
@@ -87,15 +98,41 @@ def verify(spec: Spec, candles: list[dict], entries: dict[int, str],
         "control": full["control"],
         "verdict": full["verdict"],
         "walk_forward": None,
+        "param_grid": None,
     }
 
+    wf = None
     if spec.walk_forward.enabled:
         wf = _walk_forward(spec, candles, entries, exit_rule, funding)
         result["walk_forward"] = wf
-        result["verdict"] = _verdict(
-            spec, full["runs"], full["cost_sensitivity"], full["control"], wf=wf
-        )
+
+    if spec.param_grid.enabled:
+        result["param_grid"] = _param_grid_result(spec, candles, entries, exit_rule, funding, wf)
+
+    result["verdict"] = _verdict(
+        spec, full["runs"], full["cost_sensitivity"], full["control"],
+        wf=wf,
+        grids=result["param_grid"]["scopes"] if result["param_grid"] else None,
+    )
     return result
+
+
+def _param_grid_result(spec: Spec, candles: list[dict], entries: dict[int, str],
+                       exit_rule, funding: list[dict] | None, wf: dict | None) -> dict:
+    """Assemble the param_grid block: the declaration plus one grid per scope
+    (the full entry set, or the walk-forward segments when it is on)."""
+    from . import grid as grid_instrument
+
+    if wf is not None:
+        scopes = [g for g in (wf.get("in_sample_grid"), wf.get("out_sample_grid")) if g]
+    else:
+        scopes = [grid_instrument.run(spec, candles, entries, exit_rule, funding, scope="全窗口")]
+    return {
+        "axes": {k: list(v) for k, v in spec.param_grid.axes.items()},
+        "axis_order": list(spec.param_grid.axes),
+        "max_cells": spec.param_grid.max_cells,
+        "scopes": scopes,
+    }
 
 
 def _battery(spec: Spec, candles: list[dict], entries: dict[int, str], exit_rule,
@@ -194,6 +231,11 @@ def _walk_forward(spec: Spec, candles: list[dict], entries: dict[int, str],
     the last fold exits whenever its exit rule says, and the bars after the
     fold are still the future relative to that entry -- truncating them would
     manufacture 'unresolved' trades that real trading would have closed.
+
+    When the parameter grid is declared it runs per segment too (same entry
+    split), and each segment's own verdict is recomputed with its grid --
+    otherwise the WF table's per-segment verdict would disagree with the
+    criteria table whenever a grid rule fires on one segment.
     """
     folds = spec.walk_forward.folds
     if len(candles) < folds:
@@ -205,7 +247,7 @@ def _walk_forward(spec: Spec, candles: list[dict], entries: dict[int, str],
     boundary = (folds - 1) * fold_bars
     is_entries = {i: s for i, s in entries.items() if i < boundary}
     oos_entries = {i: s for i, s in entries.items() if i >= boundary}
-    return {
+    wf = {
         "folds": folds,
         "fold_bars": fold_bars,
         "boundary_bar": boundary,
@@ -217,7 +259,27 @@ def _walk_forward(spec: Spec, candles: list[dict], entries: dict[int, str],
         "out_sample": _battery(spec, candles, oos_entries, exit_rule, funding,
                                control_range=(boundary, len(candles) - 2),
                                scope="样本外") if oos_entries else None,
+        "in_sample_grid": None,
+        "out_sample_grid": None,
     }
+    if spec.param_grid.enabled:
+        from . import grid as grid_instrument
+
+        if is_entries:
+            wf["in_sample_grid"] = grid_instrument.run(
+                spec, candles, is_entries, exit_rule, funding, scope="样本内")
+        if oos_entries:
+            wf["out_sample_grid"] = grid_instrument.run(
+                spec, candles, oos_entries, exit_rule, funding, scope="样本外")
+        for seg, grid_key in (("in_sample", "in_sample_grid"),
+                              ("out_sample", "out_sample_grid")):
+            battery, seg_grid = wf.get(seg), wf.get(grid_key)
+            if battery is not None and seg_grid is not None:
+                battery["verdict"] = _verdict(
+                    spec, battery["runs"], battery["cost_sensitivity"], battery["control"],
+                    scope=seg_grid["scope"], grids=[seg_grid],
+                )
+    return wf
 
 
 def verify_file(spec_path, candles, entries, funding=None) -> dict:
@@ -305,8 +367,51 @@ def _evaluate_criteria(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict
     return checks
 
 
+def _grid_checks(spec: Spec, grid: dict, scope: str, prefix: str = "") -> list[dict]:
+    """Apply the PRE-DECLARED grid criterion to one grid scope.
+
+    The rule (`falsify_if.grid_positive_ratio_min`) lives in the spec and was
+    fixed before the report existed; this function only reads it and the
+    measured ratio -- it never invents a threshold after seeing the cells. A
+    grid where nothing traded is INCONCLUSIVE: no evidence is not a failure,
+    and it is certainly not a pass.
+    """
+    checks: list[dict] = []
+    min_ratio = spec.falsify_if.get("grid_positive_ratio_min")
+    if min_ratio is None:
+        return checks
+    if grid["cells_with_fills"] == 0:
+        checks.append({
+            "rule": "grid_positive_ratio_min",
+            "scope": scope,
+            "detail": (f"{prefix}参数网格 {grid['n_cells']} 格全部无成交，"
+                       f"无法评估参数敏感性"),
+            "triggered": False,
+            "insufficient": True,
+        })
+        return checks
+    if grid["positive_ratio"] < float(min_ratio):
+        no_fill = (f"（另有 {grid['no_fill_cells']} 格无成交，不计入占比）"
+                   if grid["no_fill_cells"] else "")
+        if grid["positive_cells"] == 0:
+            tail = (f"参数网格 0/{grid['cells_with_fills']} 格为正{no_fill}——"
+                    f"网格内没有任何参数组合赚钱，edge 在这个参数空间里不存在，更谈不上稳健")
+        else:
+            tail = (f"参数网格 {grid['positive_cells']}/{grid['cells_with_fills']} 格为正"
+                    f"（{grid['positive_ratio']:.0%}）< 声明下限 {float(min_ratio):.0%}{no_fill}——"
+                    f"edge 只在一小撮参数组合下存在，是曲线拟合不是 edge")
+        checks.append({
+            "rule": "grid_positive_ratio_min",
+            "scope": scope,
+            "detail": f"{prefix}{tail}",
+            "triggered": True,
+        })
+    return checks
+
+
 def _verdict(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict | None,
-             scope: str = "全窗口", wf: dict | None = None) -> dict:
+             scope: str = "全窗口", wf: dict | None = None,
+             grids: list[dict] | None = None) -> dict:
     """Evaluate the pre-declared falsification criteria. Criteria live in the
     spec and were fixed before the report existed; this function only reads
     them and the numbers, it never invents a new rule.
@@ -316,8 +421,17 @@ def _verdict(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict | None,
     the whole strategy -- surviving only where you looked is the failure mode
     the walk-forward instrument exists to catch. Too few out-of-sample fills
     is INCONCLUSIVE, never a pass.
+
+    `grids` carries one parameter-grid result per scope (the full entry set,
+    or the walk-forward segments). The declared grid criterion is evaluated
+    on every scope; a knife-edge grid falsifies wherever it was measured.
     """
     checks = _evaluate_criteria(spec, runs, cost_rows, ctrl, scope=scope)
+    for grid in (grids or []):
+        prefix = ""
+        if wf is not None and grid["scope"] == "样本外":
+            prefix = f"样本外段（第 {wf['boundary_bar']} 根起）："
+        checks.extend(_grid_checks(spec, grid, scope=grid["scope"], prefix=prefix))
 
     if wf is not None:
         oos = wf.get("out_sample")
@@ -357,6 +471,12 @@ def _verdict(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict | None,
         if wf is not None:
             reason += "样本外段同样未触发任何规则。"
             reason += "注意：未被证伪 ≠ 被证实；参数是否曾用全窗口数据调优，引擎无法验证。"
-        else:
+        elif not grids:
             reason += "注意：未被证伪 ≠ 被证实，样本外表现与参数过拟合不在本引擎的射程内。"
+        else:
+            reason += "注意：未被证伪 ≠ 被证实；参数网格只测量参数脆弱性（且在窗口内），不构成样本外证据。"
+        for grid in (grids or []):
+            if grid["cells_with_fills"]:
+                reason += (f"参数网格（{grid['scope']}）"
+                           f"{grid['positive_cells']}/{grid['cells_with_fills']} 格为正。")
     return {"outcome": outcome, "reason": reason, "checks": checks}
