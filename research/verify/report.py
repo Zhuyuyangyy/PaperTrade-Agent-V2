@@ -55,6 +55,10 @@ def render(result: dict) -> str:
       + (f" · 含资金费" if result.get("funding_applied") else (" · spec 声明含资金费但数据缺失，按 0 处理" if spec.get("funding") else " · 不含资金费"))
       + f" · bar 内先到止损判止损（最坏优先）")
     a(f"- 信号数：{result['n_signals']}")
+    wf = result.get("walk_forward")
+    if wf:
+        oos_v = (wf.get("out_sample") or {}).get("verdict", {}).get("outcome", "无信号")
+        a(f"- Walk-forward：{wf['folds']} 折（样本外界界 {wf['boundary_ts']}，第 {wf['boundary_bar']} 根）· 样本外段裁决 {oos_v}")
     a("")
 
     # -- 1. replay ----------------------------------------------------------
@@ -114,43 +118,92 @@ def render(result: dict) -> str:
     ctrl = result.get("control")
     if ctrl:
         cs = ctrl["stats"]
-        a(f"- 对照组：{ctrl['n_random']} 个随机入场（seed={ctrl['seed']}，允许重复，镜像策略主方向 {ctrl.get('side', 'long')}），同一窗口、同一退出规则、同一成本假设")
-        a(f"- 策略均值/笔 {_pct(ctrl['strategy_mean_pct'])} vs 对照组 {_pct(ctrl['control_mean_pct'])}（成交 {cs['n']} 笔，胜率 {cs['win_pct']:.0f}%）")
-        if ctrl.get("diff_pct") is not None:
-            ci = ctrl.get("diff_ci")
-            ci_txt = f"[{ci[0]:+.2f}%, {ci[1]:+.2f}%]" if ci else "（样本不足，未计算）"
-            a(f"- 差值 {_pct(ctrl['diff_pct'])}，95% bootstrap 区间 {ci_txt}")
-        sel = ctrl.get("selectivity")
-        msg = {
-            "proven": "策略显著优于随机入场——选择性成立（在本窗口内）。",
-            "refuted": "策略显著差于随机入场——信号方向可能是反的，或成本吃掉了一切。",
-            "unproven": "区间跨 0：未能证明策略优于抛硬币。绝对收益数字在这种情况下没有意义。",
-            "unknown": "样本不足，无法比较。",
-        }[sel]
-        a(f"- 判定：**{sel}** —— {msg}")
+        rng = ctrl.get("bar_range")
+        if ctrl.get("note"):
+            a(f"- {ctrl['note']}")
+        else:
+            rng_txt = f"，随机入场范围 第 {rng[0]} → 第 {rng[1]} 根" if rng and rng[0] != 30 else ""
+            a(f"- 对照组：{ctrl['n_random']} 个随机入场（seed={ctrl['seed']}，允许重复，镜像策略主方向 {ctrl.get('side', 'long')}{rng_txt}），同一窗口、同一退出规则、同一成本假设")
+            a(f"- 策略均值/笔 {_pct(ctrl['strategy_mean_pct'])} vs 对照组 {_pct(ctrl['control_mean_pct'])}（成交 {cs['n']} 笔，胜率 {cs['win_pct']:.0f}%）")
+            if ctrl.get("diff_pct") is not None:
+                ci = ctrl.get("diff_ci")
+                ci_txt = f"[{ci[0]:+.2f}%, {ci[1]:+.2f}%]" if ci else "（样本不足，未计算）"
+                a(f"- 差值 {_pct(ctrl['diff_pct'])}，95% bootstrap 区间 {ci_txt}")
+            sel = ctrl.get("selectivity")
+            msg = {
+                "proven": "策略显著优于随机入场——选择性成立（在本窗口内）。",
+                "refuted": "策略显著差于随机入场——信号方向可能是反的，或成本吃掉了一切。",
+                "unproven": "区间跨 0：未能证明策略优于抛硬币。绝对收益数字在这种情况下没有意义。",
+                "unknown": "样本不足，无法比较。",
+            }[sel]
+            a(f"- 判定：**{sel}** —— {msg}")
     else:
         a("- 未启用对照组（spec.control.enabled=false）——没有对照组的回放只是叙事。")
     a("")
 
-    # -- 5. criteria --------------------------------------------------------
-    a("## 5. 事前证伪规则判定")
+    # -- 5. walk-forward ------------------------------------------------------
+    if wf:
+        a("## 5. Walk-forward（样本内 / 样本外）")
+        a("")
+        a(f"- 切分：全窗口 {result['window']['bars']} 根 K 线切 {wf['folds']} 折（每折 {wf['fold_bars']} 根）；样本外界界 {wf['boundary_ts']}（第 {wf['boundary_bar']} 根）")
+        a(f"- 样本内 = 前 {wf['folds'] - 1} 折的入场 · 样本外 = 最后 1 折的入场；两段各跑完整电池"
+          f"（回放 + 成本敏感性 + 障碍可达性 + 随机对照组；样本外对照组的随机入场只在该段内抽取，"
+          f"两段的成交都在全窗口上推演——入场之后的 K 线对入场而言仍是未来）")
+        a("")
+        a("| 段 | 信号 | 成交 | 净收益(最坏) | 均值/笔 | 胜率 | PF | 段内裁决 |")
+        a("|---|---:|---:|---:|---:|---:|---:|---|")
+        for seg, label in (("in_sample", f"样本内（前 {wf['folds'] - 1} 折）"),
+                           ("out_sample", "样本外（最后 1 折）")):
+            b = wf.get(seg)
+            if b is None:
+                a(f"| {label} | 0 | — | — | — | — | — | 无信号 |")
+                continue
+            st = b["runs"]["worst_case"]["stats"]
+            a(f"| {label} | {b['n_signals']} | {st['n']} | {_pct(st['sum_pct'])} | {_pct(st['mean_pct'])} "
+              f"| {st['win_pct']:.0f}% | {_pf(st['profit_factor'])} | {b['verdict']['outcome']} |")
+        a("")
+        isb, oosb = wf.get("in_sample"), wf.get("out_sample")
+        if isb and oosb:
+            is_sum = isb["runs"]["worst_case"]["stats"]["sum_pct"]
+            oos_sum = oosb["runs"]["worst_case"]["stats"]["sum_pct"]
+            a(f"- 样本内 → 样本外（最坏口径净收益）：{_pct(is_sum)} → {_pct(oos_sum)}（变化 {oos_sum - is_sum:+.2f}pp）")
+            if oos_sum <= 0 < is_sum:
+                a("")
+                a("> 样本外转负——在未见过的时段里，edge 没有活下来。")
+            elif 0 < oos_sum < is_sum:
+                a("")
+                a("> 样本外仍为正但低于样本内——衰减模式与过拟合一致，不能排除。")
+            elif is_sum <= 0 and oos_sum <= 0:
+                a("")
+                a("> 两段均为负——这不是衰减，是稳定地亏；样本内外一致地证伪。")
+            a("")
+        if v["outcome"] == "FALSIFIED" and any(
+            c.get("triggered") and c.get("scope") == "样本外" for c in v["checks"]
+        ):
+            a("> 样本外段触发了事前证伪规则——按裁决规则，整体判 FALSIFIED：只在看得见的地方成立的 edge 不是 edge。")
+            a("")
+
+    # -- 6. criteria --------------------------------------------------------
+    a("## 6. 事前证伪规则判定")
     a("")
     if v["checks"]:
-        a("| 规则 | 结果 | 明细 |")
-        a("|---|---|---|")
+        a("| 规则 | 范围 | 结果 | 明细 |")
+        a("|---|---|---|---|")
         for c in v["checks"]:
             mark = "触发" if c.get("triggered") else ("样本不足" if c.get("insufficient") else "通过")
-            a(f"| `{c['rule']}` | {mark} | {c['detail']} |")
+            a(f"| `{c['rule']}` | {c.get('scope', '全窗口')} | {mark} | {c['detail']} |")
     else:
         a("- spec 未声明任何 falsify_if 规则——本报告只呈现测量，不下裁决。")
     a("")
 
     # -- disclosure ---------------------------------------------------------
-    a("## 6. 未建模事项（阅读前必读）")
+    a("## 7. 未建模事项（阅读前必读）")
     a("")
     for t in [
         "滑点与部分成交：只按费率+成交模型计成本，真实盘口的排队与部分成交不在模型内；",
-        "样本外表现：所有数字都是窗口内的样本内结果，walk-forward 与参数敏感性不在本引擎射程内；",
+        ("样本外表现：walk-forward 已启用——最后一段按时间切出作样本外，但引擎无法验证策略参数是否曾用全窗口数据调优；"
+         "若调参时已看过最后一段，'样本外'名不副实。" if wf else
+         "样本外表现：所有数字都是窗口内的样本内结果，walk-forward 与参数敏感性不在本引擎射程内；"),
         "资金容量：等权回放，单笔金额对盘口的冲击（除费率外）未建模；",
         "同时持仓相关性：信号逐一独立回放，重叠持仓的相关性风险不计入；",
         "交易所/链路风险：宕机、API 限流、插针、宕机重启后的订单状态，一概不在模型内。",

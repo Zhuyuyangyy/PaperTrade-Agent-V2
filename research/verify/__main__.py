@@ -43,6 +43,7 @@ DEMO_SPEC = {
     "exit": {"take_profit": 0.03, "stop_loss": -0.08, "timeout_bars": 24},
     "signals": {"kind": "rule", "rule": "rsi_below", "period": 14, "threshold": 30, "side": "long"},
     "control": {"enabled": True, "n_random": 200, "seed": 42},
+    "walk_forward": {"enabled": True, "folds": 3},
     "fee_multiples": [1, 2, 5],
     "falsify_if": {
         "control_lift_ci_includes_zero": True,

@@ -14,24 +14,30 @@ import random
 import statistics
 
 from . import metrics
-from .signals import random_signals
+from .signals import bar_bounds, random_signals
 from ..audit.pathsim import Exit, simulate
 
 BOOTSTRAP = 2000
 
 
 def random_control(candles: list[dict], rule: Exit, spec, entries: dict[int, str], *,
-                   n_random: int, seed: int, funding: list[dict] | None = None) -> dict:
+                   n_random: int, seed: int, funding: list[dict] | None = None,
+                   bar_range: tuple[int, int] | None = None) -> dict:
     """Replay one random-entry book with the strategy's exact parameters.
 
     The control mirrors the strategy's DOMINANT side: a long-only book gets a
     long-only control. When a strategy trades both directions, mirroring the
     dominant side is disclosed in the report -- the control is about entry
     timing, not about direction, and pretending otherwise would flatter it.
+
+    bar_range restricts where the random entries may land ([lo, hi] bar
+    indices, inclusive). The out-of-sample battery uses it so its control is
+    drawn from the same segment as the strategy's out-of-sample entries; the
+    effective range travels with the result so the report can disclose it.
     """
     sides = list(entries.values())
     side = max(set(sides), key=sides.count) if sides else "long"
-    rand_entries = random_signals(candles, n_random, seed, side=side)
+    rand_entries = random_signals(candles, n_random, seed, side=side, bar_range=bar_range)
     sim = simulate(
         candles, rand_entries, rule,
         symbol=spec.symbol, fee_rate=spec.fee_rate,
@@ -39,10 +45,12 @@ def random_control(candles: list[dict], rule: Exit, spec, entries: dict[int, str
         fill_model=spec.fill_model,
     )
     nets = sim.net_pct_series()
+    lo, hi = bar_bounds(candles, bar_range=bar_range)
     return {
         "n_random": len(rand_entries),
         "seed": seed,
         "side": side,
+        "bar_range": [lo, hi],
         "fills": sim.closed,
         "unfilled": sim.unfilled_entries,
         "stats": metrics.equity_stats(nets),

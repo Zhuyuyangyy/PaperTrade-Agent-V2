@@ -25,6 +25,10 @@
     "n_random": 200,
     "seed": 42
   },
+  "walk_forward": {
+    "enabled": true,
+    "folds": 3
+  },
   "fee_multiples": [
     1,
     2,

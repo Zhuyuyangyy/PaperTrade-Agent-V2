@@ -61,19 +61,41 @@ def rule_signals(candles: list[dict], *, rule: str, period: int, threshold: floa
     return entries
 
 
+def bar_bounds(candles: list[dict], warmup: int = 30,
+               bar_range: tuple[int, int] | None = None) -> tuple[int, int]:
+    """Effective inclusive [lo, hi] bar range for random entries.
+
+    Default (bar_range=None): the historical convention [warmup, len-2].
+    An explicit bar_range lets a segment battery draw its control from the
+    same segment as the strategy's entries -- a control drawn from the whole
+    window would not be a control for the segment, it would be a different
+    experiment wearing the same label.
+    """
+    hi = len(candles) - 2
+    if bar_range is None:
+        lo = warmup
+        if hi <= lo:
+            raise ValueError(f"数据窗口太短（{len(candles)} 根），无法生成随机信号")
+        return lo, hi
+    lo, hi_req = int(bar_range[0]), int(bar_range[1])
+    lo = max(lo, 0)  # a negative index would silently wrap to the last candle
+    hi = min(hi, hi_req)
+    if hi < lo:
+        raise ValueError(f"随机入场范围 [{lo}, {hi_req}] 在窗口内为空或倒退")
+    return lo, hi
+
+
 def random_signals(candles: list[dict], n: int, seed: int, side: str = "long",
-                   warmup: int = 30) -> dict[int, str]:
+                   warmup: int = 30, bar_range: tuple[int, int] | None = None) -> dict[int, str]:
     """Uniform random entry bars in [warmup, len-2], with replacement allowed.
 
     With replacement: the control is about entry *timing* distribution, not
     about cardinality. Two random signals may share a bar; that is fine and it
     is disclosed in the report.
     """
+    lo, hi = bar_bounds(candles, warmup=warmup, bar_range=bar_range)
     rng = random.Random(seed)
-    hi = len(candles) - 2
-    if hi <= warmup:
-        raise ValueError(f"数据窗口太短（{len(candles)} 根），无法生成随机信号")
-    return {rng.randint(warmup, hi): side for _ in range(n)}
+    return {rng.randint(lo, hi): side for _ in range(n)}
 
 
 def signal_stats(entries: dict[int, str], candles: list[dict]) -> dict:

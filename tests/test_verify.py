@@ -363,6 +363,197 @@ class TestVerifyEngine:
 
 
 # --------------------------------------------------------------------------
+# walk-forward
+# --------------------------------------------------------------------------
+
+def _dip_recovery_candles(n: int, seed: int = 3, period: int = 15,
+                          dip: float = 0.015, rec: float = 0.005) -> list[dict]:
+    """Flat base with periodic deep dips that recover: dip-buying WINS here."""
+    rng = random.Random(seed)
+    out, px = [], 100.0
+    t0 = 1_700_000_000_000
+    for i in range(n):
+        phase = i % period
+        px *= 1.0 + (-dip if phase < 3 else rec) + rng.gauss(0.0, 0.002)
+        o = px
+        c = px * (1.0 + rng.gauss(0.0, 0.004))
+        h = max(o, c) * (1.0 + abs(rng.gauss(0.0, 0.003)))
+        l = min(o, c) * (1.0 - abs(rng.gauss(0.0, 0.003)))
+        out.append({"t": t0 + i * 3_600_000, "o": o, "h": h, "l": l, "c": c, "v": 1000.0})
+    return out
+
+
+def _grind_down_candles(n: int, seed: int = 5, drift: float = -0.0002,
+                        vol: float = 0.006) -> list[dict]:
+    """Mild persistent decline: dip entries time out at a small loss, forever."""
+    rng = random.Random(seed)
+    out, px = [], 100.0
+    t0 = 1_700_000_000_000
+    for i in range(n):
+        px *= 1.0 + drift + rng.gauss(0.0, vol)
+        o = px
+        c = px * (1.0 + rng.gauss(0.0, 0.004))
+        h = max(o, c) * (1.0 + abs(rng.gauss(0.0, vol)))
+        l = min(o, c) * (1.0 - abs(rng.gauss(0.0, vol)))
+        out.append({"t": t0 + i * 3_600_000, "o": o, "h": h, "l": l, "c": c, "v": 1000.0})
+    return out
+
+
+def _overfit_candles() -> list[dict]:
+    """The overfitting story in one series: the edge is real for 1000 bars,
+    then the regime grinds lower and the same entries bleed. Measured on this
+    series (seeded, deterministic): full window +87.1%, in-sample +163.5%,
+    out-of-sample -76.4% -- the full window PASSES worst_case_net_negative
+    while the out-of-sample segment fails it, so a FALSIFIED verdict here can
+    only have come from the walk-forward propagation rule."""
+    return _dip_recovery_candles(1000) + _grind_down_candles(500)
+
+
+class TestWalkForward:
+    def test_single_fold_rejected(self):
+        with pytest.raises(SpecError, match="至少为 2"):
+            Spec.from_dict({
+                "name": "t", "symbol": "X", "interval": "1h",
+                "exit": {"timeout_bars": 5}, "signals": {"kind": "random"},
+                "walk_forward": {"folds": 1},
+            })
+
+    def test_default_disabled_and_declaring_block_enables(self):
+        off = Spec.from_dict({
+            "name": "t", "symbol": "X", "interval": "1h",
+            "exit": {"timeout_bars": 5}, "signals": {"kind": "random"},
+        })
+        assert off.walk_forward.enabled is False
+        on = Spec.from_dict({
+            "name": "t", "symbol": "X", "interval": "1h",
+            "exit": {"timeout_bars": 5}, "signals": {"kind": "random"},
+            "walk_forward": {"folds": 4},
+        })
+        assert on.walk_forward.enabled is True and on.walk_forward.folds == 4
+        assert on.to_dict()["walk_forward"] == {"enabled": True, "folds": 4}
+
+    def test_window_too_short_for_folds_is_refused(self):
+        candles = make_candles(60)
+        d = dict(BASE_SPEC)
+        d["walk_forward"] = {"folds": 100}
+        spec = Spec.from_dict(d)
+        with pytest.raises(ValueError, match="不够切"):
+            verify(spec, candles, {30: "long"})
+
+    def test_split_partitions_every_signal_exactly_once(self):
+        candles = make_candles(1200, seed=21)
+        d = dict(BASE_SPEC)
+        d["walk_forward"] = {"folds": 4}
+        d["control"] = {"enabled": False}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        r = verify(spec, candles, entries)
+        wf = r["walk_forward"]
+        assert wf["folds"] == 4 and wf["fold_bars"] == 300 and wf["boundary_bar"] == 900
+        isb, oosb = wf["in_sample"], wf["out_sample"]
+        assert isb and oosb
+        assert isb["n_signals"] + oosb["n_signals"] == len(entries)
+        # both segments run the SAME instruments, not a reduced copy
+        for b in (isb, oosb):
+            assert len(b["cost_sensitivity"]) == 3
+            assert b["barrier_reach"]["n"] > 0
+            assert b["runs"]["worst_case"]["stats"]["n"] > 0
+        assert r["walk_forward"] is not None
+
+    def test_oos_control_draws_only_from_the_oos_segment(self):
+        candles = make_candles(1200, seed=21)
+        d = dict(BASE_SPEC)
+        d["walk_forward"] = {"folds": 4}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        r = verify(spec, candles, entries)
+        wf = r["walk_forward"]
+        # the in-sample control keeps the historical default range [30, len-2]
+        assert wf["in_sample"]["control"]["bar_range"] == [30, 1198]
+        # the out-of-sample control is confined to the out-of-sample segment
+        assert wf["out_sample"]["control"]["bar_range"][0] == 900
+        assert wf["out_sample"]["control"]["bar_range"][1] == 1198
+
+    def test_oos_falsification_falsifies_the_whole_strategy(self):
+        """Full window passes the declared rule, out-of-sample fails it: the
+        FALSIFIED verdict can only come from the propagation rule."""
+        candles = _overfit_candles()
+        d = dict(BASE_SPEC)
+        d["signals"] = {"kind": "rule", "rule": "rsi_below", "period": 14, "threshold": 45}
+        d["control"] = {"enabled": False}
+        d["walk_forward"] = {"folds": 3}
+        d["falsify_if"] = {"worst_case_net_negative": True, "min_fills": 10}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=45)
+        r = verify(spec, candles, entries)
+        v = r["verdict"]
+        assert v["outcome"] == "FALSIFIED"
+        triggered = [c for c in v["checks"] if c.get("triggered")]
+        assert triggered and all(c["scope"] == "样本外" for c in triggered)
+        assert "样本外段（第 1000 根起）" in triggered[0]["detail"]
+        assert "样本外" in v["reason"]
+        # the standalone segment verdicts say the same thing
+        assert r["walk_forward"]["out_sample"]["verdict"]["outcome"] == "FALSIFIED"
+
+    def test_oos_insufficient_is_inconclusive_never_a_pass(self):
+        candles = make_candles(150, seed=2)  # short window -> few signals
+        d = dict(BASE_SPEC)
+        d["walk_forward"] = {"folds": 5}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        r = verify(spec, candles, entries)
+        v = r["verdict"]
+        assert v["outcome"] == "INCONCLUSIVE"
+        assert not any(c.get("triggered") for c in v["checks"])
+        oos_ins = [c for c in v["checks"]
+                   if c.get("insufficient") and c.get("scope") == "样本外"]
+        assert oos_ins and "样本外段" in oos_ins[0]["detail"]
+
+    def test_no_oos_signals_is_inconclusive_with_the_reason(self):
+        candles = make_candles(100)
+        d = dict(BASE_SPEC)
+        d["walk_forward"] = {"folds": 2}
+        d["control"] = {"enabled": False}
+        spec = Spec.from_dict(d)
+        r = verify(spec, candles, {5: "long"})  # the only signal is in-sample
+        wf = r["walk_forward"]
+        assert wf["in_sample"] is not None and wf["out_sample"] is None
+        v = r["verdict"]
+        assert v["outcome"] == "INCONCLUSIVE"
+        note = [c for c in v["checks"] if c.get("scope") == "样本外"]
+        assert note and "没有任何入场信号" in note[0]["detail"]
+
+    def test_report_shows_both_segments_and_the_tuning_disclosure(self):
+        candles = _overfit_candles()
+        d = dict(BASE_SPEC)
+        d["signals"] = {"kind": "rule", "rule": "rsi_below", "period": 14, "threshold": 45}
+        d["control"] = {"enabled": False}
+        d["walk_forward"] = {"folds": 3}
+        d["falsify_if"] = {"worst_case_net_negative": True, "min_fills": 10}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=45)
+        text = report.render(verify(spec, candles, entries))
+        assert "## 5. Walk-forward（样本内 / 样本外）" in text
+        assert "样本内（前 2 折）" in text and "样本外（最后 1 折）" in text
+        assert "## 6. 事前证伪规则判定" in text
+        assert "| 规则 | 范围 | 结果 | 明细 |" in text
+        assert "无法验证策略参数是否曾用全窗口数据调优" in text
+        assert "只在看得见的地方成立的 edge 不是 edge" in text
+        assert "不在本引擎射程内" not in text  # stale once walk-forward runs
+
+    def test_report_without_walk_forward_keeps_the_old_disclosure(self):
+        candles = make_candles(800, seed=9)
+        d = dict(BASE_SPEC)
+        d["control"] = {"enabled": False}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        text = report.render(verify(spec, candles, entries))
+        assert "## 5. Walk-forward" not in text
+        assert "## 6. 事前证伪规则判定" in text  # criteria renumbered, still last
+        assert "walk-forward 与参数敏感性不在本引擎射程内" in text
+
+
+# --------------------------------------------------------------------------
 # control group
 # --------------------------------------------------------------------------
 
@@ -412,6 +603,24 @@ class TestCLI:
         assert (tmp_path / "r.json").is_file()
         payload = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
         assert payload["verdict"]["outcome"] in ("FALSIFIED", "NOT_FALSIFIED", "INCONCLUSIVE")
+
+    def test_cli_spec_with_walk_forward_renders_both_segments(self, tmp_path):
+        candles = make_candles(1200, seed=21)
+        kpath = write_csv(tmp_path / "k.csv", [
+            {"t": c["t"], "o": c["o"], "h": c["h"], "l": c["l"], "c": c["c"]} for c in candles
+        ], ["t", "o", "h", "l", "c"])
+        d = dict(BASE_SPEC)
+        d["walk_forward"] = {"folds": 4}
+        spec_path = tmp_path / "spec.json"
+        spec_path.write_text(json.dumps(d), encoding="utf-8")
+        out = tmp_path / "r.md"
+        rc = main(["--spec", str(spec_path), "--candles", str(kpath), "--out", str(out), "--json"])
+        assert rc == 0
+        text = out.read_text(encoding="utf-8")
+        assert "## 5. Walk-forward（样本内 / 样本外）" in text
+        payload = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+        assert payload["walk_forward"]["folds"] == 4
+        assert payload["walk_forward"]["boundary_bar"] == 900
 
     def test_bad_spec_exits_2_with_message(self, tmp_path, capsys):
         spec_path = tmp_path / "bad.json"

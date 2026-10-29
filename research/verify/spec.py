@@ -16,6 +16,7 @@ Example:
       "exit": {"take_profit": 0.03, "stop_loss": -0.08, "timeout_bars": 24},
       "signals": {"kind": "rule", "rule": "rsi_below", "period": 14, "threshold": 30},
       "control": {"enabled": true, "n_random": 200, "seed": 42},
+      "walk_forward": {"enabled": true, "folds": 3},
       "fee_multiples": [1, 2, 5],
       "falsify_if": {
         "control_lift_ci_includes_zero": true,
@@ -99,6 +100,26 @@ class ControlSpec:
 
 
 @dataclass
+class WalkForwardSpec:
+    """Time-split the window into N folds; the last fold is out-of-sample.
+
+    Declaring the block is the intent (same convention as `control`). The
+    industry's number-one cause of backtest->live decay is in-sample overfit
+    (median -14.3pp); a strategy that only works on the bars its parameters
+    were chosen on is a story, not an edge. The engine cannot know how the
+    parameters were chosen -- that provenance is disclosed as a limit, not
+    assumed away.
+    """
+
+    enabled: bool = False
+    folds: int = 3
+
+    def validate(self) -> None:
+        if self.folds < 2:
+            raise SpecError("walk_forward.folds 至少为 2（1 折没有样本外段，walk-forward 失去意义）")
+
+
+@dataclass
 class Spec:
     name: str
     symbol: str
@@ -111,6 +132,7 @@ class Spec:
     exit: ExitSpec = field(default_factory=ExitSpec)
     signals: SignalSpec = field(default_factory=SignalSpec)
     control: ControlSpec = field(default_factory=ControlSpec)
+    walk_forward: WalkForwardSpec = field(default_factory=WalkForwardSpec)
     fee_multiples: tuple[float, ...] = (1.0, 2.0, 5.0)
     falsify_if: dict = field(default_factory=dict)
     hypothesis: str = ""
@@ -136,6 +158,7 @@ class Spec:
         self.exit.validate()
         self.signals.validate()
         self.control.validate()
+        self.walk_forward.validate()
 
     # -- (de)serialisation ---------------------------------------------------
     def to_dict(self) -> dict:
@@ -173,6 +196,10 @@ class Spec:
                 "n_random": self.control.n_random,
                 "seed": self.control.seed,
             },
+            "walk_forward": {
+                "enabled": self.walk_forward.enabled,
+                "folds": self.walk_forward.folds,
+            },
             "fee_multiples": list(self.fee_multiples),
             "falsify_if": self.falsify_if,
         }
@@ -187,6 +214,7 @@ class Spec:
         exit_d = d.get("exit") or {}
         sig_d = d.get("signals") or {}
         ctrl_d = d.get("control") or {}
+        wf_d = d.get("walk_forward") or {}
         spec = cls(
             name=str(d["name"]),
             symbol=str(d["symbol"]).upper(),
@@ -218,6 +246,10 @@ class Spec:
                 enabled=bool(ctrl_d.get("enabled", True)),
                 n_random=int(ctrl_d.get("n_random", 200)),
                 seed=int(ctrl_d.get("seed", 42)),
+            ),
+            walk_forward=WalkForwardSpec(
+                enabled=bool(wf_d.get("enabled", True)) if "walk_forward" in d else False,
+                folds=int(wf_d.get("folds", 3)),
             ),
             fee_multiples=tuple(float(m) for m in d.get("fee_multiples", (1.0, 2.0, 5.0))),
             falsify_if=dict(d.get("falsify_if") or {}),
