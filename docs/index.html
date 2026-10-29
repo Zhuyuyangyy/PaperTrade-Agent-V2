@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StrategyFalsifier — 你的回测曲线，敢过一遍对照组吗？</title>
+<meta name="description" content="一个能证明策略无效的测量系统：path-aware 回放、成本敏感性、障碍可达性、随机入场对照组、walk-forward、参数敏感性网格。裁决来自事前声明的证伪规则。">
+<style>
+  :root {
+    --ink: #1a2332;
+    --ink-2: #4a5568;
+    --ink-3: #718096;
+    --line: #e2e8f0;
+    --bg: #ffffff;
+    --bg-soft: #f7f9fc;
+    --accent: #0b5fff;
+    --accent-ink: #0849c4;
+    --kill: #c0392b;
+    --kill-bg: #fdf0ee;
+    --ok: #1e7f4f;
+    --ok-bg: #ecf8f1;
+    --warn: #9a6a00;
+    --warn-bg: #fdf6e3;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.65;
+    font-size: 16px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+  section { padding: 56px 0; border-bottom: 1px solid var(--line); }
+  section:last-of-type { border-bottom: none; }
+  h1 { font-size: 34px; line-height: 1.3; letter-spacing: -0.01em; }
+  h2 { font-size: 24px; margin-bottom: 8px; letter-spacing: -0.01em; }
+  h2 .no { color: var(--ink-3); font-family: var(--mono); font-size: 15px; font-weight: 500; margin-right: 8px; }
+  .kicker { color: var(--accent); font-weight: 600; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px; }
+  .sub { color: var(--ink-2); font-size: 17px; max-width: 720px; }
+  .fine { color: var(--ink-3); font-size: 13.5px; }
+  code, .mono { font-family: var(--mono); font-size: 0.92em; }
+  code { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; }
+  pre {
+    background: #101828; color: #e6ebf4; border-radius: 10px;
+    padding: 16px 18px; overflow-x: auto; font-family: var(--mono); font-size: 13.5px; line-height: 1.6;
+  }
+  pre .cm { color: #8fa3c0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* hero */
+  .hero { padding: 72px 0 56px; background: linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 100%); border-bottom: 1px solid var(--line); }
+  .hero .tag { display: inline-block; font-family: var(--mono); font-size: 13px; color: var(--accent-ink); background: #eaf1ff; border: 1px solid #c9dbff; border-radius: 999px; padding: 3px 12px; margin-bottom: 18px; }
+  .hero h1 { max-width: 760px; }
+  .hero .sub { margin-top: 14px; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+  .btn { display: inline-block; border-radius: 8px; padding: 10px 18px; font-size: 15px; font-weight: 600; border: 1px solid transparent; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-ink); text-decoration: none; }
+  .btn-ghost { border-color: var(--line); color: var(--ink); background: #fff; }
+  .btn-ghost:hover { border-color: var(--ink-3); text-decoration: none; }
+
+  /* stat band */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 34px; }
+  .stat { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .stat .v { font-size: 22px; font-weight: 700; font-family: var(--mono); }
+  .stat .v.bad { color: var(--kill); }
+  .stat .l { font-size: 13px; color: var(--ink-3); margin-top: 2px; }
+
+  /* tables */
+  table { width: 100%; border-collapse: collapse; margin: 18px 0 6px; font-size: 14.5px; }
+  th { text-align: left; font-size: 13px; color: var(--ink-3); font-weight: 600; padding: 8px 10px; border-bottom: 2px solid var(--line); white-space: nowrap; }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-size: 13.5px; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 999px; padding: 1px 10px; white-space: nowrap; }
+  .pill-kill { color: var(--kill); background: var(--kill-bg); border: 1px solid #f2cfc9; }
+  .pill-warn { color: var(--warn); background: var(--warn-bg); border: 1px solid #eedfa8; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 20px; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; background: #fff; }
+  .card h3 { font-size: 15.5px; margin-bottom: 6px; }
+  .card h3 .no { font-family: var(--mono); color: var(--accent); margin-right: 6px; font-size: 13px; }
+  .card p { font-size: 13.5px; color: var(--ink-2); }
+
+  .price-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-top: 22px; }
+  .price { border: 1px solid var(--line); border-radius: 12px; padding: 20px; background: #fff; display: flex; flex-direction: column; }
+  .price.featured { border-color: var(--accent); box-shadow: 0 0 0 3px #eaf1ff; }
+  .price .tier { font-size: 13px; font-weight: 700; color: var(--ink-3); letter-spacing: 0.05em; text-transform: uppercase; }
+  .price .amount { font-size: 32px; font-weight: 800; font-family: var(--mono); margin: 6px 0 2px; }
+  .price .amount small { font-size: 14px; font-weight: 500; color: var(--ink-3); }
+  .price ul { list-style: none; margin: 12px 0 0; flex: 1; }
+  .price li { font-size: 13.5px; color: var(--ink-2); padding: 5px 0 5px 20px; position: relative; border-top: 1px dashed var(--line); }
+  .price li::before { content: "✓"; position: absolute; left: 2px; color: var(--ok); font-weight: 700; }
+  .price li:first-child { border-top: none; }
+
+  .note { border-left: 3px solid var(--accent); background: var(--bg-soft); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 18px 0; font-size: 14px; color: var(--ink-2); }
+  .note.warn { border-left-color: var(--warn); background: var(--warn-bg); }
+  .note.kill { border-left-color: var(--kill); background: var(--kill-bg); }
+  .note strong { color: var(--ink); }
+
+  .demo-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 18px; }
+  @media (min-width: 760px) { .demo-grid { grid-template-columns: 5fr 4fr; } }
+  .demo-box { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; }
+  .demo-box .cap { font-size: 12.5px; color: var(--ink-3); padding: 8px 14px; border-bottom: 1px solid var(--line); background: var(--bg-soft); font-family: var(--mono); }
+  .demo-box .body { padding: 14px; font-size: 13.5px; color: var(--ink-2); }
+  .demo-box .body b { color: var(--ink); }
+
+  footer { padding: 36px 0 48px; color: var(--ink-3); font-size: 13.5px; }
+  .contact-box { border: 1px dashed var(--ink-3); border-radius: 10px; padding: 18px 20px; margin-top: 16px; background: var(--bg-soft); }
+  .contact-box .ph { font-family: var(--mono); color: var(--warn); }
+  ul.plain { list-style: none; margin: 10px 0; }
+  ul.plain li { padding: 4px 0 4px 18px; position: relative; font-size: 14.5px; color: var(--ink-2); }
+  ul.plain li::before { content: "—"; position: absolute; left: 0; color: var(--ink-3); }
+</style>
+</head>
+<body>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="wrap">
+    <span class="tag">StrategyFalsifier · 策略证伪引擎 · 开源 · 离线可跑</span>
+    <h1>你的回测曲线，敢过一遍对照组吗？</h1>
+    <p class="sub">一个能<b>证明策略无效</b>的测量系统。输入一份策略声明，输出一份<strong>试图杀死它</strong>的报告——裁决不来自评分，来自<strong>先于任何数字存在</strong>的事前证伪规则。</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#demo">30 秒看一份真实报告</a>
+      <a class="btn btn-ghost" href="verify-sample-report.md">样例报告（真实 BTC 数据）</a>
+      <a class="btn btn-ghost" href="cases/">案例矩阵：同一台引擎，四种死法</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="v bad">-14.3pp</div><div class="l">回测 → 实盘的收益中位差（行业第一死因：样本内过拟合）</div></div>
+      <div class="stat"><div class="v bad">+34.35%</div><div class="l">三年赚钱曲线仍被判 FALSIFIED——统计上无法与随机入场区分</div></div>
+      <div class="stat"><div class="v">6</div><div class="l">台仪器，一个裁决：回放 / 成本 / 障碍 / 对照 / walk-forward / 参数网格</div></div>
+      <div class="stat"><div class="v">297</div><div class="l">个自动化测试守着规则——事后不许改规则，不许挑好看的说</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ PROBLEM ============ -->
+<section id="problem">
+  <div class="wrap">
+    <div class="kicker">The Problem</div>
+    <h2><span class="no">01</span>市面服务只会「画曲线」，我们负责回答曲线是不是幻觉</h2>
+    <p class="sub">每个卖机器人的仓库都有一条漂亮曲线。行业实测：22 个零售 bot 里 17 个与指数相关性 &gt; 0.8——牛市里随机入场也赚钱，<strong>这条曲线卖的是 beta，包装成 alpha</strong>。样本内过拟合是回测失效的第一死因，而绝大多数回测工具对此一言不发。</p>
+    <div class="note kill"><strong>我们的立场：</strong>这个工具<strong>杀死策略，不生产策略</strong>。如果你的回测是真的，这份报告是你最好的营销资产；如果它是幻觉，你省下的是一整年订阅费。我们同时披露仪器的边界——报告固定含「未建模事项」一节，<strong>未被证伪 ≠ 被证实</strong>。</div>
+  </div>
+</section>
+
+<!-- ============ INSTRUMENTS ============ -->
+<section id="instruments">
+  <div class="wrap">
+    <div class="kicker">Instruments</div>
+    <h2><span class="no">02</span>六台仪器，一个裁决</h2>
+    <p class="sub">全部规则<strong>事前声明</strong>：证伪阈值写死在 spec 里、先于结果存在；跑完不分好坏全部发布。</p>
+    <div class="cards">
+      <div class="card"><h3><span class="no">#1</span>Path-aware 回放</h3><p>同一批信号逐 bar 走价，bar 内止损/止盈同触默认判止损，最坏/最好口径并列——你赚的是价差还是假设？实测过同一信号差 3.5 倍。</p></div>
+      <div class="card"><h3><span class="no">#2</span>成本敏感性</h3><p>费率 ×1 / ×2 / ×5 重放：edge 付不付得起自己的 toll？费率翻倍就翻车的曲线，是在给交易所打工。</p></div>
+      <div class="card"><h3><span class="no">#3</span>障碍可达性</h3><p>止盈/止损位在持仓窗口内到底被摸到过几次——还是止损从未工作的彩票结构？</p></div>
+      <div class="card"><h3><span class="no">#4</span>随机入场对照组</h3><p>同币、同时刻、同退出规则、同成本，随机 bar 入场（固定 seed 可复现）。<strong>打不过抛硬币的策略，绝对收益数字没有意义。</strong></p></div>
+      <div class="card"><h3><span class="no">#5</span>Walk-forward</h3><p>窗口切 N 折，样本内/样本外各跑完整电池，同一批事前规则在样本外复判——样本外被证伪 → 整体 FALSIFIED。<strong>只在看得见的地方成立的 edge 不是 edge。</strong></p></div>
+      <div class="card"><h3><span class="no">#6</span>参数敏感性网格</h3><p>事前声明的退出参数全网格重放：只有个别格子为正 → 打过拟合标记。edge 只在一小撮参数组合下存在，是曲线拟合不是 edge。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DEMO ============ -->
+<section id="demo">
+  <div class="wrap">
+    <div class="kicker">30-Second Demo</div>
+    <h2><span class="no">03</span>一条命令，看一份真实数据的证伪报告</h2>
+    <div class="demo-grid">
+      <div class="demo-box">
+        <div class="cap">$ python -m research.verify --demo --out report.md</div>
+        <div class="body">
+          引擎对<b>真实 BTC 1h 数据</b>（2023-06 → 2026-10，29,347 根 K 线）上一个经典策略跑完整电池：<b>RSI(14) &lt; 30 抄底做多</b>，止盈 +3% / 止损 -8% / 超时 24h，taker 4bps/边。<br><br>
+          <b>裁决：FALSIFIED</b>——7 条事前规则被触发：全窗口 -505.65%；×2 成本 -610.45%；随机对照组差值 -0.37%（95% CI [-0.70, -0.03]，显著差于抛硬币）；walk-forward 样本外 -265.31%；参数网格样本内 0/9、样本外 0/9 全负。<br><br>
+          <span class="fine">新克隆无行情缓存也能跑：内置 5,000 根近期 K 线，自动降级并在报告中披露。</span>
+        </div>
+      </div>
+      <div class="demo-box">
+        <div class="cap">report.md — 报告长这样</div>
+        <div class="body">
+          <b>§1</b> 回放（最坏/最好并列）<br>
+          <b>§2</b> 成本敏感性 ×1/2/5<br>
+          <b>§3</b> 障碍可达性（MFE/MAE 分布）<br>
+          <b>§4</b> 随机对照 + bootstrap CI<br>
+          <b>§5</b> walk-forward 两段对比 + 衰减<br>
+          <b>§6</b> 参数网格热力表 + 分布<br>
+          <b>§7</b> 事前证伪规则逐条判定<br>
+          <b>§8</b> 未建模事项披露<br><br>
+          <span class="fine">markdown + JSON 双格式交付，每个数字可用文内命令复现。</span>
+        </div>
+      </div>
+    </div>
+    <p style="margin-top:14px"><a href="verify-sample-report.md">📄 完整样例报告（docs/verify-sample-report.md）</a> · <a href="cases/">📂 案例矩阵（docs/cases/）</a></p>
+  </div>
+</section>
+
+<!-- ============ CASES ============ -->
+<section id="cases">
+  <div class="wrap">
+    <div class="kicker">Case Matrix</div>
+    <h2><span class="no">04</span>同一台引擎，四种死法</h2>
+    <p class="sub">四个<strong>事前声明</strong>的策略变体，同一窗口（Binance 1h futures，29,347 根/币，2023-06-24 → 2026-10-28），跑完不分好坏全部发布——包括看起来很赚钱的那个。</p>
+    <table>
+      <thead><tr><th>案例</th><th>假设</th><th class="num">成交</th><th class="num">净收益</th><th>vs 随机对照</th><th>裁决</th></tr></thead>
+      <tbody>
+        <tr><td><a href="cases/case1_rsi_dip_btc.md">case1</a> 抄底 BTC</td><td>RSI&lt;30 做多，均值回复</td><td class="num">1310</td><td class="num">-505.65%</td><td><span class="pill pill-kill">refuted</span> -0.37%，CI[-0.70,-0.03]</td><td><span class="pill pill-kill">FALSIFIED</span></td></tr>
+        <tr><td><a href="cases/case2_rsi_breakout_btc.md">case2</a> 追涨 BTC</td><td>RSI&gt;70 做多，动量延续</td><td class="num">1638</td><td class="num">+34.35%</td><td><span class="pill pill-warn">unproven</span> +0.03%，CI 跨 0</td><td><span class="pill pill-kill">FALSIFIED</span></td></tr>
+        <tr><td><a href="cases/case3_rsi_dip_eth.md">case3</a> 抄底 ETH</td><td>case1 跨币种复现</td><td class="num">1419</td><td class="num">-1144.10%</td><td><span class="pill pill-kill">refuted</span> -0.80%</td><td><span class="pill pill-kill">FALSIFIED</span></td></tr>
+        <tr><td><a href="cases/case4_rsi_dip_btc_maker.md">case4</a> 抄底 BTC · maker</td><td>case1 改限价成交 2bps/边</td><td class="num">1301</td><td class="num">-453.20%</td><td><span class="pill pill-kill">refuted</span> -0.40%</td><td><span class="pill pill-kill">FALSIFIED</span></td></tr>
+      </tbody>
+    </table>
+    <div class="note"><strong>case2 是重点：</strong>三年 +34%，看着能发朋友圈。但同一窗口随机入场 200 笔，均值只差 +0.03%/笔且 95% 区间跨 0——统计上无法区分于抛硬币。2023-06 到 2026-10 是加密大牛市，随机入场也赚钱。<strong>钱是 beta 不是 alpha。</strong></div>
+    <div class="note warn"><strong>诚实的限制：</strong>引擎无法验证参数是否用全窗口调优过（它看得到曲线，看不到你的搜索过程）——所以参数网格与 walk-forward 只是必要不充分条件。样本不足时输出 INCONCLUSIVE，永不放过。</div>
+  </div>
+</section>
+
+<!-- ============ PRICING ============ -->
+<section id="pricing">
+  <div class="wrap">
+    <div class="kicker">Pricing</div>
+    <h2><span class="no">05</span>先看样例，再决定要不要付费</h2>
+    <div class="price-grid">
+      <div class="price">
+        <div class="tier">First 10 Free</div>
+        <div class="amount">$0</div>
+        <ul>
+          <li>完整证伪报告（markdown + JSON）</li>
+          <li>换匿名公开发布权</li>
+          <li>先看样例再决定</li>
+        </ul>
+      </div>
+      <div class="price featured">
+        <div class="tier">Falsification Report</div>
+        <div class="amount">$99</div>
+        <ul>
+          <li>六台仪器完整报告</li>
+          <li>事前证伪规则逐条判定</li>
+          <li>随机对照 200 笔 + bootstrap CI</li>
+          <li>24-72h 交付</li>
+        </ul>
+      </div>
+      <div class="price">
+        <div class="tier">Report + Walkthrough</div>
+        <div class="amount">$299</div>
+        <ul>
+          <li>上述全部内容</li>
+          <li>30 分钟视频讲解</li>
+          <li>×10 成本扩展</li>
+          <li>数据更新后一次复跑</li>
+        </ul>
+      </div>
+    </div>
+    <p class="fine" style="margin-top:14px">输入契约：策略描述（市场/周期/信号/退出/成本假设）+ K 线 CSV 或公开标的 + 你的证伪标准（没有就用引擎默认）。Toku 平台搜 <strong>StrategyFalsifier</strong>。</p>
+  </div>
+</section>
+
+<!-- ============ BOUNDARY / CONTACT ============ -->
+<section id="contact">
+  <div class="wrap">
+    <div class="kicker">Boundaries &amp; Contact</div>
+    <h2><span class="no">06</span>边界先于生意</h2>
+    <ul class="plain">
+      <li>不荐股、不带单、不代管资金、不承诺收益——只回答一个问题：<strong>你的曲线是不是幻觉</strong>。</li>
+      <li>不接任何需要访问客户交易所 API key 的委托。</li>
+      <li>引擎开源，报告可复现：每个数字都能用仓库内命令重跑。</li>
+      <li>纸面交易 · 只读 · 无实盘路径。本项目自己的交易实验已于 2026-10-28 全部停止，本页是那次实验留下的仪器。</li>
+    </ul>
+    <div class="contact-box">
+      <strong>联系（占位）</strong><br>
+      <span class="ph">your-contact@example.com</span> · <span class="ph">@your-handle</span><br>
+      <span class="fine">↑ 占位符，联系渠道确认后替换。也欢迎在 <a href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2">GitHub 仓库</a>开 issue 讨论仪器本身。</span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    PaperTrade-Agent-V2-Fast · research/verify 策略证伪引擎 · MIT License ·
+    <a href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2">源码</a> ·
+    <a href="article-falsification.md">方法论文章</a> ·
+    <a href="verify-sample-report.md">样例报告</a><br>
+    本页所有数字来自真实执行，可用仓库内命令复跑。生成于 2026-10-30。
+  </div>
+</footer>
+
+</body>
+</html>
