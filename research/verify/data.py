@@ -181,6 +181,40 @@ def load_signals_csv(path: str | Path, candles: list[dict]) -> tuple[dict[int, s
     return entries, stats
 
 
+def load_exit_signals_csv(path: str | Path, candles: list[dict]) -> dict[int, str]:
+    """Map exit-signal timestamps onto bar indices: bar index -> reason.
+
+    Same mapping rule as entries: the first candle at or after the signal
+    timestamp, because a signal confirmed on one bar's close acts on the next.
+    The reason string rides along into the simulator's exit bookkeeping.
+    """
+    p = Path(path)
+    if not p.is_file():
+        raise CandleError(f"退出信号文件不存在: {p}")
+    out: dict[int, str] = {}
+    times = [c["t"] for c in candles]
+    with p.open(newline="", encoding="utf-8-sig") as fh:
+        reader = csv.DictReader(fh)
+        if reader.fieldnames is None or "t" not in reader.fieldnames:
+            raise CandleError(f"退出信号 CSV 需要列 t[,reason]，实际得到 {reader.fieldnames}")
+        for row in reader:
+            try:
+                t = _to_ms(row["t"])
+            except CandleError:
+                continue
+            if t < times[0] or t > times[-1]:
+                continue
+            lo, hi = 0, len(times) - 1
+            while lo < hi:
+                mid = (lo + hi) // 2
+                if times[mid] >= t:
+                    hi = mid
+                else:
+                    lo = mid + 1
+            out[lo] = (row.get("reason") or "signal_exit").strip() or "signal_exit"
+    return out
+
+
 def describe_market_cache(db_path: str | Path) -> list[tuple]:
     """What is actually in a market cache: (symbol, interval, venue, bars, from, to)."""
     p = Path(db_path)

@@ -110,6 +110,32 @@ class TestSpec:
                 "exit": {"timeout_bars": 5}, "signals": {"kind": "random"},
             })
 
+    def test_exit_signals_csv_maps_to_bars(self, tmp_path):
+        """A strategy whose exit logic is itself a signal: bar index -> reason,
+        filled at the close (pathsim contract)."""
+        candles = make_candles(60)
+        p = write_csv(tmp_path / "x.csv", [
+            {"t": str(candles[5]["t"]), "reason": "funding_reversal"},
+            {"t": str(candles[9]["t"])},                      # default reason
+            {"t": str(candles[0]["t"] - 10_000_000)},         # before window: skipped
+        ], ["t", "reason"])
+        sigs = data.load_exit_signals_csv(p, candles)
+        assert sigs.get(5) == "funding_reversal"
+        assert sigs.get(9) == "signal_exit"
+        assert len(sigs) == 2
+
+    def test_exit_signals_reach_the_simulator(self):
+        """With an exit signal on every bar, every trade exits by signal at the
+        close -- the reason must appear in the by_reason bookkeeping."""
+        candles = make_candles(400, seed=8)
+        d = dict(BASE_SPEC)
+        d["control"] = {"enabled": False}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        every_bar = {i: "my_reason" for i in range(len(candles))}
+        r = verify(spec, candles, entries, exit_signals=every_bar)
+        assert "my_reason" in r["runs"]["worst_case"]["by_reason"]
+
     def test_roundtrip_dict(self):
         d = {
             "name": "t", "symbol": "X", "interval": "1h",

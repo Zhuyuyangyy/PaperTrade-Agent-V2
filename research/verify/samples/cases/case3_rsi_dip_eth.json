@@ -1,0 +1,38 @@
+{
+  "interval": "1h",
+  "venue": "futures",
+  "fee_rate": 0.0004,
+  "funding": true,
+  "exit": {
+    "take_profit": 0.03,
+    "stop_loss": -0.08,
+    "timeout_bars": 24
+  },
+  "control": {
+    "enabled": true,
+    "n_random": 200,
+    "seed": 42
+  },
+  "fee_multiples": [
+    1,
+    2,
+    5
+  ],
+  "falsify_if": {
+    "control_lift_ci_includes_zero": true,
+    "net_negative_at_fee_multiple": 2,
+    "worst_case_net_negative": true,
+    "min_fills": 30
+  },
+  "name": "case3-rsi-dip-eth-1h",
+  "hypothesis": "ETH 1h RSI(14)<30 超卖后做多（case1 的跨币种复现）",
+  "symbol": "ETHUSDT",
+  "fill_model": "taker",
+  "signals": {
+    "kind": "rule",
+    "rule": "rsi_below",
+    "period": 14,
+    "threshold": 30,
+    "side": "long"
+  }
+}

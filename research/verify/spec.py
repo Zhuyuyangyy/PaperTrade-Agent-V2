@@ -48,6 +48,7 @@ class ExitSpec:
     timeout_bars: int | None = None
     trailing: float | None = None
     trailing_offset: float | None = None
+    exit_signals_path: str | None = None   # CSV(t[,reason]): bar-close exit signals
 
     def validate(self) -> None:
         if self.take_profit is not None and self.take_profit <= 0:
@@ -56,8 +57,9 @@ class ExitSpec:
             raise SpecError("exit.stop_loss 必须是负数（如 -0.08 表示 -8%）")
         if self.timeout_bars is not None and self.timeout_bars < 1:
             raise SpecError("exit.timeout_bars 至少为 1")
-        if all(v is None for v in (self.take_profit, self.stop_loss, self.timeout_bars, self.trailing)):
-            raise SpecError("exit 至少要声明一个退出条件（take_profit / stop_loss / timeout_bars / trailing）")
+        if all(v is None for v in (self.take_profit, self.stop_loss, self.timeout_bars,
+                                   self.trailing, self.exit_signals_path)):
+            raise SpecError("exit 至少要声明一个退出条件（take_profit / stop_loss / timeout_bars / trailing / exit_signals_path）")
 
 
 @dataclass
@@ -154,6 +156,7 @@ class Spec:
                 "timeout_bars": self.exit.timeout_bars,
                 "trailing": self.exit.trailing,
                 "trailing_offset": self.exit.trailing_offset,
+                "exit_signals_path": self.exit.exit_signals_path,
             },
             "signals": {
                 "kind": self.signals.kind,
@@ -199,6 +202,7 @@ class Spec:
                 timeout_bars=_opt_int(exit_d.get("timeout_bars"), "exit.timeout_bars"),
                 trailing=_opt_float(exit_d.get("trailing"), "exit.trailing"),
                 trailing_offset=_opt_float(exit_d.get("trailing_offset"), "exit.trailing_offset"),
+                exit_signals_path=exit_d.get("exit_signals_path"),
             ),
             signals=SignalSpec(
                 kind=str(sig_d.get("kind", "rule")),

@@ -47,6 +47,7 @@ def render(result: dict) -> str:
             f"止损 {ex['stop_loss']*100:+.1f}%" if ex.get("stop_loss") is not None else "",
             f"超时 {ex['timeout_bars']} 根" if ex.get("timeout_bars") is not None else "",
             f"移动止损回撤 {ex['trailing']*100:.1f}%" if ex.get("trailing") is not None else "",
+            "信号退出（收盘价）" if ex.get("exit_signals_path") else "",
         ] if t
     )
     a(f"- 退出规则：{exit_txt}")

@@ -22,6 +22,10 @@ from .spec import Spec, SpecError
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MARKET = ROOT / "runtime" / "audit" / "market.sqlite"
 
+# The spec file currently being processed, so relative paths inside it resolve
+# against the spec's own directory. Set by main() before any loading happens.
+_spec_path: list = [None]
+
 DEMO_SPEC = {
     "name": "rsi-dip-btc-1h-demo",
     "hypothesis": "BTC 1 小时 RSI(14) 低于 30 后做多，捕捉均值回复",
@@ -89,6 +93,27 @@ def _build_entries(args, spec: Spec, candles: list[dict]) -> dict[int, str]:
     return entries
 
 
+def _resolve_against_spec(spec_path: str | None, rel: str) -> Path:
+    """A relative path in a spec resolves against the spec's own directory
+    first (so a spec folder travels together), then against the CWD."""
+    p = Path(rel)
+    if p.is_absolute() or p.is_file():
+        return p
+    if spec_path:
+        cand = Path(spec_path).resolve().parent / rel
+        if cand.is_file():
+            return cand
+    return p
+
+
+def _load_exit_signals(spec: Spec, candles: list[dict]) -> dict[int, str]:
+    path = _resolve_against_spec(_spec_path[0], spec.exit.exit_signals_path)
+    sigs = data.load_exit_signals_csv(path, candles)
+    if not sigs:
+        raise data.CandleError(f"退出信号文件 {path} 没有映射到 K 线窗口内的信号")
+    return sigs
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="research.verify", description="策略证伪引擎：path-aware 回放 + 成本敏感性 + 障碍可达性 + 随机对照组")
     ap.add_argument("--spec", help="策略 spec JSON 路径")
@@ -122,10 +147,14 @@ def main(argv: list[str] | None = None) -> int:
             spec = Spec.from_dict(DEMO_SPEC)
         elif args.spec:
             spec = Spec.load(args.spec)
+            _spec_path[0] = args.spec
         else:
             ap.error("必须提供 --spec 或 --demo（或用 --list-market 查看缓存）")
         candles = _load_candles(args, spec)
         entries = _build_entries(args, spec, candles)
+        exit_signals = None
+        if spec.exit.exit_signals_path:
+            exit_signals = _load_exit_signals(spec, candles)
         funding = None
         if spec.funding:
             funding = data.load_funding(market, spec.symbol)
@@ -133,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
                 print("[提示] 缓存中没有该 symbol 的资金费数据，按 0 处理", file=sys.stderr)
         from . import verify as run_verify
 
-        result = run_verify(spec, candles, entries, funding=funding)
+        result = run_verify(spec, candles, entries, funding=funding, exit_signals=exit_signals)
     except (SpecError, data.CandleError, ValueError) as exc:
         print(f"[输入错误] {exc}", file=sys.stderr)
         return 2

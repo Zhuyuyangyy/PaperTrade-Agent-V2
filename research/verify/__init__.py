@@ -35,11 +35,14 @@ __all__ = ["Spec", "SpecError", "verify", "verify_file"]
 
 
 def verify(spec: Spec, candles: list[dict], entries: dict[int, str],
-           funding: list[dict] | None = None) -> dict:
+           funding: list[dict] | None = None,
+           exit_signals: dict[int, str] | None = None) -> dict:
     """Run the full falsification battery for one strategy over one price series.
 
     candles : [{'t': ms, 'o','h','l','c': float, 'v': float}, ...] ascending.
     entries : bar index -> 'long' | 'short', as produced by a signal source.
+    exit_signals : optional bar index -> reason, for strategies whose exit
+    logic is itself a signal (fills at the bar close).
     Returns a plain dict (JSON-serialisable) ready for report rendering.
     """
     from . import control, excursions, metrics
@@ -56,6 +59,7 @@ def verify(spec: Spec, candles: list[dict], entries: dict[int, str],
         timeout_bars=spec.exit.timeout_bars,
         trailing=spec.exit.trailing,
         trailing_offset=spec.exit.trailing_offset,
+        exit_signals=exit_signals or None,
     )
 
     # --- 1. path-aware replay, worst case and best case side by side ---------

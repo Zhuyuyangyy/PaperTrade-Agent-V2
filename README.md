@@ -186,6 +186,10 @@ python -m research.verify --list-market                   # 本地行情缓存�
 
 样例报告（真实数据，RSI 抄底 BTC 策略 3 年 1310 笔）：`docs/verify-sample-report.md`——裁决 FALSIFIED：基线即亏损、×2 成本净 -610%、且**显著差于随机入场**（差值 -0.37%，95% CI [-0.70%, -0.03%]）。spec 模板：`research/verify/samples/demo_spec.json`。
 
+**案例矩阵**（`docs/cases/`，四个事前声明变体全部发布）：抄底 BTC / 追涨 BTC / 抄底 ETH / maker 限价成交，统一 29,347 根 1h futures 真实 K 线。三个被对照组击败，第四个 **+34% 三年曲线仍被判 FALSIFIED——统计上无法与随机入场区分（CI 跨 0），钱是 beta 不是 alpha**。引擎同时支持客户自带信号（CSV 进场 + CSV 信号退出）。
+
+**方法论文章**（对外内容资产）：`docs/article-falsification.md`。**分发作战包**（Reddit/X/闲鱼/Toku 文案 + gate 规则 + 本人操作清单）：`docs/dist/`。
+
 **测试**：`tests/test_verify.py` 36 个用例（spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/CLI 端到端）。修复了 pathsim 一个真 bug：maker 未成交单曾被同时计入 unfilled 和 open_signals，虚低成交率。
 
 ## 运维：这个系统活着的时候经历过什么
