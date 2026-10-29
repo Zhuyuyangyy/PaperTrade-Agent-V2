@@ -62,10 +62,17 @@ def test_baseline_buys_but_hybrid_never_enters_without_current_agent(tmp_path):
 
 
 def test_hybrid_approves_only_last_matching_candle(tmp_path):
+    # Live clocks: the hybrid validates signal freshness against its own
+    # datetime.now(), so the signal must be written with a real recent time.
+    # The one exception is the closed-candle check, anchored 60s back -- the
+    # same convention run_demo uses -- because inside the first 30s after an
+    # hour boundary an hour-aligned feed has no candle that is both settled
+    # and fresh (the dead zone, pinned by the test below).
     now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
     df = make_df(now_ms)
-    bars = checked_closed_candles(fake_closed_rows(now_ms), now_ms)
-    d = build_decision("BTC/USDT", bars, now_ms)
+    safe_ms = now_ms - 60_000
+    bars = checked_closed_candles(fake_closed_rows(safe_ms), safe_ms)
+    d = build_decision("BTC/USDT", bars, safe_ms)
     atomic_write_json(tmp_path / "BTC_USDT.json", d)
     s = new_strategy(PaperHybrid, tmp_path)
     assert s.process_only_new_candles is False
@@ -78,6 +85,20 @@ def test_hybrid_approves_only_last_matching_candle(tmp_path):
     assert s.confirm_trade_entry("BTC/USDT", "market", 1, 100, "gtc", now, "agent", "long") is True
     (tmp_path / "BTC_USDT.json").unlink()
     assert s.confirm_trade_entry("BTC/USDT", "market", 1, 100, "gtc", now, "agent", "long") is False
+
+
+def test_hour_boundary_dead_zone_is_stale_not_silent():
+    """The dead zone, pinned: within 30s after an hour boundary an hour-aligned
+    feed has no candle that is both settled (30s rule) and fresh (1h window),
+    so the staleness guard must fire loudly -- and the demo's one-minute-back
+    anchor must not trip it. This test failed intermittently in CI before the
+    guard became a dedicated exception and the clocks were pinned."""
+    boundary = int(datetime(2026, 10, 29, 10, 0, tzinfo=timezone.utc).timestamp() * 1000)
+    live = boundary + 5_000
+    with pytest.raises(ValueError, match="stale"):
+        checked_closed_candles(fake_closed_rows(live), live)
+    anchored = live - 60_000
+    assert len(checked_closed_candles(fake_closed_rows(anchored), anchored)) >= 60
 
 
 def test_hybrid_exit_is_independent_of_research_signal(tmp_path):

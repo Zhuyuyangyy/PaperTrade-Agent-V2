@@ -15,6 +15,17 @@ HOUR_MS = 3_600_000
 PAIR_MAP = {"BTC/USDT": "BTC-USD", "ETH/USDT": "ETH-USD"}
 
 
+class StaleFeedError(ValueError):
+    """The newest closed candle is too old to act on.
+
+    Distinct from a broken feed (invalid OHLCV, gaps): staleness is a normal
+    state in the 30 seconds after an hour boundary, when the candle that just
+    closed has not settled its 30s yet and the one before it is already past
+    the 1h freshness window. Callers skip the tick and try again; a subclass
+    of ValueError so existing `pytest.raises(ValueError)` contracts hold.
+    """
+
+
 @dataclass(frozen=True)
 class ClosedCandle:
     open_ms: int
@@ -46,7 +57,7 @@ def checked_closed_candles(rows: list[list[float]], now_ms: int) -> list[ClosedC
     if any(b.open_ms - a.open_ms != HOUR_MS for a, b in zip(parsed[-60:-1], parsed[-59:])):
         raise ValueError("Last 60 candles are not contiguous")
     if now_ms - (parsed[-1].open_ms + HOUR_MS) >= HOUR_MS:
-        raise ValueError("Most recent closed candle is stale")
+        raise StaleFeedError("Most recent closed candle is stale")
     return parsed
 
 

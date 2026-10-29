@@ -10,7 +10,7 @@ import sys
 import time
 
 from research.core import (
-    HOUR_MS, PAIR_MAP, atomic_write_json, build_decision,
+    HOUR_MS, PAIR_MAP, StaleFeedError, atomic_write_json, build_decision,
     checked_closed_candles, write_decisions,
 )
 
@@ -67,9 +67,18 @@ def run_once(outdir: Path, logpath: Path, ta_policy: str, ta_root: Path,
     # Collect and validate all pairs before writing any signal.
     snapshots = {}
     ex = open_public_exchange()
-    for pair in PAIR_MAP:
-        rows = fetch_public(ex, pair)
-        snapshots[pair] = checked_closed_candles(rows, now)
+    try:
+        for pair in PAIR_MAP:
+            rows = fetch_public(ex, pair)
+            snapshots[pair] = checked_closed_candles(rows, now)
+    except StaleFeedError as exc:
+        # Hour-boundary dead zone (first ~30s of an hour): the newest 1h
+        # candle has not settled its 30s, the previous one is already stale.
+        # That is a "not yet", not a failure -- skip the tick and let the
+        # next one run with fresh candles. A genuinely broken feed still
+        # raises (invalid OHLCV / gaps are plain ValueErrors).
+        print(f"skip tick: {exc}", flush=True)
+        return []
     decisions = [build_decision(pair, snapshots[pair], now, ta_policy, ta_root) for pair in PAIR_MAP]
     count = write_decisions(outdir, decisions, logpath)
     if marks_out is not None:
@@ -100,7 +109,12 @@ def fake_closed_rows(now_ms: int, factor: float = 1.0, n: int = 120) -> list[lis
 
 
 def run_demo(outdir: Path) -> list[dict]:
-    now = utc_ms()
+    # Anchor one minute back. The synthetic feed is hour-aligned, and inside
+    # the first 30s after an hour boundary no candle is both settled (30s
+    # rule) and fresh (1h staleness window) -- the demo would crash exactly
+    # there. One minute back is also what this feed's docstring already
+    # claims: "120 completely closed candles ending one minute before now".
+    now = utc_ms() - 60_000
     # DEMO outputs to a distinct directory; does not write to trade consumption path.
     decisions = [
         build_decision(pair, checked_closed_candles(fake_closed_rows(now, factor=1.0 + i), now), now)
