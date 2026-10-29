@@ -429,3 +429,18 @@ class TestCLI:
     def test_no_spec_and_no_demo_is_usage_error(self):
         with pytest.raises(SystemExit):
             main([])
+
+    def test_bundled_offline_demo_runs_without_cache(self, tmp_path):
+        """The sales funnel: a fresh clone has no market cache (sqlite is
+        gitignored), so --demo must work from the committed CSV bundle alone.
+        If this breaks, every visitor who clones the repo hits a dead end."""
+        from research.verify.__main__ import BUNDLED_CANDLES, BUNDLED_SPEC
+
+        assert BUNDLED_CANDLES.is_file(), "演示 K 线 CSV 缺失"
+        assert BUNDLED_SPEC.is_file(), "离线演示 spec 缺失"
+        out = tmp_path / "offline.md"
+        rc = main(["--demo", "--market", str(tmp_path / "absent.sqlite"), "--out", str(out)])
+        assert rc == 0
+        text = out.read_text(encoding="utf-8")
+        assert "裁决" in text and "FALSIFIED" in text or "NOT_FALSIFIED" in text
+        assert "不含资金费" in text  # the bundle ships no funding series; disclosed

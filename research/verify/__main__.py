@@ -21,6 +21,10 @@ from .spec import Spec, SpecError
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MARKET = ROOT / "runtime" / "audit" / "market.sqlite"
+# Self-contained demo bundle: a fresh clone has no market cache (sqlite is
+# gitignored), so the demo must work from committed CSVs alone.
+BUNDLED_CANDLES = Path(__file__).resolve().parent / "samples" / "demo_candles.csv"
+BUNDLED_SPEC = Path(__file__).resolve().parent / "samples" / "demo_spec_csv.json"
 
 # The spec file currently being processed, so relative paths inside it resolve
 # against the spec's own directory. Set by main() before any loading happens.
@@ -53,12 +57,18 @@ def _load_candles(args, spec: Spec) -> list[dict]:
     if args.candles:
         return data.load_candles_csv(args.candles)
     market = Path(args.market) if args.market else DEFAULT_MARKET
-    if not market.is_file():
-        raise data.CandleError(
-            f"找不到行情缓存 {market}。请用 --candles 提供 CSV（列 t,o,h,l,c），"
-            "或用 --list-market 查看可用缓存。"
-        )
-    return data.load_candles_market(market, spec.symbol, spec.interval, spec.venue)
+    if market.is_file():
+        return data.load_candles_market(market, spec.symbol, spec.interval, spec.venue)
+    # No cache (fresh clone): fall back to the committed demo bundle so the
+    # demo always runs. Numbers differ slightly from the cached run (no
+    # funding series ships in the bundle) and the report discloses that.
+    if args.demo and BUNDLED_CANDLES.is_file():
+        print(f"[提示] 无行情缓存，使用内置演示数据 {BUNDLED_CANDLES.name}", file=sys.stderr)
+        return data.load_candles_csv(BUNDLED_CANDLES)
+    raise data.CandleError(
+        f"找不到行情缓存 {market}。请用 --candles 提供 CSV（列 t,o,h,l,c），"
+        "或用 --list-market 查看可用缓存。"
+    )
 
 
 def _build_entries(args, spec: Spec, candles: list[dict]) -> dict[int, str]:
@@ -143,8 +153,15 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     try:
+        market_path = Path(args.market) if args.market else DEFAULT_MARKET
         if args.demo:
-            spec = Spec.from_dict(DEMO_SPEC)
+            # With a cache the demo runs the full 3-year series; without one it
+            # falls back to the committed bundle (no funding series ships with
+            # it, so the bundled spec declares funding: false and says so).
+            if market_path.is_file() or not BUNDLED_SPEC.is_file():
+                spec = Spec.from_dict(DEMO_SPEC)
+            else:
+                spec = Spec.load(BUNDLED_SPEC)
         elif args.spec:
             spec = Spec.load(args.spec)
             _spec_path[0] = args.spec

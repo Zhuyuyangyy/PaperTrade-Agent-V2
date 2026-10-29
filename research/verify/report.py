@@ -52,7 +52,7 @@ def render(result: dict) -> str:
     )
     a(f"- 退出规则：{exit_txt}")
     a(f"- 执行假设：{spec['fill_model']} 成交模型 · 单边费率 {spec['fee_rate']*10000:.0f}bps"
-      + (f" · 含资金费" if spec.get("funding") else " · 不含资金费")
+      + (f" · 含资金费" if result.get("funding_applied") else (" · spec 声明含资金费但数据缺失，按 0 处理" if spec.get("funding") else " · 不含资金费"))
       + f" · bar 内先到止损判止损（最坏优先）")
     a(f"- 信号数：{result['n_signals']}")
     a("")

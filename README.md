@@ -8,6 +8,24 @@
 
 ---
 
+## 现在：策略证伪服务（仪器活着，而且接单）
+
+**你的回测曲线，敢过一遍对照组吗？** 我们把杀死了自己交易系统的那套仪器做成了产品：
+
+```bash
+python -m research.verify --demo --out report.md    # 30 秒看一份真实数据的证伪报告
+```
+
+- 输入一份策略 spec，输出一份**试图杀死它**的报告：path-aware 回放（最坏/最好并列）、成本敏感性 ×1/2/5、障碍可达性、随机入场对照组、事前证伪规则判定
+- 样例（真实 BTC 数据，三年 +34% 的策略仍被判 FALSIFIED）：[`docs/verify-sample-report.md`](docs/verify-sample-report.md) · 案例矩阵：[`docs/cases/`](docs/cases/)
+- **首 10 单免费**，换匿名公开发布权 · 付费档 $99 / $299（[服务说明](docs/dist/toku-profile.md)，Toku 搜 StrategyFalsifier）
+- 不荐股、不带单、不代管资金、不承诺收益——只回答一个问题：**你的曲线是不是幻觉**
+- 新克隆无行情缓存也能跑 demo（内置 5000 根近期 K 线，自动降级并披露）
+
+完整产品化章节见下文「产品化：策略证伪引擎」；对外文章：[`docs/article-falsification.md`](docs/article-falsification.md)。
+
+---
+
 ## TL;DR — 我们测出了什么
 
 36 小时、六本并行账本、252 笔平仓、四个外部策略约 10,700 笔模拟成交，结论是硬的：
