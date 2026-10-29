@@ -1,229 +1,167 @@
-# PaperTrade-Agent V2 - Independent A/B Dry-run (NO REAL ORDERS)
+# PaperTrade-Agent-V2-Fast
 
-A reproducible, paper-only comparison of (A) a deterministic 1-hour SMA baseline and
-(B) the same baseline filtered by a risk-first multi-voter research committee, plus a separate exploratory 15-minute fast lane C.
-All three are standalone Freqtrade **dry-run** accounts using public Kraken OHLCV data; C is excluded from the primary A/B results.
-This project does not authenticate or place real exchange orders, does not require
-identity verification, and is NOT a profitable-trading claim.
+**一个能证明策略无效的测量系统。** 纸面交易 · 只读 · 无实盘路径 · 已归档
 
-## What is actually integrated
+> 状态：**实验已于 2026-10-28 18:05 全部停止**（STOP 文件生效，六本账静止）。
+> 本仓库是那次实验的完整档案：代码、数据、结论、以及得出结论的仪器。
+> 恢复命令见文末；本文所有数字都能用文内的命令复现。
 
-* **Freqtrade**: separate baseline, hybrid, and fast Docker services, 1,000 USDT simulated
-  starting capital EACH, BTC/USDT and ETH/USDT spot only, three separate SQLite ledgers
-  in isolated writable runtime directories. Fast is an exploratory 15m EMA/RSI lane, not part of A/B. Entries use a 5 bps adverse custom price;
-  exit and stoploss use limit orders so Freqtrade actually calls the custom exit-price
-  hook. Limit exits can remain unfilled in a fast move, which is recorded as a model
-  limitation. Stake is capped at 100 USDT and 10 percent of estimated wallet stake.
-* **CCXT**: public-only Kraken OHLCV and ticker worker (no API keys), strict timestamps,
-  hourly close/gap checks, atomic last-closed-candle signals, and separate short-lived
-  mark-price files for valuing open spot positions.
-* **FundAgents-inspired pattern**: rule-based trend and momentum voters, risk veto,
-  observable votes, and missing-data fail-closed behavior. This is original integration
-  code and does NOT import or modify the user's existing FundAgents repository.
-* **TradingAgents**: OPTIONAL upstream research adapter `research/tradingagents_bridge.py`.
-  It is NOT enabled by default and has NOT been exercised against live upstream APIs.
-  After separate installation and LLM credentials, it can publish a strictly parsed,
-  same-day daily research bias to `data/ta_bias`. Set `--ta-policy require_buy` in the
-  worker to use that as an EXTRA entry veto; never as autonomous trade authorization.
-* **Gate**: `PaperHybrid` can only veto baseline BUY entries; it cannot create trades
-  independently. Exact ticker, time, candle, source, schema, vote and risk checks are
-  repeated at the final Freqtrade entry authorization. Baseline exits/stoploss stay
-  operational regardless of Agent connectivity.
-* **Equity reporting**: `scripts/report.py` reads Freqtrade ledgers in read-only mode and
-  marks open long positions to fresh public ticker prices, including entry/estimated exit
-  fees. If any open position lacks a fresh valid mark, total equity is unavailable rather
-  than guessed. `research.equity_sampler` appends 60-second equity snapshots; the dashboard
-  plots those full-equity samples rather than reconstructing a realized-only curve.
+---
 
-## First run (Python 3.11 + Docker Compose)
+## TL;DR — 我们测出了什么
 
-```bash
-python scripts/safety_check.py
-python -m research.worker demo
-python scripts/dashboard.py
-python -m pytest -q tests
-python -m unittest discover -s legacy_v1/tests -p test_paper_agent.py
+36 小时、六本并行账本、252 笔平仓、四个外部策略约 10,700 笔模拟成交，结论是硬的：
 
-# Docker requires access to public Kraken market APIs and images.
-docker compose config
-# Inspect user_data/config.baseline.json and config.hybrid.json first.
-docker compose up -d --build
-docker compose logs -f --tail=80 research baseline hybrid fast equity-sampler
+| # | 结论 | 证据 |
+|---|---|---|
+| 1 | **这套桌面交易的期望值为负** | 每笔毛利 +18bps vs LP 费地板 50bps（池深无关，结构性） |
+| 2 | **六个筛选 agent 没有选择力** | 14 个队列 lift 的 95% 区间全部跨 0；中位候选 5 分钟波动 0.00% |
+| 3 | **六 agent 管线打不过最笨的规则** | E（六 agent 全开）-94.68 vs C（无脑按 organic_score 买前 3）-102.75，差 8 美元 |
+| 4 | **外部策略同样不行** | 3 个 GitHub 策略：PF 1.12 / 0.84 / 0.88，两个被随机入场对照组击败 |
+| 5 | **唯一活线索：资金费率** | FundingRate 盈亏平衡点 ≈3bps/边（零售 taker 5bps）；maker 假设下 PF 1.07，是唯一通过自己证伪规则的 |
+
+**这不是"还没调好"，这是"测完了"。** 外部独立研究同向：2,380 个 Solana 币 100+ 规则策略零正期望（swaphunt.dev）、arXiv 2026-06 论文去掉前 3 笔即转负、pumpfun-momentum-bot 模拟正实盘负（延迟吃掉信号）。
+
+---
+
+## 系统是什么
+
+```
+                  ┌──────────────── 同一候选池 · 同一时刻 ────────────────┐
+                  │                                                    │
+   Jupiter/DexScreener ──► SEARCH ──► RISK ──► GMGN ──► JUDGE ──► FOMO ──► EXIT
+   (8 个公开数据源)        入池      否决+打分   聪明钱    LLM 研判   开仓    60 秒盯仓
+                              │        │                   │
+                              ▼        ▼                   ▼
+                        candidate_marks (影子价格)   llm_judgments (研判留痕)
+                              │
+                              ▼
+                     research/replay/ ── 选择性审计 · 成本校准 · 反事实回放
 ```
 
-The demo creates **synthetic** files under `data/synthetic_signals/`, a directory
-NOT read by the trading strategy. Real research writes only to
-`user_data/signals/`. Do not copy demo files to the production signal directory.
-To stop the simulations: `docker compose down`. Account databases live under
-`runtime/baseline/`, `runtime/hybrid/`, and `runtime/fast/`; do not delete those directories if you wish to
-preserve results. Shared strategies are mounted read-only, and Hybrid reads public
-signals from a separate read-only mount.
+**六本账并行**（各自独立 SQLite，WAL 模式，多进程安全写入）：
 
-### Reports
+| 账本 | 角色 | 与 E 的差异 |
+|---|---|---|
+| `memehunter.sqlite` (E) | 现役基线 | — |
+| `counterpart.sqlite` (C) | 对照组 | 只按 organic_score 取前 3 买入，无否决/分数线/聪明钱/冷却 |
+| `arm_stop22.sqlite` | 实验臂 | 止损 -12% → -22% |
+| `arm_tp20.sqlite` | 实验臂 | 止盈 +55% → +20% |
+| `arm_nojudge.sqlite` | 实验臂 | 关 JUDGE 与试探仓 |
+| `arm_bold.sqlite` | 实验臂 | 单笔 $100→$300、持仓 5→8、每轮 2→4 笔、分数线 45→35 |
 
-```bash
-python scripts/report.py
-python scripts/dashboard.py
-```
+每个臂的假设和证伪规则**开工前写死在配置文件里**（`user_data/config.arm_*.json` 的 `_arm` 字段），测试强制校验字段完整——事后不许改规则，不许挑好看的说。
 
-For a live-updating local dashboard, run this in a separate terminal after starting Docker:
+---
 
-```bash
-python scripts/dashboard_server.py
-```
+## 仪器：这个项目真正的资产
 
-Open `http://127.0.0.1:8765`. The server binds to localhost only and refreshes the read-only page every 15 seconds from local SQLite ledgers, fresh public marks, equity snapshots, and validated signal files. It has no order or credential endpoints and makes no outbound requests. Stop it with Ctrl+C.
+赚钱线停了，测量层是可复用的。四件东西：
 
-For a one-off HTML snapshot that can be opened directly, run `python scripts/dashboard.py` and open `data/paper_dashboard.html`. The dashboard follows a compact trading-console layout: four KPI cards, full-equity history, activity log, primary baseline-vs-agent comparison, and nine module cards including Fast Experiment C. Click a module card to read its responsibility and safety boundary.
+### 1. Path-aware 回放器（`research/audit/pathsim.py`）
 
-When no ledger exists, metrics show `--` and the chart shows an empty state rather than invented profits. Equity history is sampled once per minute and includes open-position mark-to-market P&L. If any open position lacks a valid public mark no complete-equity value is emitted for that sample. A chart is not a live exchange performance statement. See `docs/UI_DESIGN.md` for layout and data-truthfulness rules.
+逐 bar 回放，同一根 K 线内止损和止盈同时触及时**默认判止损**，乐观读法并列打印。这不是学术洁癖——CascadeFader 的仓库自己记录过：用"是否触及过止盈价"分析得到 +469%/91% 胜率，改成路径回放后是 +132%/PF 1.62。**同一批信号，差 3.5 倍。**
 
-The HTML dashboard is generated from the current template and local snapshot. No synthetic
-balances, wins, trades, or P&L are inserted. The earlier checked-in PNGs showed the previous
-realized-only labels, so they are not included as current screenshots in this release.
+信号在**下一根 K 线开盘**成交（本 bar 收盘才知道信号，bar 内成交就是前视）；未成交的信号被计数，不丢弃。
 
-Fast Experiment C also writes a local heartbeat from Freqtrade's actual `bot_loop_start` callback. The activity feed shows that heartbeat and fresh Kraken public marks, so a flat account can still visibly show that the process and market feed are alive. The heartbeat is not a trade signal and does not change account P&L.
+### 2. 随机入场对照组（`research/audit/runner.py`）
 
-### Optional TradingAgents integration (NOT a default dependency)
+每个策略对照"同币、同时刻、同退出规则、随机 bar 入场"（固定 seed 可复现）。**打不过自己对照组的策略，是有论文的巧合，不是策略。** TrendRider 8468 笔 PF 0.84、CascadeFader PF 1.12 都过不了这关。
 
-Read the upstream documentation at https://github.com/TauricResearch/TradingAgents
-and choose supported LLM providers and market data; API subscriptions may cost money.
-Install upstream in a separate compatible Python environment. Set the variables
-`TA_LLM_PROVIDER`, `TA_QUICK_MODEL`, `TA_DEEP_MODEL` and the vendor's required API key.
-Run a daily analysis with:
+### 3. 成本模型（`research/replay/costs.py`）
 
-```bash
-python -m research.tradingagents_bridge --pair BTC/USDT
-python -m research.tradingagents_bridge --pair ETH/USDT
-```
+用池深度反推冲击成本 + LP 费 + 固定链上费，替代配置里的常数。实测：池深中位 $799k 时 $100 单往返 60bps（其中 50bps 是 LP 地板，与池深无关）；配置里那个 120bps 其实是给 $1,000 单定的价——**尺子用错了地方，不是数写错了。**
 
-This emits `data/ta_bias/BTC_USDT.json` and `ETH_USDT.json`. To use the optional
-veto inside the researcher, set the `research` Docker Compose command option from
-`--ta-policy off` to `--ta-policy require_buy`, but remember that the optional
-adapter is not installed in the researcher Docker image: run it separately, make
-its output accessible at the mounted `data/ta_bias` path, and verify its daily
-input data provider. If missing or ambiguous, new Hybrid entries will be blocked.
-The trading engine MUST NOT use LLM API keys or handle any secret.
+### 4. 影子价格（`research/replay/labels.py`）
 
-## Upgrade from the earlier V2 folder
+没买的候选也记账：5m/15m/30m/1h 前向曲线。没有它就算不出"经过筛选的候选收益更高"这个断言是否成立——而那正是每个 agent 过滤规则的隐含承诺。
 
-Stop the old stack first, but keep the old project directory intact. The migration uses SQLite's backup API and never overwrites an existing target. It prefers current ledgers under `runtime/{baseline,hybrid}/` and falls back to legacy `user_data/*.dryrun.sqlite` files. The fast lane is new and normally has no legacy ledger.
+---
 
-```bash
-# First run `docker compose down` in the OLD project directory.
-# Then run these commands from the NEW project directory after extracting the new ZIP.
-python scripts/migrate_ledgers.py --legacy-root "/path/to/old/PaperTrade-Agent-V2" --target-root .
-python scripts/safety_check.py
-docker compose config
-docker compose up -d --build
-```
+## 外部策略审计（`research/audit/`）
 
-Use the actual old project path for `--legacy-root`; do not delete or overwrite its `runtime/` folder. Run migration before the new services create target ledgers. A missing old fast ledger is expected and that exploratory account will start fresh.
+用审自己的同一套仪器，审 GitHub 上找来的三个策略。阈值全部用作者默认值，未做任何调优。
 
-## Safety invariants
+| 策略 | 来源 | 笔数 | 胜率 | 笔均净 | PF | vs 随机对照 | 判定 |
+|---|---|---|---|---|---|---|---|
+| CascadeFaderV1 | IvPalmer/Master-Trader | 189 | 69% | +0.21% | 1.12 | +0.42% | ❌ 输给对照 |
+| TrendRider | darkvolg/trendrider-strategy (MIT) | 8468 | 52% | -0.41% | 0.84 | -0.02% | ❌ 大样本负期望 |
+| FundingRateEnhanced | realm520/FreqBot | 2095 | 43% | -0.03% | 0.88 | -0.05% | 🟡 唯一候选 |
 
-1. All three dry-run config files must keep `dry_run: true`, `trading_mode: spot`,
-   empty exchange credentials, and disabled remote API/forced entries.
-2. `PaperBaseline.require_paper_mode()` independently rejects live mode and
-   unexpected exchange/symbol/stake parameters at startup and before entries.
-3. Data is untrusted: missing, stale, out-of-order or demo signals never approve BUY.
-4. Historical Freqtrade backtests CANNOT consume the live `signals/*.json` file,
-   since that would introduce hindsight. First implement point-in-time signal tape.
-5. Local Docker services do not expose ports. Run on a private host, no public UI.
-6. Do not add seed phrases, exchange signing keys, transfer tools or credentials.
+### 仪器校准（本节是上面表格可信度的来源）
 
-## Limits, not hidden
+CascadeFader 的仓库公布了 3.3 年实验室数字：PF 1.62，按 per-pair edge 精选 13 个币。我们用**他们公布的排除规则**（排除 BCH/DOGE/XRP/LINK/TRX）重建名单、同样窗口重放，得到 **PF 1.12**——方向和量级吻合，我们更保守。差异来自他们名单自带的选择过拟合。**仪器读得出同一个信号，也读得出精选名单的虚高。**
 
-* This release was validated using **offline mocked integrations**, not actual
-  live Kraken connectivity or full Freqtrade Docker startup in the build environment.
-* Freqtrade dry-run models fills with simplifying assumptions, and does not prove
-  real exchange execution, profitability or safety. Different research polling
-  latency can confound A/B fill comparisons.
-* The -20 USDT daily loss cutoff covers **closed-trade realized P&L only**,
-  not floating P&L or a full daily total-equity circuit breaker. The equity sampler
-  now records marked account equity, but it does not yet stop new entries on a total-equity
-  drawdown breach. Freqtrade's built-in protections are additional safeguards, not a
-  substitute for a dedicated total-equity circuit breaker.
-* LLM agent debate and news/social market reasoning are not enabled in this V2.
-  There is a tested, optional handoff contract, not a claimed deployed LLM system.
-* No live API, no on-chain wallet, no KYC, no Binance integration.
+### FundingRate 费率敏感度（2095 笔，两种 bar 假设结果一致到小数点后三位）
 
-## Experiment plan and extensions
+| 费率/边 | 笔均净 | PF | vs 随机对照 |
+|---|---|---|---|
+| taker 5bps（真实零售价） | -0.046% | 0.80 | +0.110% |
+| taker 4bps | -0.026% | 0.88 | +0.025% |
+| **maker 2bps** | **+0.014%** | **1.07** | +0.007% |
 
-Read `docs/EXPERIMENT.md` and `docs/SECURITY.md`. Record at least 30 days of
-forward paper behavior and enough separate market regimes before comparing strategies.
-Compare to BTC/ETH buy-and-hold with the same clock, fees and exposure. Do not treat
-synthetic demo, previous months' hindsight, or a single profitable week as evidence.
+盈亏平衡 ≈3bps/边。它在**每一档**费率下都赢随机对照——费率信号里确有价格之外的信息；问题是信息比手续费薄。maker 路径有两个回放验证不了的假设（挂单成交率、成交价=挂单价），真实结果落在 taker 与 maker 之间。**判定：唯一值得 dry-run 的候选；不上钱。**
 
-Export an auditable experiment snapshot before reviewing or sharing results:
+---
+
+## 运维：这个系统活着的时候经历过什么
+
+实验期间的真实事故与修复，全部有提交记录：
+
+| 事故 | 根因 | 修复 |
+|---|---|---|
+| 整轮 0 代币，报 `ValueError: expected 2, got 1` | `_timed()` 失败返回 `{"error":...}`，四个 agent 先解包再判 ok，真实错误被第二层异常埋掉 | `BaseAgent._failed()` 统一面化错误 + 给下游留形状正确的空手 |
+| 止损名义 -12%，实际成交 -12.2%~-21% | mark/exit 只在六 agent 轮次里跑，一轮 4-5 分钟，价格在两次检查间跳穿 | 独立 60 秒退出循环 |
+| `database is locked` 锁风暴 | `_sample_equity()` 写了不提交，退出循环抱 WAL 写锁整分钟 | sample 后补 commit；失败轮 rollback；回归测试用第二连接验证 |
+| 退出循环静默死 3.7 小时，数字冻结 | 看门狗靠查库判活，读取器竞争失败与"健康"无法区分 | 退出循环自写心跳文件；看门狗读文件不读库 |
+| 每次扫描 2.8 个数据源报错 | `_get()` 遇 429 直接放弃，一次扫描连发 8 请求挂一个丢一个 | 429 重试 2 次 + 尊重 Retry-After + 退避 |
+| 权益曲线全平 7.7 小时 | 本机 DNS 被污染 + TCP 重置（代理工具掉线），不是限流 | 面板加数据源健康度告警："曲线平是因为没行情，不是因为停了" |
+| 五本账偶尔变四本 | 账本被瞬时锁占用时 feed `continue` 静默丢行 | `_unavailable()` 两条失败路径都列出行 |
+| 看门狗同时跑两个 `once` 探针撞锁 | 探针产生真实轮次 | 轮次互斥锁（pid+时间戳，10 分钟接管） |
+| 停止后循环反复复活 | `loop.sh` while true 守护 + 排队后台任务到点自启 | STOP 文件 kill switch（幂等） |
+| 后台任务约 3 小时被系统回收 | 环境事实 | 主+副班双看门狗，故障窗口 30 分钟 |
+
+**220 个测试，全部通过。**
+
+---
+
+## 复现
 
 ```bash
-python scripts/export_experiment.py
+# 环境：Python 3.13，pandas/numpy（无 TA-Lib 依赖）
+PY="C:/Users/联想/.workbuddy/binaries/python/envs/default/Scripts/python.exe"
+
+# 全部测试
+$PY -m pytest tests -q
+
+# 桌面交易（先删 STOP 文件）
+rm STOP
+$PY -m research.pipeline.orchestrator loop --sleep 100          # E 入口
+$PY -m research.pipeline.orchestrator exit-loop --interval 60   # E 退出
+$PY -m research.pipeline.orchestrator loop --sleep 240 \
+    --config user_data/config.arm_stop22.json --db-name arm_stop22.sqlite   # 实验臂
+
+# 外部策略审计（数据缓存在 runtime/audit/market.sqlite，可离线回放）
+$PY -m research.audit list                                     # 候选清单与假设
+$PY -m research.audit prefill                                  # 拉取 Binance 公开数据
+$PY -m research.audit run --strategy funding --fee 0.0002      # maker 假设
+$PY -m research.replay selectivity                             # 桌面选择性审计
+$PY -m research.replay fees                                    # 成本校准
 ```
 
-The exporter uses SQLite's backup API for a consistent copy of active ledgers, redacts
-exchange credential fields, and records SHA-256 hashes for included configs, strategies,
-protocol, public marks, decisions, and equity snapshots. Export archives are ignored by
-Git; do not commit runtime ledgers. The preserved original V1 is under `legacy_v1/`.
-This V2 is an independent sandbox and makes no changes to any connected GitHub repository.
-External projects are dependencies or optional inspirations, not vendored source.
+## 数据资产
 
+- **六本账完整 SQLite**（`runtime/memehunter/*.sqlite`）：252 笔平仓、每笔的入场价/出场价/原因/成本、候选流影子价格（5m-1h 前向曲线）、LLM 研判留痕
+- **Binance 3.35 年 K 线缓存**：40 个币 × 29,346 根 1h + 12 个币 15m + 1095 条/币资金费率
+- **回放结果**：`runtime/audit/*.log`
 
-## Fast Experiment C
+## 仪表盘（只读）
 
-A separate 15-minute EMA/RSI paper strategy is available for faster feedback on the order-to-ledger path. Its results are exploratory and are explicitly excluded from the primary Baseline A vs Agent-assisted B comparison. See `docs/FAST_LANE.md`.
+`http://127.0.0.1:8765/office` — 一页档案：停止说明、六本账最终结果、外部策略审计结论
+`http://127.0.0.1:8765/classic` — 完整报表 · `/room` — 旧办公室视图 · `/api/state` — 原始 JSON
 
-## CopyWatch D (event-driven on-chain follow simulation)
+## 最终判定
 
-A/B/C wait for indicator conditions, so a flat line is the correct output of a quiet market.
-D is a different experiment: it watches **real DEX swaps** on public pools, promotes wallets by
-verifiable on-chain activity, and only records a paper fill when a real buy event passes every
-risk gate.
+**这个项目证明了一套特定方法在特定成本结构下不成立，并且把"证明"本身做成了可复用的仪器。** 它不是一个亏钱的交易机器人——亏钱的机器人满街都是，能拿出证据链的没几个。
 
-- Signal source: public pool trade API (no key, read-only). See `docs/COPYWATCH.md`.
-- Separate ledger and separate cash: `runtime/copywatch/copywatch.sqlite`, 500 USDT, excluded from A/B/C totals.
-- Paper fill = pool price **at discovery time** + 5 bps adverse slippage; fees and gas are charged on both sides.
-- Every skipped signal is stored with a reason code (`WALLET_UNVERIFIED`, `COST_TOO_HIGH`, ...), so "why no trade" is answerable.
-- No wallet, no private key, no signing code, no order endpoint.
-
-```bash
-python -m research.copywatch.agent once     # one poll
-python -m research.copywatch.agent loop     # 45 s polling
-python scripts/copywatch.py status          # equity, open positions, skip breakdown
-docker compose up -d copywatch              # same as the other services, no exposed ports
-```
-
-Live evidence from the first ten minutes on 2026-10-24 (real public data, not a mock):
-613 swaps ingested, 320 wallets observed, 32 promoted, 13 entered risk review, 1 paper fill,
-8 skipped for an unverified wallet and 1 rejected for `COST_TOO_HIGH` (500 bps on Ethereum
-mainnet vs a 60 bps limit) — the cost gate fired on a real signal from the most active tracked
-wallet.
-
-
-## MemeHunter E (self-directed meme picks)
-
-A/B/C wait for conditions and D copies wallets. E is the third question: **given an asset class
-where the program must form its own view, does the research pipeline survive contact with costs?**
-
-Meme tokens are the harshest test bed available: hundreds of candidates per hour, a very high
-base rate of structurally broken contracts, and terrible round-trip costs.
-
-- Universe: four Jupiter rankings (`toporganicscore` 1h/5m/24h + `recent`), deduped, ~100-150 tokens per scan.
-- **Survival vetoes** (mint/freeze authority, holder concentration, holder count, pool depth, recent
-  volume, FDV ceiling, wash-traded volume share, collapse in progress) are absolute.
-- Everything else is **scored 0-100** and ranked; only the top of the list is bought. An all-must-pass
-  conjunction was tried first and selected nothing, because most meme tokens are defective by nature.
-- Paper fill = Jupiter quote **at discovery time** plus slippage estimated from pool depth; 120 bps
-  round trip charged on top. Exits: +55% / -22% / 30% peak giveback / 180 min timeout.
-- Separate ledger and cash: `runtime/memehunter/memehunter.sqlite`, 1,000 USDT, excluded from every other total.
-- Config lives in `user_data/config.memehunter.json`, so thresholds are auditable and tunable without code edits.
-
-```bash
-python scripts/memehunter.py scan --dry-run   # candidates and reasons, open nothing
-python scripts/memehunter.py scan             # scan, then open qualifying positions
-python scripts/memehunter.py update           # mark to market, apply exits
-python scripts/memehunter.py status           # equity, cash, open book
-python scripts/memehunter.py candidates       # every token from the last scan, with its veto code
-```
-
-Design notes and known gaps: `docs/MEMEHUNTER.md`.
+后续唯一开放的问题：FundingRate 的 maker 路径（成交不确定性）需要 dry-run 验证；框架（分级、证伪、自动停机）已在 `research/audit/` 里，等候选过回放关就能套。
