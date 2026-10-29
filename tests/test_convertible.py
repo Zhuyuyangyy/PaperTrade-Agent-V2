@@ -9,9 +9,17 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+# akshare is a heavy, network-oriented dependency used only by the A-share
+# data fetcher. The audit logic under test is pure and offline; when the
+# fetcher's dependency is absent the tests skip rather than error the whole
+# CI collection (which is exactly what happened before this guard).
+pytest.importorskip("akshare", reason="akshare 未安装：跳过可转债审计测试（CI 最小依赖环境）")
 
 from research.astock.discount import (  # noqa: E402
     COMMISSION,
