@@ -3,8 +3,9 @@
 A spec is a small JSON document. It exists so that the falsification criteria
 are written BEFORE anyone sees a single number -- the same discipline the
 research arms used (`_arm` fields pinned in config before the run). A spec
-without `falsify_if` is accepted, but the report will say the verdict is
-unfalsifiable, which is the truth.
+without `falsify_if` is accepted and measured in full, but the verdict comes
+back NOT_FALSIFIED with the criteria table saying "no rules were declared" --
+an audit without pre-declared kill criteria is a measurement, not a test.
 
 Example:
 
@@ -196,6 +197,11 @@ class Spec:
     falsify_if: dict = field(default_factory=dict)
     hypothesis: str = ""
     source: str = ""
+    # Free-text port notes for strategies ported from somewhere else: what was
+    # replicated verbatim, what was approximated, what was NOT ported. Rendered
+    # as section 0 so a regenerated report never loses them (hand-editing the
+    # markdown after a run is how artifacts drift from the engine).
+    port_notes: str = ""
 
     def validate(self) -> None:
         if not self.name:
@@ -238,6 +244,7 @@ class Spec:
             "name": self.name,
             "hypothesis": self.hypothesis,
             "source": self.source,
+            "port_notes": self.port_notes,
             "symbol": self.symbol,
             "interval": self.interval,
             "venue": self.venue,
@@ -338,6 +345,7 @@ class Spec:
             falsify_if=dict(d.get("falsify_if") or {}),
             hypothesis=str(d.get("hypothesis", "")),
             source=str(d.get("source", "")),
+            port_notes=str(d.get("port_notes", "")),
         )
         spec.validate()
         return spec

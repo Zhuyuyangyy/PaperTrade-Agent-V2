@@ -1,0 +1,76 @@
+{
+  "_说明": "本文件复制自引擎内置 samples/demo_spec_csv.json（离线演示 spec：5000 根近期 K 线、无资金费序列），仅新增以 '_' 开头的中文注释字段；引擎加载时忽略这些注释键，其余字段与原文件逐字节一致。用法：python -m research.verify --spec examples/demo_spec.json --candles research/verify/samples/demo_candles.csv（不给 --candles 时若本机有行情缓存 runtime/audit/market.sqlite 则优先用缓存，funding 会按缓存数据处理）。字段完整文档见 ../references/spec-format.md。",
+  "name": "rsi-dip-btc-1h-offline-demo",
+  "_name_注释": "策略名，非空即可，写进报告标题",
+  "hypothesis": "BTC 1 小时 RSI(14) 低于 30 后做多，捕捉均值回复（离线演示版：5000 根近期 K 线，无资金费序列）",
+  "_hypothesis_注释": "待检验假设——先写下来，再去看数字",
+  "source": "内置离线演示（新克隆无行情缓存时使用）",
+  "_source_注释": "策略来源，写进报告头部，便于审计溯源",
+  "symbol": "BTCUSDT",
+  "_symbol_注释": "交易对，加载时自动转大写；与行情数据的 symbol 对应",
+  "interval": "1h",
+  "_interval_注释": "K 线周期，与行情数据的 interval 对应",
+  "venue": "futures",
+  "_venue_注释": "spot 或 futures；选 futures 才能声明 funding",
+  "fee_rate": 0.0004,
+  "_fee_rate_注释": "单边小数费率，0.0004 = 4bps；必须在 [0, 0.01) 内",
+  "fill_model": "taker",
+  "_fill_model_注释": "taker 或 maker；taker 入场价取信号次根开盘，maker 取信号根收盘（近似挂单价）",
+  "worst_case": true,
+  "_worst_case_注释": "true = bar 内先到止损判止损（最坏优先口径）；报告同时输出两种口径",
+  "funding": false,
+  "_funding_注释": "是否计入资金费；仅 futures 允许 true；本离线演示数据无资金费序列故为 false",
+  "exit": {
+    "_exit_注释": "退出规则：take_profit/stop_loss/timeout_bars/trailing/exit_signals_path 至少声明一个；take_profit 必须为正、stop_loss 必须为负、timeout_bars 必须 ≥1",
+    "take_profit": 0.03,
+    "_take_profit_注释": "止盈 +3%（小数 0.03）",
+    "stop_loss": -0.08,
+    "_stop_loss_注释": "止损 -8%（小数 -0.08，必须为负）",
+    "timeout_bars": 24,
+    "_timeout_bars_注释": "超时 24 根 K 线后离场"
+  },
+  "signals": {
+    "_signals_注释": "信号来源：kind = rule（内置规则）/ csv（外部信号文件）/ random（随机，即对照组本身）",
+    "kind": "rule",
+    "rule": "rsi_below",
+    "_rule_注释": "内置规则 rsi_below（Wilder RSI 低于阈值触发）或 rsi_above；kind=rule 时必填",
+    "period": 14,
+    "_period_注释": "RSI 周期，必须 ≥2",
+    "threshold": 30,
+    "_threshold_注释": "RSI 阈值；rsi_below 在值 < 30 时触发",
+    "side": "long",
+    "_side_注释": "long 或 short"
+  },
+  "control": {
+    "_control_注释": "随机入场对照组：同窗口、同退出规则、同成本，只把入场改为随机；n_random 必须 ≥10",
+    "enabled": true,
+    "n_random": 200,
+    "_n_random_注释": "随机入场次数；bootstrap 2000 次重采样给出 95% 置信区间",
+    "seed": 42,
+    "_seed_注释": "随机种子，固定可复现"
+  },
+  "walk_forward": {
+    "_walk_forward_注释": "walk-forward：窗口切 N 折，最后 1 折作样本外重跑完整电池；块存在而未写 enabled 时默认启用；folds 必须 ≥2",
+    "enabled": true,
+    "folds": 3,
+    "_folds_注释": "切分折数；样本内 = 前 folds-1 折入场，样本外 = 最后 1 折入场"
+  },
+  "param_grid": {
+    "_param_grid_注释": "参数网格：退出参数逐格回放，读分布不看最佳格；最多 2 轴、默认总格数 ≤ max_cells(64)；可网格化的仅 take_profit/stop_loss/timeout_bars/trailing",
+    "axes": {
+      "take_profit": [0.02, 0.03, 0.04],
+      "stop_loss": [-0.06, -0.08, -0.10]
+    },
+    "_axes_注释": "参数轴及取值：take_profit × stop_loss 共 3×3=9 格；每轴至少 2 个值、不许重复；符号约束同 exit"
+  },
+  "fee_multiples": [1, 2, 5],
+  "_fee_multiples_注释": "成本敏感性倍数：费率 ×1/×2/×5 重跑；必须包含 1（基准锚点）",
+  "_falsify_if_说明": "falsify_if 例外：引擎对 falsify_if 原样透传进报告与 JSON 输出，故其内部不放注释键，各键含义如下——control_lift_ci_includes_zero：策略 − 随机对照组的 95% 置信区间跨 0 即触发（未能证明选择性）；net_negative_at_fee_multiple=2：成本 ×2（8bps 往返）时净收益 ≤0 即触发（edge 付不起 toll）；worst_case_net_negative：最坏优先口径净收益 ≤0 即触发；grid_positive_ratio_min=0.5：参数网格正收益格占比 <50% 即触发，必须在 (0,1] 内；min_fills=30：成交 <30 笔不触发证伪，判 INCONCLUSIVE（样本不足）。事前规则写于看数字之前；任一触发即 FALSIFIED。",
+  "falsify_if": {
+    "control_lift_ci_includes_zero": true,
+    "net_negative_at_fee_multiple": 2,
+    "worst_case_net_negative": true,
+    "grid_positive_ratio_min": 0.5,
+    "min_fills": 30
+  }
+}

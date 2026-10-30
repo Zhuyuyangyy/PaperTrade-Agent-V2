@@ -4,8 +4,9 @@ The report is the product. Its rules:
 
   * every number that could be mistaken for a promise is labelled with the
     assumption that produced it (worst/best case, fee multiple, fill model);
-  * the verdict comes last in reading order but first in the summary block,
-    and it quotes the exact criteria that fired;
+  * a "30 秒读懂" block carries the verdict and the three key numbers at the
+    very top -- the verdict comes last in reading order but first in the
+    summary block, and it quotes the exact criteria that fired;
   * what is NOT modelled is a section, not a footnote -- a reader who does not
     know the limits of the instrument will misuse it.
 """
@@ -22,6 +23,16 @@ def _pf(v: float | None) -> str:
 
 def _pct(v: float | None, digits: int = 2) -> str:
     return f"{v:+.{digits}f}%" if v is not None else "—"
+
+
+def _n(v) -> str:
+    """Counts read with thousands separators so 1,532 成交 never scans as
+    three numbers. Missing values stay a dash -- never a fake zero."""
+    if v is None:
+        return "—"
+    if isinstance(v, int):
+        return f"{v:,}"
+    return f"{v:,.2f}"
 
 
 def _fmt_axis(key: str, v) -> str:
@@ -55,7 +66,7 @@ def _render_grid_scope(g: dict, spec: dict, verdict: dict, a) -> None:
     if len(order) == 2:
         r_ax, c_ax = order
         a(f"| {r_ax} ↓ ＼ {c_ax} → | " + " | ".join(_fmt_axis(c_ax, v) for v in axes[c_ax]) + " |")
-        a("|" + "---|" * (len(axes[c_ax]) + 1))
+        a("|---|" + "---:|" * len(axes[c_ax]))
         cell_map = {(c["params"][r_ax], c["params"][c_ax]): c for c in g["cells"]}
         best_key = ((g["best"]["params"][r_ax], g["best"]["params"][c_ax])
                     if g["best"] else None)
@@ -73,7 +84,7 @@ def _render_grid_scope(g: dict, spec: dict, verdict: dict, a) -> None:
         for v in axes[order[0]]:
             c = cell_map[v]
             txt = "无成交" if c["fills"] == 0 else _pct(c["net_sum_pct"])
-            a(f"| `{_fmt_axis(order[0], v)}` | {txt} | {c['fills']} |")
+            a(f"| `{_fmt_axis(order[0], v)}` | {txt} | {_n(c['fills'])} |")
     fired = [c for c in verdict["checks"]
              if c.get("rule") == "grid_positive_ratio_min"
              and c.get("triggered") and c.get("scope") == g["scope"]]
@@ -89,6 +100,76 @@ def _render_grid_scope(g: dict, spec: dict, verdict: dict, a) -> None:
               f"这是过拟合的典型签名；按事前声明规则 `grid_positive_ratio_min`（下限 {min_ratio:.0%}）触发证伪，见第 7 节。")
 
 
+def _key_numbers(result: dict) -> list[str]:
+    """The three numbers a reader needs before deciding to read on: the
+    baseline net, the control-group delta, and the out-of-sample or grid
+    measurement -- whichever of the two the spec actually enabled. Only
+    presents numbers already in the result; computes nothing new."""
+    worst = result["runs"]["worst_case"]["stats"]
+    best = result["runs"]["best_case"]["stats"]
+    lines = [
+        f"基线净收益（最坏口径）：**{_pct(worst['sum_pct'])}**"
+        f"（最好口径 {_pct(best['sum_pct'])} · {_n(worst['n'])} 笔成交）"
+    ]
+    ctrl = result.get("control")
+    if ctrl is None:
+        lines.append("对照差值：对照组未启用——没有对照组的回放只是叙事")
+    elif ctrl.get("diff_pct") is None:
+        lines.append(f"对照差值：{ctrl.get('note') or '样本不足，未计算'}")
+    else:
+        ci = ctrl.get("diff_ci")
+        ci_txt = (f"，95% bootstrap 区间 [{ci[0]:+.2f}%, {ci[1]:+.2f}%]"
+                  if ci else "（样本不足，区间未计算）")
+        lines.append(
+            f"对照差值（策略 − 随机入场）：**{_pct(ctrl['diff_pct'])}/笔**{ci_txt}")
+    wf = result.get("walk_forward")
+    pg = result.get("param_grid")
+    if wf and wf.get("out_sample"):
+        oos = wf["out_sample"]["runs"]["worst_case"]["stats"]
+        isb = wf.get("in_sample")
+        is_txt = (f"（样本内 {_pct(isb['runs']['worst_case']['stats']['sum_pct'])}）"
+                  if isb else "")
+        lines.append(f"样本外净收益（最坏口径）：**{_pct(oos['sum_pct'])}**{is_txt}")
+    elif pg:
+        g = pg["scopes"][0]
+        if g["cells_with_fills"]:
+            lines.append(
+                f"参数网格：**{g['positive_cells']}/{g['cells_with_fills']} 格为正**"
+                f"（{g['positive_ratio']:.0%}，共 {g['n_cells']} 格）")
+        else:
+            lines.append(f"参数网格：{g['n_cells']} 格全部无成交——无法评估参数敏感性")
+    else:
+        lines.append("样本外 / 参数网格：均未启用——以上数字全是窗口内结果")
+    return lines
+
+
+def _plain_sentence(result: dict) -> str:
+    """One sentence a non-quant reader can act on. It re-voices the verdict
+    and the rules that fired; it invents no new judgement."""
+    v = result["verdict"]
+    trig = [c for c in v["checks"] if c.get("triggered")]
+    if v["outcome"] == "FALSIFIED":
+        if any(c.get("scope") == "样本外" for c in trig):
+            return ("人话：策略在没见过的时段里先撑不住——样本外段触发了事前证伪规则，"
+                    "按裁决规则整体判负。")
+        rules = {c["rule"].split("=")[0] for c in trig}
+        bits = []
+        if "worst_case_net_negative" in rules:
+            bits.append("按最保守的成交假设这笔账是亏的")
+        if "net_negative_at_fee_multiple" in rules:
+            bits.append("成本只要翻倍就由赚转亏")
+        if "control_lift_ci_includes_zero" in rules:
+            bits.append("表现和随机入场区分不开")
+        if "grid_positive_ratio_min" in rules:
+            bits.append("只有个别参数组合赚钱，换个参数就不成立")
+        tail = "、".join(bits) if bits else "事前写好的证伪规则被触发"
+        return f"人话：{tail}——规则先于报告存在，这次没能活下来。"
+    if v["outcome"] == "INCONCLUSIVE":
+        return "人话：样本不够，这份报告既证不实也证不伪——先去攒数据，别拿它做决定。"
+    return ("人话：在声明的规则里活下来了，但'未被证伪'不等于'被证实'——"
+            "规则没问的账，引擎不替它吹。")
+
+
 def render(result: dict) -> str:
     spec = result["spec"]
     v = result["verdict"]
@@ -97,10 +178,17 @@ def render(result: dict) -> str:
 
     a(f"# 证伪报告 · {spec['name']}")
     a("")
+    a("> **30 秒读懂**")
+    a(">")
+    a(f"> - 裁决：**{v['outcome']}**")
+    for ln in _key_numbers(result):
+        a(f"> - {ln}")
+    a(f"> - {_plain_sentence(result)}")
+    a("")
     a(f"> **裁决：{v['outcome']}** —— {v['reason']}")
     a("")
     a(f"- 生成时间：{_dt.datetime.now().strftime('%Y-%m-%d %H:%M')} · 引擎 {ENGINE_VERSION}")
-    a(f"- 标的：{spec['symbol']} {spec['interval']}（{spec['venue']}）· 窗口 {result['window']['from']} → {result['window']['to']}（{result['window']['bars']} 根 K 线）")
+    a(f"- 标的：{spec['symbol']} {spec['interval']}（{spec['venue']}）· 窗口 {result['window']['from']} → {result['window']['to']}（{_n(result['window']['bars'])} 根 K 线）")
     if spec.get("hypothesis"):
         a(f"- 待检验假设：{spec['hypothesis']}")
     if spec.get("source"):
@@ -119,7 +207,15 @@ def render(result: dict) -> str:
     a(f"- 执行假设：{spec['fill_model']} 成交模型 · 单边费率 {spec['fee_rate']*10000:.0f}bps"
       + (f" · 含资金费" if result.get("funding_applied") else (" · spec 声明含资金费但数据缺失，按 0 处理" if spec.get("funding") else " · 不含资金费"))
       + f" · bar 内先到止损判止损（最坏优先）")
-    a(f"- 信号数：{result['n_signals']}")
+    a(f"- 信号数：{_n(result['n_signals'])}")
+    # --- section 0: port notes (strategies ported from somewhere else) -----
+    if spec.get("port_notes"):
+        a("")
+        a("## 0. 移植说明")
+        a("")
+        for line in spec["port_notes"].splitlines():
+            a(line.rstrip())
+        a("")
     wf = result.get("walk_forward")
     if wf:
         oos_v = (wf.get("out_sample") or {}).get("verdict", {}).get("outcome", "无信号")
@@ -133,7 +229,7 @@ def render(result: dict) -> str:
                 parts.append(f"{g['scope']} {g['positive_cells']}/{g['cells_with_fills']} 格为正")
             else:
                 parts.append(f"{g['scope']} 无成交")
-        a(f"- 参数网格：{dims} 共 {pg['scopes'][0]['n_cells']} 格 · " + " · ".join(parts))
+        a(f"- 参数网格：{dims} 共 {_n(pg['scopes'][0]['n_cells'])} 格 · " + " · ".join(parts))
     a("")
 
     # -- 1. replay ----------------------------------------------------------
@@ -144,7 +240,7 @@ def render(result: dict) -> str:
     for case, label in (("worst_case", "最坏优先"), ("best_case", "最好优先")):
         r = result["runs"][case]
         st = r["stats"]
-        a(f"| {label} | {st['n']} | {r['unfilled']} | {r['open_signals']} "
+        a(f"| {label} | {_n(st['n'])} | {_n(r['unfilled'])} | {_n(r['open_signals'])} "
           f"| {_pct(st['sum_pct'])} | {_pct(st['mean_pct'])} | {st['win_pct']:.0f}% "
           f"| {_pf(st['profit_factor'])} | {_pct(st['max_dd_pct'])} |")
     a("")
@@ -156,7 +252,7 @@ def render(result: dict) -> str:
         by = result["runs"][case]["by_reason"]
         if not by:
             continue
-        parts = [f"{k} {b['n']} 笔({b['net_sum_pct']:+.2f}%)" for k, b in sorted(by.items(), key=lambda kv: -kv[1]["net_sum_pct"])]
+        parts = [f"{k} {_n(b['n'])} 笔({b['net_sum_pct']:+.2f}%)" for k, b in sorted(by.items(), key=lambda kv: -kv[1]["net_sum_pct"])]
         a(f"- {label}退出结构：{' · '.join(parts)}")
     a("")
 
@@ -175,7 +271,7 @@ def render(result: dict) -> str:
     a("")
     br = result["barrier_reach"]
     if br.get("n"):
-        a(f"- 样本 {br['n']} 笔 · 摸到止盈位的 {br['reached_tp_pct']:.1f}% · 摸到止损位的 {br['reached_sl_pct']:.1f}% · 两者都没摸到的 {br['reached_neither_pct']:.1f}%")
+        a(f"- 样本 {_n(br['n'])} 笔 · 摸到止盈位的 {br['reached_tp_pct']:.1f}% · 摸到止损位的 {br['reached_sl_pct']:.1f}% · 两者都没摸到的 {br['reached_neither_pct']:.1f}%")
         a(f"- 最大有利偏离（MFE）中位 {_pct(br['mfe']['median'], 1)} / p90 {_pct(br['mfe']['p90'], 1)} · 最大不利偏离（MAE）中位 {_pct(br['mae']['median'], 1)} / p10 {_pct(br['mae']['p10'], 1)}")
         if br.get("tp_level_pct") is not None and br["reached_tp_pct"] < 10:
             a("")
@@ -198,8 +294,8 @@ def render(result: dict) -> str:
             a(f"- {ctrl['note']}")
         else:
             rng_txt = f"，随机入场范围 第 {rng[0]} → 第 {rng[1]} 根" if rng and rng[0] != 30 else ""
-            a(f"- 对照组：{ctrl['n_random']} 个随机入场（seed={ctrl['seed']}，允许重复，镜像策略主方向 {ctrl.get('side', 'long')}{rng_txt}），同一窗口、同一退出规则、同一成本假设")
-            a(f"- 策略均值/笔 {_pct(ctrl['strategy_mean_pct'])} vs 对照组 {_pct(ctrl['control_mean_pct'])}（成交 {cs['n']} 笔，胜率 {cs['win_pct']:.0f}%）")
+            a(f"- 对照组：{_n(ctrl['n_random'])} 个随机入场（seed={ctrl['seed']}，允许重复，镜像策略主方向 {ctrl.get('side', 'long')}{rng_txt}），同一窗口、同一退出规则、同一成本假设")
+            a(f"- 策略均值/笔 {_pct(ctrl['strategy_mean_pct'])} vs 对照组 {_pct(ctrl['control_mean_pct'])}（成交 {_n(cs['n'])} 笔，胜率 {cs['win_pct']:.0f}%）")
             if ctrl.get("diff_pct") is not None:
                 ci = ctrl.get("diff_ci")
                 ci_txt = f"[{ci[0]:+.2f}%, {ci[1]:+.2f}%]" if ci else "（样本不足，未计算）"
@@ -220,7 +316,7 @@ def render(result: dict) -> str:
     if wf:
         a("## 5. Walk-forward（样本内 / 样本外）")
         a("")
-        a(f"- 切分：全窗口 {result['window']['bars']} 根 K 线切 {wf['folds']} 折（每折 {wf['fold_bars']} 根）；样本外界界 {wf['boundary_ts']}（第 {wf['boundary_bar']} 根）")
+        a(f"- 切分：全窗口 {_n(result['window']['bars'])} 根 K 线切 {wf['folds']} 折（每折 {_n(wf['fold_bars'])} 根）；样本外界界 {wf['boundary_ts']}（第 {_n(wf['boundary_bar'])} 根）")
         a(f"- 样本内 = 前 {wf['folds'] - 1} 折的入场 · 样本外 = 最后 1 折的入场；两段各跑完整电池"
           f"（回放 + 成本敏感性 + 障碍可达性 + 随机对照组；样本外对照组的随机入场只在该段内抽取，"
           f"两段的成交都在全窗口上推演——入场之后的 K 线对入场而言仍是未来）")
@@ -234,7 +330,7 @@ def render(result: dict) -> str:
                 a(f"| {label} | 0 | — | — | — | — | — | 无信号 |")
                 continue
             st = b["runs"]["worst_case"]["stats"]
-            a(f"| {label} | {b['n_signals']} | {st['n']} | {_pct(st['sum_pct'])} | {_pct(st['mean_pct'])} "
+            a(f"| {label} | {_n(b['n_signals'])} | {_n(st['n'])} | {_pct(st['sum_pct'])} | {_pct(st['mean_pct'])} "
               f"| {st['win_pct']:.0f}% | {_pf(st['profit_factor'])} | {b['verdict']['outcome']} |")
         a("")
         isb, oosb = wf.get("in_sample"), wf.get("out_sample")
@@ -266,7 +362,7 @@ def render(result: dict) -> str:
             f"`{k}` [{', '.join(_fmt_axis(k, v) for v in pg['axes'][k])}]"
             for k in pg["axis_order"]
         )
-        a(f"- 事前声明：{decl}（共 {pg['scopes'][0]['n_cells']} 格；网格值写于 spec，先于本报告存在）")
+        a(f"- 事前声明：{decl}（共 {_n(pg['scopes'][0]['n_cells'])} 格；网格值写于 spec，先于本报告存在）")
         if wf:
             a("- walk-forward 已启用：样本内 / 样本外两段各跑一遍全网格（两段入场之和 = 全体入场）；"
               "每格按 spec 声明的成交口径、基准费率 ×1、同一入场集回放——成本敏感性见第 2 节，"
@@ -313,6 +409,25 @@ def render(result: dict) -> str:
     ]:
         a(f"- {t}")
     a("")
+
+    # -- reproduce ----------------------------------------------------------
+    repro = result.get("repro")
+    if repro:
+        a("## 9. 复现命令")
+        a("")
+        a("本次报告由以下命令产生；在同一目录重跑，可复现同样数字：")
+        a("")
+        a("```bash")
+        a(repro["command"])
+        a("```")
+        a("")
+        a("| 输入 | 路径 / 来源 |")
+        a("|---|---|")
+        a(f"| spec | {repro['spec']} |")
+        a(f"| candles | {repro['candles']} |")
+        a(f"| signals | {repro['signals']} |")
+        a("")
+
     a("---")
     a(f"*{ENGINE_VERSION} · 本报告由事前证伪规则驱动，规则先于数字写入 spec；未被证伪不等于被证实。*")
     return "\n".join(L)

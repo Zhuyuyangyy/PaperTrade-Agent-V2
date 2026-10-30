@@ -25,6 +25,9 @@ DEFAULT_MARKET = ROOT / "runtime" / "audit" / "market.sqlite"
 # gitignored), so the demo must work from committed CSVs alone.
 BUNDLED_CANDLES = Path(__file__).resolve().parent / "samples" / "demo_candles.csv"
 BUNDLED_SPEC = Path(__file__).resolve().parent / "samples" / "demo_spec_csv.json"
+# The funnel tail printed after every run: where to see the 30-second demo
+# and the case matrix, and what the first 10 orders cost (nothing).
+LANDING_PAGE = "https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/"
 
 # The spec file currently being processed, so relative paths inside it resolve
 # against the spec's own directory. Set by main() before any loading happens.
@@ -128,6 +131,56 @@ def _load_exit_signals(spec: Spec, candles: list[dict]) -> dict[int, str]:
     return sigs
 
 
+def _q(s: str) -> str:
+    """Quote a path only when it needs it, so the repro command stays
+    copy-pasteable on Windows shells."""
+    return f'"{s}"' if " " in s else s
+
+
+def _repro_info(args, spec: Spec, raw_argv: list[str]) -> dict:
+    """The exact command and input paths behind this run, so the report ends
+    with its own recipe. Built from what was actually passed -- never guessed."""
+    cmd = "python -m research.verify"
+    if raw_argv:
+        cmd += " " + " ".join(_q(a) for a in raw_argv)
+    market_path = Path(args.market) if args.market else DEFAULT_MARKET
+    if args.demo:
+        if market_path.is_file() or not BUNDLED_SPEC.is_file():
+            spec_src = "内置演示 spec（--demo；DEMO_SPEC 定义于 research/verify/__main__.py）"
+        else:
+            spec_src = f"{BUNDLED_SPEC}（内置离线演示 spec）"
+    else:
+        spec_src = str(args.spec)
+    if args.candles:
+        candles_src = str(args.candles)
+    elif market_path.is_file():
+        candles_src = f"{market_path}（本地行情缓存 sqlite）"
+    elif args.demo and BUNDLED_CANDLES.is_file():
+        candles_src = f"{BUNDLED_CANDLES}（内置演示数据）"
+    else:
+        candles_src = f"{market_path}（未找到）"
+    k = spec.signals.kind
+    if k == "rule":
+        sig_src = (f"规则信号（{spec.signals.rule}，period={spec.signals.period:g}，"
+                   f"threshold={spec.signals.threshold:g}，由 K 线实时计算，无需外部文件）")
+    elif k == "random":
+        sig_src = f"随机信号（n={spec.signals.n_random}，seed={spec.signals.seed}）"
+    else:
+        path = args.signals or spec.signals.path
+        sig_src = str(path) if path else "未提供（signals.kind=csv 但无路径）"
+    return {"command": cmd, "spec": spec_src, "candles": candles_src, "signals": sig_src}
+
+
+def _print_footer_promo() -> None:
+    """The funnel tail: every run -- report to stdout or to a file -- ends
+    with the landing page and the free-first-10-orders offer."""
+    print()
+    print("-" * 60)
+    print(f"落地页（30 秒演示 · 真实案例矩阵）：{LANDING_PAGE}")
+    print("服务：带策略来，我出证伪报告 —— 首 10 单免费（换匿名公开案例授权），付费档 $99 / $299。")
+    print("-" * 60)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="research.verify", description="策略证伪引擎：path-aware 回放 + 成本敏感性 + 障碍可达性 + 随机对照组")
     ap.add_argument("--spec", help="策略 spec JSON 路径")
@@ -139,6 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true", help="额外输出机器可读 JSON（与 --out 同名 .json）")
     ap.add_argument("--list-market", action="store_true", help="列出本地行情缓存内容后退出")
     args = ap.parse_args(argv)
+    raw_argv = list(argv) if argv is not None else sys.argv[1:]
 
     market = Path(args.market) if args.market else DEFAULT_MARKET
     if args.list_market:
@@ -184,6 +238,7 @@ def main(argv: list[str] | None = None) -> int:
         from . import verify as run_verify
 
         result = run_verify(spec, candles, entries, funding=funding, exit_signals=exit_signals)
+        result["repro"] = _repro_info(args, spec, raw_argv)
     except (SpecError, data.CandleError, ValueError) as exc:
         print(f"[输入错误] {exc}", file=sys.stderr)
         return 2
@@ -202,6 +257,7 @@ def main(argv: list[str] | None = None) -> int:
         print(md)
         if args.json:
             print(report.render_json(result))
+    _print_footer_promo()
     return 0
 
 

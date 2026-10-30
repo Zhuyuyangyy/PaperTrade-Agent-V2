@@ -1,0 +1,61 @@
+{
+  "name": "external-freqbot-fundingrate-btcusdt-1h",
+  "hypothesis": "资金费率是结构性现金流而非零和价差：BTCUSDT 永续资金费率连续 >=3 个 8h 周期为正且高于近 24 个周期均值（费率上升趋势）、技术面仅在 30<RSI(14)<70、ADX(14)<40、ATR%(14)<5% 的温和区间内不过滤方向时做空，收取资金费；TP +0.3% / 硬止损 -1.5% / 盈利 0.5% 后 0.2% 回撤追踪 / 48h 无条件超时。原策略 15m，本案例因缓存无 15m futures 改用 1h futures（周期变更影响见报告移植说明）。",
+  "source": "extern-strategies/FreqBot user_data/strategies/FundingRateEnhancedStrategy.py（realm520/FreqBot，freqtrade IStrategy，15m，USDT 本位永续，作者默认参数；旧审计线 research/audit/strategies/funding_rate.py 曾以 12 币 15m spot 行情 + perp 资金费审计，2095 信号，maker 真实成交 PF 1.00）",
+  "symbol": "BTCUSDT",
+  "interval": "1h",
+  "venue": "futures",
+  "fee_rate": 0.0005,
+  "fill_model": "taker",
+  "worst_case": true,
+  "funding": true,
+  "exit": {
+    "take_profit": 0.003,
+    "stop_loss": -0.015,
+    "timeout_bars": 48,
+    "trailing": 0.002,
+    "trailing_offset": 0.005,
+    "exit_signals_path": "external-freqbot-fundingrate-exit-signals.csv"
+  },
+  "signals": {
+    "kind": "csv",
+    "path": "external-freqbot-fundingrate-signals.csv",
+    "side": "short"
+  },
+  "control": {
+    "enabled": true,
+    "n_random": 200,
+    "seed": 42
+  },
+  "walk_forward": {
+    "enabled": true,
+    "folds": 3
+  },
+  "param_grid": {
+    "enabled": true,
+    "axes": {
+      "take_profit": [
+        0.002,
+        0.003,
+        0.005
+      ],
+      "stop_loss": [
+        -0.01,
+        -0.015,
+        -0.025
+      ]
+    }
+  },
+  "fee_multiples": [
+    1,
+    2,
+    5
+  ],
+  "falsify_if": {
+    "worst_case_net_negative": true,
+    "net_negative_at_fee_multiple": 2,
+    "control_lift_ci_includes_zero": true,
+    "min_fills": 30
+  },
+  "port_notes": "原策略：FundingRateEnhanced（extern-strategies/FreqBot，realm520/FreqBot，15m USDT 本位永续，作者默认参数）。旧审计线曾以 12 币 15m spot + perp 资金费审计（2095 信号，maker 真实成交 PF 1.00 恰好打平但全赢随机对照）。\n\n- 信号层·高保真：费率三条件逐字复刻（阈值 / 持续性按打印序列计算 / 成本门用原文默认 0.0002），325 个信号 0 坏行 0 跳过。\n- 退出层·两处实质近似：① 动态盈亏比止损（-3x 预期收益）退化为固定 -1.5%（偏乐观，已披露）；② 周期与场所变更：原策略 15m，因本地缓存无 15m futures 改用 BTCUSDT 1h futures——信号频率、持仓周期结构、费率阈值触达率全部改变，这是本案例样本外零信号的直接原因（2025 年以来 BTC 资金费再未站上 0.03% 阈值）。\n- 退出信号·按方向分流：引擎退出信号表不区分持仓方向，本窗口入场全为 short，故按原文 exit_short 分支生成（精确适用；跨 symbol 需重新分流）。\n- 成本层·一致或更保守：taker 5bps/边与旧线口径一致，资金费真实计付。\n- 结构层·未移植：单 symbol、等权、无多 pair 组合层。\n- 关键发现：资金费本身只贡献 +0.0104%/笔（净收益约 4%），edge 载体不是资金费，而是\"费率极端高位做空\"后的短周期价格结构——这与原策略\"收取资金费\"的宣称只有部分一致。"
+}

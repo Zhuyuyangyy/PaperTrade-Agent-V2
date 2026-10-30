@@ -324,6 +324,25 @@ class TestVerifyEngine:
         r = verify(spec, candles, entries)
         assert r["verdict"]["outcome"] == "INCONCLUSIVE"
 
+    def test_zero_fill_window_is_inconclusive_never_falsified(self):
+        """A window where nothing ever closed has no measured net: sum_pct
+        is 0.0 because nothing traded, not because the strategy broke even.
+        The declared net-negative rules must stay silent there -- falsifying
+        a strategy that never traded is the failure mode min_fills exists
+        to prevent, and '无证据不算输' cuts both ways."""
+        candles = make_candles(60)
+        d = dict(BASE_SPEC)
+        d["falsify_if"] = {"min_fills": 5, "worst_case_net_negative": True,
+                           "net_negative_at_fee_multiple": 2}
+        spec = Spec.from_dict(d)
+        r = verify(spec, candles, {len(candles) - 1: "long"})  # last bar: nothing can close
+        assert r["runs"]["worst_case"]["stats"]["n"] == 0
+        v = r["verdict"]
+        assert v["outcome"] == "INCONCLUSIVE"
+        assert not any(c.get("triggered") for c in v["checks"])
+        assert any(c.get("insufficient") and c.get("scope") == "全窗口"
+                   for c in v["checks"])
+
     def test_control_disabled_leaves_no_control_section(self):
         candles = make_candles(800, seed=9)
         d = dict(BASE_SPEC)
@@ -483,8 +502,10 @@ class TestWalkForward:
         entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
         r = verify(spec, candles, entries)
         wf = r["walk_forward"]
-        # the in-sample control keeps the historical default range [30, len-2]
-        assert wf["in_sample"]["control"]["bar_range"] == [30, 1198]
+        # the in-sample control stays inside the in-sample segment: a control
+        # reaching into the out-of-sample fold would book that fold's random
+        # losses as "control" and inflate in-sample selectivity
+        assert wf["in_sample"]["control"]["bar_range"] == [30, 899]
         # the out-of-sample control is confined to the out-of-sample segment
         assert wf["out_sample"]["control"]["bar_range"][0] == 900
         assert wf["out_sample"]["control"]["bar_range"][1] == 1198
@@ -537,6 +558,29 @@ class TestWalkForward:
         assert v["outcome"] == "INCONCLUSIVE"
         note = [c for c in v["checks"] if c.get("scope") == "样本外"]
         assert note and "没有任何入场信号" in note[0]["detail"]
+
+    def test_zero_fill_oos_fold_is_inconclusive_never_falsified(self):
+        """The out-of-sample fold's only signal sits on the last bar: the
+        segment has signals but ZERO fills. Its net is unmeasured, so the
+        declared net-negative rules must not fire there -- a FALSIFIED
+        verdict would override this fold's own min_fills insufficient check
+        and kill the strategy on no evidence at all."""
+        candles = make_candles(60)
+        d = dict(BASE_SPEC)
+        d["walk_forward"] = {"folds": 2}
+        d["falsify_if"] = {"min_fills": 5, "worst_case_net_negative": True,
+                           "net_negative_at_fee_multiple": 2}
+        spec = Spec.from_dict(d)
+        r = verify(spec, candles, {59: "long"})  # boundary=30 -> the only signal is OOS
+        wf = r["walk_forward"]
+        assert wf["out_sample"] is not None
+        assert wf["out_sample"]["runs"]["worst_case"]["stats"]["n"] == 0
+        v = r["verdict"]
+        assert v["outcome"] == "INCONCLUSIVE"
+        assert not any(c.get("triggered") for c in v["checks"])
+        oos_ins = [c for c in v["checks"]
+                   if c.get("insufficient") and c.get("scope") == "样本外"]
+        assert oos_ins and "样本外段" in oos_ins[0]["detail"]
 
     def test_report_shows_both_segments_and_the_tuning_disclosure(self):
         candles = _overfit_candles()
@@ -796,6 +840,110 @@ class TestControl:
         out = control.compare(st, ctrl, seed=1)
         assert out["selectivity"] == "unproven"
         assert out["diff_ci"] is not None
+
+    def test_control_book_keeps_the_accounting_identity(self):
+        """The control book answers to the same identity as the strategy
+        books: fills + unfilled + open == n_random. A random entry the replay
+        never resolved is a fact about the window -- dropping it would quietly
+        inflate the control's apparent fill rate."""
+        candles = make_candles(600, seed=6)
+        spec = Spec.from_dict(BASE_SPEC)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        r = verify(spec, candles, entries)
+        ctrl = r["control"]
+        # seeded repro: 88 distinct random entries, 87 closed, 1 never resolved
+        assert ctrl["open_signals"] >= 1
+        assert ctrl["fills"] + ctrl["unfilled"] + ctrl["open_signals"] == ctrl["n_random"]
+
+    def test_control_side_tie_is_deterministic_across_hash_seeds(self):
+        """A 50/50 long/short book has no dominant side, so the mirrored side
+        must not depend on the process's string-hash seed (set iteration
+        order). Otherwise the same spec + data + seed yields a DIFFERENT
+        control group on every run."""
+        import os
+        import subprocess
+
+        code = f"""
+import sys
+sys.path.insert(0, {str(ROOT)!r})
+from research.verify import Spec, control
+from research.audit.pathsim import Exit
+spec = Spec.from_dict({{'name': 't', 'symbol': 'X', 'interval': '1h',
+    'exit': {{'take_profit': 0.03}}, 'signals': {{'kind': 'random'}}}})
+rule = Exit(take_profit=0.03)
+tied = {{i: ('long' if i % 2 == 0 else 'short') for i in range(40)}}
+candles = [{{'t': 1_700_000_000_000 + i * 3_600_000, 'o': 100.0, 'h': 101.0,
+            'l': 99.0, 'c': 100.0, 'v': 1.0}} for i in range(200)]
+print(control.random_control(candles, rule, spec, tied, n_random=20, seed=42)['side'])
+"""
+        sides = set()
+        for hash_seed in ("1", "2", "5"):
+            env = dict(os.environ, PYTHONHASHSEED=hash_seed)
+            out = subprocess.run([sys.executable, "-c", code], env=env, cwd=str(ROOT),
+                                 capture_output=True, text=True, timeout=120)
+            assert out.returncode == 0, out.stderr
+            sides.add(out.stdout.strip())
+        assert len(sides) == 1, f"对照组镜像方向随 PYTHONHASHSEED 变化：{sides}"
+
+
+    def test_trailing_exit_is_labelled_trailing_not_stop_loss(self):
+        """Once the trail arms it is a profit-taking mechanism: labelling its
+        exit 'stop_loss' made winning givebacks read as losing stops in the
+        by-reason bookkeeping (the FreqBot audit exposed this). The Fill.reason
+        contract has always listed 'trailing'; now the code keeps it."""
+        candles = make_candles(400, seed=31)
+        d = dict(BASE_SPEC)
+        d["exit"] = {"stop_loss": -0.08, "trailing": 0.01, "trailing_offset": 0.005,
+                     "timeout_bars": 24}
+        d["control"] = {"enabled": False}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        r = verify(spec, candles, entries)
+        by = r["runs"]["worst_case"]["by_reason"]
+        assert "trailing" in by, f"移动止损止盈被记成了别的原因: {sorted(by)}"
+        assert by["trailing"]["n"] > 0
+
+    def test_hard_stop_still_labelled_stop_loss_when_trail_never_arms(self):
+        """The label fix must not swallow real stops: without a trail the
+        stop_loss reason is unchanged."""
+        candles = make_candles(400, seed=32)
+        d = dict(BASE_SPEC)
+        d["control"] = {"enabled": False}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        r = verify(spec, candles, entries)
+        by = r["runs"]["worst_case"]["by_reason"]
+        assert "trailing" not in by
+
+    def test_spec_without_falsify_rules_is_not_falsified_with_a_saying(self):
+        """Measured in full, verdict NOT_FALSIFIED, and the criteria table says
+        no rules were declared -- the docstring used to claim 'unfalsifiable',
+        which the engine never said."""
+        candles = make_candles(1500, seed=33)  # >=30 fills so the default guard passes
+        d = dict(BASE_SPEC)
+        d.pop("falsify_if", None)
+        d["control"] = {"enabled": False}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        r = verify(spec, candles, entries)
+        assert r["verdict"]["outcome"] == "NOT_FALSIFIED"
+        assert "未声明" in report.render(r)
+
+
+    def test_port_notes_render_as_section_zero(self):
+        """A ported strategy's fidelity notes live in the spec, not in
+        hand-edited markdown: regeneration must never lose them."""
+        candles = make_candles(600, seed=34)
+        d = dict(BASE_SPEC)
+        d["port_notes"] = "信号层高保真；退出层一处近似：ROI 阶梯退化为固定 TP。"
+        d["control"] = {"enabled": False}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        r = verify(spec, candles, entries)
+        text = report.render(r)
+        assert "## 0. 移植说明" in text
+        assert "ROI 阶梯退化为固定 TP" in text
+        assert r["spec"]["port_notes"].startswith("信号层高保真")
 
 
 def _exit_rule():

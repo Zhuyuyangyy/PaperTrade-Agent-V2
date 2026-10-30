@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import random
 import statistics
+from collections import Counter
 
 from . import metrics
 from .signals import bar_bounds, random_signals
@@ -36,7 +37,10 @@ def random_control(candles: list[dict], rule: Exit, spec, entries: dict[int, str
     effective range travels with the result so the report can disclose it.
     """
     sides = list(entries.values())
-    side = max(set(sides), key=sides.count) if sides else "long"
+    # The dominant side, ties broken by FIRST APPEARANCE -- never by set
+    # iteration order: string hashes are randomised per process, and a control
+    # whose mirrored side flips between runs of the same spec is not a control.
+    side = Counter(sides).most_common(1)[0][0] if sides else "long"
     rand_entries = random_signals(candles, n_random, seed, side=side, bar_range=bar_range)
     sim = simulate(
         candles, rand_entries, rule,
@@ -53,6 +57,11 @@ def random_control(candles: list[dict], rule: Exit, spec, entries: dict[int, str
         "bar_range": [lo, hi],
         "fills": sim.closed,
         "unfilled": sim.unfilled_entries,
+        # Same accounting identity as the strategy books: fills + unfilled +
+        # open == n_random. A random entry the replay never resolved is a fact
+        # about the window, and dropping it here would quietly inflate the
+        # control's apparent fill rate.
+        "open_signals": sim.open_signals,
         "stats": metrics.equity_stats(nets),
     }
 

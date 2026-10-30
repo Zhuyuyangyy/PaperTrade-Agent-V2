@@ -1,10 +1,36 @@
 # PaperTrade-Agent-V2-Fast
 
+[![CI](https://img.shields.io/github/actions/workflow/status/Zhuyuyangyy/PaperTrade-Agent-V2/Offline%20safety%20and%20strategy%20tests?style=flat-square&label=CI)](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/actions/workflows/tests.yml)
+[![tests](https://img.shields.io/badge/tests-301%20passed%2C%202%20skipped-brightgreen?style=flat-square)](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2)
+[![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)](https://www.python.org/downloads/)
+
 **一个能证明策略无效的测量系统。** 纸面交易 · 只读 · 无实盘路径 · 已归档
 
 > 状态：**实验已于 2026-10-28 18:05 全部停止**（STOP 文件生效，六本账静止）。
 > 本仓库是那次实验的完整档案：代码、数据、结论、以及得出结论的仪器。
 > 恢复命令见文末；本文所有数字都能用文内的命令复现。
+
+---
+
+## Quickstart：三步出第一份证伪报告
+
+1. **Clone**
+
+   ```bash
+   git clone https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2.git
+   cd PaperTrade-Agent-V2
+   ```
+
+2. **跑演示**（约 30 秒，报告打印到终端；加 `--out report.md` 可存成文件）
+
+   ```bash
+   python -m research.verify --demo
+   ```
+
+3. **对照真实样例**：[`docs/verify-sample-report.md`](docs/verify-sample-report.md)——三年 +34% 的 BTC 策略仍被判 FALSIFIED 的那份报告
+
+依赖 pandas / numpy（无 TA-Lib）；新克隆无行情缓存也能跑 demo——内置 5000 根近期 K 线，自动降级并披露。
 
 ---
 
@@ -23,6 +49,15 @@ python -m research.verify --demo --out report.md    # 30 秒看一份真实数�
 - **首 10 单免费**，换匿名公开发布权 · 付费档 $99 / $299（[服务说明](docs/dist/toku-profile.md)，Toku 搜 StrategyFalsifier）
 - 不荐股、不带单、不代管资金、不承诺收益——只回答一个问题：**你的曲线是不是幻觉**
 - 新克隆无行情缓存也能跑 demo（内置 5000 根近期 K 线，自动降级并披露）
+
+**Skill 集成（agent 可直接调用）**：同一引擎已包装成 Skill——[`skill/strategy-falsifier/`](skill/strategy-falsifier/)（入口 [`SKILL.md`](skill/strategy-falsifier/SKILL.md)）。当用户提出"这个回测能不能信 / 是不是过拟合 / 跑个 walk-forward / 和随机入场比一下"这类请求时，agent 直接调用：
+
+```bash
+python skill/strategy-falsifier/scripts/verify.py --demo                                                # 无需外部文件，30 秒出报告
+python skill/strategy-falsifier/scripts/verify.py spec.json --candles klines.csv --out report.md --json  # 审计自己的策略
+```
+
+包装层自动定位仓库根目录、原样转发全部参数，行为与 `python -m research.verify` 一致；spec 字段表：[`skill/strategy-falsifier/references/spec-format.md`](skill/strategy-falsifier/references/spec-format.md)，六件仪器口径与真实数字案例：[`skill/strategy-falsifier/references/instruments.md`](skill/strategy-falsifier/references/instruments.md)。
 
 完整产品化章节见下文「产品化：策略证伪引擎」；对外文章：[`docs/article-falsification.md`](docs/article-falsification.md)。
 
@@ -212,7 +247,7 @@ python -m research.verify --list-market                   # 本地行情缓存�
 
 **方法论文章**（对外内容资产）：`docs/article-falsification.md`。**分发作战包**（Reddit/X/闲鱼/Toku 文案 + gate 规则 + 本人操作清单）：`docs/dist/`。**落地页**（pitch + demo + 案例矩阵 + 价格）：`docs/index.html`。
 
-**测试**：`tests/test_verify.py` 60 个用例（spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/walk-forward/参数网格/CLI 端到端），全套测试 **297 passed, 2 skipped**（akshare 未装自动跳过）。修复了 pathsim 一个真 bug：maker 未成交单曾被同时计入 unfilled 和 open_signals，虚低成交率。
+**测试**：`tests/test_verify.py` 64 个用例（spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/walk-forward/参数网格/CLI 端到端），全套测试 **301 passed, 2 skipped**（akshare 未装、Windows 缺 symlink 权限各跳 1 个）。修复了 pathsim 一个真 bug：maker 未成交单曾被同时计入 unfilled 和 open_signals，虚低成交率。
 
 ## 运维：这个系统活着的时候经历过什么
 
@@ -231,7 +266,7 @@ python -m research.verify --list-market                   # 本地行情缓存�
 | 停止后循环反复复活 | `loop.sh` while true 守护 + 排队后台任务到点自启 | STOP 文件 kill switch（幂等） |
 | 后台任务约 3 小时被系统回收 | 环境事实 | 主+副班双看门狗，故障窗口 30 分钟 |
 
-**272 个测试，全部通过**（含 verify 引擎 36 个；`test_convertible` 因环境缺 akshare 跳过收集）。
+**301 passed, 2 skipped**（`test_convertible` 缺 akshare、`test_migrate_ledgers` 缺 Windows symlink 权限，各跳 1 个）。
 
 ---
 

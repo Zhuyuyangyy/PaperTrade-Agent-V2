@@ -12,6 +12,12 @@ import random
 
 from ..audit.pathsim import Exit
 
+# Bars reserved for indicator warmup at the start of any window. Random
+# entries never draw from this zone: an entry there could not have been
+# signalled by any indicator-based strategy, which would make the control
+# easier than the strategy by construction.
+CONTROL_WARMUP = 30
+
 
 def rsi(closes: list[float], period: int) -> list[float | None]:
     """Wilder RSI, pure python, aligned to the input (None while warming up).
@@ -61,7 +67,7 @@ def rule_signals(candles: list[dict], *, rule: str, period: int, threshold: floa
     return entries
 
 
-def bar_bounds(candles: list[dict], warmup: int = 30,
+def bar_bounds(candles: list[dict], warmup: int = CONTROL_WARMUP,
                bar_range: tuple[int, int] | None = None) -> tuple[int, int]:
     """Effective inclusive [lo, hi] bar range for random entries.
 
@@ -86,7 +92,7 @@ def bar_bounds(candles: list[dict], warmup: int = 30,
 
 
 def random_signals(candles: list[dict], n: int, seed: int, side: str = "long",
-                   warmup: int = 30, bar_range: tuple[int, int] | None = None) -> dict[int, str]:
+                   warmup: int = CONTROL_WARMUP, bar_range: tuple[int, int] | None = None) -> dict[int, str]:
     """Uniform random entry bars in [warmup, len-2], with replacement allowed.
 
     With replacement: the control is about entry *timing* distribution, not

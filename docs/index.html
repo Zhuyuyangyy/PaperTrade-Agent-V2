@@ -110,11 +110,25 @@
   .demo-box .body b { color: var(--ink); }
 
   footer { padding: 36px 0 48px; color: var(--ink-3); font-size: 13.5px; }
-  .contact-box { border: 1px dashed var(--ink-3); border-radius: 10px; padding: 18px 20px; margin-top: 16px; background: var(--bg-soft); }
-  .contact-box .ph { font-family: var(--mono); color: var(--warn); }
+  .contact-box { border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin-top: 16px; background: var(--bg-soft); }
   ul.plain { list-style: none; margin: 10px 0; }
   ul.plain li { padding: 4px 0 4px 18px; position: relative; font-size: 14.5px; color: var(--ink-2); }
   ul.plain li::before { content: "—"; position: absolute; left: 0; color: var(--ink-3); }
+
+  /* verdict banner */
+  .verdict { border: 2px solid var(--kill); background: var(--kill-bg); border-radius: 12px; padding: 16px 22px; margin-top: 18px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; }
+  .verdict .word { font-family: var(--mono); font-size: 32px; font-weight: 800; color: var(--kill); letter-spacing: 0.02em; line-height: 1.1; }
+  .verdict .why { font-size: 14px; color: var(--ink-2); }
+  .verdict .why strong { color: var(--kill); }
+
+  /* six-dimension grid */
+  .dims { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-top: 16px; }
+  .dim { border: 1px solid var(--line); border-radius: 10px; padding: 13px 16px; background: #fff; }
+  .dim .no { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 700; }
+  .dim h3 { font-size: 14.5px; margin: 2px 0 4px; }
+  .dim .v { font-family: var(--mono); font-size: 22px; font-weight: 800; color: var(--kill); line-height: 1.15; }
+  .dim .l { font-size: 12.5px; color: var(--ink-3); margin-top: 4px; }
+  .stat .v.sm { font-size: 16px; }
 </style>
 </head>
 <body>
@@ -126,8 +140,9 @@
     <h1>你的回测曲线，敢过一遍对照组吗？</h1>
     <p class="sub">一个能<b>证明策略无效</b>的测量系统。输入一份策略声明，输出一份<strong>试图杀死它</strong>的报告——裁决不来自评分，来自<strong>先于任何数字存在</strong>的事前证伪规则。</p>
     <div class="cta-row">
-      <a class="btn btn-primary" href="#demo">30 秒看一份真实报告</a>
-      <a class="btn btn-ghost" href="verify-sample-report.md">样例报告（真实 BTC 数据）</a>
+      <a class="btn btn-primary" href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/issues/new">免费首 10 单 · GitHub 开 issue 提交策略</a>
+      <a class="btn btn-ghost" href="https://toku.agency/agents/strategyfalsifier">Toku 托管 · $99 / $299</a>
+      <a class="btn btn-ghost" href="#demo">30 秒看一份真实报告</a>
       <a class="btn btn-ghost" href="cases/">案例矩阵：同一台引擎，四种死法</a>
     </div>
     <div class="stats">
@@ -171,13 +186,25 @@
   <div class="wrap">
     <div class="kicker">30-Second Demo</div>
     <h2><span class="no">03</span>一条命令，看一份真实数据的证伪报告</h2>
+    <p class="sub">引擎对<b>真实 BTC 1h 数据</b>（2023-06-24 → 2026-10-28，29,347 根 K 线）上的经典策略跑完整电池：<b>RSI(14) &lt; 30 抄底做多</b>，止盈 +3% / 止损 -8% / 超时 24h，taker 4bps/边，1,310 笔信号。</p>
+    <div class="verdict">
+      <span class="word">FALSIFIED</span>
+      <span class="why"><strong>7 条事前证伪规则被触发</strong>——规则先于任何数字写死在 spec 里，逐条判定见 <a href="verify-sample-report.md">完整样例报告 §7</a></span>
+    </div>
+    <div class="dims">
+      <div class="dim"><div class="no">#1</div><h3>Path-aware 回放</h3><div class="v">-505.65%</div><div class="l">全窗口净收益（最坏口径）· 1,310 笔全成交 · 均值/笔 -0.39% · 胜率 50% · PF 0.69</div></div>
+      <div class="dim"><div class="no">#2</div><h3>成本敏感性</h3><div class="v">-610.45%</div><div class="l">费率 ×2（8bps 往返）即翻车 · ×5 时 -924.85%——edge 付不起自己的 toll</div></div>
+      <div class="dim"><div class="no">#3</div><h3>障碍可达性</h3><div class="v">4.9%</div><div class="l">止损 -8% 在持仓窗口内被摸到的比例 · 74.2% 的笔数两障均未触及——「止损」基本没在工作</div></div>
+      <div class="dim"><div class="no">#4</div><h3>随机入场对照组</h3><div class="v">-0.37%/笔</div><div class="l">策略 − 随机对照（200 笔，seed=42）· 95% CI [-0.70, -0.03] 不含 0——显著差于抛硬币</div></div>
+      <div class="dim"><div class="no">#5</div><h3>Walk-forward</h3><div class="v">-265.31%</div><div class="l">样本外段净收益（样本内 -240.34%）· 两段均负——不是衰减，是稳定地亏</div></div>
+      <div class="dim"><div class="no">#6</div><h3>参数敏感性网格</h3><div class="v">0/9</div><div class="l">样本内 0/9 格为正 · 样本外 0/9 格为正——网格内没有任何参数组合赚钱</div></div>
+    </div>
     <div class="demo-grid">
       <div class="demo-box">
         <div class="cap">$ python -m research.verify --demo --out report.md</div>
         <div class="body">
-          引擎对<b>真实 BTC 1h 数据</b>（2023-06 → 2026-10，29,347 根 K 线）上一个经典策略跑完整电池：<b>RSI(14) &lt; 30 抄底做多</b>，止盈 +3% / 止损 -8% / 超时 24h，taker 4bps/边。<br><br>
-          <b>裁决：FALSIFIED</b>——7 条事前规则被触发：全窗口 -505.65%；×2 成本 -610.45%；随机对照组差值 -0.37%（95% CI [-0.70, -0.03]，显著差于抛硬币）；walk-forward 样本外 -265.31%；参数网格样本内 0/9、样本外 0/9 全负。<br><br>
-          <span class="fine">新克隆无行情缓存也能跑：内置 5,000 根近期 K 线，自动降级并在报告中披露。</span>
+          新克隆无行情缓存也能跑：内置 5,000 根近期 K 线，自动降级并在报告中披露。<br><br>
+          <span class="fine">markdown + JSON 双格式交付，每个数字可用文内命令复现。</span>
         </div>
       </div>
       <div class="demo-box">
@@ -191,7 +218,7 @@
           <b>§6</b> 参数网格热力表 + 分布<br>
           <b>§7</b> 事前证伪规则逐条判定<br>
           <b>§8</b> 未建模事项披露<br><br>
-          <span class="fine">markdown + JSON 双格式交付，每个数字可用文内命令复现。</span>
+          <span class="fine">裁决来自事前声明的证伪规则，不来自评分。</span>
         </div>
       </div>
     </div>
@@ -219,17 +246,79 @@
   </div>
 </section>
 
+<!-- ============ SKILL ============ -->
+<section id="skill">
+  <div class="wrap">
+    <div class="kicker">Skill Integration</div>
+    <h2><span class="no">05</span>作为 Skill 集成：输入一份 spec，输出一份证伪报告</h2>
+    <p class="sub">整台引擎是一条命令、一个 JSON 契约——可以被 <strong>agent、工作流、CI 直接调用</strong>，没有人在回路，也能拿到同一台仪器的裁决。证伪规则先于数字写进 spec，跑完不分好坏全部输出。</p>
+    <div class="demo-grid">
+      <div class="demo-box">
+        <div class="cap">输入 · strategy spec（JSON）</div>
+        <div class="body">
+          <pre>{
+  <span class="cm">"symbol": "BTCUSDT", "interval": "1h"</span>,
+  "exit": { "take_profit": 0.03, "stop_loss": -0.08,
+            "timeout_bars": 24 },
+  "fee_rate": 0.0004, "fill_model": "taker",
+  "signals": { "kind": "rule", "rule": "rsi_below",
+               "period": 14, "threshold": 30.0 },
+  "control": { "enabled": true, "n_random": 200, "seed": 42 },
+  <span class="cm">"falsify_if": {</span>
+    "worst_case_net_negative": true,
+    "net_negative_at_fee_multiple": 2,
+    "control_lift_ci_includes_zero": true
+  }
+}</pre>
+          <span class="fine">spec 结构见 <a href="cases/">docs/cases/*.json</a>；信号可以是内置规则、CSV 文件，或你的 agent 自己生成的入场列表。</span>
+        </div>
+      </div>
+      <div class="demo-box">
+        <div class="cap">$ python -m research.verify --spec spec.json --candles klines.csv --signals sig.csv --out report.md --json</div>
+        <div class="body">
+          <b>输出 · falsification report（markdown + JSON 双格式）</b><br>
+          · verdict：FALSIFIED / UNPROVEN / INCONCLUSIVE<br>
+          · 六维结果：回放 / 成本 / 障碍 / 对照 / walk-forward / 网格<br>
+          · 事前证伪规则逐条判定 + 未建模事项披露<br><br>
+          <span class="fine">本地离线可跑，无外部依赖；样本不足时输出 INCONCLUSIVE，永不放过。机器可读的 JSON 直接进你的流水线，markdown 直接给人看。</span>
+        </div>
+      </div>
+    </div>
+    <div class="cards">
+      <div class="card"><h3><span class="no">→</span>策略筛选流水线</h3><p>量化 agent 每产出一个候选策略，先过证伪再进回测——把「是不是幻觉」挡在组合构建之前，而不是亏钱之后。</p></div>
+      <div class="card"><h3><span class="no">→</span>策略库批量体检</h3><p>一份 spec 一个裁决，天然适合批处理：给整库策略跑同一组事前规则，输出统一格式的生死簿，人事后无法挑好看的说。</p></div>
+      <div class="card"><h3><span class="no">→</span>投前 / 跟单前尽调</h3><p>对方发了曲线？把它的假设写成 spec 跑一遍——打不过随机入场组的曲线，定价权就在你手里。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROOF ============ -->
+<section id="proof">
+  <div class="wrap">
+    <div class="kicker">Proof</div>
+    <h2><span class="no">06</span>社会证明：这些数字，任何人都可以复跑</h2>
+    <div class="stats">
+      <div class="stat"><div class="v">297</div><div class="l">个自动化测试守着规则——事后不许改规则，不许挑好看的说</div></div>
+      <div class="stat"><div class="v">6</div><div class="l">台仪器，一个裁决：回放 / 成本 / 障碍 / 对照 / walk-forward / 参数网格</div></div>
+      <div class="stat"><div class="v sm">2023-06 → 2026-10</div><div class="l">真实数据窗口：Binance 1h futures，29,347 根 K 线/币，含一轮完整牛市</div></div>
+      <div class="stat"><div class="v">4/4</div><div class="l">案例全部公开——包括三年 +34.35% 看着能发朋友圈的那个，照样 FALSIFIED</div></div>
+    </div>
+    <p class="fine" style="margin-top:14px">本页所有数字来自真实执行，可用仓库内命令复跑；每份报告固定含「未建模事项」一节——<strong>未被证伪 ≠ 被证实</strong>。</p>
+  </div>
+</section>
+
 <!-- ============ PRICING ============ -->
 <section id="pricing">
   <div class="wrap">
     <div class="kicker">Pricing</div>
-    <h2><span class="no">05</span>先看样例，再决定要不要付费</h2>
+    <h2><span class="no">07</span>先看样例，再决定要不要付费</h2>
     <div class="price-grid">
       <div class="price">
-        <div class="tier">First 10 Free</div>
+        <div class="tier">First 10 Free · 主推入口</div>
         <div class="amount">$0</div>
         <ul>
           <li>完整证伪报告（markdown + JSON）</li>
+          <li>GitHub 开 issue 提交，贴策略描述即可</li>
           <li>换匿名公开发布权</li>
           <li>先看样例再决定</li>
         </ul>
@@ -255,7 +344,11 @@
         </ul>
       </div>
     </div>
-    <p class="fine" style="margin-top:14px">输入契约：策略描述（市场/周期/信号/退出/成本假设）+ K 线 CSV 或公开标的 + 你的证伪标准（没有就用引擎默认）。Toku 平台搜 <strong>StrategyFalsifier</strong>。</p>
+    <div class="cta-row" style="margin-top:22px">
+      <a class="btn btn-primary" href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/issues/new">主 CTA · 免费首 10 单：GitHub 开 issue</a>
+      <a class="btn btn-ghost" href="https://toku.agency/agents/strategyfalsifier">副 CTA · Toku 托管：$99 / $299</a>
+    </div>
+    <p class="fine" style="margin-top:14px">输入契约：策略描述（市场/周期/信号/退出/成本假设）+ K 线 CSV 或公开标的 + 你的证伪标准（没有就用引擎默认）。两条通道同一台引擎、同一份报告格式；Toku 平台搜 <strong>StrategyFalsifier</strong>。</p>
   </div>
 </section>
 
@@ -263,7 +356,7 @@
 <section id="contact">
   <div class="wrap">
     <div class="kicker">Boundaries &amp; Contact</div>
-    <h2><span class="no">06</span>边界先于生意</h2>
+    <h2><span class="no">08</span>边界先于生意</h2>
     <ul class="plain">
       <li>不荐股、不带单、不代管资金、不承诺收益——只回答一个问题：<strong>你的曲线是不是幻觉</strong>。</li>
       <li>不接任何需要访问客户交易所 API key 的委托。</li>
@@ -271,9 +364,9 @@
       <li>纸面交易 · 只读 · 无实盘路径。本项目自己的交易实验已于 2026-10-28 全部停止，本页是那次实验留下的仪器。</li>
     </ul>
     <div class="contact-box">
-      <strong>联系（两条都通）</strong><br>
-      ① <a href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/issues/new">GitHub 开 issue</a>——贴策略描述（市场/周期/信号/退出），首 10 单免费换匿名公开授权<br>
-      ② <a href="https://toku.agency/agents/strategyfalsifier">Toku 主页 StrategyFalsifier</a>——平台托管交易，$99 / $299 两档<br>
+      <strong>两条路，都通</strong><br>
+      ① <strong>主 CTA · 免费首 10 单</strong>：<a href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/issues/new">GitHub 开 issue</a>——贴策略描述（市场/周期/信号/退出），24-72h 内交付完整证伪报告，换匿名公开发布权<br>
+      ② <strong>副 CTA · 付费托管</strong>：<a href="https://toku.agency/agents/strategyfalsifier">Toku · StrategyFalsifier</a>——$99 报告 / $299 报告 + 30 分钟讲解，平台托管交易<br>
       <span class="fine">也可在 <a href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2">GitHub 仓库</a>开 issue 讨论仪器本身。</span>
     </div>
   </div>

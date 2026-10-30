@@ -193,6 +193,12 @@ def _one_trade(candles, i, side, rule: Exit, *, symbol, fee_rate, funding, worst
         if rule.stop_loss is not None:
             sl_price = entry_price * (1 + rule.stop_loss) if side == "long" \
                 else entry_price * (1 - rule.stop_loss)
+        # Once the trail is armed it REPLACES the stop as the binding level,
+        # and it is a profit-taking mechanism, not a loss: label its exit
+        # 'trailing', not 'stop_loss', or the by-reason bookkeeping reads a
+        # winning giveback as a losing stop. Reset per bar because sl_price is
+        # recomputed per bar.
+        sl_from_trail = False
         if rule.trailing is not None:
             peak = max(peak, high) if side == "long" else min(peak, low)
             gain = (peak / entry_price - 1) if side == "long" else (1 - peak / entry_price)
@@ -204,6 +210,7 @@ def _one_trade(candles, i, side, rule: Exit, *, symbol, fee_rate, funding, worst
                 if sl_price is None or (side == "long" and trail_price > sl_price) \
                         or (side == "short" and trail_price < sl_price):
                     sl_price = trail_price
+                    sl_from_trail = True
 
         if fill_model == "maker":
             # A take-profit is the OPPOSITE order from the entry: a long's TP
@@ -220,13 +227,13 @@ def _one_trade(candles, i, side, rule: Exit, *, symbol, fee_rate, funding, worst
         if tp_hit and sl_hit:
             # The whole point of this module: disclose which one you assume.
             if worst_case:
-                reason, price = "stop_loss", sl_price
+                reason, price = ("trailing" if sl_from_trail else "stop_loss"), sl_price
             else:
                 reason, price = "take_profit", tp_price
         elif tp_hit:
             reason, price = "take_profit", tp_price
         elif sl_hit:
-            reason, price = "stop_loss", sl_price
+            reason, price = ("trailing" if sl_from_trail else "stop_loss"), sl_price
         elif rule.timeout_bars is not None and held_bars >= rule.timeout_bars:
             reason, price = "timeout", bar["c"]
         elif rule.exit_signals and k in rule.exit_signals:

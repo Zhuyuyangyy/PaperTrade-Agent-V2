@@ -43,6 +43,7 @@ honest execution, honest costs, and an honest control group.
 from __future__ import annotations
 
 from .spec import Spec, SpecError
+from .signals import CONTROL_WARMUP
 
 __all__ = ["Spec", "SpecError", "verify", "verify_file"]
 
@@ -207,7 +208,8 @@ def _battery(spec: Spec, candles: list[dict], entries: dict[int, str], exit_rule
                 "n_random": 0, "seed": spec.control.seed, "side": None,
                 "bar_range": list(control_range) if control_range else None,
                 "note": f"该段无法抽取随机对照组：{exc}",
-                "fills": 0, "unfilled": 0, "stats": metrics.equity_stats([]),
+                "fills": 0, "unfilled": 0, "open_signals": 0,
+                "stats": metrics.equity_stats([]),
                 "strategy_mean_pct": None, "control_mean_pct": None,
                 "diff_pct": None, "diff_ci": None, "selectivity": "unknown",
             }
@@ -252,7 +254,12 @@ def _walk_forward(spec: Spec, candles: list[dict], entries: dict[int, str],
         "fold_bars": fold_bars,
         "boundary_bar": boundary,
         "boundary_ts": _fmt_ts(candles[boundary]["t"]),
+        # the in-sample control may only draw from the in-sample segment: a
+        # control that reaches into the out-of-sample fold would book that
+        # fold's random losses as "control" and inflate the in-sample
+        # selectivity it is supposed to be blind to
         "in_sample": _battery(spec, candles, is_entries, exit_rule, funding,
+                              control_range=(CONTROL_WARMUP, boundary - 1),
                               scope="样本内") if is_entries else None,
         # the out-of-sample control may only draw entries from the out-of-
         # sample segment, or it is not a control for that segment
@@ -336,7 +343,15 @@ def _evaluate_criteria(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict
             "insufficient": True,
         })
 
-    if spec.falsify_if.get("worst_case_net_negative") and worst["sum_pct"] <= 0:
+    # A segment with ZERO fills has no measured net: sum_pct is 0.0 because
+    # nothing traded, not because the strategy broke even. Firing a net rule
+    # there would falsify on no evidence -- the same line the grid draws
+    # ("无证据不算输"), and it would override this function's own min_fills
+    # insufficient verdict, which exists precisely for that case. With at
+    # least one fill the net IS measured and the declared rule stands.
+    measured = worst["n"] > 0
+
+    if spec.falsify_if.get("worst_case_net_negative") and measured and worst["sum_pct"] <= 0:
         checks.append({
             "rule": "worst_case_net_negative",
             "scope": scope,
@@ -347,7 +362,7 @@ def _evaluate_criteria(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict
     mult = spec.falsify_if.get("net_negative_at_fee_multiple")
     if mult is not None:
         row = next((r for r in cost_rows if r["fee_multiple"] == mult), None)
-        if row is not None and row["net_sum_pct"] <= 0:
+        if row is not None and measured and row["net_sum_pct"] <= 0:
             checks.append({
                 "rule": f"net_negative_at_fee_multiple={mult}",
                 "scope": scope,
