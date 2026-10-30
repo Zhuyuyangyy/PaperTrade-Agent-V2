@@ -183,7 +183,7 @@ python -m research.astock audit --limit 0     # 全量（732 只老券，约 20 
 
 ## 产品化：策略证伪引擎（`research/verify/`）
 
-赚钱线停了，仪器活着——而且被市场调研证明有真实需求（`docs/market-scan-2026-10-29.md`：backtest→实盘中位差 -14.3pp 是行业第一痛点，而市面服务只会"画曲线"）。`research/verify/` 把整个项目淬炼出的四件仪器打包成一个 CLI：**输入一份策略 spec，输出一份试图杀死它的报告。**
+赚钱线停了，仪器活着——而且被市场调研证明有真实需求（`docs/market-scan-2026-10-29.md`：backtest→实盘中位差 -14.3pp 是行业第一痛点，而市面服务只会"画曲线"）。`research/verify/` 把整个项目淬炼出的六件仪器打包成一个 CLI：**输入一份策略 spec，输出一份试图杀死它的报告。**
 
 ```bash
 python -m research.verify --demo --out report.md          # 内置演示（真实 BTC 1h 缓存数据）
@@ -191,7 +191,7 @@ python -m research.verify --spec spec.json --candles klines.csv --signals sig.cs
 python -m research.verify --list-market                   # 本地行情缓存里有什么
 ```
 
-四件仪器，一个裁决：
+六件仪器，一个裁决：
 
 | 仪器 | 回答的问题 |
 |---|---|
@@ -199,16 +199,18 @@ python -m research.verify --list-market                   # 本地行情缓存�
 | 成本敏感性 | 费率 ×1/×2/×5 重放——edge 付不付得起自己的 toll？（本项目实测：$100 单 60bps，其中 50bps 是 LP 地板） |
 | 障碍可达性 | 止盈/止损位在持仓窗口内到底被摸到过几次——还是彩票结构？ |
 | 随机入场对照组 | 同窗口同退出规则随机入场，bootstrap CI 比均值——打不过抛硬币的策略，绝对收益数字没有意义 |
+| walk-forward（样本内/样本外） | 窗口切 N 折，两段各跑完整电池，同一批事前规则在样本外复判——只在看得见的地方成立的 edge 不是 edge（样本外被证伪 → 整体 FALSIFIED；样本不足 → INCONCLUSIVE，永不放过） |
+| 参数敏感性网格 | 事前声明的退出参数全网格重放——只有个别格子为正 → 打过拟合标记：edge 依赖一小撮参数组合，是曲线拟合不是 edge |
 
 **裁决不是分数，是事前证伪规则的判定结果**：`falsify_if` 写在 spec 里、先于任何数字存在（对照/证伪规则触发→FALSIFIED；样本不足→INCONCLUSIVE，不下结论；否则 NOT_FALSIFIED，并附"未被证伪≠被证实"）。报告固定含"未建模事项"一节——不知道仪器边界的人会滥用仪器。
 
-样例报告（真实数据，RSI 抄底 BTC 策略 3 年 1310 笔）：`docs/verify-sample-report.md`——裁决 FALSIFIED：基线即亏损、×2 成本净 -610%、且**显著差于随机入场**（差值 -0.37%，95% CI [-0.70%, -0.03%]）。spec 模板：`research/verify/samples/demo_spec.json`。
+样例报告（真实数据，RSI 抄底 BTC 策略 3 年 1310 笔）：`docs/verify-sample-report.md`——裁决 FALSIFIED：基线即亏损、×2 成本净 -610%、**显著差于随机入场**（差值 -0.37%，95% CI [-0.70%, -0.03%]）、**样本外段 -265.31% 且 9 格参数网格样本内外全负**（行业第一死因样本内过拟合的两台专用仪器）。spec 模板：`research/verify/samples/demo_spec.json`。
 
 **案例矩阵**（`docs/cases/`，四个事前声明变体全部发布）：抄底 BTC / 追涨 BTC / 抄底 ETH / maker 限价成交，统一 29,347 根 1h futures 真实 K 线。三个被对照组击败，第四个 **+34% 三年曲线仍被判 FALSIFIED——统计上无法与随机入场区分（CI 跨 0），钱是 beta 不是 alpha**。引擎同时支持客户自带信号（CSV 进场 + CSV 信号退出）。
 
-**方法论文章**（对外内容资产）：`docs/article-falsification.md`。**分发作战包**（Reddit/X/闲鱼/Toku 文案 + gate 规则 + 本人操作清单）：`docs/dist/`。
+**方法论文章**（对外内容资产）：`docs/article-falsification.md`。**分发作战包**（Reddit/X/闲鱼/Toku 文案 + gate 规则 + 本人操作清单）：`docs/dist/`。**落地页**（pitch + demo + 案例矩阵 + 价格）：`docs/index.html`。
 
-**测试**：`tests/test_verify.py` 36 个用例（spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/CLI 端到端）。修复了 pathsim 一个真 bug：maker 未成交单曾被同时计入 unfilled 和 open_signals，虚低成交率。
+**测试**：`tests/test_verify.py` 60 个用例（spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/walk-forward/参数网格/CLI 端到端），全套测试 **297 passed, 2 skipped**（akshare 未装自动跳过）。修复了 pathsim 一个真 bug：maker 未成交单曾被同时计入 unfilled 和 open_signals，虚低成交率。
 
 ## 运维：这个系统活着的时候经历过什么
 
@@ -276,4 +278,4 @@ $PY -m research.verify --spec research/verify/samples/demo_spec.json --out r.md
 
 市场化验证的阶梯已经备好（`research/live/`）：规则事前写死、降级自动、升级需人、停机优先。今天没有策略够资格站上去——FundingRate 三档执行假设全赢对照但恰好被摩擦吃平（PF 1.00），这是仪器给出的最终答案，而阶梯是给下一个候选准备的。
 
-**归档之后**：仪器没有跟着归档。`research/verify/` 把四件仪器产品化为"策略证伪即服务"——市场调研（`docs/market-scan-2026-10-29.md`）显示这是个人在这个生态里少数被验证有真实付费需求的方向：别人卖"收益率曲线"，我们卖"这条曲线是不是幻觉"。
+**归档之后**：仪器没有跟着归档。`research/verify/` 把六件仪器产品化为"策略证伪即服务"——市场调研（`docs/market-scan-2026-10-29.md`）显示这是个人在这个生态里少数被验证有真实付费需求的方向：别人卖"收益率曲线"，我们卖"这条曲线是不是幻觉"。

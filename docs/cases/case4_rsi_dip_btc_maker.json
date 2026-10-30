@@ -15,7 +15,8 @@
       "stop_loss": -0.08,
       "timeout_bars": 24,
       "trailing": null,
-      "trailing_offset": null
+      "trailing_offset": null,
+      "exit_signals_path": null
     },
     "signals": {
       "kind": "rule",
@@ -31,6 +32,15 @@
       "enabled": true,
       "n_random": 200,
       "seed": 42
+    },
+    "walk_forward": {
+      "enabled": false,
+      "folds": 3
+    },
+    "param_grid": {
+      "enabled": false,
+      "axes": {},
+      "max_cells": 64
     },
     "fee_multiples": [
       1.0,
@@ -50,6 +60,7 @@
     "bars": 29347
   },
   "n_signals": 1310,
+  "funding_applied": true,
   "runs": {
     "worst_case": {
       "fills": 1301,
@@ -2766,6 +2777,10 @@
     "n_random": 200,
     "seed": 42,
     "side": "long",
+    "bar_range": [
+      30,
+      29345
+    ],
     "fills": 194,
     "unfilled": 6,
     "stats": {
@@ -2991,14 +3006,18 @@
     "checks": [
       {
         "rule": "worst_case_net_negative",
+        "scope": "全窗口",
         "detail": "最坏优先口径净收益 -453.20% ≤ 0",
         "triggered": true
       },
       {
         "rule": "net_negative_at_fee_multiple=2",
+        "scope": "全窗口",
         "detail": "成本 ×2（4bps 往返）时净收益 -505.24% ≤ 0，edge 付不起 toll",
         "triggered": true
       }
     ]
-  }
+  },
+  "walk_forward": null,
+  "param_grid": null
 }
