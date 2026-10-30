@@ -225,8 +225,14 @@ python -m research.astock audit --limit 0     # 全量（732 只老券，约 20 
 ```bash
 python -m research.verify --demo --out report.md          # 内置演示（真实 BTC 1h 缓存数据）
 python -m research.verify --spec spec.json --candles klines.csv --signals sig.csv --out report.md --json
+python -m research.verify --compare a.json b.json c.json --out compare.md --json   # 多策略对比
+python -m research.verify --demo --out report.html        # HTML 报告（自包含单文件，含权益曲线/成本条形图/网格热力图）
 python -m research.verify --list-market                   # 本地行情缓存里有什么
 ```
+
+**多策略对比**（`--compare`，最高频真实问题"我这几个变体哪个最不过拟合"的直接答案）：排名规则事前声明印在表格上方——裁决档位优先（NOT_FALSIFIED > INCONCLUSIVE > FALSIFIED，档位即诚实度），同档内按对照组差值 CI 下界、样本外净收益、样本外网格正格率、成交数依次排序。公开示例：`docs/compare-sample.md`（7 个策略一次过，含三个外部真实策略）。
+
+**spec 自带数据**：spec 里可声明 `candles_path` / `funding_path` / `signals.path` / `exit.exit_signals_path`（均相对 spec 所在目录解析）——一个 spec 文件夹就是一套可复现实验，换机器、换缓存、给同事，数字不变。
 
 六件仪器，一个裁决：
 
@@ -243,11 +249,11 @@ python -m research.verify --list-market                   # 本地行情缓存�
 
 样例报告（真实数据，RSI 抄底 BTC 策略 3 年 1310 笔）：`docs/verify-sample-report.md`——裁决 FALSIFIED：基线即亏损、×2 成本净 -610%、**显著差于随机入场**（差值 -0.37%，95% CI [-0.70%, -0.03%]）、**样本外段 -265.31% 且 9 格参数网格样本内外全负**（行业第一死因样本内过拟合的两台专用仪器）。spec 模板：`research/verify/samples/demo_spec.json`。
 
-**案例矩阵**（`docs/cases/`，四个事前声明变体全部发布）：抄底 BTC / 追涨 BTC / 抄底 ETH / maker 限价成交，统一 29,347 根 1h futures 真实 K 线。三个被对照组击败，第四个 **+34% 三年曲线仍被判 FALSIFIED——统计上无法与随机入场区分（CI 跨 0），钱是 beta 不是 alpha**。引擎同时支持客户自带信号（CSV 进场 + CSV 信号退出）。
+**案例矩阵**（`docs/cases/`，四个事前声明变体全部发布）：抄底 BTC / 追涨 BTC / 抄底 ETH / maker 限价成交，统一 29,347 根 1h futures 真实 K 线。三个被对照组击败，第四个 **+34% 三年曲线仍被判 FALSIFIED——统计上无法与随机入场区分（CI 跨 0），钱是 beta 不是 alpha**。另有三个外部真实策略案例（CascadeFader / FundingRateEnhanced / GridTradingStrategy，spec 自带数据可复现）。引擎同时支持客户自带信号（CSV 进场 + CSV 信号退出）。
 
 **方法论文章**（对外内容资产）：`docs/article-falsification.md`。**分发作战包**（Reddit/X/闲鱼/Toku 文案 + gate 规则 + 本人操作清单）：`docs/dist/`。**落地页**（pitch + demo + 案例矩阵 + 价格）：`docs/index.html`。
 
-**测试**：`tests/test_verify.py` 64 个用例（spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/walk-forward/参数网格/CLI 端到端），全套测试 **301 passed, 2 skipped**（akshare 未装、Windows 缺 symlink 权限各跳 1 个）。修复了 pathsim 一个真 bug：maker 未成交单曾被同时计入 unfilled 和 open_signals，虚低成交率。
+**测试**：`tests/test_verify.py` 覆盖 spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/walk-forward/参数网格/HTML 渲染/多策略对比/spec 自带数据/CLI 端到端，全套测试 **337 passed, 2 skipped**（akshare 未装、Windows 缺 symlink 权限各跳 1 个）。
 
 ## 运维：这个系统活着的时候经历过什么
 

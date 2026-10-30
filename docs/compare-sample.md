@@ -1,0 +1,81 @@
+# 多策略对比
+
+本表由 **7 个策略**过同一套证伪电池产出。每个策略的回放口径、成本敏感性、随机对照组、walk-forward 样本外折叠、参数网格、事前证伪规则均按其各自 spec 声明执行。
+
+## 排名规则（事前声明，先于任何数字）
+
+1. **裁决档位优先**：`NOT_FALSIFIED` > `INCONCLUSIVE` > `FALSIFIED`——档位本身就是诚实度排序：扛住全部事前规则的策略，排在「测不出结论」的之上，排在「被规则抓住」的之上。
+2. **同档内按对照组差值 CI 下界降序**：下界为正 = 已证明选择性；跨 0 = 未被证伪但也未证明；整体为负 = 显著差于随机。
+3. **再按样本外净收益降序**（只在没见过的数据段上成立过的钱才算数）。
+4. **再按样本外参数网格正格率降序**（换参数还活着的格子的比例）。
+5. **最后按最坏口径成交数降序**（样本量即话语权）。
+
+## 对比矩阵
+
+| 排名 | 策略 | 裁决 | 成交 | 最坏净 | 最好净 | ×2 成本净 | 对照组 CI | 选择性 | 样本外净 | 样本外网格 | 触发规则 |
+|---:|---|---|---:|---:|---:|---:|---|---|---|---:|---|---|
+| 1 | external-cascade-fader-btcusdt-1h | INCONCLUSIVE | 3 | +3.23% | +3.23% | +2.63% | n/a | unknown | +1.48% | 100% | 无 |
+| 2 | external-freqbot-fundingrate-btcusdt-1h | FALSIFIED | 325 | -27.22% | +89.86% | -59.72% | [-0.05%, +0.17%] | unproven | n/a | 11% | worst_case_net_negative(全窗口)、net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
+| 3 | case2-rsi-breakout-btc-1h | FALSIFIED | 1638 | +34.35% | +34.35% | -96.69% | [-0.27%, +0.35%] | unproven | n/a | n/a | net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
+| 4 | freqbot-grid-btcusdt-1h | FALSIFIED | 360 | +61.06% | +61.06% | +32.26% | [-0.40%, +0.44%] | unproven | +50.86% | 100% | control_lift_ci_includes_zero(全窗口) |
+| 5 | case1-rsi-dip-btc-1h | FALSIFIED | 1310 | -505.65% | -505.65% | -610.45% | [-0.70%, -0.03%] | refuted | n/a | n/a | worst_case_net_negative(全窗口)、net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
+| 6 | case4-rsi-dip-btc-1h-maker | FALSIFIED | 1301 | -453.20% | -453.20% | -505.24% | [-0.74%, -0.04%] | refuted | n/a | n/a | worst_case_net_negative(全窗口)、net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
+| 7 | case3-rsi-dip-eth-1h | FALSIFIED | 1419 | -1144.10% | -1144.10% | -1257.62% | [-1.21%, -0.37%] | refuted | n/a | n/a | worst_case_net_negative(全窗口)、net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
+
+## 稳健性排名（一句话版）
+
+**external-cascade-fader-btcusdt-1h**：无对照组数据，按样本外与网格表现排序。
+**case3-rsi-dip-eth-1h**：排名最低——详见其触发规则。
+
+> 注意：这个排名只回答"哪一个最不过拟合"，不回答"该不该实盘"。第一名同样可能不该实盘——看它自己的报告第 8 节未建模事项。
+
+## 每个策略的裁决理由（原样摘录）
+
+### 1. external-cascade-fader-btcusdt-1h —— INCONCLUSIVE
+
+样本量不足（全窗口、样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。
+
+- 标的/周期/场所：BTCUSDT · 1h · futures · 单边费率 10bps · taker 成交 · 含资金费
+- 数据窗口：29347 根（2023-06-24 01:00 → 2026-10-28 19:00）
+
+### 2. external-freqbot-fundingrate-btcusdt-1h —— FALSIFIED
+
+3 条事前证伪规则被触发：最坏优先口径净收益 -27.22% ≤ 0；成本 ×2（往返 20bps）时净收益 -59.72% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.06%，95% 区间 [-0.05, +0.17] 跨 0，未能证明选择性
+
+- 标的/周期/场所：BTCUSDT · 1h · futures · 单边费率 5bps · taker 成交 · 含资金费
+- 数据窗口：29347 根（2023-06-24 01:00 → 2026-10-28 19:00）
+
+### 3. case2-rsi-breakout-btc-1h —— FALSIFIED
+
+2 条事前证伪规则被触发：成本 ×2（往返 16bps）时净收益 -96.69% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.03%，95% 区间 [-0.27, +0.35] 跨 0，未能证明选择性
+
+- 标的/周期/场所：BTCUSDT · 1h · futures · 单边费率 4bps · taker 成交 · 含资金费
+- 数据窗口：29347 根（2023-06-24 01:00 → 2026-10-28 19:00）
+
+### 4. freqbot-grid-btcusdt-1h —— FALSIFIED
+
+1 条事前证伪规则被触发：策略 − 随机对照组 = +0.02%，95% 区间 [-0.40, +0.44] 跨 0，未能证明选择性
+
+- 标的/周期/场所：BTCUSDT · 1h · futures · 单边费率 4bps · taker 成交 · 不含资金费
+- 数据窗口：29347 根（2023-06-24 01:00 → 2026-10-28 19:00）
+
+### 5. case1-rsi-dip-btc-1h —— FALSIFIED
+
+3 条事前证伪规则被触发：最坏优先口径净收益 -505.65% ≤ 0；成本 ×2（往返 16bps）时净收益 -610.45% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.37%，95% 区间 [-0.70, -0.03] 整体为负——显著差于随机入场
+
+- 标的/周期/场所：BTCUSDT · 1h · futures · 单边费率 4bps · taker 成交 · 含资金费
+- 数据窗口：29347 根（2023-06-24 01:00 → 2026-10-28 19:00）
+
+### 6. case4-rsi-dip-btc-1h-maker —— FALSIFIED
+
+3 条事前证伪规则被触发：最坏优先口径净收益 -453.20% ≤ 0；成本 ×2（往返 8bps）时净收益 -505.24% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.40%，95% 区间 [-0.74, -0.04] 整体为负——显著差于随机入场
+
+- 标的/周期/场所：BTCUSDT · 1h · futures · 单边费率 2bps · maker 成交 · 含资金费
+- 数据窗口：29347 根（2023-06-24 01:00 → 2026-10-28 19:00）
+
+### 7. case3-rsi-dip-eth-1h —— FALSIFIED
+
+3 条事前证伪规则被触发：最坏优先口径净收益 -1144.10% ≤ 0；成本 ×2（往返 16bps）时净收益 -1257.62% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.80%，95% 区间 [-1.21, -0.37] 整体为负——显著差于随机入场
+
+- 标的/周期/场所：ETHUSDT · 1h · futures · 单边费率 4bps · taker 成交 · 含资金费
+- 数据窗口：29347 根（2023-06-24 01:00 → 2026-10-28 19:00）

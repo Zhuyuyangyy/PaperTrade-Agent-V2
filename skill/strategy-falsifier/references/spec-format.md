@@ -9,6 +9,8 @@
   "name": "rsi-dip-btc-1h",
   "hypothesis": "BTC 1h RSI<30 后的均值回复",
   "source": "",
+  "candles_path": null,
+  "funding_path": null,
   "symbol": "BTCUSDT",
   "interval": "1h",
   "venue": "futures",
@@ -33,6 +35,8 @@
 | `name` | str | 必填 | 非空，否则 `name 不能为空` |
 | `hypothesis` | str | `""` | 待检验假设，写进报告头部 |
 | `source` | str | `""` | 策略来源，写进报告头部 |
+| `candles_path` | str \| null | `null` | spec 自带 K 线 CSV（列 `t,o,h,l,c`；兼容 `date/open/high/low/close/volume` 等常见列名，多余列忽略）。相对路径先按 spec 所在目录解析，再按 CWD。命令行 `--candles` 优先于本字段 |
+| `funding_path` | str \| null | `null` | spec 自带资金费 CSV（列 `t,rate`），仅 `funding=true` 时有意义；同 spec 目录解析规则 |
 | `symbol` | str | 必填 | 加载时 `.upper()`；非空 |
 | `interval` | str | 必填 | 如 `"1h"`；与行情缓存的 interval 对应 |
 | `venue` | str | `"spot"` | 必须 `"spot"` 或 `"futures"` |
@@ -128,3 +132,19 @@
 ```
 
 完整可运行示例（含全部可选块与中文注释）见 [../examples/demo_spec.json](../examples/demo_spec.json)。
+
+## 8. CLI 速查
+
+| 命令 | 作用 |
+|---|---|
+| `--demo` | 内置演示（有行情缓存跑 3 年全量，无缓存回退内置 5000 根 bundle） |
+| `--spec spec.json` | 单策略审计；spec 内相对路径按 spec 目录解析 |
+| `--compare a.json b.json ...` | 多策略对比（≥2 个 spec）：排名规则事前声明 + 对比矩阵 + 每个策略的裁决理由 |
+| `--candles klines.csv` | 命令行 K 线（优先于 spec.candles_path）；对比模式下对所有 spec 生效 |
+| `--signals sig.csv` | 命令行信号（优先于 spec.signals.path）；对 rule/random spec 传它是**硬错误**（防静默忽略） |
+| `--out report.md` / `report.html` | 输出格式由扩展名决定；`.html` 为自包含单文件（内联 CSS/SVG：权益曲线、成本条形图、网格热力图） |
+| `--json` | 额外输出同名 `.json`（单策略为 object，compare 为 array） |
+| `--list-market` | 列出本地行情缓存中的序列 |
+| `--market path.sqlite` | 指定行情缓存 |
+
+公开示例：`docs/compare-sample.md`（7 策略对比矩阵）、`docs/cases/external-*/`（三个外部真实策略的 spec 自带数据案例）。

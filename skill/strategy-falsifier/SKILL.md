@@ -33,6 +33,12 @@ python scripts/verify.py --demo
 
 # 审计自己的策略：spec JSON + 可选 K 线 CSV（列 t,o,h,l,c）
 python scripts/verify.py path/to/spec.json --candles path/to/klines.csv --out report.md --json
+
+# 多策略对比：我这几个变体哪个最不过拟合（排名规则事前声明，先于数字）
+python scripts/verify.py --compare a.json b.json c.json --out compare.md --json
+
+# HTML 报告：自包含单文件（内联 CSS/SVG，零外部请求），含权益曲线、成本条形图、参数网格热力图
+python scripts/verify.py path/to/spec.json --out report.html
 ```
 
 `scripts/verify.py` 自动优先调用包内 `engine/`；相对路径按你当前的目录解析。也可绕过包装直接 `PYTHONPATH=<本包目录> python -m engine --demo`。
@@ -43,12 +49,16 @@ python scripts/verify.py path/to/spec.json --candles path/to/klines.csv --out re
 # 在仓库根目录（research/verify/ 所在层）
 python -m research.verify --demo
 python -m research.verify --spec path/to/spec.json --candles path/to/klines.csv --out report.md --json
+python -m research.verify --compare a.json b.json --out compare.md     # 多策略对比
+python -m research.verify --demo --out report.html                     # HTML 报告
 python -m research.verify --list-market        # 本地行情缓存里有什么
 ```
 
 本机演示所用 Python：`C:/Users/联想/.workbuddy/binaries/python/versions/3.13.12/python.exe`（脚本默认用当前解释器 `sys.executable`，可用环境变量 `STRATEGY_FALSIFIER_PYTHON` 覆盖）。
 
-演示输出为一份 markdown 证伪报告：30 秒读懂摘要置顶，随后依次是回放、成本敏感性、障碍可达性、随机对照组、walk-forward、参数网格、事前证伪规则判定表、未建模事项、复现命令。
+演示输出为一份证伪报告（markdown 或 HTML）：30 秒读懂摘要置顶，随后依次是回放、成本敏感性、障碍可达性、随机对照组、walk-forward、参数网格、事前证伪规则判定表、未建模事项、复现命令。
+
+**spec 自带数据**：spec 里可声明 `candles_path`（K 线 CSV，列 t,o,h,l,c，兼容 date/open/high/low/close 等常见列名）、`funding_path`（资金费 CSV，列 t,rate）、`signals.path`（信号 CSV，列 t[,side]）、`exit.exit_signals_path`（退出信号 CSV，列 t[,reason]）——全部相对 spec 所在目录解析。一个 spec 文件夹就是一套可复现实验；公开案例 `docs/cases/external-*/` 即此结构，clone 后无需行情缓存即可复现。
 
 ## 六件仪器一览
 
@@ -72,6 +82,7 @@ spec 是一份 JSON：`name`、`symbol`、`interval`、`exit`、`signals` 为必
 - **`control_lift_ci_includes_zero` 实为“未证明更优即证伪”**：对照组差值 95% 区间跨 0（区分不开随机）**或整体为负（显著差于随机）**都触发；只有区间完全为正（证明更优）才不触发。
 - **最坏/最好口径按盈亏选，不按槽位选**：移动止盈触发时它占的是止损槽但是盈利退出——平局裁决按本侧实际盈亏取更差/更好，保证最坏口径永远不优于最好口径（这条规则来自一次外部复核抓到的倒挂 bug）。
 - **信号三种来源**：`kind` = `rule`（内置 `rsi_below`/`rsi_above`，Wilder RSI）、`csv`（外部信号文件）、`random`（对照组本身）。
+- **spec 可自带全部数据**：`candles_path`（K 线，列 t,o,h,l,c，兼容 date/open/high/low/close/volume 等常见列名）、`funding_path`（资金费，列 t,rate）、`signals.path`、`exit.exit_signals_path`——全部相对 spec 所在目录解析，一个文件夹就是一套可复现实验。`--candles` / `--signals` 命令行参数优先于 spec 内路径。
 - **可网格化的只有退出参数**：`take_profit`、`stop_loss`、`timeout_bars`、`trailing`，最多 2 轴、默认上限 64 格；动信号参数等于换了个实验。
 - 块存在即启用：写了 `walk_forward` / `param_grid` 块但没写 `enabled: false` 时默认启用。
 

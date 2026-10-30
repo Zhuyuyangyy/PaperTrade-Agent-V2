@@ -197,6 +197,15 @@ class Spec:
     falsify_if: dict = field(default_factory=dict)
     hypothesis: str = ""
     source: str = ""
+    # Optional: the spec's own candle CSV (columns t,o,h,l,c). Relative paths
+    # resolve against the spec's directory, like signals.path. This is what
+    # lets --compare mix strategies over DIFFERENT data sources: each spec
+    # carries its own series, and the comparison discloses the window of each.
+    candles_path: str | None = None
+    # Optional: the spec's own funding series (columns t,rate). Same resolution
+    # rules as candles_path; together they make a published case replay
+    # identically on a machine with no market cache.
+    funding_path: str | None = None
     # Free-text port notes for strategies ported from somewhere else: what was
     # replicated verbatim, what was approximated, what was NOT ported. Rendered
     # as section 0 so a regenerated report never loses them (hand-editing the
@@ -244,6 +253,8 @@ class Spec:
             "name": self.name,
             "hypothesis": self.hypothesis,
             "source": self.source,
+            "candles_path": self.candles_path,
+            "funding_path": self.funding_path,
             "port_notes": self.port_notes,
             "symbol": self.symbol,
             "interval": self.interval,
@@ -345,6 +356,8 @@ class Spec:
             falsify_if=dict(d.get("falsify_if") or {}),
             hypothesis=str(d.get("hypothesis", "")),
             source=str(d.get("source", "")),
+            candles_path=(str(d["candles_path"]) if d.get("candles_path") else None),
+            funding_path=(str(d["funding_path"]) if d.get("funding_path") else None),
             port_notes=str(d.get("port_notes", "")),
         )
         spec.validate()

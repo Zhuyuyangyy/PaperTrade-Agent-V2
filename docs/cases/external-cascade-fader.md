@@ -10,7 +10,7 @@
 
 > **裁决：INCONCLUSIVE** —— 样本量不足（全窗口、样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。
 
-- 生成时间：2026-10-30 18:40 · 引擎 verify/0.1
+- 生成时间：2026-10-30 21:57 · 引擎 verify/0.1
 - 标的：BTCUSDT 1h（futures）· 窗口 2023-06-24 01:00 → 2026-10-28 19:00（29,347 根 K 线）
 - 待检验假设：强制流（多头连环爆仓）把价格短暂压到公允价之下：1h K 线自开盘深跌 >=8% 且尾盘收回超 40%（非接飞刀）、成交量 > 30 日均量 2 倍（恐慌签名）时，次根开盘做多，捕捉短促超卖反弹。TP +3% / SL -8% / 48h 无条件超时。
 - 策略来源：extern-strategies/Master-Trader/ft_userdata/user_data/strategies/CascadeFaderV1.py（freqtrade IStrategy，2026-05-09 生成；config: CascadeFaderV1.json，spot，1h，limit 单，实验室口径 0.20% RT taker）
@@ -122,14 +122,15 @@
 本次报告由以下命令产生；在同一目录重跑，可复现同样数字：
 
 ```bash
-python -m research.verify --spec docs/cases/external-cascade-fader-spec.json --candles docs/cases/external-cascade-fader-candles.csv --signals docs/cases/external-cascade-fader-signals.csv --out docs/cases/external-cascade-fader.md --json
+python -m research.verify --spec docs/cases/external-cascade-fader-spec.json --out docs/cases/external-cascade-fader.md --json
 ```
 
 | 输入 | 路径 / 来源 |
 |---|---|
 | spec | docs/cases/external-cascade-fader-spec.json |
-| candles | docs/cases/external-cascade-fader-candles.csv |
-| signals | docs/cases/external-cascade-fader-signals.csv |
+| candles | external-cascade-fader-candles.csv（spec 自带，相对 spec 目录解析） |
+| signals | external-cascade-fader-signals.csv |
+| funding | external-cascade-fader-funding.csv（spec 自带资金费序列） |
 
 ---
 *verify/0.1 · 本报告由事前证伪规则驱动，规则先于数字写入 spec；未被证伪不等于被证实。*

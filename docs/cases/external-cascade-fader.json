@@ -3,6 +3,8 @@
     "name": "external-cascade-fader-btcusdt-1h",
     "hypothesis": "强制流（多头连环爆仓）把价格短暂压到公允价之下：1h K 线自开盘深跌 >=8% 且尾盘收回超 40%（非接飞刀）、成交量 > 30 日均量 2 倍（恐慌签名）时，次根开盘做多，捕捉短促超卖反弹。TP +3% / SL -8% / 48h 无条件超时。",
     "source": "extern-strategies/Master-Trader/ft_userdata/user_data/strategies/CascadeFaderV1.py（freqtrade IStrategy，2026-05-09 生成；config: CascadeFaderV1.json，spot，1h，limit 单，实验室口径 0.20% RT taker）",
+    "candles_path": "external-cascade-fader-candles.csv",
+    "funding_path": "external-cascade-fader-funding.csv",
     "port_notes": "原策略：CascadeFader（extern-strategies/Master-Trader，IvPalmer/Master-Trader），原文为 13-pair 现货组合。\n\n- 信号层·高保真：三条件逐字复刻（阈值 / 比较符 / 720h 回看窗口 / 360 最小周期 / 720 预热），未做任何参数调整。交叉验证：同一规则在本地缓存可得的 13 个白名单 pair 上共触发 232 个信号，与原文实验室口径的 N=162 同量级。\n- 退出层·基本保真：TP +3% / SL -8% / 48h 无条件超时与原文一致；唯一实质近似是 ROI 阶梯退化为固定 TP（引擎只支持单值止盈，偏保守方向见引擎披露）。\n- 成本层·一致或更保守：按原文实验室口径 0.20% 往返 taker；原策略为现货无资金费，本案例移植到永续序列后真实计付资金费（更保守）。\n- 结构层·未移植：单 pair、等权、无 max_open_trades=3、无 13-pair 组合层。本案例测量的是\"规则在 BTCUSDT 1h 上的表现\"，不能替代原 13-pair 组合的结论。\n- 样本量卡点（本案例裁决 INCONCLUSIVE 的原因）：8% 深跌阈值是为高波动 alt 币校准的，BTCUSDT 1h 上 3.3 年仅 3 根 K 线满足 (open-low)/open >= 8%；本地缓存缺白名单中 ARB/UNI/ZEC/HBAR 的任何 1h 数据，LTC/APT 仅现货、MATIC 现货且止于 2024-09，无法在原宇宙复现。",
     "symbol": "BTCUSDT",
     "interval": "1h",
@@ -1751,9 +1753,10 @@
     ]
   },
   "repro": {
-    "command": "python -m research.verify --spec docs/cases/external-cascade-fader-spec.json --candles docs/cases/external-cascade-fader-candles.csv --signals docs/cases/external-cascade-fader-signals.csv --out docs/cases/external-cascade-fader.md --json",
+    "command": "python -m research.verify --spec docs/cases/external-cascade-fader-spec.json --out docs/cases/external-cascade-fader.md --json",
     "spec": "docs/cases/external-cascade-fader-spec.json",
-    "candles": "docs/cases/external-cascade-fader-candles.csv",
-    "signals": "docs/cases/external-cascade-fader-signals.csv"
+    "candles": "external-cascade-fader-candles.csv（spec 自带，相对 spec 目录解析）",
+    "signals": "external-cascade-fader-signals.csv",
+    "funding": "external-cascade-fader-funding.csv（spec 自带资金费序列）"
   }
 }

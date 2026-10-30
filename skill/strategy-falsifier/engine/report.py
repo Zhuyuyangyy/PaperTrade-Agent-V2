@@ -170,6 +170,24 @@ def _plain_sentence(result: dict) -> str:
             "规则没问的账，引擎不替它吹。")
 
 
+def unmodeled_notes(result: dict) -> list[str]:
+    """The standing disclosures, computed from what this run actually enabled.
+    Shared by the markdown and HTML renderers so the two can never drift."""
+    wf = bool(result.get("walk_forward"))
+    pg = bool(result.get("param_grid"))
+    return [
+        "滑点与部分成交：只按费率+成交模型计成本，真实盘口的排队与部分成交不在模型内；",
+        ("样本外表现：walk-forward 已启用——最后一段按时间切出作样本外，但引擎无法验证策略参数是否曾用全窗口数据调优；"
+         "若调参时已看过最后一段，'样本外'名不副实。" if wf else
+         "样本外表现：walk-forward 未启用——所有数字都是窗口内的样本内结果；参数网格已启用，"
+         "但它测量的是参数脆弱性而非时间维度上的稳健性，且网格本身也在窗口内测量，不能替代样本外验证。" if pg else
+         "样本外表现：所有数字都是窗口内的样本内结果，walk-forward 与参数敏感性不在本引擎射程内；"),
+        "资金容量：等权回放，单笔金额对盘口的冲击（除费率外）未建模；",
+        "同时持仓相关性：信号逐一独立回放，重叠持仓的相关性风险不计入；",
+        "交易所/链路风险：宕机、API 限流、插针、宕机重启后的订单状态，一概不在模型内。",
+    ]
+
+
 def render(result: dict) -> str:
     spec = result["spec"]
     v = result["verdict"]
@@ -404,17 +422,7 @@ def render(result: dict) -> str:
     # -- disclosure ---------------------------------------------------------
     a("## 8. 未建模事项（阅读前必读）")
     a("")
-    for t in [
-        "滑点与部分成交：只按费率+成交模型计成本，真实盘口的排队与部分成交不在模型内；",
-        ("样本外表现：walk-forward 已启用——最后一段按时间切出作样本外，但引擎无法验证策略参数是否曾用全窗口数据调优；"
-         "若调参时已看过最后一段，'样本外'名不副实。" if wf else
-         "样本外表现：walk-forward 未启用——所有数字都是窗口内的样本内结果；参数网格已启用，"
-         "但它测量的是参数脆弱性而非时间维度上的稳健性，且网格本身也在窗口内测量，不能替代样本外验证。" if pg else
-         "样本外表现：所有数字都是窗口内的样本内结果，walk-forward 与参数敏感性不在本引擎射程内；"),
-        "资金容量：等权回放，单笔金额对盘口的冲击（除费率外）未建模；",
-        "同时持仓相关性：信号逐一独立回放，重叠持仓的相关性风险不计入；",
-        "交易所/链路风险：宕机、API 限流、插针、宕机重启后的订单状态，一概不在模型内。",
-    ]:
+    for t in unmodeled_notes(result):
         a(f"- {t}")
     a("")
 
@@ -434,6 +442,8 @@ def render(result: dict) -> str:
         a(f"| spec | {repro['spec']} |")
         a(f"| candles | {repro['candles']} |")
         a(f"| signals | {repro['signals']} |")
+        if repro.get("funding"):
+            a(f"| funding | {repro['funding']} |")
         a("")
 
     a("---")

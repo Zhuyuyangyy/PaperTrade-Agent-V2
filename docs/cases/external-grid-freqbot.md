@@ -10,7 +10,7 @@
 
 > **裁决：FALSIFIED** —— 1 条事前证伪规则被触发：策略 − 随机对照组 = +0.02%，95% 区间 [-0.40, +0.44] 跨 0，未能证明选择性
 
-- 生成时间：2026-10-30 20:18 · 引擎 verify/0.1
+- 生成时间：2026-10-30 21:57 · 引擎 verify/0.1
 - 标的：BTCUSDT 1h（futures）· 窗口 2023-06-24 01:00 → 2026-10-28 19:00（29,347 根 K 线）
 - 待检验假设：FreqBot GridTradingStrategy（作者默认参数）：布林中轴下方+RSI<45+EMA多头+布林带宽度1.5%-25%+ATR足够+量能确认时买入，网格退出信号+8%止损
 - 策略来源：extern-strategies/FreqBot freqbot_config/strategies/GridTradingStrategy.py（作者默认参数，未调优）
@@ -117,14 +117,15 @@
 本次报告由以下命令产生；在同一目录重跑，可复现同样数字：
 
 ```bash
-python -m research.verify --spec docs/cases/external-grid-freqbot/spec.json --candles docs/cases/external-grid-freqbot/candles.csv --out docs/cases/external-grid-freqbot.md --json
+python -m research.verify --spec docs/cases/external-grid-freqbot/spec.json --out docs/cases/external-grid-freqbot.md --json
 ```
 
 | 输入 | 路径 / 来源 |
 |---|---|
 | spec | docs/cases/external-grid-freqbot/spec.json |
-| candles | docs/cases/external-grid-freqbot/candles.csv |
+| candles | candles.csv（spec 自带，相对 spec 目录解析） |
 | signals | signals.csv |
+| funding | 不适用（spec.funding=false） |
 
 ---
 *verify/0.1 · 本报告由事前证伪规则驱动，规则先于数字写入 spec；未被证伪不等于被证实。*

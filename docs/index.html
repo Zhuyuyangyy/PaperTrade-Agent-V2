@@ -246,11 +246,32 @@
   </div>
 </section>
 
+<!-- ============ COMPARE ============ -->
+<section id="compare">
+  <div class="wrap">
+    <div class="kicker">Compare &amp; Deliver</div>
+    <h2><span class="no">05</span>我这几个变体，哪个最不过拟合？</h2>
+    <p class="sub">最高频的真实问题不是「我的策略好不好」，而是「我手上五个变体该信哪个」。<code>--compare</code> 一次跑完，排名规则<strong>事前声明印在矩阵上方</strong>：裁决档位优先（NOT_FALSIFIED &gt; INCONCLUSIVE &gt; FALSIFIED——档位即诚实度），同档内按对照组差值 CI 下界、样本外净收益、样本外网格正格率、成交数依次排序。下面是 7 个策略的真实矩阵（<a href="compare-sample.md">完整版</a>）：</p>
+    <table>
+      <thead><tr><th>#</th><th>策略</th><th>裁决</th><th class="num">最坏净</th><th>对照组 CI</th><th>样本外净</th></tr></thead>
+      <tbody>
+        <tr><td class="num">1</td><td>CascadeFader（外部）</td><td><span class="pill pill-warn">INCONCLUSIVE</span></td><td class="num">+3.23%</td><td>样本不足（3 笔）</td><td class="num">+1.48%</td></tr>
+        <tr><td class="num">2</td><td>FundingRateEnhanced（外部）</td><td><span class="pill pill-kill">FALSIFIED</span></td><td class="num">-27.22%</td><td><span class="pill pill-warn">unproven</span></td><td class="num">n/a</td></tr>
+        <tr><td class="num">3</td><td>RSI 追涨 BTC</td><td><span class="pill pill-kill">FALSIFIED</span></td><td class="num">+34.35%</td><td><span class="pill pill-warn">unproven</span> CI 跨 0</td><td class="num">n/a</td></tr>
+        <tr><td class="num">4</td><td>GridTradingStrategy（外部）</td><td><span class="pill pill-kill">FALSIFIED</span></td><td class="num">+61.06%</td><td><span class="pill pill-warn">unproven</span></td><td class="num">+50.86%</td></tr>
+        <tr><td class="num">5-7</td><td>RSI 抄底 BTC / ETH / maker</td><td><span class="pill pill-kill">FALSIFIED</span></td><td class="num">-505 ~ -1144%</td><td><span class="pill pill-kill">refuted</span></td><td class="num">n/a</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><strong>报告不止 markdown：</strong><code>--out report.html</code> 输出自包含单文件（内联 CSS/SVG，零外部请求）——逐笔权益曲线（最坏 vs 最好口径并列）、成本敏感性条形图、参数网格热力图。可以直接发给合伙人、上级或自己存档。</div>
+    <div class="note"><strong>spec 自带数据：</strong><code>candles_path</code> / <code>funding_path</code> / <code>signals.path</code> / <code>exit.exit_signals_path</code> 全部相对 spec 目录解析——一个 spec 文件夹就是一套可复现实验，公开案例 clone 后无需行情缓存即可复现。</div>
+  </div>
+</section>
+
 <!-- ============ SKILL ============ -->
 <section id="skill">
   <div class="wrap">
     <div class="kicker">Skill Integration</div>
-    <h2><span class="no">05</span>作为 Skill 集成：输入一份 spec，输出一份证伪报告</h2>
+    <h2><span class="no">06</span>作为 Skill 集成：输入一份 spec，输出一份证伪报告</h2>
     <p class="sub">整台引擎是一条命令、一个 JSON 契约——可以被 <strong>agent、工作流、CI 直接调用</strong>，没有人在回路，也能拿到同一台仪器的裁决。证伪规则先于数字写进 spec，跑完不分好坏全部输出。</p>
     <div class="demo-grid">
       <div class="demo-box">
@@ -296,7 +317,7 @@
 <section id="proof">
   <div class="wrap">
     <div class="kicker">Proof</div>
-    <h2><span class="no">06</span>社会证明：这些数字，任何人都可以复跑</h2>
+    <h2><span class="no">07</span>社会证明：这些数字，任何人都可以复跑</h2>
     <div class="stats">
       <div class="stat"><div class="v">297</div><div class="l">个自动化测试守着规则——事后不许改规则，不许挑好看的说</div></div>
       <div class="stat"><div class="v">6</div><div class="l">台仪器，一个裁决：回放 / 成本 / 障碍 / 对照 / walk-forward / 参数网格</div></div>
@@ -311,7 +332,7 @@
 <section id="pricing">
   <div class="wrap">
     <div class="kicker">Pricing</div>
-    <h2><span class="no">07</span>先看样例，再决定要不要付费</h2>
+    <h2><span class="no">08</span>先看样例，再决定要不要付费</h2>
     <div class="price-grid">
       <div class="price">
         <div class="tier">First 10 Free · 主推入口</div>
@@ -356,7 +377,7 @@
 <section id="contact">
   <div class="wrap">
     <div class="kicker">Boundaries &amp; Contact</div>
-    <h2><span class="no">08</span>边界先于生意</h2>
+    <h2><span class="no">09</span>边界先于生意</h2>
     <ul class="plain">
       <li>不荐股、不带单、不代管资金、不承诺收益——只回答一个问题：<strong>你的曲线是不是幻觉</strong>。</li>
       <li>不接任何需要访问客户交易所 API key 的委托。</li>

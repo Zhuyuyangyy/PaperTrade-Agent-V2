@@ -73,6 +73,14 @@ DEMO_SPEC = {
 def _load_candles(args, spec: Spec) -> list[dict]:
     if args.candles:
         return data.load_candles_csv(args.candles)
+    # The spec's own candle file (relative to the spec's directory) travels
+    # with the spec folder -- this is how --compare mixes strategies over
+    # different data sources, each disclosed in the comparison.
+    if spec.candles_path:
+        p = _resolve_against_spec(_spec_path[0], spec.candles_path)
+        if p.is_file():
+            return data.load_candles_csv(p)
+        raise data.CandleError(f"spec 声明的 candles_path 不存在: {p}")
     market = Path(args.market) if args.market else DEFAULT_MARKET
     if market is not None and market.is_file():
         return data.load_candles_market(market, spec.symbol, spec.interval, spec.venue)
@@ -183,6 +191,8 @@ def _repro_info(args, spec: Spec, raw_argv: list[str]) -> dict:
         spec_src = str(args.spec)
     if args.candles:
         candles_src = str(args.candles)
+    elif spec.candles_path:
+        candles_src = f"{spec.candles_path}（spec 自带，相对 spec 目录解析）"
     elif has_cache:
         candles_src = f"{market_path}（本地行情缓存 sqlite）"
     elif args.demo and BUNDLED_CANDLES.is_file():
@@ -198,7 +208,16 @@ def _repro_info(args, spec: Spec, raw_argv: list[str]) -> dict:
     else:
         path = args.signals or spec.signals.path
         sig_src = str(path) if path else "未提供（signals.kind=csv 但无路径）"
-    return {"command": cmd, "spec": spec_src, "candles": candles_src, "signals": sig_src}
+    if spec.funding_path:
+        funding_src = f"{spec.funding_path}（spec 自带资金费序列）"
+    elif spec.funding and not (args.candles or spec.candles_path) and market_path is not None:
+        funding_src = f"{market_path}（本地行情缓存 funding 表）"
+    elif spec.funding:
+        funding_src = "无序列，按 0 计"
+    else:
+        funding_src = "不适用（spec.funding=false）"
+    return {"command": cmd, "spec": spec_src, "candles": candles_src, "signals": sig_src,
+            "funding": funding_src}
 
 
 def _print_footer_promo() -> None:
@@ -211,18 +230,74 @@ def _print_footer_promo() -> None:
     print("-" * 60)
 
 
+def _run_one(args, spec_path: str | None, raw_argv: list[str]) -> dict:
+    """Run the full battery for ONE spec and return the result dict.
+
+    Shared by the single-strategy path and --compare (which calls it once per
+    spec). spec_path=None means the built-in demo.
+    """
+    market_path = Path(args.market) if args.market else DEFAULT_MARKET
+    if args.demo and spec_path is None:
+        # With a cache the demo runs the full 3-year series; without one it
+        # falls back to the committed bundle (no funding series ships with
+        # it, so the bundled spec declares funding: false and says so).
+        if (market_path is not None and market_path.is_file()) or not BUNDLED_SPEC.is_file():
+            spec = Spec.from_dict(DEMO_SPEC)
+        else:
+            spec = Spec.load(BUNDLED_SPEC)
+    else:
+        spec = Spec.load(spec_path)
+        _spec_path[0] = spec_path
+    candles = _load_candles(args, spec)
+    entries = _build_entries(args, spec, candles)
+    exit_signals = None
+    if spec.exit.exit_signals_path:
+        exit_signals = _load_exit_signals(spec, candles)
+    funding = None
+    # Funding resolution: the spec's own funding file first (it travels with
+    # the spec), then the cache -- but only when the candles ALSO come from
+    # that cache, so rates never get applied across mismatched windows.
+    if spec.funding_path:
+        fp = _resolve_against_spec(_spec_path[0], spec.funding_path)
+        if fp.is_file():
+            funding = data.load_funding_csv(fp)
+        else:
+            raise data.CandleError(f"spec 声明的 funding_path 不存在: {fp}")
+    elif spec.funding and not (args.candles or spec.candles_path) and market_path is not None:
+        funding = data.load_funding(market_path, spec.symbol)
+        if not funding:
+            print("[提示] 缓存中没有该 symbol 的资金费数据，按 0 处理", file=sys.stderr)
+    from . import verify as run_verify
+
+    result = run_verify(spec, candles, entries, funding=funding, exit_signals=exit_signals)
+    result["repro"] = _repro_info(args, spec, raw_argv)
+    return result
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="research.verify", description="策略证伪引擎：path-aware 回放 + 成本敏感性 + 障碍可达性 + 随机对照组")
     ap.add_argument("--spec", help="策略 spec JSON 路径")
     ap.add_argument("--demo", action="store_true", help="运行内置演示（BTC 1h RSI 规则，数据取自本地行情缓存）")
-    ap.add_argument("--candles", help="K 线 CSV（列 t,o,h,l,c），优先于行情缓存")
-    ap.add_argument("--signals", help="信号 CSV（列 t[,side]），kind=csv 时使用")
+    ap.add_argument("--compare", nargs="+", metavar="SPEC",
+                    help="对比模式：2 个以上 spec 一次跑，输出多策略对比矩阵（排名规则事前声明）")
+    ap.add_argument("--candles", help="K 线 CSV（列 t,o,h,l,c），优先于行情缓存；对比模式下所有策略共用")
+    ap.add_argument("--signals", help="信号 CSV（列 t[,side]），kind=csv 时使用；对比模式下对所有 spec 生效")
     ap.add_argument("--market", help=f"行情缓存 sqlite（默认 {DEFAULT_MARKET}）")
-    ap.add_argument("--out", help="报告输出路径（markdown）；缺省打印到 stdout")
+    ap.add_argument("--out", help="报告输出路径（markdown；.html 输出 HTML 版）；缺省打印到 stdout")
     ap.add_argument("--json", action="store_true", help="额外输出机器可读 JSON（与 --out 同名 .json）")
     ap.add_argument("--list-market", action="store_true", help="列出本地行情缓存内容后退出")
     args = ap.parse_args(argv)
     raw_argv = list(argv) if argv is not None else sys.argv[1:]
+
+    if args.compare:
+        if args.demo:
+            ap.error("--compare 与 --demo 不能同用（对比需要显式 spec）")
+        if args.spec:
+            ap.error("--compare 与 --spec 不能同用（把全部 spec 都给 --compare）")
+        if len(args.compare) < 2:
+            ap.error("--compare 至少需要 2 个 spec；单策略请用 --spec")
+    elif not args.spec and not args.demo:
+        ap.error("必须提供 --spec 或 --demo（或用 --list-market 查看缓存）")
 
     market = Path(args.market) if args.market else DEFAULT_MARKET
     if args.list_market:
@@ -244,52 +319,45 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     try:
-        market_path = Path(args.market) if args.market else DEFAULT_MARKET
-        if args.demo:
-            # With a cache the demo runs the full 3-year series; without one it
-            # falls back to the committed bundle (no funding series ships with
-            # it, so the bundled spec declares funding: false and says so).
-            if (market_path is not None and market_path.is_file()) or not BUNDLED_SPEC.is_file():
-                spec = Spec.from_dict(DEMO_SPEC)
-            else:
-                spec = Spec.load(BUNDLED_SPEC)
-        elif args.spec:
-            spec = Spec.load(args.spec)
-            _spec_path[0] = args.spec
-        else:
-            ap.error("必须提供 --spec 或 --demo（或用 --list-market 查看缓存）")
-        candles = _load_candles(args, spec)
-        entries = _build_entries(args, spec, candles)
-        exit_signals = None
-        if spec.exit.exit_signals_path:
-            exit_signals = _load_exit_signals(spec, candles)
-        funding = None
-        if spec.funding and market is not None:
-            funding = data.load_funding(market, spec.symbol)
-            if not funding and not args.candles:
-                print("[提示] 缓存中没有该 symbol 的资金费数据，按 0 处理", file=sys.stderr)
-        from . import verify as run_verify
+        if args.compare:
+            from . import compare as compare_mod
 
-        result = run_verify(spec, candles, entries, funding=funding, exit_signals=exit_signals)
-        result["repro"] = _repro_info(args, spec, raw_argv)
+            results = []
+            for sp in args.compare:
+                _spec_path[0] = None  # each spec resolves its own relative paths
+                results.append(_run_one(args, sp, raw_argv))
+            md = compare_mod.render_comparison(results)
+            payload = results
+        else:
+            result = _run_one(args, args.spec, raw_argv)
+            md = report.render(result)
+            payload = result
     except (SpecError, data.CandleError, ValueError) as exc:
         print(f"[输入错误] {exc}", file=sys.stderr)
         return 2
 
-    md = report.render(result)
     if args.out:
         out = Path(args.out)
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(md, encoding="utf-8")
-        print(f"报告已写入 {out}")
+        if out.suffix.lower() == ".html":
+            from . import html_report
+
+            if args.compare:
+                html_report.render_comparison_html_to(results, out)
+            else:
+                html_report.render_to(result, out)
+            print(f"HTML 报告已写入 {out}")
+        else:
+            out.write_text(md, encoding="utf-8")
+            print(f"报告已写入 {out}")
         if args.json:
             jpath = out.with_suffix(".json")
-            jpath.write_text(report.render_json(result), encoding="utf-8")
+            jpath.write_text(report.render_json(payload), encoding="utf-8")
             print(f"JSON 已写入 {jpath}")
     else:
         print(md)
         if args.json:
-            print(report.render_json(result))
+            print(report.render_json(payload))
     _print_footer_promo()
     return 0
 

@@ -10,7 +10,7 @@
 
 > **裁决：FALSIFIED** —— 3 条事前证伪规则被触发：最坏优先口径净收益 -27.22% ≤ 0；成本 ×2（往返 20bps）时净收益 -59.72% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.06%，95% 区间 [-0.05, +0.17] 跨 0，未能证明选择性
 
-- 生成时间：2026-10-30 18:41 · 引擎 verify/0.1
+- 生成时间：2026-10-30 21:57 · 引擎 verify/0.1
 - 标的：BTCUSDT 1h（futures）· 窗口 2023-06-24 01:00 → 2026-10-28 19:00（29,347 根 K 线）
 - 待检验假设：资金费率是结构性现金流而非零和价差：BTCUSDT 永续资金费率连续 >=3 个 8h 周期为正且高于近 24 个周期均值（费率上升趋势）、技术面仅在 30<RSI(14)<70、ADX(14)<40、ATR%(14)<5% 的温和区间内不过滤方向时做空，收取资金费；TP +0.3% / 硬止损 -1.5% / 盈利 0.5% 后 0.2% 回撤追踪 / 48h 无条件超时。原策略 15m，本案例因缓存无 15m futures 改用 1h futures（周期变更影响见报告移植说明）。
 - 策略来源：extern-strategies/FreqBot user_data/strategies/FundingRateEnhancedStrategy.py（realm520/FreqBot，freqtrade IStrategy，15m，USDT 本位永续，作者默认参数；旧审计线 research/audit/strategies/funding_rate.py 曾以 12 币 15m spot 行情 + perp 资金费审计，2095 信号，maker 真实成交 PF 1.00）
@@ -110,14 +110,15 @@
 本次报告由以下命令产生；在同一目录重跑，可复现同样数字：
 
 ```bash
-python -m research.verify --spec docs/cases/external-freqbot-fundingrate-spec.json --candles docs/cases/external-freqbot-fundingrate-candles.csv --signals docs/cases/external-freqbot-fundingrate-signals.csv --out docs/cases/external-freqbot-fundingrate.md --json
+python -m research.verify --spec docs/cases/external-freqbot-fundingrate-spec.json --out docs/cases/external-freqbot-fundingrate.md --json
 ```
 
 | 输入 | 路径 / 来源 |
 |---|---|
 | spec | docs/cases/external-freqbot-fundingrate-spec.json |
-| candles | docs/cases/external-freqbot-fundingrate-candles.csv |
-| signals | docs/cases/external-freqbot-fundingrate-signals.csv |
+| candles | external-freqbot-fundingrate-candles.csv（spec 自带，相对 spec 目录解析） |
+| signals | external-freqbot-fundingrate-signals.csv |
+| funding | external-freqbot-fundingrate-funding.csv（spec 自带资金费序列） |
 
 ---
 *verify/0.1 · 本报告由事前证伪规则驱动，规则先于数字写入 spec；未被证伪不等于被证实。*

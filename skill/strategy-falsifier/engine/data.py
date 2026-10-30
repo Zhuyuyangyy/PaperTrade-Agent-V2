@@ -153,6 +153,31 @@ def load_candles_market(db_path: str | Path, symbol: str, interval: str, venue: 
     ]
 
 
+def load_funding_csv(path: str | Path) -> list[dict]:
+    """Funding series from a CSV (columns t,rate), or [] when unusable.
+
+    Lets a spec carry its own funding series so a published case replays
+    identically on a machine with no market cache.
+    """
+    p = Path(path)
+    if not p.is_file():
+        raise CandleError(f"资金费文件不存在: {p}")
+    out: list[dict] = []
+    with p.open(newline="", encoding="utf-8-sig") as fh:
+        reader = csv.DictReader(fh)
+        if reader.fieldnames is None or "t" not in reader.fieldnames or "rate" not in reader.fieldnames:
+            raise CandleError(f"资金费 CSV 需要列 t,rate，实际得到 {reader.fieldnames}")
+        for i, row in enumerate(reader, start=2):
+            try:
+                out.append({"t": _to_ms(row["t"]), "rate": float(row["rate"])})
+            except (ValueError, KeyError):
+                raise CandleError(f"资金费 CSV 第 {i} 行无法解析: {row}") from None
+    if not out:
+        raise CandleError(f"资金费 CSV 没有数据行: {p}")
+    out.sort(key=lambda r: r["t"])
+    return out
+
+
 def load_funding(db_path: str | Path, symbol: str) -> list[dict] | None:
     """Funding series for a symbol, or None when the cache has none.
 

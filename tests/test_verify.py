@@ -1160,6 +1160,274 @@ class TestCustomerJourneyFixes:
             assert reason.count("样本外段：") <= 1, "scope 前缀重复了"
 
 
+class TestCompare:
+    """Multi-strategy comparison mode: the declared ranking rule, the matrix,
+    and the CLI guards that keep it honest."""
+
+    def _spec_file(self, tmp_path: Path, name: str, threshold: int) -> Path:
+        d = dict(BASE_SPEC)
+        d["name"] = name
+        d["funding"] = False
+        d["signals"] = {"kind": "rule", "rule": "rsi_below", "period": 14, "threshold": threshold}
+        p = tmp_path / f"{name}.json"
+        p.write_text(json.dumps(d), encoding="utf-8")
+        return p
+
+    def _candles_file(self, tmp_path: Path, n: int = 1500) -> Path:
+        p = tmp_path / "candles.csv"
+        write_csv(p, make_candles(n, seed=11), ["t", "o", "h", "l", "c", "v"])
+        return p
+
+    def test_compare_needs_two_specs(self):
+        from research.verify.__main__ import main
+
+        with pytest.raises(SystemExit):
+            main(["--compare", "only-one.json"])
+
+    def test_compare_rejects_demo_and_spec(self):
+        from research.verify.__main__ import main
+
+        with pytest.raises(SystemExit):
+            main(["--compare", "a.json", "b.json", "--demo"])
+        with pytest.raises(SystemExit):
+            main(["--compare", "a.json", "b.json", "--spec", "c.json"])
+
+    def test_rank_key_tier_beats_numbers(self):
+        """A FALSIFIED strategy with a beautiful book still ranks BELOW an
+        INCONCLUSIVE one with a poor book: the tier IS the honesty order."""
+        from research.verify.compare import rank_key
+
+        good_book = {
+            "verdict": {"outcome": "FALSIFIED"},
+            "control": {"diff_ci": [0.5, 0.9], "selectivity": "proven"},
+            "walk_forward": {"out_sample": {"runs": {"worst_case": {"stats": {"sum_pct": 50.0}}}}},
+            "runs": {"worst_case": {"stats": {"sum_pct": 50.0, "n": 100}},
+                     "best_case": {"stats": {"sum_pct": 50.0}}},
+        }
+        poor_book = {
+            "verdict": {"outcome": "INCONCLUSIVE"},
+            "control": {"diff_ci": [-0.2, 0.1], "selectivity": "unproven"},
+            "walk_forward": {"out_sample": {"runs": {"worst_case": {"stats": {"sum_pct": -5.0}}}}},
+            "runs": {"worst_case": {"stats": {"sum_pct": -5.0, "n": 100}},
+                     "best_case": {"stats": {"sum_pct": -5.0}}},
+        }
+        assert rank_key(poor_book) > rank_key(good_book)
+
+    def test_render_states_the_rule_before_the_numbers(self):
+        from research.verify.compare import render_comparison
+
+        def res(name, outcome, ci):
+            return {
+                "spec": {"name": name, "symbol": "TESTUSDT", "interval": "1h",
+                         "venue": "futures", "fee_rate": 0.0004, "fill_model": "taker",
+                         "funding": False},
+                "window": {"from": "2023-01-01 00:00", "to": "2023-06-01 00:00", "bars": 3600},
+                "verdict": {"outcome": outcome, "reason": f"{name} 的理由", "checks": []},
+                "runs": {"worst_case": {"stats": {"sum_pct": 1.0, "n": 42}},
+                         "best_case": {"stats": {"sum_pct": 1.0, "n": 42}}},
+                "control": {"diff_ci": ci, "selectivity": "unproven", "diff_pct": 0.0},
+                "walk_forward": {"out_sample": {"runs": {"worst_case": {"stats": {"sum_pct": -1.0}}}}},
+            }
+
+        md = render_comparison([res("alpha", "INCONCLUSIVE", [-0.1, 0.2]),
+                                res("beta", "FALSIFIED", [-0.4, -0.1])])
+        # rule section precedes the matrix
+        assert md.index("排名规则") < md.index("对比矩阵")
+        # the matrix lists both strategies, ranked by tier (alpha first)
+        assert md.index("alpha") < md.index("beta")
+        # each strategy's verdict reason is quoted, with provenance
+        assert "alpha 的理由" in md and "beta 的理由" in md
+        assert "TESTUSDT" in md and "3600 根" in md
+
+    def test_end_to_end(self, tmp_path):
+        from research.verify.__main__ import main
+
+        a = self._spec_file(tmp_path, "cmp-alpha", 30)
+        b = self._spec_file(tmp_path, "cmp-beta", 45)
+        candles = self._candles_file(tmp_path)
+        out = tmp_path / "cmp.md"
+        rc = main(["--compare", str(a), str(b),
+                   "--candles", str(candles), "--out", str(out), "--json"])
+        assert rc == 0
+        md = out.read_text(encoding="utf-8")
+        assert "多策略对比" in md and "cmp-alpha" in md and "cmp-beta" in md
+        # --json in compare mode is a LIST (one entry per strategy); single
+        # mode stays a dict -- the two must never be confused downstream
+        payload = json.loads((tmp_path / "cmp.json").read_text(encoding="utf-8"))
+        assert isinstance(payload, list) and len(payload) == 2
+
+    def test_single_spec_json_stays_a_dict(self, tmp_path):
+        from research.verify.__main__ import main
+
+        a = self._spec_file(tmp_path, "solo", 30)
+        candles = self._candles_file(tmp_path)
+        out = tmp_path / "solo.md"
+        rc = main(["--spec", str(a), "--candles", str(candles),
+                   "--out", str(out), "--json"])
+        assert rc == 0
+        payload = json.loads((tmp_path / "solo.json").read_text(encoding="utf-8"))
+        assert isinstance(payload, dict) and "verdict" in payload
+
+
+class TestHtmlReport:
+    """The HTML renderer: self-contained, every markdown section present,
+    charts drawn from real numbers, and zero drift from the markdown text."""
+
+    def _result(self):
+        candles = make_candles(1500, seed=11)
+        spec = Spec.from_dict(BASE_SPEC)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        result = verify(spec, candles, entries)
+        # the CLI injects repro; a direct verify() call does not. Add a
+        # realistic one so the report's section 9 is exercised too.
+        result["repro"] = {"command": "python -m research.verify --spec s.json",
+                           "spec": "s.json", "candles": "c.csv", "signals": "rule:rsi_below"}
+        return result
+
+    def test_structure_and_all_sections(self):
+        from research.verify.html_report import render_html
+
+        html = render_html(self._result())
+        assert html.startswith("<!DOCTYPE html>")
+        assert 'class="badge' in html
+        for section in ("1. Path-aware 回放", "2. 成本敏感性", "3. 障碍可达性",
+                        "4. 随机入场对照组", "5. Walk-forward", "6. 参数敏感性网格",
+                        "7. 事前证伪规则判定", "8. 未建模事项", "9. 复现命令"):
+            assert section in html, section
+
+    def test_self_contained_no_external_resources(self):
+        from research.verify.html_report import render_html
+
+        html = render_html(self._result())
+        # no stylesheets, scripts, fonts, or images fetched from elsewhere
+        for bad in ("<script", "<link", "@import", "src=\"http", "href=\"http://fonts"):
+            assert bad not in html, bad
+        # the only external hrefs are the footer's two deliberate links
+        import re
+
+        hrefs = re.findall(r'href="(http[^"]+)"', html)
+        assert set(hrefs) <= {
+            "https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/",
+            "https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2",
+        }
+
+    def test_charts_are_drawn_from_real_numbers(self):
+        from research.verify.html_report import render_html
+
+        html = render_html(self._result())
+        # equity curves: two polylines (worst + best), each with points
+        assert html.count("<polyline") >= 2
+        assert "points=" in html
+        # cost bars: one rect per fee multiple
+        assert html.count("<rect") >= 3
+        # grid heatmap: cells carry their net% as text, not colour alone
+        assert "%</text>" in html
+
+    def test_html_escaping(self):
+        from research.verify.html_report import render_html
+
+        result = self._result()
+        result["spec"]["name"] = "<script>alert(1)</script>"
+        html = render_html(result)
+        assert "<script>alert(1)</script>" not in html
+        assert "&lt;script&gt;" in html
+
+    def test_no_drift_from_markdown_disclosures(self):
+        """The markdown and HTML renderers share unmodeled_notes(); if that
+        ever regresses to two hardcoded lists, this test fails."""
+        from research.verify import report
+        from research.verify.html_report import render_html
+
+        html = render_html(self._result())
+        for note in report.unmodeled_notes(self._result()):
+            assert note in html
+
+    def test_comparison_page(self):
+        from research.verify.compare import render_comparison
+        from research.verify.html_report import render_comparison_html
+
+        r1 = self._result()
+        r2 = self._result()
+        r2["spec"]["name"] = "second-strategy"
+        r2["verdict"]["outcome"] = "NOT_FALSIFIED"
+        page = render_comparison_html([r1, r2])
+        assert page.index("排名规则") < page.index("对比矩阵")
+        assert page.count("<details") == 2
+        assert "second-strategy" in page
+        # and the markdown comparison still renders (both formats, same data)
+        md = render_comparison([r1, r2])
+        assert "second-strategy" in md and "排名规则" in md
+
+    def test_out_html_extension_selects_html(self, tmp_path):
+        from research.verify.__main__ import main
+
+        a = tmp_path / "s.json"
+        a.write_text(json.dumps(BASE_SPEC), encoding="utf-8")
+        candles = tmp_path / "c.csv"
+        write_csv(candles, make_candles(1500, seed=11), ["t", "o", "h", "l", "c", "v"])
+        out = tmp_path / "r.html"
+        rc = main(["--spec", str(a), "--candles", str(candles), "--out", str(out)])
+        assert rc == 0
+        text = out.read_text(encoding="utf-8")
+        assert text.startswith("<!DOCTYPE html>")
+        assert "<svg" in text
+
+
+class TestSpecCarriedData:
+    """A spec that carries its own candles/funding files travels as a folder
+    and replays identically on a machine with no market cache."""
+
+    def test_spec_candles_path_resolves_against_spec_dir(self, tmp_path):
+        from research.verify.__main__ import main
+
+        d = dict(BASE_SPEC)
+        d["funding"] = False
+        d["candles_path"] = "own_candles.csv"
+        spec_p = tmp_path / "spec.json"
+        spec_p.write_text(json.dumps(d), encoding="utf-8")
+        write_csv(tmp_path / "own_candles.csv", make_candles(1200, seed=5), ["t", "o", "h", "l", "c", "v"])
+        out = tmp_path / "r.md"
+        rc = main(["--spec", str(spec_p), "--out", str(out)])
+        assert rc == 0
+        text = out.read_text(encoding="utf-8")
+        assert "own_candles.csv（spec 自带，相对 spec 目录解析）" in text
+
+    def test_spec_funding_path_is_applied(self, tmp_path):
+        import csv
+
+        from research.verify.__main__ import main
+
+        d = dict(BASE_SPEC)
+        d["venue"] = "futures"
+        d["candles_path"] = "own_candles.csv"
+        d["funding"] = True
+        d["funding_path"] = "own_funding.csv"
+        spec_p = tmp_path / "spec.json"
+        spec_p.write_text(json.dumps(d), encoding="utf-8")
+        write_csv(tmp_path / "own_candles.csv", make_candles(1200, seed=5), ["t", "o", "h", "l", "c", "v"])
+        candles = make_candles(1200, seed=5)
+        with (tmp_path / "own_funding.csv").open("w", newline="", encoding="utf-8") as fh:
+            w = csv.writer(fh)
+            w.writerow(["t", "rate"])
+            for c in candles[::8]:
+                w.writerow([c["t"], 0.0001])
+        out = tmp_path / "r.md"
+        rc = main(["--spec", str(spec_p), "--out", str(out), "--json"])
+        assert rc == 0
+        payload = json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))
+        assert payload["funding_applied"] is True
+        text = out.read_text(encoding="utf-8")
+        assert "own_funding.csv（spec 自带资金费序列）" in text
+
+    def test_funding_csv_bad_row_is_an_error(self, tmp_path):
+        from research.verify import data
+
+        p = tmp_path / "bad.csv"
+        p.write_text("t,rate\n1,0.0001\nnot-a-number,0.0002\n", encoding="utf-8")
+        with pytest.raises(data.CandleError):
+            data.load_funding_csv(p)
+
+
 def _exit_rule():
     from research.audit.pathsim import Exit
 
