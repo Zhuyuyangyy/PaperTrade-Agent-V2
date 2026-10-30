@@ -39,8 +39,8 @@ def _oos_net(result: dict) -> float | None:
 
 def _oos_grid_ratio(result: dict) -> float | None:
     wf = result.get("walk_forward") or {}
-    grid = wf.get("out_sample_grid") or {}
-    return grid.get("positive_ratio")
+    grid_scope = wf.get("out_sample_grid") or {}
+    return grid_scope.get("positive_ratio")
 
 
 def _grid_ratio(result: dict) -> float | None:
