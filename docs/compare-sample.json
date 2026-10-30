@@ -3058,6 +3058,19 @@
     },
     "walk_forward": null,
     "param_grid": null,
+    "diagnosis": {
+      "primary": "randomness",
+      "primary_label": "随机性杀死",
+      "tags": [],
+      "tag_labels": [],
+      "evidence": [
+        "对照组：策略 − 随机 = -0.37%/笔，95% 区间 [-0.70%, -0.03%] 整体为负——入场逻辑显著差于随机"
+      ],
+      "prescriptions": [
+        "把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声",
+        "账面 -505.65% 且打不过随机：回到假设阶段——这个 edge 的市场学基础是什么（谁在犯错、错误定价为什么持续）？写不出来就不要回测了"
+      ]
+    },
     "repro": {
       "command": "python -m research.verify --compare research/verify/samples/cases/case1_rsi_dip_btc.json research/verify/samples/cases/case2_rsi_breakout_btc.json research/verify/samples/cases/case3_rsi_dip_eth.json research/verify/samples/cases/case4_rsi_dip_btc_maker.json docs/cases/external-cascade-fader-spec.json docs/cases/external-freqbot-fundingrate-spec.json docs/cases/external-grid-freqbot/spec.json --out docs/compare-sample.md --json",
       "spec": "None",
@@ -6775,6 +6788,25 @@
     },
     "walk_forward": null,
     "param_grid": null,
+    "diagnosis": {
+      "primary": "randomness",
+      "primary_label": "随机性杀死",
+      "tags": [
+        "cost"
+      ],
+      "tag_labels": [
+        "成本杀死"
+      ],
+      "evidence": [
+        "对照组：策略 − 随机 = +0.03%/笔，95% 区间 [-0.27%, +0.35%] 跨 0——无法证明入场逻辑优于随机",
+        "账面净收益 +34.35% 是真实的，但它与随机入场的差异在统计上不存在：赚的是 beta，包装成 alpha"
+      ],
+      "prescriptions": [
+        "把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声",
+        "承认定位：这份账面（+34.35%）大概率是 beta。若目标就是赚 beta，该做的是定投/资产配置工具，不是策略引擎——先把目的想清楚，再决定要不要继续",
+        "附带问题：成本翻倍即亏损（×2 净 -96.69%）——即使主死因修好了，toll 预算仍是硬约束"
+      ]
+    },
     "repro": {
       "command": "python -m research.verify --compare research/verify/samples/cases/case1_rsi_dip_btc.json research/verify/samples/cases/case2_rsi_breakout_btc.json research/verify/samples/cases/case3_rsi_dip_eth.json research/verify/samples/cases/case4_rsi_dip_btc_maker.json docs/cases/external-cascade-fader-spec.json docs/cases/external-freqbot-fundingrate-spec.json docs/cases/external-grid-freqbot/spec.json --out docs/compare-sample.md --json",
       "spec": "None",
@@ -10060,6 +10092,19 @@
     },
     "walk_forward": null,
     "param_grid": null,
+    "diagnosis": {
+      "primary": "randomness",
+      "primary_label": "随机性杀死",
+      "tags": [],
+      "tag_labels": [],
+      "evidence": [
+        "对照组：策略 − 随机 = -0.80%/笔，95% 区间 [-1.21%, -0.37%] 整体为负——入场逻辑显著差于随机"
+      ],
+      "prescriptions": [
+        "把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声",
+        "账面 -1144.10% 且打不过随机：回到假设阶段——这个 edge 的市场学基础是什么（谁在犯错、错误定价为什么持续）？写不出来就不要回测了"
+      ]
+    },
     "repro": {
       "command": "python -m research.verify --compare research/verify/samples/cases/case1_rsi_dip_btc.json research/verify/samples/cases/case2_rsi_breakout_btc.json research/verify/samples/cases/case3_rsi_dip_eth.json research/verify/samples/cases/case4_rsi_dip_btc_maker.json docs/cases/external-cascade-fader-spec.json docs/cases/external-freqbot-fundingrate-spec.json docs/cases/external-grid-freqbot/spec.json --out docs/compare-sample.md --json",
       "spec": "None",
@@ -13103,6 +13148,19 @@
     },
     "walk_forward": null,
     "param_grid": null,
+    "diagnosis": {
+      "primary": "randomness",
+      "primary_label": "随机性杀死",
+      "tags": [],
+      "tag_labels": [],
+      "evidence": [
+        "对照组：策略 − 随机 = -0.40%/笔，95% 区间 [-0.74%, -0.04%] 整体为负——入场逻辑显著差于随机"
+      ],
+      "prescriptions": [
+        "把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声",
+        "账面 -453.20% 且打不过随机：回到假设阶段——这个 edge 的市场学基础是什么（谁在犯错、错误定价为什么持续）？写不出来就不要回测了"
+      ]
+    },
     "repro": {
       "command": "python -m research.verify --compare research/verify/samples/cases/case1_rsi_dip_btc.json research/verify/samples/cases/case2_rsi_breakout_btc.json research/verify/samples/cases/case3_rsi_dip_eth.json research/verify/samples/cases/case4_rsi_dip_btc_maker.json docs/cases/external-cascade-fader-spec.json docs/cases/external-freqbot-fundingrate-spec.json docs/cases/external-grid-freqbot/spec.json --out docs/compare-sample.md --json",
       "spec": "None",
@@ -14863,6 +14921,18 @@
             }
           ]
         }
+      ]
+    },
+    "diagnosis": {
+      "primary": "insufficient",
+      "primary_label": "样本不足",
+      "tags": [],
+      "tag_labels": [],
+      "evidence": [
+        "成交 3 笔，低于 spec 声明的证据门槛——成交 3 笔 < 声明下限 30，样本不足以下结论（其余规则未评估）"
+      ],
+      "prescriptions": [
+        "先解决样本量：成交 3 笔不足以支撑任何结论。扩窗口、加标的，或放宽入场阈值——但放宽后要在报告里重新声明 min_fills，不允许用同一个宽松阈值既扩样本又保裁决"
       ]
     },
     "repro": {
@@ -17331,6 +17401,19 @@
             }
           ]
         }
+      ]
+    },
+    "diagnosis": {
+      "primary": "randomness",
+      "primary_label": "随机性杀死",
+      "tags": [],
+      "tag_labels": [],
+      "evidence": [
+        "对照组：策略 − 随机 = +0.06%/笔，95% 区间 [-0.05%, +0.17%] 跨 0——无法证明入场逻辑优于随机"
+      ],
+      "prescriptions": [
+        "把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声",
+        "账面 -27.22% 且打不过随机：回到假设阶段——这个 edge 的市场学基础是什么（谁在犯错、错误定价为什么持续）？写不出来就不要回测了"
       ]
     },
     "repro": {
@@ -20211,6 +20294,24 @@
             }
           ]
         }
+      ]
+    },
+    "diagnosis": {
+      "primary": "randomness",
+      "primary_label": "随机性杀死",
+      "tags": [
+        "barrier"
+      ],
+      "tag_labels": [
+        "结构杀死（彩票）"
+      ],
+      "evidence": [
+        "对照组：策略 − 随机 = +0.02%/笔，95% 区间 [-0.40%, +0.44%] 跨 0——无法证明入场逻辑优于随机",
+        "账面净收益 +61.06% 是真实的，但它与随机入场的差异在统计上不存在：赚的是 beta，包装成 alpha"
+      ],
+      "prescriptions": [
+        "把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声",
+        "承认定位：这份账面（+61.06%）大概率是 beta。若目标就是赚 beta，该做的是定投/资产配置工具，不是策略引擎——先把目的想清楚，再决定要不要继续"
       ]
     },
     "repro": {

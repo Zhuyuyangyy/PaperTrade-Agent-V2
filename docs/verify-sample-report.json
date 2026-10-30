@@ -3,6 +3,8 @@
     "name": "rsi-dip-btc-1h-demo",
     "hypothesis": "BTC 1 小时 RSI(14) 低于 30 后做多，捕捉均值回复",
     "source": "内置演示（规则信号，无需外部信号文件）",
+    "candles_path": null,
+    "funding_path": null,
     "port_notes": "",
     "symbol": "BTCUSDT",
     "interval": "1h",
@@ -7088,10 +7090,31 @@
       }
     ]
   },
+  "diagnosis": {
+    "primary": "randomness",
+    "primary_label": "随机性杀死",
+    "tags": [
+      "overfitting"
+    ],
+    "tag_labels": [
+      "过拟合杀死"
+    ],
+    "evidence": [
+      "对照组：策略 − 随机 = -0.37%/笔，95% 区间 [-0.70%, -0.03%] 整体为负——入场逻辑显著差于随机",
+      "样本外净 -265.31% 不足样本内 -240.34% 的一半",
+      "样本外参数网格仅 0/9 格为正——edge 只在一小撮参数组合下存在"
+    ],
+    "prescriptions": [
+      "把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声",
+      "账面 -505.65% 且打不过随机：回到假设阶段——这个 edge 的市场学基础是什么（谁在犯错、错误定价为什么持续）？写不出来就不要回测了",
+      "附带问题：样本外/网格显示参数脆弱——主死因修好后，用更少的参数重测"
+    ]
+  },
   "repro": {
     "command": "python -m research.verify --demo --out docs/verify-sample-report.md --json",
     "spec": "内置演示 spec（--demo；DEMO_SPEC 定义于 research/verify/__main__.py）",
     "candles": "D:\\ZYY_Inovation\\money\\PaperTrade-Agent-V2-Fast\\runtime\\audit\\market.sqlite（本地行情缓存 sqlite）",
-    "signals": "规则信号（rsi_below，period=14，threshold=30，由 K 线实时计算，无需外部文件）"
+    "signals": "规则信号（rsi_below，period=14，threshold=30，由 K 线实时计算，无需外部文件）",
+    "funding": "D:\\ZYY_Inovation\\money\\PaperTrade-Agent-V2-Fast\\runtime\\audit\\market.sqlite（本地行情缓存 funding 表）"
   }
 }

@@ -56,7 +56,9 @@ python -m research.verify --list-market        # 本地行情缓存里有什么
 
 本机演示所用 Python：`C:/Users/联想/.workbuddy/binaries/python/versions/3.13.12/python.exe`（脚本默认用当前解释器 `sys.executable`，可用环境变量 `STRATEGY_FALSIFIER_PYTHON` 覆盖）。
 
-演示输出为一份证伪报告（markdown 或 HTML）：30 秒读懂摘要置顶，随后依次是回放、成本敏感性、障碍可达性、随机对照组、walk-forward、参数网格、事前证伪规则判定表、未建模事项、复现命令。
+演示输出为一份证伪报告（markdown 或 HTML）：30 秒读懂摘要置顶，随后依次是回放、成本敏感性、障碍可达性、随机对照组、walk-forward、参数网格、事前证伪规则判定表、**诊断（死因与处方）**、未建模事项、复现命令。
+
+**诊断层**（第 8 节，`research/verify/diagnosis.py`）：主死因归类（随机性杀死 / 成本杀死 / 无 edge / 过拟合杀死 / 结构杀死 / 样本不足）+ 附带问题 + 证据 + 处方。归类规则事前声明、先于任何策略被分类；处方每条引用本次运行的真实数字。多策略对比（`--compare`）矩阵每行带死因列。
 
 **spec 自带数据**：spec 里可声明 `candles_path`（K 线 CSV，列 t,o,h,l,c，兼容 date/open/high/low/close 等常见列名）、`funding_path`（资金费 CSV，列 t,rate）、`signals.path`（信号 CSV，列 t[,side]）、`exit.exit_signals_path`（退出信号 CSV，列 t[,reason]）——全部相对 spec 所在目录解析。一个 spec 文件夹就是一套可复现实验；公开案例 `docs/cases/external-*/` 即此结构，clone 后无需行情缓存即可复现。
 

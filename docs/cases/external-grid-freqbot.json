@@ -2870,6 +2870,24 @@
       }
     ]
   },
+  "diagnosis": {
+    "primary": "randomness",
+    "primary_label": "随机性杀死",
+    "tags": [
+      "barrier"
+    ],
+    "tag_labels": [
+      "结构杀死（彩票）"
+    ],
+    "evidence": [
+      "对照组：策略 − 随机 = +0.02%/笔，95% 区间 [-0.40%, +0.44%] 跨 0——无法证明入场逻辑优于随机",
+      "账面净收益 +61.06% 是真实的，但它与随机入场的差异在统计上不存在：赚的是 beta，包装成 alpha"
+    ],
+    "prescriptions": [
+      "把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声",
+      "承认定位：这份账面（+61.06%）大概率是 beta。若目标就是赚 beta，该做的是定投/资产配置工具，不是策略引擎——先把目的想清楚，再决定要不要继续"
+    ]
+  },
   "repro": {
     "command": "python -m research.verify --spec docs/cases/external-grid-freqbot/spec.json --out docs/cases/external-grid-freqbot.md --json",
     "spec": "docs/cases/external-grid-freqbot/spec.json",

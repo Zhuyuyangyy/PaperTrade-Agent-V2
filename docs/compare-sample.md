@@ -12,15 +12,15 @@
 
 ## 对比矩阵
 
-| 排名 | 策略 | 裁决 | 成交 | 最坏净 | 最好净 | ×2 成本净 | 对照组 CI | 选择性 | 样本外净 | 样本外网格 | 触发规则 |
-|---:|---|---|---:|---:|---:|---:|---|---|---|---:|---|---|
-| 1 | external-cascade-fader-btcusdt-1h | INCONCLUSIVE | 3 | +3.23% | +3.23% | +2.63% | n/a | unknown | +1.48% | 100% | 无 |
-| 2 | external-freqbot-fundingrate-btcusdt-1h | FALSIFIED | 325 | -27.22% | +89.86% | -59.72% | [-0.05%, +0.17%] | unproven | n/a | 11% | worst_case_net_negative(全窗口)、net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
-| 3 | case2-rsi-breakout-btc-1h | FALSIFIED | 1638 | +34.35% | +34.35% | -96.69% | [-0.27%, +0.35%] | unproven | n/a | n/a | net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
-| 4 | freqbot-grid-btcusdt-1h | FALSIFIED | 360 | +61.06% | +61.06% | +32.26% | [-0.40%, +0.44%] | unproven | +50.86% | 100% | control_lift_ci_includes_zero(全窗口) |
-| 5 | case1-rsi-dip-btc-1h | FALSIFIED | 1310 | -505.65% | -505.65% | -610.45% | [-0.70%, -0.03%] | refuted | n/a | n/a | worst_case_net_negative(全窗口)、net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
-| 6 | case4-rsi-dip-btc-1h-maker | FALSIFIED | 1301 | -453.20% | -453.20% | -505.24% | [-0.74%, -0.04%] | refuted | n/a | n/a | worst_case_net_negative(全窗口)、net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
-| 7 | case3-rsi-dip-eth-1h | FALSIFIED | 1419 | -1144.10% | -1144.10% | -1257.62% | [-1.21%, -0.37%] | refuted | n/a | n/a | worst_case_net_negative(全窗口)、net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
+| 排名 | 策略 | 裁决 | 死因 | 成交 | 最坏净 | 最好净 | ×2 成本净 | 对照组 CI | 选择性 | 样本外净 | 样本外网格 | 触发规则 |
+|---:|---|---|---|---:|---:|---:|---:|---|---|---:|---|---|
+| 1 | external-cascade-fader-btcusdt-1h | INCONCLUSIVE | 样本不足 | 3 | +3.23% | +3.23% | +2.63% | n/a | unknown | +1.48% | 100% | 无 |
+| 2 | external-freqbot-fundingrate-btcusdt-1h | FALSIFIED | 随机性杀死 | 325 | -27.22% | +89.86% | -59.72% | [-0.05%, +0.17%] | unproven | n/a | 11% | worst_case_net_negative(全窗口)、net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
+| 3 | case2-rsi-breakout-btc-1h | FALSIFIED | 随机性杀死（+成本杀死） | 1638 | +34.35% | +34.35% | -96.69% | [-0.27%, +0.35%] | unproven | n/a | n/a | net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
+| 4 | freqbot-grid-btcusdt-1h | FALSIFIED | 随机性杀死（+结构杀死（彩票）） | 360 | +61.06% | +61.06% | +32.26% | [-0.40%, +0.44%] | unproven | +50.86% | 100% | control_lift_ci_includes_zero(全窗口) |
+| 5 | case1-rsi-dip-btc-1h | FALSIFIED | 随机性杀死 | 1310 | -505.65% | -505.65% | -610.45% | [-0.70%, -0.03%] | refuted | n/a | n/a | worst_case_net_negative(全窗口)、net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
+| 6 | case4-rsi-dip-btc-1h-maker | FALSIFIED | 随机性杀死 | 1301 | -453.20% | -453.20% | -505.24% | [-0.74%, -0.04%] | refuted | n/a | n/a | worst_case_net_negative(全窗口)、net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
+| 7 | case3-rsi-dip-eth-1h | FALSIFIED | 随机性杀死 | 1419 | -1144.10% | -1144.10% | -1257.62% | [-1.21%, -0.37%] | refuted | n/a | n/a | worst_case_net_negative(全窗口)、net_negative_at_fee_multiple=2(全窗口)、control_lift_ci_includes_zero(全窗口) |
 
 ## 稳健性排名（一句话版）
 
@@ -35,12 +35,20 @@
 
 样本量不足（全窗口、样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。
 
+**死因：样本不足**
+
+首要处方：先解决样本量：成交 3 笔不足以支撑任何结论。扩窗口、加标的，或放宽入场阈值——但放宽后要在报告里重新声明 min_fills，不允许用同一个宽松阈值既扩样本又保裁决
+
 - 标的/周期/场所：BTCUSDT · 1h · futures · 单边费率 10bps · taker 成交 · 含资金费
 - 数据窗口：29347 根（2023-06-24 01:00 → 2026-10-28 19:00）
 
 ### 2. external-freqbot-fundingrate-btcusdt-1h —— FALSIFIED
 
 3 条事前证伪规则被触发：最坏优先口径净收益 -27.22% ≤ 0；成本 ×2（往返 20bps）时净收益 -59.72% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.06%，95% 区间 [-0.05, +0.17] 跨 0，未能证明选择性
+
+**死因：随机性杀死**
+
+首要处方：把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声
 
 - 标的/周期/场所：BTCUSDT · 1h · futures · 单边费率 5bps · taker 成交 · 含资金费
 - 数据窗口：29347 根（2023-06-24 01:00 → 2026-10-28 19:00）
@@ -49,12 +57,20 @@
 
 2 条事前证伪规则被触发：成本 ×2（往返 16bps）时净收益 -96.69% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.03%，95% 区间 [-0.27, +0.35] 跨 0，未能证明选择性
 
+**死因：随机性杀死**（附带：成本杀死）
+
+首要处方：把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声
+
 - 标的/周期/场所：BTCUSDT · 1h · futures · 单边费率 4bps · taker 成交 · 含资金费
 - 数据窗口：29347 根（2023-06-24 01:00 → 2026-10-28 19:00）
 
 ### 4. freqbot-grid-btcusdt-1h —— FALSIFIED
 
 1 条事前证伪规则被触发：策略 − 随机对照组 = +0.02%，95% 区间 [-0.40, +0.44] 跨 0，未能证明选择性
+
+**死因：随机性杀死**（附带：结构杀死（彩票））
+
+首要处方：把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声
 
 - 标的/周期/场所：BTCUSDT · 1h · futures · 单边费率 4bps · taker 成交 · 不含资金费
 - 数据窗口：29347 根（2023-06-24 01:00 → 2026-10-28 19:00）
@@ -63,6 +79,10 @@
 
 3 条事前证伪规则被触发：最坏优先口径净收益 -505.65% ≤ 0；成本 ×2（往返 16bps）时净收益 -610.45% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.37%，95% 区间 [-0.70, -0.03] 整体为负——显著差于随机入场
 
+**死因：随机性杀死**
+
+首要处方：把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声
+
 - 标的/周期/场所：BTCUSDT · 1h · futures · 单边费率 4bps · taker 成交 · 含资金费
 - 数据窗口：29347 根（2023-06-24 01:00 → 2026-10-28 19:00）
 
@@ -70,12 +90,20 @@
 
 3 条事前证伪规则被触发：最坏优先口径净收益 -453.20% ≤ 0；成本 ×2（往返 8bps）时净收益 -505.24% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.40%，95% 区间 [-0.74, -0.04] 整体为负——显著差于随机入场
 
+**死因：随机性杀死**
+
+首要处方：把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声
+
 - 标的/周期/场所：BTCUSDT · 1h · futures · 单边费率 2bps · maker 成交 · 含资金费
 - 数据窗口：29347 根（2023-06-24 01:00 → 2026-10-28 19:00）
 
 ### 7. case3-rsi-dip-eth-1h —— FALSIFIED
 
 3 条事前证伪规则被触发：最坏优先口径净收益 -1144.10% ≤ 0；成本 ×2（往返 16bps）时净收益 -1257.62% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.80%，95% 区间 [-1.21, -0.37] 整体为负——显著差于随机入场
+
+**死因：随机性杀死**
+
+首要处方：把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声
 
 - 标的/周期/场所：ETHUSDT · 1h · futures · 单边费率 4bps · taker 成交 · 含资金费
 - 数据窗口：29347 根（2023-06-24 01:00 → 2026-10-28 19:00）

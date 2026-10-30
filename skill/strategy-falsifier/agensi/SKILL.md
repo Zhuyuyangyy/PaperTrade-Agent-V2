@@ -112,6 +112,28 @@ Every report ends with its own reproduction command and a **"not modelled"**
 section (slippage/partial fills, capacity impact, correlated concurrent
 positions, exchange/link risk) -- read it before trusting any number.
 
+## The diagnosis layer
+
+Verdict alone answers "did it die". The diagnosis section (section 8 of every
+report) answers **how it died and what to change**:
+
+- **Primary cause** from a declared taxonomy: `insufficient` (non-measurement),
+  `randomness` (cannot beat / loses to random entries -- the most fundamental
+  failure), `cost` (real edge, toll eats it), `edge_absent`, `overfitting`
+  (real in-sample, gone out-of-sample or grid-brittle), `barrier` (take-profit
+  never visited -- lottery structure), `survived`.
+- **Secondary tags** for strategies that fail several ways at once.
+- **Evidence** -- every claim quotes numbers from THIS run, no new assumptions.
+- **Prescriptions** -- concrete next steps, each tied to the customer's own
+  numbers ("your +0.03%/trade becomes -0.41%/trade at doubled fees"; "tighten
+  entries by an order of magnitude and re-test with 1/5 the signals").
+
+The classification rules are declared in code before any strategy is
+classified -- the same rules-before-numbers discipline as `falsify_if`. In
+`--compare` mode every row of the matrix carries its cause label, so a set of
+variants can be read at a glance: which died to fees, which to randomness,
+which to overfitting.
+
 ## Honest limits
 
 - The engine is **offline and stdlib-only**: no market data is fetched, no

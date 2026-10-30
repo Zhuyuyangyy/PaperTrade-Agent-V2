@@ -3,6 +3,8 @@
     "name": "case3-rsi-dip-eth-1h",
     "hypothesis": "ETH 1h RSI(14)<30 超卖后做多（case1 的跨币种复现）",
     "source": "",
+    "candles_path": null,
+    "funding_path": null,
     "port_notes": "",
     "symbol": "ETHUSDT",
     "interval": "1h",
@@ -3273,10 +3275,24 @@
   },
   "walk_forward": null,
   "param_grid": null,
+  "diagnosis": {
+    "primary": "randomness",
+    "primary_label": "随机性杀死",
+    "tags": [],
+    "tag_labels": [],
+    "evidence": [
+      "对照组：策略 − 随机 = -0.80%/笔，95% 区间 [-1.21%, -0.37%] 整体为负——入场逻辑显著差于随机"
+    ],
+    "prescriptions": [
+      "把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声",
+      "账面 -1144.10% 且打不过随机：回到假设阶段——这个 edge 的市场学基础是什么（谁在犯错、错误定价为什么持续）？写不出来就不要回测了"
+    ]
+  },
   "repro": {
     "command": "python -m research.verify --spec research/verify/samples/cases/case3_rsi_dip_eth.json --out docs/cases/case3_rsi_dip_eth.md --json",
     "spec": "research/verify/samples/cases/case3_rsi_dip_eth.json",
     "candles": "D:\\ZYY_Inovation\\money\\PaperTrade-Agent-V2-Fast\\runtime\\audit\\market.sqlite（本地行情缓存 sqlite）",
-    "signals": "规则信号（rsi_below，period=14，threshold=30，由 K 线实时计算，无需外部文件）"
+    "signals": "规则信号（rsi_below，period=14，threshold=30，由 K 线实时计算，无需外部文件）",
+    "funding": "D:\\ZYY_Inovation\\money\\PaperTrade-Agent-V2-Fast\\runtime\\audit\\market.sqlite（本地行情缓存 funding 表）"
   }
 }

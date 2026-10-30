@@ -59,6 +59,7 @@ ORDER = [
     ("report", SRC_VERIFY / "report.py"),
     ("compare", SRC_VERIFY / "compare.py"),
     ("html_report", SRC_VERIFY / "html_report.py"),
+    ("diagnosis", SRC_VERIFY / "diagnosis.py"),
     ("verify", SRC_VERIFY / "__init__.py"),
     ("__main__", SRC_VERIFY / "__main__.py"),
 ]
@@ -69,6 +70,9 @@ RENAMES = [
     ("compare", "_pct", "_cmp_pct",
      "compare._pct maps None to 'n/a'; report._pct maps None to an em dash. "
      "Different behaviour -> rename, never merge."),
+    ("diagnosis", "_pct", "_dx_pct",
+     "diagnosis._pct maps None to 'n/a' (same as compare's); report._pct maps "
+     "None to an em dash. Three-way collision -> each keeps its own name."),
 ]
 
 # Definitions dropped because a byte-identical (modulo docstring) earlier

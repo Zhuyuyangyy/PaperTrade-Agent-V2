@@ -143,12 +143,16 @@ def render_comparison(results: list[dict], title: str = "多策略对比") -> st
 
     a("## 对比矩阵")
     a("")
-    a("| 排名 | 策略 | 裁决 | 成交 | 最坏净 | 最好净 | ×2 成本净 | 对照组 CI | 选择性 | 样本外净 | 样本外网格 | 触发规则 |")
-    a("|---:|---|---|---:|---:|---:|---:|---|---|---|---:|---|---|")
+    a("| 排名 | 策略 | 裁决 | 死因 | 成交 | 最坏净 | 最好净 | ×2 成本净 | 对照组 CI | 选择性 | 样本外净 | 样本外网格 | 触发规则 |")
+    a("|---:|---|---|---|---:|---:|---:|---:|---|---|---:|---|---|")
     for i, r in enumerate(ranked, 1):
         spec = r.get("spec") or {}
         name = spec.get("name") or f"strategy-{i}"
         verdict = (r.get("verdict") or {}).get("outcome", "?")
+        dx = r.get("diagnosis") or {}
+        cause = dx.get("primary_label") or "—"
+        if dx.get("tag_labels"):
+            cause += f"（+{'、'.join(dx['tag_labels'])}）"
         ci = _ci_lower(r)
         ci_txt = "n/a" if ci is None else f"[{_pct(ci)}, {_pct((r.get('control') or {}).get('diff_ci')[1])}]"
         oos = _oos_net(r)
@@ -156,7 +160,7 @@ def render_comparison(results: list[dict], title: str = "多策略对比") -> st
         grid_txt = "n/a" if grid is None else f"{grid * 100:.0f}%"
         fired = _triggered_rules(r)
         fired_txt = "、".join(fired) if fired else "无"
-        a(f"| {i} | {name} | {verdict} | {_fills(r)} | {_pct(_worst_net(r))} | {_pct(_best_net(r))} "
+        a(f"| {i} | {name} | {verdict} | {cause} | {_fills(r)} | {_pct(_worst_net(r))} | {_pct(_best_net(r))} "
           f"| {_pct(_fee2_net(r))} | {ci_txt} | {_selectivity(r)} | {_pct(oos)} | {grid_txt} | {fired_txt} |")
     a("")
 
@@ -186,10 +190,20 @@ def render_comparison(results: list[dict], title: str = "多策略对比") -> st
         spec = r.get("spec") or {}
         name = spec.get("name") or f"strategy-{i}"
         v = r.get("verdict") or {}
+        dx = r.get("diagnosis") or {}
         a(f"### {i}. {name} —— {v.get('outcome', '?')}")
         a("")
         a(f"{v.get('reason', '（无理由）')}")
         a("")
+        if dx:
+            cause = f"**死因：{dx.get('primary_label', dx.get('primary', '?'))}**"
+            if dx.get("tag_labels"):
+                cause += f"（附带：{'、'.join(dx['tag_labels'])}）"
+            a(cause)
+            if dx.get("prescriptions"):
+                a("")
+                a("首要处方：" + dx["prescriptions"][0])
+            a("")
         # Per-strategy provenance: what data, what assumptions. A comparison
         # across different symbols/windows must say so on its face.
         a(f"- 标的/周期/场所：{spec.get('symbol', '?')} · {spec.get('interval', '?')} · {spec.get('venue', '?')}"

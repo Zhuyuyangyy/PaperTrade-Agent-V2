@@ -1752,6 +1752,18 @@
       }
     ]
   },
+  "diagnosis": {
+    "primary": "insufficient",
+    "primary_label": "样本不足",
+    "tags": [],
+    "tag_labels": [],
+    "evidence": [
+      "成交 3 笔，低于 spec 声明的证据门槛——成交 3 笔 < 声明下限 30，样本不足以下结论（其余规则未评估）"
+    ],
+    "prescriptions": [
+      "先解决样本量：成交 3 笔不足以支撑任何结论。扩窗口、加标的，或放宽入场阈值——但放宽后要在报告里重新声明 min_fills，不允许用同一个宽松阈值既扩样本又保裁决"
+    ]
+  },
   "repro": {
     "command": "python -m research.verify --spec docs/cases/external-cascade-fader-spec.json --out docs/cases/external-cascade-fader.md --json",
     "spec": "docs/cases/external-cascade-fader-spec.json",

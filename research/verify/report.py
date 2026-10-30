@@ -419,8 +419,36 @@ def render(result: dict) -> str:
         a("- spec 未声明任何 falsify_if 规则——本报告只呈现测量，不下裁决。")
     a("")
 
+    # -- diagnosis ----------------------------------------------------------
+    a("## 8. 诊断：死因与处方")
+    a("")
+    dx = result.get("diagnosis") or {}
+    if dx:
+        a(f"**主死因：{dx.get('primary_label', dx.get('primary', '?'))}**")
+        if dx.get("tag_labels"):
+            a(f"**附带问题：{' · '.join(dx['tag_labels'])}**")
+        a("")
+        if dx.get("evidence"):
+            a("证据（全部来自本次测量，无新增假设）：")
+            a("")
+            for e in dx["evidence"]:
+                a(f"- {e}")
+            a("")
+        if dx.get("prescriptions"):
+            a("处方（按优先级；每条都引用本次运行的真实数字）：")
+            a("")
+            for i, p in enumerate(dx["prescriptions"], 1):
+                a(f"{i}. {p}")
+            a("")
+        a("> 死因归类规则事前声明于 `research/verify/diagnosis.py`，先于任何策略被分类——"
+          "与证伪规则同一条纪律。处方是工程建议，不是投资建议。")
+        a("")
+    else:
+        a("- （本报告无诊断信息）")
+        a("")
+
     # -- disclosure ---------------------------------------------------------
-    a("## 8. 未建模事项（阅读前必读）")
+    a("## 9. 未建模事项（阅读前必读）")
     a("")
     for t in unmodeled_notes(result):
         a(f"- {t}")
@@ -429,7 +457,7 @@ def render(result: dict) -> str:
     # -- reproduce ----------------------------------------------------------
     repro = result.get("repro")
     if repro:
-        a("## 9. 复现命令")
+        a("## 10. 复现命令")
         a("")
         a("本次报告由以下命令产生；在同一目录重跑，可复现同样数字：")
         a("")

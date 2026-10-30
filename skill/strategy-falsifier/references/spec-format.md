@@ -147,4 +147,8 @@
 | `--list-market` | 列出本地行情缓存中的序列 |
 | `--market path.sqlite` | 指定行情缓存 |
 
-公开示例：`docs/compare-sample.md`（7 策略对比矩阵）、`docs/cases/external-*/`（三个外部真实策略的 spec 自带数据案例）。
+公开示例：`docs/compare-sample.md`（7 策略对比矩阵，每行带死因列）、`docs/cases/external-*/`（三个外部真实策略的 spec 自带数据案例）。
+
+## 9. 诊断层
+
+每份报告第 8 节是诊断：主死因（`insufficient` / `randomness` / `cost` / `edge_absent` / `overfitting` / `barrier` / `survived`）+ 附带问题 + 证据 + 处方。归类规则事前声明于 `research/verify/diagnosis.py`（优先级：样本不足 > NOT_FALSIFIED 短路 > 随机性 > 成本 > 无 edge > 过拟合 > 结构），处方每条引用本次运行的真实数字。JSON 产物中位于 `diagnosis` 字段。

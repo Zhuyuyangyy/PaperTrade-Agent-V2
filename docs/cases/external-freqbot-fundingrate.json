@@ -2458,6 +2458,19 @@
       }
     ]
   },
+  "diagnosis": {
+    "primary": "randomness",
+    "primary_label": "随机性杀死",
+    "tags": [],
+    "tag_labels": [],
+    "evidence": [
+      "对照组：策略 − 随机 = +0.06%/笔，95% 区间 [-0.05%, +0.17%] 跨 0——无法证明入场逻辑优于随机"
+    ],
+    "prescriptions": [
+      "把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声",
+      "账面 -27.22% 且打不过随机：回到假设阶段——这个 edge 的市场学基础是什么（谁在犯错、错误定价为什么持续）？写不出来就不要回测了"
+    ]
+  },
   "repro": {
     "command": "python -m research.verify --spec docs/cases/external-freqbot-fundingrate-spec.json --out docs/cases/external-freqbot-fundingrate.md --json",
     "spec": "docs/cases/external-freqbot-fundingrate-spec.json",

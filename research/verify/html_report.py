@@ -509,8 +509,32 @@ def render_html(result: dict) -> str:
     else:
         a('<p class="note">spec 未声明任何 falsify_if 规则——本报告只呈现测量，不下裁决。</p>')
 
-    # ---- 8. disclosures ---------------------------------------------------
-    a("<h2>8. 未建模事项（阅读前必读）</h2>")
+    # ---- 8. diagnosis ------------------------------------------------------
+    a("<h2>8. 诊断：死因与处方</h2>")
+    dx = result.get("diagnosis") or {}
+    if dx:
+        a(f'<p class="sentence" style="border-left-color:var(--kill)">'
+          f'主死因：<b>{_esc(dx.get("primary_label", dx.get("primary", "?")))}</b>'
+          + (f'　·　附带问题：{_esc(" · ".join(dx.get("tag_labels") or []))}'
+             if dx.get("tag_labels") else "")
+          + "</p>")
+        if dx.get("evidence"):
+            a("<p><b>证据</b>（全部来自本次测量，无新增假设）：</p><ul>")
+            for e in dx["evidence"]:
+                a(f"<li>{_esc(e)}</li>")
+            a("</ul>")
+        if dx.get("prescriptions"):
+            a("<p><b>处方</b>（按优先级；每条都引用本次运行的真实数字）：</p><ol>")
+            for p in dx["prescriptions"]:
+                a(f"<li>{_esc(p)}</li>")
+            a("</ol>")
+        a('<p class="note">死因归类规则事前声明于 <code>research/verify/diagnosis.py</code>，'
+          "先于任何策略被分类——与证伪规则同一条纪律。处方是工程建议，不是投资建议。</p>")
+    else:
+        a('<p class="note">（本报告无诊断信息）</p>')
+
+    # ---- 9. disclosures ---------------------------------------------------
+    a("<h2>9. 未建模事项（阅读前必读）</h2>")
     a("<ul>")
     for t in unmodeled_notes(result):
         a(f"<li>{_esc(t)}</li>")
@@ -519,7 +543,7 @@ def render_html(result: dict) -> str:
     # ---- 9. repro ---------------------------------------------------------
     repro = result.get("repro")
     if repro:
-        a("<h2>9. 复现命令</h2>")
+        a("<h2>10. 复现命令</h2>")
         a("<p>本次报告由以下命令产生；在同一目录重跑，可复现同样数字：</p>")
         a(f"<pre>{_esc(repro['command'])}</pre>")
         a(_table(["输入", "路径 / 来源"],
@@ -590,12 +614,17 @@ def render_comparison_html(results: list[dict], title: str = "多策略对比") 
         ctrl = r.get("control") or {}
         ci_txt = "n/a" if ci is None else f"[{ci:+.2f}%, {ctrl.get('diff_ci', [None, None])[1]:+.2f}%]"
         grid = _grid_ratio(r)
+        dx = r.get("diagnosis") or {}
+        cause = dx.get("primary_label", "—")
+        if dx.get("tag_labels"):
+            cause += "（+" + "、".join(dx["tag_labels"]) + "）"
         fired = _triggered_rules(r)
         rows.append([
             str(i),
             f'<b>{_esc(spec.get("name", "?"))}</b>',
             f'<span class="badge {_VERDICT_CLASS.get(outcome, "warn")}" '
             f'style="font-size:12px;padding:2px 10px">{_esc(outcome)}</span>',
+            _esc(cause),
             _n(_fills(r)),
             _signed(_worst_net(r)),
             _signed(_best_net(r)),
@@ -608,9 +637,9 @@ def render_comparison_html(results: list[dict], title: str = "多策略对比") 
         ])
         rc.append("hit" if outcome == "FALSIFIED" else
                   ("pass" if outcome == "NOT_FALSIFIED" else "weak"))
-    a(_table(["#", "策略", "裁决", "成交", "最坏净", "最好净", "×2 成本净",
+    a(_table(["#", "策略", "裁决", "死因", "成交", "最坏净", "最好净", "×2 成本净",
               "对照组 CI", "选择性", "样本外净", "样本外网格", "触发规则"],
-             rows, num_cols={0, 3, 4, 5, 6, 9, 10}, row_class=rc))
+             rows, num_cols={0, 4, 5, 6, 7, 10, 11}, row_class=rc))
 
     best = ranked[0]
     best_name = (best.get("spec") or {}).get("name", "第 1 名")
@@ -633,6 +662,14 @@ def render_comparison_html(results: list[dict], title: str = "多策略对比") 
           f'<span class="badge {_VERDICT_CLASS.get(outcome, "warn")}" '
           f'style="font-size:12px;padding:2px 10px">{_esc(outcome)}</span></summary>')
         a(f'<p>{_esc((r.get("verdict") or {}).get("reason", "（无理由）"))}</p>')
+        dx = r.get("diagnosis") or {}
+        if dx:
+            cause = f'死因：<b>{_esc(dx.get("primary_label", dx.get("primary", "?")))}</b>'
+            if dx.get("tag_labels"):
+                cause += "（附带：" + _esc("、".join(dx["tag_labels"])) + "）"
+            a(f"<p>{cause}</p>")
+            if dx.get("prescriptions"):
+                a(f'<p class="hypo">首要处方：{_esc(dx["prescriptions"][0])}</p>')
         chips = _key_numbers(r)
         if chips:
             a('<div class="chips">')
