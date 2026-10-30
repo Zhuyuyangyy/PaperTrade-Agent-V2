@@ -38,7 +38,8 @@ Verdicts come from `falsify_if` rules written into the spec before any number is
 
 I'm now offering the first 10 strategy-falsification reports free in exchange for publication rights, because I'd rather build the public case-study library than argue. No signals, no subscriptions, no managed capital — the only question the tool answers is whether your curve is real.
 
-Repo: [link in comment]
+Repo: https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2
+Landing page (30-second demo + case matrix): https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/
 
 Happy to answer anything about the methodology, especially where it's weakest (no walk-forward, no capacity modelling, one-price-series-at-a-time).
 

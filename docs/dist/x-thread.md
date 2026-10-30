@@ -65,4 +65,5 @@ Engine is open source (MIT), 38 tests, offline replay, sample report on real dat
 
 First 10 strategy-falsification reports free in exchange for publication rights. No signals, no subscriptions, no managed capital — the only question it answers is whether your curve is real.
 
-Repo + case matrix: [link]
+Repo + case matrix: https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2
+Landing page: https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/

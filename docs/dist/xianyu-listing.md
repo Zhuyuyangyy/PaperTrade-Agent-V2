@@ -35,7 +35,8 @@ markdown 证伪报告 + 机器可读 JSON + 30 分钟语音讲解
 荐股、带单、代操盘、保证收益——一概不接。只回答一个问题：
 你的曲线是不是幻觉。
 
-【样例】github.com/Zhuyuyangyy/PaperTrade-Agent-V2
+【样例】落地页 zhuyuyangyy.github.io/PaperTrade-Agent-V2/（30 秒看懂）
+仓库 github.com/Zhuyuyangyy/PaperTrade-Agent-V2
 docs/verify-sample-report.md 是真实数据跑出来的完整报告，
 四个案例三个被证伪，其中一个三年 +34% 也被判出局——因为它打不过随机入场。
 
