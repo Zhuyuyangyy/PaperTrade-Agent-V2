@@ -10,21 +10,34 @@ from __future__ import annotations
 import statistics
 
 
+def _max_dd(series: list[float]) -> float:
+    """Max peak-to-trough drawdown of the compounded equity, as a negative
+    fraction. Order matters: this is the realized curve of the given order."""
+    equity, peak, max_dd = 1.0, 1.0, 0.0
+    for v in series:
+        equity *= 1.0 + v
+        peak = max(peak, equity)
+        max_dd = min(max_dd, equity / peak - 1.0)
+    return max_dd
+
+
 def equity_stats(nets: list[float]) -> dict:
-    """nets: per-trade net return as a fraction (0.03 = +3%)."""
+    """nets: per-trade net return as a fraction (0.03 = +3%), chronological.
+
+    max_dd_pct is the REALIZED drawdown of the chronological order -- the
+    number a trader would have lived through. max_dd_worst_order_pct is the
+    same book replayed losses-first: a bound, not a history, reported
+    separately so neither can be mistaken for the other.
+    """
     if not nets:
         return {"n": 0, "sum_pct": 0.0, "mean_pct": 0.0, "median_pct": 0.0,
                 "win_pct": 0.0, "profit_factor": None, "max_dd_pct": 0.0,
+                "max_dd_worst_order_pct": 0.0,
                 "expectancy_pct": 0.0, "best_pct": 0.0, "worst_pct": 0.0}
     s = sorted(nets)
     n = len(s)
     gains = sum(v for v in s if v > 0)
     losses = -sum(v for v in s if v < 0)
-    equity, peak, max_dd = 1.0, 1.0, 0.0
-    for v in s:  # worst-case ordering is fine for a drawdown bound; the
-        equity *= (1.0 + v)  # chronological curve is in report.equity_curve
-        peak = max(peak, equity)
-        max_dd = min(max_dd, equity / peak - 1.0)
     return {
         "n": n,
         "sum_pct": sum(s) * 100,
@@ -32,7 +45,8 @@ def equity_stats(nets: list[float]) -> dict:
         "median_pct": (s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2) * 100,
         "win_pct": sum(1 for v in s if v > 0) / n * 100,
         "profit_factor": (gains / losses) if losses > 0 else None,
-        "max_dd_pct": max_dd * 100,
+        "max_dd_pct": _max_dd(nets) * 100,
+        "max_dd_worst_order_pct": _max_dd(s) * 100,
         "expectancy_pct": statistics.fmean(s) * 100,
         "best_pct": s[-1] * 100,
         "worst_pct": s[0] * 100,

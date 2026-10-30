@@ -3,6 +3,7 @@
     "name": "case4-rsi-dip-btc-1h-maker",
     "hypothesis": "case1 同策略改用 maker 限价成交（挂信号根收盘价，穿越才成交）",
     "source": "",
+    "port_notes": "",
     "symbol": "BTCUSDT",
     "interval": "1h",
     "venue": "futures",
@@ -74,7 +75,8 @@
         "median_pct": 0.021,
         "win_pct": 50.73020753266718,
         "profit_factor": 0.7190281724108643,
-        "max_dd_pct": -99.99999327076921,
+        "max_dd_pct": -99.71566184332951,
+        "max_dd_worst_order_pct": -99.99999327076921,
         "expectancy_pct": -0.3483448116833205,
         "best_pct": 2.9786,
         "worst_pct": -8.07,
@@ -1409,7 +1411,8 @@
         "median_pct": 0.021,
         "win_pct": 50.73020753266718,
         "profit_factor": 0.7190281724108643,
-        "max_dd_pct": -99.99999327076921,
+        "max_dd_pct": -99.71566184332951,
+        "max_dd_worst_order_pct": -99.99999327076921,
         "expectancy_pct": -0.3483448116833205,
         "best_pct": 2.9786,
         "worst_pct": -8.07,
@@ -2736,21 +2739,21 @@
   "cost_sensitivity": [
     {
       "fee_multiple": 1.0,
-      "fee_bps": 2.0,
+      "fee_bps": 4.0,
       "net_sum_pct": -453.1966,
       "profit_factor": 0.7190281724108643,
       "win_pct": 50.73020753266718
     },
     {
       "fee_multiple": 2.0,
-      "fee_bps": 4.0,
+      "fee_bps": 8.0,
       "net_sum_pct": -505.2366,
       "profit_factor": 0.6917220930773192,
       "win_pct": 49.730976172175254
     },
     {
       "fee_multiple": 5.0,
-      "fee_bps": 10.0,
+      "fee_bps": 20.0,
       "net_sum_pct": -661.3566000000001,
       "profit_factor": 0.6152754399085257,
       "win_pct": 47.57878554957725
@@ -2783,6 +2786,7 @@
     ],
     "fills": 194,
     "unfilled": 6,
+    "open_signals": 0,
     "stats": {
       "n": 194,
       "sum_pct": 9.4683,
@@ -2790,7 +2794,8 @@
       "median_pct": 0.1606,
       "win_pct": 55.154639175257735,
       "profit_factor": 1.0611644916104976,
-      "max_dd_pct": -79.26014997273889,
+      "max_dd_pct": -41.05009778116094,
+      "max_dd_worst_order_pct": -79.26014997273889,
       "expectancy_pct": 0.04880567010309277,
       "best_pct": 2.9661,
       "worst_pct": -8.0572,
@@ -3002,7 +3007,7 @@
   },
   "verdict": {
     "outcome": "FALSIFIED",
-    "reason": "2 条事前证伪规则被触发：最坏优先口径净收益 -453.20% ≤ 0；成本 ×2（4bps 往返）时净收益 -505.24% ≤ 0，edge 付不起 toll",
+    "reason": "3 条事前证伪规则被触发：最坏优先口径净收益 -453.20% ≤ 0；成本 ×2（往返 8bps）时净收益 -505.24% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.40%，95% 区间 [-0.74, -0.04] 整体为负——显著差于随机入场",
     "checks": [
       {
         "rule": "worst_case_net_negative",
@@ -3013,11 +3018,23 @@
       {
         "rule": "net_negative_at_fee_multiple=2",
         "scope": "全窗口",
-        "detail": "成本 ×2（4bps 往返）时净收益 -505.24% ≤ 0，edge 付不起 toll",
+        "detail": "成本 ×2（往返 8bps）时净收益 -505.24% ≤ 0，edge 付不起 toll",
+        "triggered": true
+      },
+      {
+        "rule": "control_lift_ci_includes_zero",
+        "scope": "全窗口",
+        "detail": "策略 − 随机对照组 = -0.40%，95% 区间 [-0.74, -0.04] 整体为负——显著差于随机入场",
         "triggered": true
       }
     ]
   },
   "walk_forward": null,
-  "param_grid": null
+  "param_grid": null,
+  "repro": {
+    "command": "python -m research.verify --spec research/verify/samples/cases/case4_rsi_dip_btc_maker.json --out docs/cases/case4_rsi_dip_btc_maker.md --json",
+    "spec": "research/verify/samples/cases/case4_rsi_dip_btc_maker.json",
+    "candles": "D:\\ZYY_Inovation\\money\\PaperTrade-Agent-V2-Fast\\runtime\\audit\\market.sqlite（本地行情缓存 sqlite）",
+    "signals": "规则信号（rsi_below，period=14，threshold=30，由 K 线实时计算，无需外部文件）"
+  }
 }

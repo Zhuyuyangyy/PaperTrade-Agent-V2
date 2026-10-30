@@ -50,14 +50,14 @@ python -m research.verify --demo --out report.md    # 30 秒看一份真实数�
 - 不荐股、不带单、不代管资金、不承诺收益——只回答一个问题：**你的曲线是不是幻觉**
 - 新克隆无行情缓存也能跑 demo（内置 5000 根近期 K 线，自动降级并披露）
 
-**Skill 集成（agent 可直接调用）**：同一引擎已包装成 Skill——[`skill/strategy-falsifier/`](skill/strategy-falsifier/)（入口 [`SKILL.md`](skill/strategy-falsifier/SKILL.md)）。当用户提出"这个回测能不能信 / 是不是过拟合 / 跑个 walk-forward / 和随机入场比一下"这类请求时，agent 直接调用：
+**Skill 集成（agent 可直接调用，ZIP 可独立分发）**：同一引擎已包装成 Skill——[`skill/strategy-falsifier/`](skill/strategy-falsifier/)（入口 [`SKILL.md`](skill/strategy-falsifier/SKILL.md)）。引擎已 vendored 进包内 `engine/`（纯标准库、零第三方依赖），**解压即用、不需要本仓库**：
 
 ```bash
 python skill/strategy-falsifier/scripts/verify.py --demo                                                # 无需外部文件，30 秒出报告
 python skill/strategy-falsifier/scripts/verify.py spec.json --candles klines.csv --out report.md --json  # 审计自己的策略
 ```
 
-包装层自动定位仓库根目录、原样转发全部参数，行为与 `python -m research.verify` 一致；spec 字段表：[`skill/strategy-falsifier/references/spec-format.md`](skill/strategy-falsifier/references/spec-format.md)，六件仪器口径与真实数字案例：[`skill/strategy-falsifier/references/instruments.md`](skill/strategy-falsifier/references/instruments.md)。
+独立运行有测试守着（`tests/test_skill_standalone.py`）：vendored 引擎从空目录跑出的裁决与数字和仓库引擎**逐字节一致**；改引擎后跑 `skill/strategy-falsifier/scripts/sync_engine.py` 同步。spec 字段表：[`skill/strategy-falsifier/references/spec-format.md`](skill/strategy-falsifier/references/spec-format.md)，六件仪器口径与真实数字案例：[`skill/strategy-falsifier/references/instruments.md`](skill/strategy-falsifier/references/instruments.md)。
 
 完整产品化章节见下文「产品化：策略证伪引擎」；对外文章：[`docs/article-falsification.md`](docs/article-falsification.md)。
 

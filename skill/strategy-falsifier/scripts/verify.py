@@ -1,7 +1,13 @@
 #!/usr/bin/env python
-"""strategy-falsifier 一层包装：接收 spec 路径，调用引擎 python -m research.verify。
+"""strategy-falsifier 一层包装：接收 spec 路径，调用证伪引擎。
 
-用法（在仓库任意目录下执行均可，脚本自动定位仓库根）：
+两种运行模式，自动选择：
+  1. 独立模式（默认）：调用本包内 vendored 引擎（engine/）。ZIP 解压即用，
+     不需要主仓库，不需要安装任何第三方依赖（引擎纯标准库）。
+  2. 仓库模式：环境变量 STRATEGY_FALSIFIER_USE_REPO=1 时调用主仓库的
+     research.verify（用于开发中对齐两边行为）。
+
+用法（在包任意目录下执行均可）：
     verify.py --demo
     verify.py path/to/spec.json [--candles klines.csv] [--out report.md] [--json]
     verify.py --spec path/to/spec.json --signals signals.csv
@@ -16,9 +22,21 @@ import subprocess
 import sys
 from pathlib import Path
 
-# 本文件位于 <repo>/skill/strategy-falsifier/scripts/verify.py
-REPO_ROOT = Path(__file__).resolve().parents[3]
-ENGINE_PKG = "research.verify"
+# 本文件位于 <pkg>/skill/strategy-falsifier/scripts/verify.py
+PKG_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = PKG_ROOT.parents[1]
+
+
+def _engine_target() -> tuple[str, Path]:
+    """(python -m 的目标, 工作目录)。独立模式优先。"""
+    if os.environ.get("STRATEGY_FALSIFIER_USE_REPO") == "1" \
+            and (REPO_ROOT / "research" / "verify" / "__main__.py").is_file():
+        return "research.verify", REPO_ROOT
+    if (PKG_ROOT / "engine" / "__main__.py").is_file():
+        return "engine", PKG_ROOT
+    if (REPO_ROOT / "research" / "verify" / "__main__.py").is_file():
+        return "research.verify", REPO_ROOT
+    return "", PKG_ROOT
 
 
 def _interpreter() -> str:
@@ -30,28 +48,96 @@ def _interpreter() -> str:
     return "python"
 
 
+# Options that consume the next argv element. A positional spec path must
+# never be confused with one of their values (--demo --out r.md used to break
+# exactly there: r.md got --spec inserted in front of it).
+VALUE_OPTS = ("--spec", "--candles", "--signals", "--market", "--out")
+# The ones whose values are filesystem paths the USER typed: they are relative
+# to the caller's cwd, but the engine runs with cwd=PKG_ROOT, so the wrapper
+# absolutises them before handing them over.
+PATH_OPTS = ("--spec", "--candles", "--signals", "--market", "--out")
+
+
+def _absolutise_paths(args: list[str]) -> list[str]:
+    """Resolve path-valued options against the CALLER's cwd."""
+    out: list[str] = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a.startswith("--") and "=" in a:
+            key, _, val = a.partition("=")
+            if key in PATH_OPTS and val:
+                a = f"{key}={str(Path(val).expanduser().resolve())}"
+            out.append(a)
+            i += 1
+            continue
+        if a in PATH_OPTS and i + 1 < len(args):
+            val = args[i + 1]
+            out.append(a)
+            out.append(str(Path(val).expanduser().resolve()))
+            i += 2
+            continue
+        out.append(a)
+        i += 1
+    return out
+
+
+def _munge_args(args: list[str]) -> list[str]:
+    """Insert --spec before the first POSITIONAL argument, if any.
+
+    A positional is an argv element that is neither an option nor the value
+    of a value-taking option. Returns args unchanged when a --spec (either
+    form) is already present.
+    """
+    if any(a == "--spec" or a.startswith("--spec=") for a in args):
+        return list(args)
+    out: list[str] = []
+    inserted = False
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a.startswith("--") and "=" in a:
+            out.append(a)
+            i += 1
+            continue
+        if a in VALUE_OPTS:
+            out.append(a)
+            if i + 1 < len(args):
+                out.append(args[i + 1])
+                i += 2
+            else:
+                i += 1
+            continue
+        if not a.startswith("-") and not inserted:
+            out.append("--spec")
+            out.append(a)
+            inserted = True
+            i += 1
+            continue
+        out.append(a)
+        i += 1
+    return out
+
+
 def main(argv: list[str]) -> int:
-    if not (REPO_ROOT / "research" / "verify" / "__main__.py").is_file():
-        print(f"[包装错误] 在 {REPO_ROOT} 找不到引擎 research/verify/——"
-              f"本脚本必须位于 <repo>/skill/strategy-falsifier/scripts/ 下", file=sys.stderr)
+    pkg, cwd = _engine_target()
+    if not pkg:
+        print(f"[包装错误] 在 {PKG_ROOT} 找不到引擎（engine/ 缺失，且不在仓库内）。"
+              f"如果是仓库内使用，请从 skill/strategy-falsifier/ 目录运行，"
+              f"或先执行 python scripts/sync_engine.py 生成本地引擎副本。",
+              file=sys.stderr)
         return 2
 
-    args = list(argv)
-    has_spec = any(a == "--spec" or a.startswith("--spec=") for a in args)
-    if not has_spec:
-        # 第一个不以 "-" 开头的参数视为 spec 路径，补成 --spec
-        for i, a in enumerate(args):
-            if not a.startswith("-"):
-                args.insert(i, "--spec")
-                break
-        else:
-            if not any(a in ("--demo", "--list-market") for a in args):
-                print(__doc__.strip(), file=sys.stderr)
-                return 2
+    args = _absolutise_paths(_munge_args(list(argv)))
+    if not any(a in ("--demo", "--list-market") or a == "--spec" or a.startswith("--spec=")
+               for a in args):
+        print(__doc__.strip(), file=sys.stderr)
+        return 2
 
-    cmd = [_interpreter(), "-m", ENGINE_PKG, *args]
-    print(f"[包装] {' '.join(cmd)}（cwd={REPO_ROOT}）", file=sys.stderr)
-    return subprocess.run(cmd, cwd=REPO_ROOT).returncode
+    cmd = [_interpreter(), "-m", pkg, *args]
+    print(f"[包装] {' '.join(cmd)}（cwd={cwd}，{'独立引擎' if pkg == 'engine' else '仓库引擎'}）",
+          file=sys.stderr)
+    return subprocess.run(cmd, cwd=cwd).returncode
 
 
 if __name__ == "__main__":

@@ -19,7 +19,14 @@ import csv
 import sqlite3
 from pathlib import Path
 
-from ..audit.binance import DataError
+
+class DataError(RuntimeError):
+    """Raised when a market cache cannot be read.
+
+    Defined locally (not imported from the audit fetcher) so the engine
+    carries no dependency beyond pathsim when it is vendored into a
+    standalone skill package.
+    """
 
 
 class CandleError(ValueError):

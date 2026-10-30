@@ -1,0 +1,58 @@
+{
+  "name": "rsi-dip-btc-1h-demo",
+  "hypothesis": "BTC 1 小时 RSI(14) 低于 30 后做多，捕捉均值回复",
+  "source": "内置演示（规则信号，无需外部信号文件）",
+  "symbol": "BTCUSDT",
+  "interval": "1h",
+  "venue": "futures",
+  "fee_rate": 0.0004,
+  "fill_model": "taker",
+  "funding": true,
+  "exit": {
+    "take_profit": 0.03,
+    "stop_loss": -0.08,
+    "timeout_bars": 24
+  },
+  "signals": {
+    "kind": "rule",
+    "rule": "rsi_below",
+    "period": 14,
+    "threshold": 30,
+    "side": "long"
+  },
+  "control": {
+    "enabled": true,
+    "n_random": 200,
+    "seed": 42
+  },
+  "walk_forward": {
+    "enabled": true,
+    "folds": 3
+  },
+  "param_grid": {
+    "axes": {
+      "take_profit": [
+        0.02,
+        0.03,
+        0.04
+      ],
+      "stop_loss": [
+        -0.06,
+        -0.08,
+        -0.1
+      ]
+    }
+  },
+  "fee_multiples": [
+    1,
+    2,
+    5
+  ],
+  "falsify_if": {
+    "control_lift_ci_includes_zero": true,
+    "net_negative_at_fee_multiple": 2,
+    "worst_case_net_negative": true,
+    "min_fills": 30,
+    "grid_positive_ratio_min": 0.5
+  }
+}

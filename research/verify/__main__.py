@@ -19,12 +19,22 @@ from pathlib import Path
 from . import data, report
 from .spec import Spec, SpecError
 
-ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_MARKET = ROOT / "runtime" / "audit" / "market.sqlite"
+# Dual-layout path resolution. The SAME file runs in two places:
+#   in-repo:      research/verify/__main__.py      (repo root has runtime/)
+#   vendored:     skill/strategy-falsifier/engine/__main__.py (no repo around)
+# In both layouts the demo bundle sits next to this file's package root, so a
+# standalone ZIP runs with zero repository context.
+_HERE = Path(__file__).resolve().parent
+_REPO_ROOT = _HERE.parents[1]
+ROOT = _REPO_ROOT if (_REPO_ROOT / "runtime" / "audit").is_dir() else _HERE.parent
+DEFAULT_MARKET = (ROOT / "runtime" / "audit" / "market.sqlite"
+                  if (ROOT / "runtime" / "audit").is_dir() else None)
 # Self-contained demo bundle: a fresh clone has no market cache (sqlite is
 # gitignored), so the demo must work from committed CSVs alone.
-BUNDLED_CANDLES = Path(__file__).resolve().parent / "samples" / "demo_candles.csv"
-BUNDLED_SPEC = Path(__file__).resolve().parent / "samples" / "demo_spec_csv.json"
+_SAMPLES = next((p for p in (_HERE / "samples", ROOT / "samples") if (p / "demo_candles.csv").is_file()),
+                _HERE / "samples")
+BUNDLED_CANDLES = _SAMPLES / "demo_candles.csv"
+BUNDLED_SPEC = _SAMPLES / "demo_spec_csv.json"
 # The funnel tail printed after every run: where to see the 30-second demo
 # and the case matrix, and what the first 10 orders cost (nothing).
 LANDING_PAGE = "https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/"
@@ -64,16 +74,18 @@ def _load_candles(args, spec: Spec) -> list[dict]:
     if args.candles:
         return data.load_candles_csv(args.candles)
     market = Path(args.market) if args.market else DEFAULT_MARKET
-    if market.is_file():
+    if market is not None and market.is_file():
         return data.load_candles_market(market, spec.symbol, spec.interval, spec.venue)
-    # No cache (fresh clone): fall back to the committed demo bundle so the
-    # demo always runs. Numbers differ slightly from the cached run (no
-    # funding series ships in the bundle) and the report discloses that.
+    # No cache (fresh clone or standalone skill): fall back to the committed
+    # demo bundle so the demo always runs. Numbers differ slightly from the
+    # cached run (no funding series ships in the bundle) and the report
+    # discloses that.
     if args.demo and BUNDLED_CANDLES.is_file():
         print(f"[提示] 无行情缓存，使用内置演示数据 {BUNDLED_CANDLES.name}", file=sys.stderr)
         return data.load_candles_csv(BUNDLED_CANDLES)
+    where = market if market is not None else "（独立运行，无仓库行情缓存）"
     raise data.CandleError(
-        f"找不到行情缓存 {market}。请用 --candles 提供 CSV（列 t,o,h,l,c），"
+        f"找不到行情缓存 {where}。请用 --candles 提供 CSV（列 t,o,h,l,c），"
         "或用 --list-market 查看可用缓存。"
     )
 
@@ -140,12 +152,15 @@ def _q(s: str) -> str:
 def _repro_info(args, spec: Spec, raw_argv: list[str]) -> dict:
     """The exact command and input paths behind this run, so the report ends
     with its own recipe. Built from what was actually passed -- never guessed."""
-    cmd = "python -m research.verify"
+    # Layout-aware: the same file runs in-repo (python -m research.verify) and
+    # vendored inside the standalone skill (python -m engine).
+    cmd = "python -m research.verify" if (ROOT / "research").is_dir() else "python -m engine"
     if raw_argv:
         cmd += " " + " ".join(_q(a) for a in raw_argv)
     market_path = Path(args.market) if args.market else DEFAULT_MARKET
+    has_cache = market_path is not None and market_path.is_file()
     if args.demo:
-        if market_path.is_file() or not BUNDLED_SPEC.is_file():
+        if has_cache or not BUNDLED_SPEC.is_file():
             spec_src = "内置演示 spec（--demo；DEMO_SPEC 定义于 research/verify/__main__.py）"
         else:
             spec_src = f"{BUNDLED_SPEC}（内置离线演示 spec）"
@@ -153,7 +168,7 @@ def _repro_info(args, spec: Spec, raw_argv: list[str]) -> dict:
         spec_src = str(args.spec)
     if args.candles:
         candles_src = str(args.candles)
-    elif market_path.is_file():
+    elif has_cache:
         candles_src = f"{market_path}（本地行情缓存 sqlite）"
     elif args.demo and BUNDLED_CANDLES.is_file():
         candles_src = f"{BUNDLED_CANDLES}（内置演示数据）"
@@ -196,6 +211,9 @@ def main(argv: list[str] | None = None) -> int:
 
     market = Path(args.market) if args.market else DEFAULT_MARKET
     if args.list_market:
+        if market is None:
+            print("独立运行模式：无仓库行情缓存可用（--list-market 需要缓存）", file=sys.stderr)
+            return 2
         try:
             rows = data.describe_market_cache(market)
         except Exception as exc:  # noqa: BLE001 - CLI boundary, message is the product
@@ -216,7 +234,7 @@ def main(argv: list[str] | None = None) -> int:
             # With a cache the demo runs the full 3-year series; without one it
             # falls back to the committed bundle (no funding series ships with
             # it, so the bundled spec declares funding: false and says so).
-            if market_path.is_file() or not BUNDLED_SPEC.is_file():
+            if (market_path is not None and market_path.is_file()) or not BUNDLED_SPEC.is_file():
                 spec = Spec.from_dict(DEMO_SPEC)
             else:
                 spec = Spec.load(BUNDLED_SPEC)
@@ -231,7 +249,7 @@ def main(argv: list[str] | None = None) -> int:
         if spec.exit.exit_signals_path:
             exit_signals = _load_exit_signals(spec, candles)
         funding = None
-        if spec.funding:
+        if spec.funding and market is not None:
             funding = data.load_funding(market, spec.symbol)
             if not funding and not args.candles:
                 print("[提示] 缓存中没有该 symbol 的资金费数据，按 0 处理", file=sys.stderr)

@@ -3,6 +3,7 @@
     "name": "case2-rsi-breakout-btc-1h",
     "hypothesis": "BTC 1h RSI(14)>70 强势后追涨做多，动量延续",
     "source": "",
+    "port_notes": "",
     "symbol": "BTCUSDT",
     "interval": "1h",
     "venue": "futures",
@@ -74,7 +75,8 @@
         "median_pct": -0.0077,
         "win_pct": 49.93894993894994,
         "profit_factor": 1.023555132438479,
-        "max_dd_pct": -99.9999643024549,
+        "max_dd_pct": -95.42677784398553,
+        "max_dd_worst_order_pct": -99.9999643024549,
         "expectancy_pct": 0.02097216117216117,
         "best_pct": 2.927,
         "worst_pct": -8.3001,
@@ -1746,7 +1748,8 @@
         "median_pct": -0.0077,
         "win_pct": 49.93894993894994,
         "profit_factor": 1.023555132438479,
-        "max_dd_pct": -99.9999643024549,
+        "max_dd_pct": -95.42677784398553,
+        "max_dd_worst_order_pct": -99.9999643024549,
         "expectancy_pct": 0.02097216117216117,
         "best_pct": 2.927,
         "worst_pct": -8.3001,
@@ -3410,21 +3413,21 @@
   "cost_sensitivity": [
     {
       "fee_multiple": 1.0,
-      "fee_bps": 4.0,
+      "fee_bps": 8.0,
       "net_sum_pct": 34.3524,
       "profit_factor": 1.023555132438479,
       "win_pct": 49.93894993894994
     },
     {
       "fee_multiple": 2.0,
-      "fee_bps": 8.0,
+      "fee_bps": 16.0,
       "net_sum_pct": -96.68759999999999,
       "profit_factor": 0.9365932682794327,
       "win_pct": 48.717948717948715
     },
     {
       "fee_multiple": 5.0,
-      "fee_bps": 20.0,
+      "fee_bps": 40.0,
       "net_sum_pct": -489.80760000000004,
       "profit_factor": 0.7176184663818989,
       "win_pct": 44.32234432234432
@@ -3457,6 +3460,7 @@
     ],
     "fills": 200,
     "unfilled": 0,
+    "open_signals": 0,
     "stats": {
       "n": 200,
       "sum_pct": -2.7370000000000014,
@@ -3464,7 +3468,8 @@
       "median_pct": 0.0845,
       "win_pct": 51.5,
       "profit_factor": 0.9832028593802548,
-      "max_dd_pct": -80.9026272474787,
+      "max_dd_pct": -45.94026632903071,
+      "max_dd_worst_order_pct": -80.9026272474787,
       "expectancy_pct": -0.013685000000000008,
       "best_pct": 2.9261,
       "worst_pct": -8.0972,
@@ -3682,12 +3687,12 @@
   },
   "verdict": {
     "outcome": "FALSIFIED",
-    "reason": "2 条事前证伪规则被触发：成本 ×2（8bps 往返）时净收益 -96.69% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.03%，95% 区间 [-0.27, +0.35] 跨 0，未能证明选择性",
+    "reason": "2 条事前证伪规则被触发：成本 ×2（往返 16bps）时净收益 -96.69% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.03%，95% 区间 [-0.27, +0.35] 跨 0，未能证明选择性",
     "checks": [
       {
         "rule": "net_negative_at_fee_multiple=2",
         "scope": "全窗口",
-        "detail": "成本 ×2（8bps 往返）时净收益 -96.69% ≤ 0，edge 付不起 toll",
+        "detail": "成本 ×2（往返 16bps）时净收益 -96.69% ≤ 0，edge 付不起 toll",
         "triggered": true
       },
       {
@@ -3699,5 +3704,11 @@
     ]
   },
   "walk_forward": null,
-  "param_grid": null
+  "param_grid": null,
+  "repro": {
+    "command": "python -m research.verify --spec research/verify/samples/cases/case2_rsi_breakout_btc.json --out docs/cases/case2_rsi_breakout_btc.md --json",
+    "spec": "research/verify/samples/cases/case2_rsi_breakout_btc.json",
+    "candles": "D:\\ZYY_Inovation\\money\\PaperTrade-Agent-V2-Fast\\runtime\\audit\\market.sqlite（本地行情缓存 sqlite）",
+    "signals": "规则信号（rsi_above，period=14，threshold=70，由 K 线实时计算，无需外部文件）"
+  }
 }

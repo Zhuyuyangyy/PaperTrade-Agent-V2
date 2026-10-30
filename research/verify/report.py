@@ -235,7 +235,7 @@ def render(result: dict) -> str:
     # -- 1. replay ----------------------------------------------------------
     a("## 1. Path-aware 回放")
     a("")
-    a("| 口径 | 成交 | 未成交 | 未决 | 净收益 | 均值/笔 | 胜率 | PF | 最大回撤 |")
+    a("| 口径 | 成交 | 未成交 | 未决 | 净收益 | 均值/笔 | 胜率 | PF | 最大回撤(时序) |")
     a("|---|---:|---:|---:|---:|---:|---:|---:|---:|")
     for case, label in (("worst_case", "最坏优先"), ("best_case", "最好优先")):
         r = result["runs"][case]
@@ -247,6 +247,14 @@ def render(result: dict) -> str:
     worst, best = result["runs"]["worst_case"]["stats"], result["runs"]["best_case"]["stats"]
     if worst["n"] and best["n"] and worst["sum_pct"] > 0 > best["sum_pct"]:
         a("> 同一策略只在乐观口径下赚钱——它赚的是假设，不是价差。")
+        a("")
+    # The realized drawdown is the chronological curve. The losses-first
+    # replay is a BOUND, not a history: both are printed so neither can be
+    # mistaken for the other (the sorted-series mistake is exactly how a
+    # "worst case" number ends up quoted as a lived experience).
+    dd_worst_order = worst.get("max_dd_worst_order_pct")
+    if dd_worst_order is not None and worst["n"]:
+        a(f"> 回撤口径：表中为**时序**最大回撤（真实经历）；同账面按“先亏后赚”重放的界为 {dd_worst_order:.2f}%——是界，不是历史。")
         a("")
     for case, label in (("worst_case", "最坏优先"), ("best_case", "最好优先")):
         by = result["runs"][case]["by_reason"]

@@ -134,6 +134,33 @@ def _crossed(bar: dict, price: float, side: str) -> bool:
     return bar["l"] < price if side == "long" else bar["h"] > price
 
 
+def _worse_exit(tp_price: float, sl_price: float, side: str, sl_from_trail: bool):
+    """Of the two exits that fired inside this bar, the one that pays LESS.
+
+    A long pays less at a lower price; a short pays less at a higher price.
+    The stop slot is not automatically the worse one -- an armed trailing
+    stop is a profit-taking level that can beat the take-profit.
+    """
+    if side == "long":
+        if sl_price <= tp_price:
+            return ("trailing" if sl_from_trail else "stop_loss"), sl_price
+        return "take_profit", tp_price
+    if sl_price >= tp_price:
+        return ("trailing" if sl_from_trail else "stop_loss"), sl_price
+    return "take_profit", tp_price
+
+
+def _better_exit(tp_price: float, sl_price: float, side: str, sl_from_trail: bool):
+    """Of the two exits that fired inside this bar, the one that pays MORE."""
+    if side == "long":
+        if sl_price > tp_price:
+            return ("trailing" if sl_from_trail else "stop_loss"), sl_price
+        return "take_profit", tp_price
+    if sl_price < tp_price:
+        return ("trailing" if sl_from_trail else "stop_loss"), sl_price
+    return "take_profit", tp_price
+
+
 def _one_trade(candles, i, side, rule: Exit, *, symbol, fee_rate, funding, worst_case,
                fill_model="taker", stats=None):
     signal_bar = candles[i]
@@ -226,10 +253,16 @@ def _one_trade(candles, i, side, rule: Exit, *, symbol, fee_rate, funding, worst
 
         if tp_hit and sl_hit:
             # The whole point of this module: disclose which one you assume.
+            # BUT "the stop" is not always the worse exit: once a trailing
+            # stop arms it becomes a profit-taking level that can beat the
+            # take-profit (the FreqBot audit showed worst-case +89.86% vs
+            # best-case -27.22% -- an inversion that made the two labels
+            # meaningless). So pick by what the exit is actually WORTH for
+            # this side, not by which slot the price came from.
             if worst_case:
-                reason, price = ("trailing" if sl_from_trail else "stop_loss"), sl_price
+                reason, price = _worse_exit(tp_price, sl_price, side, sl_from_trail)
             else:
-                reason, price = "take_profit", tp_price
+                reason, price = _better_exit(tp_price, sl_price, side, sl_from_trail)
         elif tp_hit:
             reason, price = "take_profit", tp_price
         elif sl_hit:

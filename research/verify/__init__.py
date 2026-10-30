@@ -179,7 +179,10 @@ def _battery(spec: Spec, candles: list[dict], entries: dict[int, str], exit_rule
         st = metrics.equity_stats(sim.net_pct_series())
         cost_rows.append({
             "fee_multiple": mult,
-            "fee_bps": spec.fee_rate * mult * 10_000,
+            # Round trip = both sides. The simulator deducts fee_rate*2 per
+            # trade; showing the one-side number under a "round-trip" label
+            # understated every toll in the table by exactly half.
+            "fee_bps": spec.fee_rate * mult * 2 * 10_000,
             "net_sum_pct": st["sum_pct"],
             "profit_factor": st["profit_factor"],
             "win_pct": st["win_pct"],
@@ -334,21 +337,27 @@ def _evaluate_criteria(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict
     checks = []
     worst = runs["worst_case"]["stats"]
 
-    if worst["n"] < spec.falsify_if.get("min_fills", 30):
+    # The spec declared its own evidence bar (min_fills). Below it, NOTHING
+    # else is evaluated: a net rule firing on 8 fills would let a weak sample
+    # produce a strong verdict the spec itself said it did not want, and
+    # "insufficient" would stop being a verdict and become a footnote.
+    min_fills = spec.falsify_if.get("min_fills", 30)
+    if worst["n"] < min_fills:
         checks.append({
             "rule": "min_fills",
             "scope": scope,
-            "detail": f"{prefix}成交 {worst['n']} 笔 < 下限 {spec.falsify_if.get('min_fills', 30)}，样本不足以下结论",
+            "detail": (f"{prefix}成交 {worst['n']} 笔 < 声明下限 {min_fills}，"
+                       f"样本不足以下结论（其余规则未评估）"),
             "triggered": False,
             "insufficient": True,
         })
+        return checks
 
     # A segment with ZERO fills has no measured net: sum_pct is 0.0 because
     # nothing traded, not because the strategy broke even. Firing a net rule
     # there would falsify on no evidence -- the same line the grid draws
-    # ("无证据不算输"), and it would override this function's own min_fills
-    # insufficient verdict, which exists precisely for that case. With at
-    # least one fill the net IS measured and the declared rule stands.
+    # ("无证据不算输"). With at least one fill the net IS measured and the
+    # declared rule stands.
     measured = worst["n"] > 0
 
     if spec.falsify_if.get("worst_case_net_negative") and measured and worst["sum_pct"] <= 0:
@@ -366,17 +375,26 @@ def _evaluate_criteria(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict
             checks.append({
                 "rule": f"net_negative_at_fee_multiple={mult}",
                 "scope": scope,
-                "detail": f"{prefix}成本 ×{mult:g}（{row['fee_bps']:.0f}bps 往返）时净收益 {row['net_sum_pct']:+.2f}% ≤ 0，edge 付不起 toll",
+                "detail": f"{prefix}成本 ×{mult:g}（往返 {row['fee_bps']:.0f}bps）时净收益 {row['net_sum_pct']:+.2f}% ≤ 0，edge 付不起 toll",
                 "triggered": True,
             })
 
     if spec.falsify_if.get("control_lift_ci_includes_zero") and ctrl is not None:
         lo, hi = ctrl.get("diff_ci") or [None, None]
-        if lo is not None and lo <= 0 <= hi:
+        # "Includes zero" was too narrow: an interval entirely BELOW zero is
+        # not a pass, it is the strategy being significantly WORSE than coin
+        # flips. The rule fires unless selectivity is PROVEN (lo > 0).
+        if lo is not None and not lo > 0:
+            if hi is not None and hi < 0:
+                detail = (f"{prefix}策略 − 随机对照组 = {ctrl['diff_pct']:+.2f}%，"
+                          f"95% 区间 [{lo:+.2f}, {hi:+.2f}] 整体为负——显著差于随机入场")
+            else:
+                detail = (f"{prefix}策略 − 随机对照组 = {ctrl['diff_pct']:+.2f}%，"
+                          f"95% 区间 [{lo:+.2f}, {hi:+.2f}] 跨 0，未能证明选择性")
             checks.append({
                 "rule": "control_lift_ci_includes_zero",
                 "scope": scope,
-                "detail": f"{prefix}策略 − 随机对照组 = {ctrl['diff_pct']:+.2f}%，95% 区间 [{lo:+.2f}, {hi:+.2f}] 跨 0，未能证明选择性",
+                "detail": detail,
                 "triggered": True,
             })
     return checks

@@ -20,6 +20,8 @@ sys.path.insert(0, str(ROOT))
 
 from research.verify import Spec, SpecError, verify  # noqa: E402
 from research.verify import control, data, metrics, report  # noqa: E402
+from research.verify import _evaluate_criteria  # noqa: E402
+from research.audit.pathsim import Exit, simulate  # noqa: E402
 from research.verify.signals import random_signals, rsi, rule_signals  # noqa: E402
 from research.verify.__main__ import main  # noqa: E402
 
@@ -944,6 +946,124 @@ print(control.random_control(candles, rule, spec, tied, n_random=20, seed=42)['s
         assert "## 0. 移植说明" in text
         assert "ROI 阶梯退化为固定 TP" in text
         assert r["spec"]["port_notes"].startswith("信号层高保真")
+
+
+class TestReplayHonestyFixes:
+    """Regressions for the five issues an external review found (2026-10-30).
+    Each of these passed the suite BEFORE the fix -- the tests below are the
+    nails that keep them fixed."""
+
+    def test_worst_case_is_never_better_than_best_case(self):
+        """The inversion: a tie bar where an ARMED trailing stop (a profit
+        level) beats the take-profit used to make worst_case pay MORE than
+        best_case (+89.86% vs -27.22% in the FreqBot audit). The tie-break
+        now picks by what the exit is worth for the side, not by slot."""
+        candles = [
+            {"t": 1, "o": 100, "h": 100.1, "l": 99.9, "c": 100.0, "v": 1},
+            {"t": 2, "o": 100, "h": 99.65, "l": 99.4, "c": 99.45, "v": 1},  # tie bar
+            {"t": 3, "o": 99.45, "h": 99.5, "l": 99.3, "c": 99.4, "v": 1},
+        ]
+        rule = Exit(take_profit=0.003, stop_loss=-0.015,
+                    trailing=0.002, trailing_offset=0.005, timeout_bars=10)
+        nets = {}
+        for worst in (True, False):
+            sim = simulate(candles, {0: "short"}, rule, symbol="T",
+                           fee_rate=0.0, worst_case=worst)
+            nets[worst] = sim.fills[0].net_pct
+        assert nets[True] <= nets[False], (
+            f"最坏口径 {nets[True]:+.4%} 好于最好口径 {nets[False]:+.4%}——倒挂")
+
+    def test_worst_le_best_holds_over_random_sweep(self):
+        """Property test: for randomized candles and rules (trailing on and
+        off, both sides), worst-case net must never exceed best-case net."""
+        rng = random.Random(99)
+        checked = 0
+        for _ in range(60):
+            n = rng.randint(40, 120)
+            candles, px = [], 100.0
+            for i in range(n):
+                px *= 1.0 + rng.gauss(0, 0.02)
+                o = px
+                c = px * (1 + rng.gauss(0, 0.01))
+                h = max(o, c) * (1 + abs(rng.gauss(0, 0.008)))
+                l = min(o, c) * (1 - abs(rng.gauss(0, 0.008)))
+                candles.append({"t": i * 3_600_000, "o": o, "h": h, "l": l, "c": c, "v": 1})
+            side = rng.choice(["long", "short"])
+            rule = Exit(
+                take_profit=rng.choice([None, 0.01, 0.03]),
+                stop_loss=rng.choice([None, -0.02, -0.05]),
+                trailing=rng.choice([None, 0.005, 0.01]),
+                trailing_offset=rng.choice([None, 0.005, 0.01]),
+                timeout_bars=rng.randint(2, 20),
+            )
+            if rule.take_profit is None and rule.stop_loss is None and rule.trailing is None:
+                continue
+            entries = {rng.randint(5, n - 3): side}
+            worst_sim = simulate(candles, entries, rule, symbol="T", fee_rate=0.0004, worst_case=True)
+            best_sim = simulate(candles, entries, rule, symbol="T", fee_rate=0.0004, worst_case=False)
+            w = sum(f.net_pct for f in worst_sim.fills)
+            b = sum(f.net_pct for f in best_sim.fills)
+            assert w <= b + 1e-9, f"倒挂: worst {w:+.4%} > best {b:+.4%}"
+            assert len(worst_sim.fills) == len(best_sim.fills)
+            checked += 1
+        assert checked >= 40
+
+    def test_fee_bps_column_is_round_trip(self):
+        """The simulator deducts fee_rate*2 per trade; the report's
+        'round-trip fee' column used to show the one-side number --
+        understating every toll by exactly half."""
+        candles = make_candles(800, seed=41)
+        d = dict(BASE_SPEC)
+        d["fee_rate"] = 0.0005
+        d["control"] = {"enabled": False}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        r = verify(spec, candles, entries)
+        row = r["cost_sensitivity"][0]
+        assert row["fee_bps"] == pytest.approx(10.0)  # 5bps/side -> 10bps round trip
+
+    def test_drawdown_is_chronological_with_a_disclosed_bound(self):
+        """max_dd_pct must be the realized (time-ordered) drawdown; the
+        losses-first replay is a separate, clearly-labelled bound."""
+        nets = [0.2, -0.1, 0.2, -0.1]
+        st = metrics.equity_stats(nets)
+        # chronological: 1.2 -> 1.08 -> 1.296 -> 1.1664, peak 1.296 -> DD -10%
+        assert st["max_dd_pct"] == pytest.approx(-10.0)
+        # losses-first: 0.9 -> 0.81 -> 0.972 -> 1.1664, peak 1.0 -> DD -19%
+        assert st["max_dd_worst_order_pct"] == pytest.approx(-19.0)
+        assert st["max_dd_worst_order_pct"] <= st["max_dd_pct"]
+
+    def test_control_rule_fires_when_significantly_worse_too(self):
+        """'CI includes zero' used to let an interval entirely BELOW zero
+        (strategy significantly WORSE than random) pass the rule. Not being
+        proven better is the trigger; being proven worse is not a pass."""
+        spec = Spec.from_dict({
+            **BASE_SPEC,
+            "falsify_if": {"control_lift_ci_includes_zero": True, "min_fills": 1},
+        })
+        runs = {
+            "worst_case": {"stats": metrics.equity_stats([-0.01] * 50)},
+            "best_case": {"stats": metrics.equity_stats([-0.01] * 50)},
+        }
+        ctrl = {"diff_pct": -0.30, "diff_ci": [-0.50, -0.10], "selectivity": "refuted"}
+        checks = _evaluate_criteria(spec, runs, [], ctrl, scope="全窗口")
+        rule = next(c for c in checks if c["rule"] == "control_lift_ci_includes_zero")
+        assert rule["triggered"]
+        assert "显著差于随机入场" in rule["detail"]
+
+    def test_min_fills_gates_every_other_rule(self):
+        """Below the spec's own declared evidence bar, nothing else is
+        evaluated: a net rule firing on 8 fills would override the very
+        insufficient-verdict the spec asked for."""
+        candles = make_candles(300, seed=42)  # few signals
+        d = dict(BASE_SPEC)
+        d["falsify_if"] = {"min_fills": 10_000, "worst_case_net_negative": True}
+        d["control"] = {"enabled": False}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        r = verify(spec, candles, entries)
+        assert r["verdict"]["outcome"] == "INCONCLUSIVE"
+        assert [c["rule"] for c in r["verdict"]["checks"]] == ["min_fills"]
 
 
 def _exit_rule():

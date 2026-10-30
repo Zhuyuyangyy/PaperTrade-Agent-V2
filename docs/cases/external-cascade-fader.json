@@ -87,6 +87,7 @@
         "win_pct": 66.66666666666666,
         "profit_factor": 4.172555948174323,
         "max_dd_pct": -1.0187999999999975,
+        "max_dd_worst_order_pct": -1.0187999999999975,
         "expectancy_pct": 1.0774000000000001,
         "best_pct": 2.7754000000000003,
         "worst_pct": -1.0188,
@@ -120,6 +121,7 @@
         "win_pct": 66.66666666666666,
         "profit_factor": 4.172555948174323,
         "max_dd_pct": -1.0187999999999975,
+        "max_dd_worst_order_pct": -1.0187999999999975,
         "expectancy_pct": 1.0774000000000001,
         "best_pct": 2.7754000000000003,
         "worst_pct": -1.0188,
@@ -144,21 +146,21 @@
   "cost_sensitivity": [
     {
       "fee_multiple": 1.0,
-      "fee_bps": 10.0,
+      "fee_bps": 20.0,
       "net_sum_pct": 3.2322,
       "profit_factor": 4.172555948174323,
       "win_pct": 66.66666666666666
     },
     {
       "fee_multiple": 2.0,
-      "fee_bps": 20.0,
+      "fee_bps": 40.0,
       "net_sum_pct": 2.6321999999999997,
       "profit_factor": 3.15966524450279,
       "win_pct": 66.66666666666666
     },
     {
       "fee_multiple": 5.0,
-      "fee_bps": 50.0,
+      "fee_bps": 100.0,
       "net_sum_pct": 0.8322000000000002,
       "profit_factor": 1.4575544314932922,
       "win_pct": 66.66666666666666
@@ -199,7 +201,8 @@
       "median_pct": 0.2612,
       "win_pct": 54.0,
       "profit_factor": 0.9074205553939326,
-      "max_dd_pct": -89.70066973011465,
+      "max_dd_pct": -56.82925559526218,
+      "max_dd_worst_order_pct": -89.70066973011465,
       "expectancy_pct": -0.102947,
       "best_pct": 2.8061,
       "worst_pct": -8.3826,
@@ -419,14 +422,14 @@
       {
         "rule": "min_fills",
         "scope": "全窗口",
-        "detail": "成交 3 笔 < 下限 30，样本不足以下结论",
+        "detail": "成交 3 笔 < 声明下限 30，样本不足以下结论（其余规则未评估）",
         "triggered": false,
         "insufficient": true
       },
       {
         "rule": "min_fills",
         "scope": "样本外",
-        "detail": "样本外段（第 19564 根起）：成交 1 笔 < 下限 30，样本不足以下结论",
+        "detail": "样本外段（第 19564 根起）：成交 1 笔 < 声明下限 30，样本不足以下结论（其余规则未评估）",
         "triggered": false,
         "insufficient": true
       }
@@ -453,6 +456,7 @@
             "win_pct": 50.0,
             "profit_factor": 2.724185316058108,
             "max_dd_pct": -1.0187999999999975,
+            "max_dd_worst_order_pct": -1.0187999999999975,
             "expectancy_pct": 0.8783000000000001,
             "best_pct": 2.7754000000000003,
             "worst_pct": -1.0188,
@@ -485,6 +489,7 @@
             "win_pct": 50.0,
             "profit_factor": 2.724185316058108,
             "max_dd_pct": -1.0187999999999975,
+            "max_dd_worst_order_pct": -1.0187999999999975,
             "expectancy_pct": 0.8783000000000001,
             "best_pct": 2.7754000000000003,
             "worst_pct": -1.0188,
@@ -508,21 +513,21 @@
       "cost_sensitivity": [
         {
           "fee_multiple": 1.0,
-          "fee_bps": 10.0,
+          "fee_bps": 20.0,
           "net_sum_pct": 1.7566000000000002,
           "profit_factor": 2.724185316058108,
           "win_pct": 50.0
         },
         {
           "fee_multiple": 2.0,
-          "fee_bps": 20.0,
+          "fee_bps": 40.0,
           "net_sum_pct": 1.3566,
           "profit_factor": 2.113062028224483,
           "win_pct": 50.0
         },
         {
           "fee_multiple": 5.0,
-          "fee_bps": 50.0,
+          "fee_bps": 100.0,
           "net_sum_pct": 0.15660000000000013,
           "profit_factor": 1.086100725753244,
           "win_pct": 50.0
@@ -563,7 +568,8 @@
           "median_pct": 0.27945000000000003,
           "win_pct": 55.05050505050505,
           "profit_factor": 1.2497466057757867,
-          "max_dd_pct": -83.1871198486009,
+          "max_dd_pct": -36.971946489535924,
+          "max_dd_worst_order_pct": -83.1871198486009,
           "expectancy_pct": 0.2205166666666667,
           "best_pct": 2.8093,
           "worst_pct": -8.3826,
@@ -781,7 +787,7 @@
           {
             "rule": "min_fills",
             "scope": "样本内",
-            "detail": "成交 2 笔 < 下限 30，样本不足以下结论",
+            "detail": "成交 2 笔 < 声明下限 30，样本不足以下结论（其余规则未评估）",
             "triggered": false,
             "insufficient": true
           }
@@ -804,6 +810,7 @@
             "win_pct": 100.0,
             "profit_factor": null,
             "max_dd_pct": 0.0,
+            "max_dd_worst_order_pct": 0.0,
             "expectancy_pct": 1.4756,
             "best_pct": 1.4756,
             "worst_pct": 1.4756,
@@ -831,6 +838,7 @@
             "win_pct": 100.0,
             "profit_factor": null,
             "max_dd_pct": 0.0,
+            "max_dd_worst_order_pct": 0.0,
             "expectancy_pct": 1.4756,
             "best_pct": 1.4756,
             "worst_pct": 1.4756,
@@ -849,21 +857,21 @@
       "cost_sensitivity": [
         {
           "fee_multiple": 1.0,
-          "fee_bps": 10.0,
+          "fee_bps": 20.0,
           "net_sum_pct": 1.4756,
           "profit_factor": null,
           "win_pct": 100.0
         },
         {
           "fee_multiple": 2.0,
-          "fee_bps": 20.0,
+          "fee_bps": 40.0,
           "net_sum_pct": 1.2756,
           "profit_factor": null,
           "win_pct": 100.0
         },
         {
           "fee_multiple": 5.0,
-          "fee_bps": 50.0,
+          "fee_bps": 100.0,
           "net_sum_pct": 0.6756,
           "profit_factor": null,
           "win_pct": 100.0
@@ -904,7 +912,8 @@
           "median_pct": -0.05329999999999999,
           "win_pct": 49.48979591836735,
           "profit_factor": 0.6652087281916703,
-          "max_dd_pct": -95.52078837943083,
+          "max_dd_pct": -71.50155838765022,
+          "max_dd_worst_order_pct": -95.52078837943083,
           "expectancy_pct": -0.516675,
           "best_pct": 2.827,
           "worst_pct": -8.2448,
@@ -1120,7 +1129,7 @@
           {
             "rule": "min_fills",
             "scope": "样本外",
-            "detail": "成交 1 笔 < 下限 30，样本不足以下结论",
+            "detail": "成交 1 笔 < 声明下限 30，样本不足以下结论（其余规则未评估）",
             "triggered": false,
             "insufficient": true
           }
