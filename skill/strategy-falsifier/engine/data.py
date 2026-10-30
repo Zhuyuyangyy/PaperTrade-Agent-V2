@@ -33,6 +33,34 @@ class CandleError(ValueError):
     """Raised when candle data is missing, malformed, or out of order."""
 
 
+# Column aliases customers actually have. Exchange downloads, freqtrade
+# backtest exports and TradingView CSVs all use different names; demanding a
+# literal `t` is how a paying customer decides the tool is not for them.
+CANDLE_ALIASES = {
+    "t": ("t", "date", "time", "timestamp", "open_time", "opentime", "datetime", "date_time"),
+    "o": ("o", "open"),
+    "h": ("h", "high"),
+    "l": ("l", "low"),
+    "c": ("c", "close"),
+    "v": ("v", "volume", "vol", "amount", "quote_volume"),
+}
+SIGNAL_ALIASES = {
+    "t": ("t", "date", "time", "timestamp", "datetime", "date_time", "signal_time"),
+    "side": ("side", "direction", "signal", "position", "type"),
+    "reason": ("reason", "exit_reason", "tag", "note"),
+}
+
+
+def _pick(row: dict, field: str, aliases: tuple[str, ...]) -> str | None:
+    """First present alias for a logical column, or None. Extra columns are
+    ignored on purpose -- real exports carry dozens of them."""
+    lowered = {str(k).strip().lower(): v for k, v in row.items()}
+    for a in aliases:
+        if a in lowered and lowered[a] not in (None, ""):
+            return lowered[a]
+    return None
+
+
 def _to_ms(t: str) -> int:
     """ISO-8601 or epoch milliseconds -> epoch ms. Anything else is an error."""
     t = t.strip()
@@ -59,18 +87,26 @@ def _to_ms(t: str) -> int:
 
 
 def _validate_candle(row: dict, lineno: int) -> dict:
+    t_raw = _pick(row, "t", CANDLE_ALIASES["t"])
+    if t_raw is None:
+        raise CandleError(f"第 {lineno} 行缺少时间列（接受 {CANDLE_ALIASES['t']} 之一）")
     try:
-        t = _to_ms(row["t"])
-        o, h, l, c = (float(row["o"]), float(row["h"]), float(row["l"]), float(row["c"]))
-    except KeyError as exc:
-        raise CandleError(f"第 {lineno} 行缺少列 {exc}（需要 t,o,h,l,c）") from exc
-    except ValueError as exc:
-        raise CandleError(f"第 {lineno} 行价格不是数字: {exc}") from exc
+        t = _to_ms(str(t_raw))
+        o = float(_pick(row, "o", CANDLE_ALIASES["o"]))
+        h = float(_pick(row, "h", CANDLE_ALIASES["h"]))
+        l = float(_pick(row, "l", CANDLE_ALIASES["l"]))
+        c = float(_pick(row, "c", CANDLE_ALIASES["c"]))
+    except (TypeError, ValueError) as exc:
+        raise CandleError(f"第 {lineno} 行 OHLC 不是有效数字: {exc}") from exc
+    v_raw = _pick(row, "v", CANDLE_ALIASES["v"])
+    try:
+        v = float(v_raw) if v_raw is not None else 0.0
+    except ValueError:
+        v = 0.0  # volume is optional context, not a price
     if min(o, h, l, c) <= 0:
         raise CandleError(f"第 {lineno} 行存在非正价格（t={t}）")
     if h < max(o, c) - 1e-12 or l > min(o, c) + 1e-12:
         raise CandleError(f"第 {lineno} 行 OHLC 不自洽: o={o} h={h} l={l} c={c}")
-    v = float(row.get("v") or 0.0)
     return {"t": t, "o": o, "h": h, "l": l, "c": c, "v": v}
 
 
@@ -81,8 +117,13 @@ def load_candles_csv(path: str | Path) -> list[dict]:
     candles: list[dict] = []
     with p.open(newline="", encoding="utf-8-sig") as fh:
         reader = csv.DictReader(fh)
-        if reader.fieldnames is None or not {"t", "o", "h", "l", "c"} <= set(reader.fieldnames):
-            raise CandleError(f"K 线 CSV 需要列 t,o,h,l,c，实际得到 {reader.fieldnames}")
+        if reader.fieldnames is None:
+            raise CandleError("K 线 CSV 是空文件")
+        lowered = {str(f).strip().lower() for f in reader.fieldnames}
+        for field, aliases in CANDLE_ALIASES.items():
+            if field != "v" and not lowered & set(aliases):
+                raise CandleError(
+                    f"K 线 CSV 缺少 {field} 列（接受 {aliases} 之一），实际得到 {reader.fieldnames}")
         for i, row in enumerate(reader, start=2):
             candles.append(_validate_candle(row, i))
     if len(candles) < 2:
@@ -150,16 +191,25 @@ def load_signals_csv(path: str | Path, candles: list[dict]) -> tuple[dict[int, s
     times = [c["t"] for c in candles]
     with p.open(newline="", encoding="utf-8-sig") as fh:
         reader = csv.DictReader(fh)
-        if reader.fieldnames is None or "t" not in reader.fieldnames:
-            raise CandleError(f"信号 CSV 需要列 t[,side]，实际得到 {reader.fieldnames}")
+        if reader.fieldnames is None:
+            raise CandleError("信号 CSV 是空文件")
+        lowered = {str(f).strip().lower() for f in reader.fieldnames}
+        if not lowered & set(SIGNAL_ALIASES["t"]):
+            raise CandleError(
+                f"信号 CSV 缺少时间列（接受 {SIGNAL_ALIASES['t']} 之一），实际得到 {reader.fieldnames}")
         for i, row in enumerate(reader, start=2):
             stats["total"] += 1
             try:
-                t = _to_ms(row["t"])
-            except CandleError:
+                t = _to_ms(str(_pick(row, "t", SIGNAL_ALIASES["t"])))
+            except (CandleError, TypeError):
                 stats["bad_rows"] += 1
                 continue
-            side = (row.get("side") or "long").strip().lower()
+            side_raw = _pick(row, "side", SIGNAL_ALIASES["side"])
+            side = (side_raw or "long").strip().lower()
+            if side not in ("long", "short"):
+                # common spellings customers actually use
+                side = {"buy": "long", "sell": "short", "l": "long", "s": "short",
+                        "1": "long", "-1": "short"}.get(side, side)
             if side not in ("long", "short"):
                 stats["bad_rows"] += 1
                 continue
@@ -202,12 +252,16 @@ def load_exit_signals_csv(path: str | Path, candles: list[dict]) -> dict[int, st
     times = [c["t"] for c in candles]
     with p.open(newline="", encoding="utf-8-sig") as fh:
         reader = csv.DictReader(fh)
-        if reader.fieldnames is None or "t" not in reader.fieldnames:
-            raise CandleError(f"退出信号 CSV 需要列 t[,reason]，实际得到 {reader.fieldnames}")
+        if reader.fieldnames is None:
+            raise CandleError("退出信号 CSV 是空文件")
+        lowered = {str(f).strip().lower() for f in reader.fieldnames}
+        if not lowered & set(SIGNAL_ALIASES["t"]):
+            raise CandleError(
+                f"退出信号 CSV 缺少时间列（接受 {SIGNAL_ALIASES['t']} 之一），实际得到 {reader.fieldnames}")
         for row in reader:
             try:
-                t = _to_ms(row["t"])
-            except CandleError:
+                t = _to_ms(str(_pick(row, "t", SIGNAL_ALIASES["t"])))
+            except (CandleError, TypeError):
                 continue
             if t < times[0] or t > times[-1]:
                 continue
@@ -218,7 +272,8 @@ def load_exit_signals_csv(path: str | Path, candles: list[dict]) -> dict[int, st
                     hi = mid
                 else:
                     lo = mid + 1
-            out[lo] = (row.get("reason") or "signal_exit").strip() or "signal_exit"
+            reason = _pick(row, "reason", SIGNAL_ALIASES["reason"])
+            out[lo] = (reason or "signal_exit").strip() or "signal_exit"
     return out
 
 

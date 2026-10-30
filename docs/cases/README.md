@@ -1,7 +1,6 @@
 # 案例矩阵：同一台引擎，四种死法
 
 2026-10-29，`research/verify/` 对四个**事前声明**的策略变体跑完整证伪电池。四个 spec 的假设、证伪规则、退出规则、成本假设、对照组参数全部先于结果写死在 `research/verify/samples/cases/*.json`，跑完不分好坏全部发布——包括看起来很赚钱的那个。
-
 统一设置：Binance 1h futures（BTCUSDT/ETHUSDT，29,347 根/币，2023-06-24 → 2026-10-28，本地缓存离线回放）· taker 4bps/边 · 含资金费 · 止盈 +3% / 止损 -8% / 超时 24h · 随机对照 200 笔（seed=42）· 证伪规则：基线亏损 / ×2 成本亏损 / 对照组 CI 跨 0。
 
 | 案例 | 假设 | 成交 | 净收益 | vs 随机对照 | 裁决 |
@@ -38,3 +37,13 @@ done
 完整报告（含退出结构、成本敏感性表、障碍可达性、对照组明细、事前证伪规则判定）：`docs/cases/case*.md`，机器可读版为同名 `.json`。
 
 > 节号说明：报告节号固定（判定恒为 §7、披露恒为 §8）。§5（walk-forward）与 §6（参数网格）只在 spec 声明对应仪器时出现——四个案例 spec 均未声明，故直接 §4 → §7。样本报告（demo spec 启用了两台仪器）是完整的 §1-§8。
+
+## 外部真实策略（客户旅程盲测产出）
+
+| 案例 | 来源 | 成交 | 净收益 | vs 随机对照 | 裁决 |
+|---|---|---:|---|---|---|
+| [external-cascade-fader](external-cascade-fader.md) | Master-Trader（旧审计线老朋友） | 3 | +3.23% | 样本不足 | INCONCLUSIVE（8% 深跌规则在 BTC 1h 上 3.3 年仅 3 次） |
+| [external-freqbot-fundingrate](external-freqbot-fundingrate.md) | FreqBot FundingRateEnhanced | 325 | -27.22% | unproven [-0.05,+0.17] | FALSIFIED（2026-10-30 复核修正后） |
+| [external-grid-freqbot](external-grid-freqbot.md) | FreqBot GridTradingStrategy（零售最常跑的网格类） | 360 | **+61.06%** | unproven [-0.40,+0.44] | FALSIFIED（又一条“赚钱但打不过随机”的曲线） |
+
+三个外部案例共用同一条信息：**能赚钱的策略很多，能证明自己不是运气的策略很少**。grid 案例额外是一次完整客户旅程盲测——从客户格式 CSV（`date` 列名）到参考导出器（`skill/strategy-falsifier/examples/export_grid_signals.py`）到证伪报告，全程只用公开文档；旅程中踩到的六个摩擦点已全部修复并配回归测试。

@@ -93,6 +93,17 @@ def _load_candles(args, spec: Spec) -> list[dict]:
 def _build_entries(args, spec: Spec, candles: list[dict]) -> dict[int, str]:
     from . import signals as sig
 
+    # A signal file passed to a rule/random spec used to be SILENTLY ignored:
+    # the customer's own signals never got tested while the report quietly
+    # audited the built-in rule instead. That is buying the wrong answer, so
+    # it is now a hard error.
+    if args.signals and spec.signals.kind in ("rule", "random"):
+        raise SpecError(
+            f"spec 声明 signals.kind='{spec.signals.kind}'，但又传了 --signals {args.signals}。"
+            f"引擎不会猜测你意图：要么把 spec 改成 kind='csv' 测你自己的信号，"
+            f"要么去掉 --signals 测内置规则。"
+        )
+
     if spec.signals.kind == "rule":
         entries = sig.rule_signals(
             candles, rule=spec.signals.rule, period=spec.signals.period,
@@ -106,6 +117,10 @@ def _build_entries(args, spec: Spec, candles: list[dict]) -> dict[int, str]:
     path = args.signals or spec.signals.path
     if not path:
         raise SpecError("signals.kind='csv' 需要 --signals 或 spec.signals.path")
+    # A relative path inside the spec resolves against the SPEC's directory
+    # first (a spec folder travels together), not the engine's cwd -- the
+    # exit-signal loader already did this; entries silently did not.
+    path = str(_resolve_against_spec(_spec_path[0], path))
     entries, stats = data.load_signals_csv(path, candles)
     if stats["total"] and not entries:
         raise data.CandleError(

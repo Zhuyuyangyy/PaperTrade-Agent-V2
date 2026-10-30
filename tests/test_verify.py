@@ -1066,6 +1066,100 @@ class TestReplayHonestyFixes:
         assert [c["rule"] for c in r["verdict"]["checks"]] == ["min_fills"]
 
 
+class TestCustomerJourneyFixes:
+    """Frictions found by a blind customer run (2026-10-30): a real exchange
+    CSV, a real freqtrade strategy, and only the public docs. Each fix here
+    is a place the journey used to die."""
+
+    def _write(self, path, header, rows):
+        import csv
+        with open(path, "w", newline="", encoding="utf-8") as fh:
+            w = csv.writer(fh)
+            w.writerow(header)
+            w.writerows(rows)
+        return path
+
+    def test_candle_csv_accepts_exchange_column_names(self, tmp_path):
+        """A Binance/freqtrade export uses date/open/high/low/close/volume.
+        Demanding a literal `t` rejected every real customer file."""
+        rows = [[1_700_000_000_000 + i * 3_600_000, 100 + i, 101 + i, 99 + i, 100.5 + i, 10]
+                for i in range(50)]
+        strict = self._write(tmp_path / "a.csv", ["t", "o", "h", "l", "c", "v"], rows)
+        loose = self._write(tmp_path / "b.csv",
+                            ["date", "open", "high", "low", "close", "volume"], rows)
+        assert data.load_candles_csv(strict) == data.load_candles_csv(loose)
+
+    def test_candle_csv_accepts_timestamp_alias_and_extra_columns(self, tmp_path):
+        rows = [[1_700_000_000_000 + i * 3_600_000, 100, 101, 99, 100.5, 10]
+                for i in range(50)]
+        p = self._write(tmp_path / "c.csv",
+                        ["open_time", "open", "high", "low", "close", "quote_volume", "trades"],
+                        rows)
+        candles = data.load_candles_csv(p)
+        assert len(candles) == 50 and candles[0]["t"] == 1_700_000_000_000
+
+    def test_signal_csv_accepts_date_column_and_buy_sell(self, tmp_path):
+        """Customer signal files arrive as date/direction with buy/sell."""
+        candles = make_candles(80, seed=51)
+        p = self._write(tmp_path / "s.csv",
+                        ["date", "direction"],
+                        [[1_700_000_000_000 + i * 3_600_000, "buy" if i % 2 else "sell"]
+                         for i in range(5, 70)])
+        entries, stats = data.load_signals_csv(p, candles)
+        assert stats["mapped"] > 0
+        assert set(entries.values()) <= {"long", "short"}
+
+    def test_signals_option_with_rule_spec_is_a_hard_error(self, tmp_path):
+        """The dangerous one: --signals silently ignored under a rule spec
+        meant the customer's own signals never got tested while the report
+        audited the built-in rule. That is buying the wrong answer."""
+        candles = make_candles(300, seed=52)
+        kp = self._write(tmp_path / "k.csv", ["t", "o", "h", "l", "c", "v"],
+                         [[1_700_000_000_000 + i * 3_600_000, 100 + i, 101 + i, 99 + i, 100.5 + i, 10]
+                          for i in range(300)])
+        sp = self._write(tmp_path / "s.csv", ["t", "side"],
+                         [[1_700_000_000_000 + i * 3_600_000, "long"] for i in range(10, 200, 5)])
+        spec_path = tmp_path / "spec.json"
+        spec_path.write_text(json.dumps({**BASE_SPEC, "control": {"enabled": False}}), encoding="utf-8")
+        rc = main(["--spec", str(spec_path), "--candles", str(kp), "--signals", str(sp)])
+        assert rc == 2  # SpecError -> usage error, never a quiet wrong-answer report
+
+    def test_spec_relative_signal_path_resolves_against_spec_dir(self, tmp_path):
+        """signals.path inside a spec resolves against the SPEC's directory
+        (a spec folder travels together), not the engine's cwd."""
+        candles = make_candles(300, seed=53)
+        kp = self._write(tmp_path / "k.csv", ["t", "o", "h", "l", "c", "v"],
+                         [[1_700_000_000_000 + i * 3_600_000, 100 + i, 101 + i, 99 + i, 100.5 + i, 10]
+                          for i in range(300)])
+        self._write(tmp_path / "s.csv", ["t", "side"],
+                    [[1_700_000_000_000 + i * 3_600_000, "long"] for i in range(10, 200, 5)])
+        d = dict(BASE_SPEC)
+        d["signals"] = {"kind": "csv", "path": "s.csv"}
+        d["control"] = {"enabled": False}
+        (tmp_path / "spec.json").write_text(json.dumps(d), encoding="utf-8")
+        out = tmp_path / "r.md"
+        rc = main(["--spec", str(tmp_path / "spec.json"), "--candles", str(kp), "--out", str(out)])
+        assert rc == 0
+        assert "证伪报告" in out.read_text(encoding="utf-8")
+
+    def test_verdict_reason_says_each_scope_once(self):
+        """Four rules firing on the OOS segment used to repeat the segment
+        prefix four times -- a broken record readers skim past."""
+        candles = _overfit_candles()
+        d = dict(BASE_SPEC)
+        d["signals"] = {"kind": "rule", "rule": "rsi_below", "period": 14, "threshold": 45}
+        d["control"] = {"enabled": False}
+        d["walk_forward"] = {"folds": 3}
+        d["falsify_if"] = {"worst_case_net_negative": True,
+                           "net_negative_at_fee_multiple": 2, "min_fills": 10}
+        spec = Spec.from_dict(d)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=45)
+        r = verify(spec, candles, entries)
+        if r["verdict"]["outcome"] == "FALSIFIED":
+            reason = r["verdict"]["reason"]
+            assert reason.count("样本外段：") <= 1, "scope 前缀重复了"
+
+
 def _exit_rule():
     from research.audit.pathsim import Exit
 

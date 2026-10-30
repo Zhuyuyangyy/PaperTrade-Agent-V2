@@ -488,7 +488,20 @@ def _verdict(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict | None,
     insufficient = [c for c in checks if c.get("insufficient")]
     if triggered:
         outcome = "FALSIFIED"
-        reason = f"{len(triggered)} 条事前证伪规则被触发：" + "；".join(c["detail"] for c in triggered)
+        # Group by scope and say the scope ONCE: four lines each starting
+        # "样本外段（第 19564 根起）：" read like a broken record, and a
+        # record that skips is how readers skim past the actual findings.
+        by_scope: dict[str, list[str]] = {}
+        for c in triggered:
+            by_scope.setdefault(c.get("scope", "全窗口"), []).append(c["detail"])
+        parts = []
+        for scope, details in by_scope.items():
+            if scope == "全窗口":
+                parts.extend(details)
+            else:
+                stripped = [d.split("：", 1)[1] if "：" in d else d for d in details]
+                parts.append(f"{scope}段：" + "；".join(stripped))
+        reason = f"{len(triggered)} 条事前证伪规则被触发：" + "；".join(parts)
     elif insufficient:
         outcome = "INCONCLUSIVE"
         scopes = "、".join(dict.fromkeys(c["scope"] for c in insufficient))
