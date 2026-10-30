@@ -1,0 +1,53 @@
+{
+  "interval": "1h",
+  "venue": "futures",
+  "fee_rate": 0.0004,
+  "funding": true,
+  "exit": {
+    "take_profit": 0.03,
+    "stop_loss": -0.08,
+    "timeout_bars": 24
+  },
+  "control": {
+    "enabled": true,
+    "n_random": 200,
+    "seed": 42
+  },
+  "fee_multiples": [
+    1,
+    2,
+    5
+  ],
+  "falsify_if": {
+    "control_lift_ci_includes_zero": true,
+    "net_negative_at_fee_multiple": 2,
+    "worst_case_net_negative": true,
+    "min_fills": 30
+  },
+  "name": "buyer-variant-base",
+  "hypothesis": "客户策略变体：默认参数（ TP 3% / SL -8% ）。同一入场（BTC 1h RSI(14)<30 做多），同一窗口，唯一变量是退出参数。",
+  "symbol": "BTCUSDT",
+  "fill_model": "taker",
+  "signals": {
+    "kind": "rule",
+    "rule": "rsi_below",
+    "period": 14,
+    "threshold": 30,
+    "side": "long"
+  },
+  "source": "销售样张：模拟客户三变体参数选择问题（2026-10-31）",
+  "param_grid": {
+    "axes": {
+      "take_profit": [
+        0.02,
+        0.03,
+        0.04
+      ],
+      "stop_loss": [
+        -0.06,
+        -0.08,
+        -0.1
+      ]
+    }
+  }
+}
