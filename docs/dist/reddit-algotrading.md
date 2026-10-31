@@ -22,8 +22,12 @@ The instruments (all open source, all offline-replayable):
 2. **Cost sensitivity.** Replay at 1x/2x/5x the assumed fee. Measured here: $100 order into a median-$799k pool costs 60bps round trip, 50bps of which is an LP floor. The 120bps in the config was priced for a $1,000 order — wrong ruler, not wrong number.
 3. **Barrier reachability.** Are your TP/SL levels prices the market actually visits? In one test case the -8% stop was touched in 4.9% of windows. That "stop loss" was not working.
 4. **Random-entry control.** Same window, same exits, same costs, entries drawn at random, bootstrap CI on the difference. TrendRider (8468 trades, PF 0.84) and CascadeFader (PF 1.12) both fail this.
+5. **Walk-forward.** The last fold is out-of-sample; the declared rules re-adjudicate there.
+6. **Parameter grid.** The whole declared exit-parameter space, replayed. Only a few cells positive = curve fitting, not edge.
 
-Four pre-declared cases, all published including the ugly ones:
+And a **diagnosis layer** on top: seven outcomes (insufficient / control-failed / cost-sensitive / unverified edge / overfitting / barrier / not-falsified), each with the evidence from THIS run and a next experiment with an acceptance criterion. Verdict alone says "it died"; the diagnosis says which failure and what to test next. Example: a buyer asked which of three exit-parameter sets to ship — all three came back FALSIFIED with the SAME outcome (control-failed), and the diagnosis says the exit parameters were never the problem. See docs/sales-sample/ for that full case.
+
+Seven pre-declared cases, all published including the ugly ones:
 
 | Case | Trades | Net | vs random control | Verdict |
 |---|---|---|---|---|
@@ -31,6 +35,9 @@ Four pre-declared cases, all published including the ugly ones:
 | RSI momentum BTC 1h | 1638 | **+34.35%** | **unproven (+0.03%)** | FALSIFIED |
 | RSI dip-buy ETH 1h | 1419 | -1144.10% | refuted (-0.80%) | FALSIFIED |
 | Same, maker limits | 1301 | -453.20% | refuted (-0.40%) | FALSIFIED |
+| FreqBot FundingRateEnhanced | 325 | -27.22% | unproven | FALSIFIED |
+| FreqBot GridTradingStrategy | 360 | **+61.06%** | **unproven (-0.40%)** | FALSIFIED |
+| CascadeFader | 3 | +3.23% | insufficient | INCONCLUSIVE |
 
 The second row is the one I care about. +34% over three years looks publishable. But a random-entry control in the same window differs by +0.03%/trade with a CI spanning zero. 2023-06 to 2026-10 was a crypto bull run — random entries made money too. That curve sells beta packaged as alpha. (For reference, Broker Tested Reviews' live-funded tests found 17 of 22 retail bots were just index beta, and a median 14.3pp gap between backtest and live returns.)
 
