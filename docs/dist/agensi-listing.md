@@ -17,8 +17,9 @@ Strategy Falsifier — kill a backtest with evidence, not opinions
 
 ```
 Six-instrument falsification battery for trading strategies: path-aware replay,
-cost stress, random-entry control, walk-forward, parameter grid. Verdicts from
-rules declared before any number is read.
+cost stress, random-entry control, walk-forward, parameter grid -- plus a
+diagnosis layer (seven outcomes, each with a next experiment and acceptance
+criterion). Verdicts from rules declared before any number is read.
 ```
 
 ## Short description (listing card)
@@ -31,7 +32,11 @@ out-of-sample walk-forward folds, and a parameter-sensitivity grid. The verdict
 comes from falsification rules declared BEFORE any number is read — the same
 discipline a scientific control requires. Failed runs are published with the
 same prominence as successes; a strategy that earns +34% over three years and
-still cannot beat random entries gets marked FALSIFIED. Offline, stdlib-only,
+still cannot beat random entries gets marked FALSIFIED. Then the DIAGNOSIS
+layer answers what a verdict alone cannot: which of seven diagnostic outcomes
+the evidence points to (insufficient / control-failed / cost-sensitive /
+unverified edge / overfitting / barrier / not-falsified) and, for each, a next
+experiment -- hypothesis plus acceptance criterion. Offline, stdlib-only,
 single self-contained script. Free tier runs the full battery.
 ```
 
@@ -103,12 +108,15 @@ network, no account, no data leaves your machine.
 
 | Tier | Price | Contents |
 |---|---|---|
-| **Falsifier (base)** | **Free** | Full six-instrument battery, single strategy or comparison, md/json/html outputs. The engine is MIT and public; the free tier is genuinely complete — no crippled demo. |
+| **Falsifier (base)** | **Free** | Full six-instrument battery + diagnosis layer, single strategy or comparison, md/json/html outputs. The engine is MIT and public; the free tier is genuinely complete — no crippled demo. |
 | **Falsifier Pro** | $9 one-time | Everything in base, plus: bundled reference exporter (turn a freqtrade-style strategy into engine signal CSVs), the public case matrix as worked examples, priority re-runs when the engine updates. |
-| **Human audit** | $99 / $299 (off-platform, author's discretion) | The author ports YOUR strategy, cleans the data, runs the battery, and walks you through what the numbers mean. Limited slots; enquiry via the GitHub repo. |
+| **Standard audit** | $99 (off-platform) | The author ports YOUR strategy, verifies the signal fidelity, runs the full battery, delivers in 24-72h. |
+| **Diagnosis-enhanced audit** | $129 (off-platform) | $99 plus: diagnosis layer with experiments and acceptance criteria, variant comparison matrix (≤5), forwardable HTML report, **human data verification** (ported-signal fidelity checked line by line against your original code/config), a 30-minute recorded walkthrough, one re-run within 7 days. Weekly capacity 2-3 orders. |
+| **Deep audit** | $299 (off-platform) | $129 plus: ×10 cost stress, re-run after data refresh, 60-minute walkthrough. |
 
 Rationale: the base tier being complete and free is the marketing — the paid
-tiers sell convenience and human time, not a key that unlocks the verdict.
+tiers sell convenience and human time (a USD price point needs the human
+step), not a key that unlocks the verdict. All prices USD.
 
 ## Submission checklist (for the owner)
 

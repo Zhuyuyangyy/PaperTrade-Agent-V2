@@ -2837,7 +2837,7 @@ def render_html(result: dict) -> str:
       '随机对照组 · walk-forward · 参数网格）。规则先于数字，失败同样发布。</p>')
     a('<p><a href="https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/">落地页</a> · '
       '<a href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2">开源仓库</a> · '
-      '服务：带策略来，我出证伪报告 —— 首 10 单免费（换匿名公开案例授权），付费档 $99 / $299。</p>')
+      '服务：带策略来，我出证伪报告 —— 首 10 单免费（换匿名公开案例授权），付费档 $99 / $129 诊断增强 / $299。</p>')
     a("</footer>")
     a("</div></body></html>")
     return "\n".join(h)
@@ -3038,9 +3038,9 @@ Outcome taxonomy (primary, by priority):
 # whole ladder (a reader deserves to see what was ruled out and why).
 OUTCOMES = [
     ("insufficient", "证据不足"),
-    ("randomness", "随机性未排除"),
+    ("randomness", "随机对照未通过"),
     ("cost", "成本敏感"),
-    ("edge_absent", "未测出正期望"),
+    ("edge_absent", "正期望未证实"),
     ("overfitting", "过拟合迹象"),
     ("barrier", "结构受限"),
     ("survived", "未被证伪"),
@@ -3084,7 +3084,16 @@ def diagnose(result: dict) -> dict:
     wf = result.get("walk_forward") or {}
     oos = (wf.get("out_sample") or {}).get("runs", {}).get("worst_case", {}).get("stats") or {}
     isb = (wf.get("in_sample") or {}).get("runs", {}).get("worst_case", {}).get("stats") or {}
+    # Grid data lives in walk_forward.out_sample_grid when walk-forward ran;
+    # a param-grid-only spec keeps its scopes in result["param_grid"]. Read
+    # the out-of-sample grid first, fall back to the whole-window grid, so a
+    # grid-only strategy can still be classified as overfitting.
     grid = wf.get("out_sample_grid") or {}
+    if not grid:
+        for scope in ((result.get("param_grid") or {}).get("scopes") or []):
+            if isinstance(scope, dict) and scope.get("positive_ratio") is not None:
+                grid = scope
+                break
     br = result.get("barrier_reach") or {}
 
     worst_net = worst.get("sum_pct")
@@ -3095,6 +3104,10 @@ def diagnose(result: dict) -> dict:
     def ev(s: str) -> None:
         if s not in evidence:
             evidence.append(s)
+
+    def add_tag(t: str) -> None:
+        if t not in tags:
+            tags.append(t)
 
     # ---- the classification tree, in priority order -----------------------
     if outcome == "INCONCLUSIVE":
@@ -3110,18 +3123,28 @@ def diagnose(result: dict) -> dict:
     elif selectivity == "refuted":
         primary = "randomness"
         ev(f"对照组：策略 − 随机 = {_dx_pct(diff)}/笔，95% 区间 [{_dx_pct(ci[0])}, {_dx_pct(ci[1])}] "
-           f"整体为负——入场逻辑显著差于随机")
+           f"整体为负——入场逻辑显著差于随机（这是随机对照未通过的强形式：不是分不清，是更差）")
     elif selectivity == "unproven":
         primary = "randomness"
         ev(f"对照组：策略 − 随机 = {_dx_pct(diff)}/笔，95% 区间 [{_dx_pct(ci[0])}, {_dx_pct(ci[1])}] "
-           f"跨 0——无法证明入场逻辑优于随机")
+           f"跨 0——无法证明入场逻辑优于随机（随机对照未通过的弱形式：分不清）")
         if worst_net is not None and worst_net > 0:
-            ev(f"账面净收益 {_dx_pct(worst_net)} 是真实的，但它与随机入场的差异在统计上不存在："
-               "赚的是 beta，包装成 alpha")
-    elif x2_net is not None and x2_net <= 0 < (worst_net or 0):
+            ev(f"账面净收益 {_dx_pct(worst_net)} 是真实的，但收益尚未证明来自策略选择性——"
+               "它同样可能来自 beta 或运气，对照组无法区分")
+    elif selectivity == "proven" and x2_net is not None and x2_net <= 0 < (worst_net or 0):
         primary = "cost"
-        ev(f"×1 费率净 {_dx_pct(worst_net)}，×2 费率净 {_dx_pct(x2_net)}——edge 在统计上成立，"
-           "但付不起加倍的 toll")
+        ev(f"对照组已证明选择性（差值 CI 下界为正），且 ×1 费率净 {_dx_pct(worst_net)}、"
+           f"×2 费率净 {_dx_pct(x2_net)}——edge 真实存在，但付不起加倍的 toll")
+    elif x2_net is not None and x2_net <= 0 < (worst_net or 0):
+        # The book profits at 1x and dies at 2x, but selectivity was NOT
+        # proven (control disabled or unproven). A profitable book is not a
+        # proven edge: the main reading is "source of return unverified",
+        # with cost fragility as a secondary fact -- never the reverse.
+        primary = "edge_absent"
+        ev(f"账面净 {_dx_pct(worst_net)} 但 ×2 费率净 {_dx_pct(x2_net)}，且选择性未获证明"
+           + ("（随机对照组未启用）" if selectivity is None else "")
+           + "——收益来源未经验证，成本脆弱是附带事实而非主诊断")
+        add_tag("cost")
     elif worst_net is not None and worst_net <= 0:
         primary = "edge_absent"
         ev(f"×1 费率下净收益 {_dx_pct(worst_net)}，且对照组未能证明选择性——"
@@ -3130,6 +3153,13 @@ def diagnose(result: dict) -> dict:
         primary = "overfitting"
         ev(f"样本内净 {_dx_pct(isb['sum_pct'])} vs 样本外净 {_dx_pct(oos['sum_pct'])}——"
            "edge 在没见过的数据上撑不住")
+    elif grid.get("positive_ratio") is not None and grid["positive_ratio"] < 0.5:
+        # grid-only spec (no walk-forward): a brittle grid is still an
+        # overfitting reading -- edge existing only in a few cells.
+        primary = "overfitting"
+        ev(f"参数网格正格率 {grid['positive_ratio'] * 100:.0f}%"
+           f"（{grid.get('positive_cells', 0)}/{grid.get('n_cells', 0)} 格为正）——"
+           "edge 只在一小撮参数组合下存在，是曲线拟合不是规律")
     elif br.get("reached_tp_pct") is not None and br["reached_tp_pct"] < 10:
         primary = "barrier"
         ev(f"止盈位在持仓窗口内仅被摸到 {br['reached_tp_pct']:.1f}%——盈利期望是彩票结构")
@@ -3138,10 +3168,6 @@ def diagnose(result: dict) -> dict:
         ev("裁决为 FALSIFIED 但结论无法归入上述类别——请人工看第 7 节规则判定表")
 
     # ---- secondary tags (a strategy can fail several ways at once) --------
-    def add_tag(t: str) -> None:
-        if t not in tags:
-            tags.append(t)
-
     if primary != "insufficient" and outcome == "INCONCLUSIVE":
         add_tag("insufficient")
     if selectivity in ("unproven", "refuted") and primary != "randomness":
@@ -3185,7 +3211,8 @@ def diagnose(result: dict) -> dict:
         })
         if worst_net is not None and worst_net > 0:
             experiments.append({
-                "diagnosis": f"账面 {_dx_pct(worst_net)} 与随机入场无统计差异——赚的是 beta",
+                "diagnosis": f"账面 {_dx_pct(worst_net)} 与随机入场无统计差异——"
+                             "收益尚未证明来自策略选择性（可能来自 beta 或运气）",
                 "next_experiment": "若目标就是赚 beta：改用买入持有/定投做基准对比，"
                                    "本引擎的回答是“不优于随机”，不是“不能赚”",
                 "acceptance": "策略对买入持有的超额收益 CI 下界 > 0（那是另一个实验，"
@@ -3219,12 +3246,17 @@ def diagnose(result: dict) -> dict:
             "acceptance": "新假设的对照组差值 CI 下界 > 0（严格为正，不是 ≥ 0）",
         })
     elif primary == "overfitting":
+        if isb.get("sum_pct") is not None and oos.get("sum_pct") is not None:
+            acc = (f"样本外净收益 ≥ 样本内的一半（当前样本内 {_dx_pct(isb['sum_pct'])} "
+                   f"vs 样本外 {_dx_pct(oos['sum_pct'])}），且网格正格率 ≥ 声明值")
+        else:
+            acc = (f"网格正格率 ≥ 声明值（当前 {grid.get('positive_ratio', 0) * 100:.0f}%）；"
+                   "若同时启用 walk-forward，样本外净收益还应 ≥ 样本内的一半")
         experiments.append({
             "diagnosis": "样本内成立但样本外崩溃/参数网格脆弱——拟合了历史而非规律",
             "next_experiment": "砍自由度：参数空间砍到 1-2 个维度再测；必须多参数时改用"
                                "滚动前向验证（每折内重新选参，而不是单次划分）",
-            "acceptance": f"样本外净收益 ≥ 样本内的一半（当前样本内 {_dx_pct(isb.get('sum_pct'))} "
-                          f"vs 样本外 {_dx_pct(oos.get('sum_pct'))}），且网格正格率 ≥ 声明值",
+            "acceptance": acc,
         })
         if grid.get("n_cells"):
             experiments.append({
@@ -4027,7 +4059,7 @@ def _print_footer_promo() -> None:
     print()
     print("-" * 60)
     print(f"落地页（30 秒演示 · 真实案例矩阵）：{LANDING_PAGE}")
-    print("服务：带策略来，我出证伪报告 —— 首 10 单免费（换匿名公开案例授权），付费档 $99 / $299。")
+    print("服务：带策略来，我出证伪报告 —— 首 10 单免费（换匿名公开案例授权），付费档 $99 / $129 诊断增强 / $299。")
     print("-" * 60)
 
 

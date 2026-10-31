@@ -561,7 +561,7 @@ def render_html(result: dict) -> str:
       '随机对照组 · walk-forward · 参数网格）。规则先于数字，失败同样发布。</p>')
     a('<p><a href="https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/">落地页</a> · '
       '<a href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2">开源仓库</a> · '
-      '服务：带策略来，我出证伪报告 —— 首 10 单免费（换匿名公开案例授权），付费档 $99 / $299。</p>')
+      '服务：带策略来，我出证伪报告 —— 首 10 单免费（换匿名公开案例授权），付费档 $99 / $129 诊断增强 / $299。</p>')
     a("</footer>")
     a("</div></body></html>")
     return "\n".join(h)

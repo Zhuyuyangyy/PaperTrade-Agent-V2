@@ -1569,6 +1569,42 @@ class TestDiagnosis:
         assert "cost" in d["tags"]
         assert any("成本翻倍即亏损" in x["diagnosis"] for x in d["experiments"])
 
+    def test_grid_only_spec_is_classified_overfitting(self):
+        """A spec with param_grid but no walk_forward must still be readable:
+        the grid lives in result['param_grid'].scopes, not in
+        walk_forward.out_sample_grid."""
+        from research.verify.diagnosis import diagnose
+
+        r = self._result()
+        r["control"] = {"diff_pct": 0.40, "diff_ci": [0.15, 0.46], "selectivity": "proven"}
+        r["runs"]["worst_case"]["stats"]["sum_pct"] = 30.0
+        r["cost_sensitivity"] = [{"fee_multiple": 1, "fee_bps": 8, "net_sum_pct": 30.0},
+                                 {"fee_multiple": 2, "fee_bps": 16, "net_sum_pct": 28.0}]
+        r["walk_forward"] = None
+        r["barrier_reach"] = {"reached_tp_pct": 60.0}
+        r["param_grid"] = {"scopes": [{"scope": "全窗口", "n_cells": 9,
+                                       "positive_cells": 1, "positive_ratio": 1 / 9}]}
+        d = diagnose(r)
+        assert d["primary"] == "overfitting", d["primary"]
+        assert any("正格率" in e for e in d["evidence"])
+
+    def test_cost_requires_proven_selectivity(self):
+        """A profitable book that dies at doubled fees is NOT automatically a
+        'real edge killed by cost': with the control group disabled, the
+        source of return is unverified and that is the main reading."""
+        from research.verify.diagnosis import diagnose
+
+        r = self._result()
+        r["control"] = None  # the buyer never enabled the control group
+        r["runs"]["worst_case"]["stats"]["sum_pct"] = 20.0
+        r["cost_sensitivity"] = [{"fee_multiple": 1, "fee_bps": 8, "net_sum_pct": 20.0},
+                                 {"fee_multiple": 2, "fee_bps": 16, "net_sum_pct": -3.0}]
+        r["walk_forward"] = None
+        d = diagnose(r)
+        assert d["primary"] == "edge_absent", d["primary"]
+        assert "cost" in d["tags"]
+        assert any("对照组未启用" in e for e in d["evidence"])
+
     def test_diagnosis_is_in_the_verify_output(self):
         candles = make_candles(1500, seed=11)
         spec = Spec.from_dict(BASE_SPEC)

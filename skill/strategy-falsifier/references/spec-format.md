@@ -147,8 +147,8 @@
 | `--list-market` | 列出本地行情缓存中的序列 |
 | `--market path.sqlite` | 指定行情缓存 |
 
-公开示例：`docs/compare-sample.md`（7 策略对比矩阵，每行带死因列）、`docs/cases/external-*/`（三个外部真实策略的 spec 自带数据案例）。
+公开示例：`docs/compare-sample.md`（7 策略对比矩阵，每行带诊断结论列）、`docs/cases/external-*/`（三个外部真实策略的 spec 自带数据案例）。
 
 ## 9. 诊断层
 
-每份报告第 8 节是诊断结论与下一步实验：七类结论（`insufficient` 证据不足 / `randomness` 随机性未排除 / `cost` 成本敏感 / `edge_absent` 未测出正期望 / `overfitting` 过拟合迹象 / `barrier` 结构受限 / `survived` 未被证伪）+ 附带结论 + 证据 + 下一步实验（每条含 `diagnosis` / `next_experiment` / `acceptance` 三字段）。归类规则事前声明于 `research/verify/diagnosis.py`（优先级：证据不足 > NOT_FALSIFIED 短路 > 随机性 > 成本 > 无 edge > 过拟合 > 结构）。JSON 产物中位于 `diagnosis` 字段（`experiments` 列表）。
+每份报告第 8 节是诊断结论与下一步实验：七类结论（`insufficient` 证据不足 / `randomness` 随机对照未通过 / `cost` 成本敏感 / `edge_absent` 正期望未证实 / `overfitting` 过拟合迹象 / `barrier` 结构受限 / `survived` 未被证伪）+ 附带结论 + 证据 + 下一步实验（每条含 `diagnosis` / `next_experiment` / `acceptance` 三字段）。归类规则事前声明于 `research/verify/diagnosis.py`（优先级：证据不足 > NOT_FALSIFIED 短路 > 随机性 > 成本 > 无 edge > 过拟合 > 结构）。JSON 产物中位于 `diagnosis` 字段（`experiments` 列表）。

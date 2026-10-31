@@ -1,3 +1,3 @@
-39d6f7ab2aa8b09572f4037b298a7a126661369764104a2dcc34858206e9a9db  strategy-falsifier-agensi-v1.0.0.zip
+ec03cfa54615cb6bcadfbea3b09469b43cdb6acec9bccdf7ed34f1c129304225  strategy-falsifier-agensi-v1.0.0.zip
 3e34efe5d52aeb5ee22ff83cb63e5e05fcd212785205bb8799d2da443e994fe6  SKILL.md
-91b9585e691516f2c5993a516e8b36d019b9703ad1a99e56c8cdc2e21221d979  scripts/verify.py
+8886c3c152c7d163ba4aff78b2346d95e1afdfa68c207ef2e9cd77d193e0fdf6  scripts/verify.py
