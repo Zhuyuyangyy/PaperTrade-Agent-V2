@@ -100,7 +100,7 @@ python -m research.verify --spec your.json --candles klines.csv --signals sig.cs
 
 现在的形态：
 
-- **引擎**：开源（MIT），297 个测试（`test_verify.py` 60 个）全绿，离线可跑，`docs/verify-sample-report.md` 是真实数据样例
+- **引擎**：开源（MIT），361 个测试（`test_verify.py` 60 个）全绿，离线可跑，`docs/verify-sample-report.md` 是真实数据样例
 - **服务**：你带策略来（信号 CSV 或规则描述），我出证伪报告。**首 10 单免费**，换公开发布的 case study 授权
 - **不碰的**：不荐股、不带单、不代管资金、不承诺收益。我只回答一个问题：**你的曲线是不是幻觉。**
 

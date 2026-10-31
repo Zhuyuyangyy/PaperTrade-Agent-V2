@@ -61,7 +61,7 @@ That's the whole product thesis: not killing losers (they die on their own) — 
 Verdicts come from falsification rules written BEFORE the numbers exist. Post-hoc rules are marketing.
 
 **8/**
-Engine is open source (MIT), 38 tests, offline replay, sample report on real data in the repo.
+Engine is open source (MIT), 361 tests, offline replay, sample report on real data in the repo.
 
 First 10 strategy-falsification reports free in exchange for publication rights. No signals, no subscriptions, no managed capital — the only question it answers is whether your curve is real.
 
