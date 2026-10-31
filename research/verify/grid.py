@@ -31,7 +31,7 @@ from . import metrics
 from ..audit.pathsim import Exit, simulate
 
 
-def run(spec, candles: list[dict], entries: dict[int, str], exit_rule: Exit,
+def run(spec_obj, candles: list[dict], entries: dict[int, str], exit_rule: Exit,
         funding: list[dict] | None = None, scope: str = "全窗口") -> dict:
     """Replay every declared parameter combination over ONE entry set.
 
@@ -41,16 +41,16 @@ def run(spec, candles: list[dict], entries: dict[int, str], exit_rule: Exit,
     cell where nothing traded carries no evidence either way, and counting
     it as a loss would flatter the instrument.
     """
-    axes = spec.param_grid.axes
+    axes = spec_obj.param_grid.axes
     order = list(axes)
     cells = []
     for combo in itertools.product(*(axes[k] for k in order)):
         params = dict(zip(order, combo))
         sim = simulate(
             candles, entries, _exit_with(exit_rule, params),
-            symbol=spec.symbol, fee_rate=spec.fee_rate,
-            funding_series=funding if spec.funding else None,
-            worst_case=spec.worst_case, fill_model=spec.fill_model,
+            symbol=spec_obj.symbol, fee_rate=spec_obj.fee_rate,
+            funding_series=funding if spec_obj.funding else None,
+            worst_case=spec_obj.worst_case, fill_model=spec_obj.fill_model,
         )
         st = metrics.equity_stats(sim.net_pct_series())
         cells.append({

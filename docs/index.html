@@ -129,6 +129,12 @@
   .dim .v { font-family: var(--mono); font-size: 22px; font-weight: 800; color: var(--kill); line-height: 1.15; }
   .dim .l { font-size: 12.5px; color: var(--ink-3); margin-top: 4px; }
   .stat .v.sm { font-size: 16px; }
+  .sample-strip { margin: 22px 0 0; padding: 18px 20px; border: 1px solid var(--line); border-left: 4px solid var(--kill); border-radius: 0 12px 12px 0; background: var(--bg-soft); }
+  .sample-strip .kicker { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); font-weight: 700; margin-bottom: 8px; }
+  .sample-lines { margin: 0 0 10px; font-size: 17px; line-height: 1.75; color: var(--ink); }
+  .sample-lines b, .sample-lines strong { color: var(--kill); }
+  .sample-meta { margin: 0; font-size: 13px; color: var(--ink-2); }
+  .sample-meta a { color: var(--accent); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -146,10 +152,19 @@
       <a class="btn btn-ghost" href="cases/">案例矩阵：同一台引擎，四种死法</a>
     </div>
     <div class="stats">
-      <div class="stat"><div class="v bad">-14.3pp</div><div class="l">回测 → 实盘的收益中位差（行业第一死因：样本内过拟合）</div></div>
+      <div class="stat"><div class="v bad">-14.3pp</div><div class="l">回测 → 实盘的收益中位差（行业第一痛点：样本内过拟合）</div></div>
       <div class="stat"><div class="v bad">+34.35%</div><div class="l">三年赚钱曲线仍被判 FALSIFIED——统计上无法与随机入场区分</div></div>
-      <div class="stat"><div class="v">6</div><div class="l">台仪器，一个裁决：回放 / 成本 / 障碍 / 对照 / walk-forward / 参数网格</div></div>
-      <div class="stat"><div class="v">297</div><div class="l">个自动化测试守着规则——事后不许改规则，不许挑好看的说</div></div>
+      <div class="stat"><div class="v">6+1</div><div class="l">六台仪器 + 诊断层：回放 / 成本 / 障碍 / 对照 / walk-forward / 参数网格 → 诊断结论与下一步实验</div></div>
+      <div class="stat"><div class="v">356</div><div class="l">个自动化测试守着规则——事后不许改规则，不许挑好看的说</div></div>
+    </div>
+    <div class="sample-strip">
+      <div class="kicker">Sales Sample · 免费样张</div>
+      <p class="sample-lines">
+        <b>三个策略，三条漂亮的收益曲线。</b><br>
+        结果<strong>全部无法证明优于随机入场</strong>。<br>
+        你以为需要优化止盈止损，实际上需要<b>重新审视入场逻辑</b>。
+      </p>
+      <p class="sample-meta">一位买家的真实问题：“我入场定死了，止盈止损设多少？”——三个变体一次过，诊断结论全部指向同一处。<a href="sales-sample/">看完整样张（含 spec / 报告 / 复现命令）→</a></p>
     </div>
   </div>
 </header>
@@ -263,6 +278,7 @@
       </tbody>
     </table>
     <div class="note"><strong>报告不止 markdown：</strong><code>--out report.html</code> 输出自包含单文件（内联 CSS/SVG，零外部请求）——逐笔权益曲线（最坏 vs 最好口径并列）、成本敏感性条形图、参数网格热力图。可以直接发给合伙人、上级或自己存档。</div>
+    <div class="note"><strong>裁决之后还有诊断：</strong>每份报告第 8 节回答「证据指向什么、下一步验证什么」——七类诊断结论（证据不足 / 随机对照未通过 / 成本敏感 / 正期望未证实 / 过拟合迹象 / 结构受限 / 未被证伪）+ 附带结论 + 证据 + 下一步实验（每条含诊断、实验假设、验收标准）。归类规则事前声明、先于任何策略被分类。上面矩阵的诊断结论列就是它：一眼看清每个变体的证据指向。</div>
     <div class="note"><strong>spec 自带数据：</strong><code>candles_path</code> / <code>funding_path</code> / <code>signals.path</code> / <code>exit.exit_signals_path</code> 全部相对 spec 目录解析——一个 spec 文件夹就是一套可复现实验，公开案例 clone 后无需行情缓存即可复现。</div>
   </div>
 </section>
@@ -319,7 +335,7 @@
     <div class="kicker">Proof</div>
     <h2><span class="no">07</span>社会证明：这些数字，任何人都可以复跑</h2>
     <div class="stats">
-      <div class="stat"><div class="v">297</div><div class="l">个自动化测试守着规则——事后不许改规则，不许挑好看的说</div></div>
+      <div class="stat"><div class="v">361</div><div class="l">个自动化测试守着规则——事后不许改规则，不许挑好看的说</div></div>
       <div class="stat"><div class="v">6</div><div class="l">台仪器，一个裁决：回放 / 成本 / 障碍 / 对照 / walk-forward / 参数网格</div></div>
       <div class="stat"><div class="v sm">2023-06 → 2026-10</div><div class="l">真实数据窗口：Binance 1h futures，29,347 根 K 线/币，含一轮完整牛市</div></div>
       <div class="stat"><div class="v">4/4</div><div class="l">案例全部公开——包括三年 +34.35% 看着能发朋友圈的那个，照样 FALSIFIED</div></div>
@@ -338,30 +354,43 @@
         <div class="tier">First 10 Free · 主推入口</div>
         <div class="amount">$0</div>
         <ul>
-          <li>完整证伪报告（markdown + JSON）</li>
+          <li>完整证伪报告（markdown + JSON）<strong>含自动诊断层</strong>（七类结论 + 下一步实验）</li>
           <li>GitHub 开 issue 提交，贴策略描述即可</li>
           <li>换匿名公开发布权</li>
           <li>先看样例再决定</li>
         </ul>
       </div>
-      <div class="price featured">
-        <div class="tier">Falsification Report</div>
+      <div class="price">
+        <div class="tier">标准审计 · 人工跑 + 核数据</div>
         <div class="amount">$99</div>
         <ul>
-          <li>六台仪器完整报告</li>
+          <li>单策略，六台仪器完整报告（md + JSON）</li>
           <li>事前证伪规则逐条判定</li>
           <li>随机对照 200 笔 + bootstrap CI</li>
+          <li><strong>人工数据核验</strong>：你的策略 → 引擎信号的移植保真度核对</li>
           <li>24-72h 交付</li>
         </ul>
       </div>
+      <div class="price featured">
+        <div class="tier">诊断增强审计 · 人工复核结论</div>
+        <div class="amount">$129</div>
+        <ul>
+          <li>$99 全部内容</li>
+          <li><strong>人工复核诊断结论</strong>：七类结论逐条确认，不是机器说什么就是什么</li>
+          <li>最多 5 个变体对比矩阵（哪个最不过拟合）</li>
+          <li><strong>定制实验方案</strong>：下一步实验与验收标准由人工校准</li>
+          <li>HTML 可转发报告</li>
+          <li>30 分钟录屏解读 + 7 天内一次复跑</li>
+        </ul>
+      </div>
       <div class="price">
-        <div class="tier">Report + Walkthrough</div>
+        <div class="tier">深度审计</div>
         <div class="amount">$299</div>
         <ul>
-          <li>上述全部内容</li>
-          <li>30 分钟视频讲解</li>
-          <li>×10 成本扩展</li>
-          <li>数据更新后一次复跑</li>
+          <li>$129 全部内容</li>
+          <li>×10 成本压力测试</li>
+          <li>数据刷新后复跑</li>
+          <li>更长解读（60 分钟）</li>
         </ul>
       </div>
     </div>

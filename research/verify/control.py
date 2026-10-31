@@ -21,7 +21,7 @@ from ..audit.pathsim import Exit, simulate
 BOOTSTRAP = 2000
 
 
-def random_control(candles: list[dict], rule: Exit, spec, entries: dict[int, str], *,
+def random_control(candles: list[dict], rule: Exit, spec_obj, entries: dict[int, str], *,
                    n_random: int, seed: int, funding: list[dict] | None = None,
                    bar_range: tuple[int, int] | None = None) -> dict:
     """Replay one random-entry book with the strategy's exact parameters.
@@ -44,9 +44,9 @@ def random_control(candles: list[dict], rule: Exit, spec, entries: dict[int, str
     rand_entries = random_signals(candles, n_random, seed, side=side, bar_range=bar_range)
     sim = simulate(
         candles, rand_entries, rule,
-        symbol=spec.symbol, fee_rate=spec.fee_rate,
-        funding_series=funding, worst_case=spec.worst_case,
-        fill_model=spec.fill_model,
+        symbol=spec_obj.symbol, fee_rate=spec_obj.fee_rate,
+        funding_series=funding, worst_case=spec_obj.worst_case,
+        fill_model=spec_obj.fill_model,
     )
     nets = sim.net_pct_series()
     lo, hi = bar_bounds(candles, bar_range=bar_range)

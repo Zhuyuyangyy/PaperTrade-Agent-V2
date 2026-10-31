@@ -419,8 +419,40 @@ def render(result: dict) -> str:
         a("- spec 未声明任何 falsify_if 规则——本报告只呈现测量，不下裁决。")
     a("")
 
+    # -- diagnosis ----------------------------------------------------------
+    a("## 8. 诊断结论与下一步实验")
+    a("")
+    dx = result.get("diagnosis") or {}
+    if dx:
+        a(f"**主要结论：{dx.get('primary_label', dx.get('primary', '?'))}**")
+        if dx.get("tag_labels"):
+            a(f"**附带结论：{' · '.join(dx['tag_labels'])}**")
+        a("")
+        if dx.get("evidence"):
+            a("证据（全部来自本次测量，无新增假设）：")
+            a("")
+            for e in dx["evidence"]:
+                a(f"- {e}")
+            a("")
+        for i, x in enumerate(dx.get("experiments") or [], 1):
+            a(f"**实验 {i}**")
+            a("")
+            a(f"- 诊断：{x.get('diagnosis', '')}")
+            a(f"- 下一步实验：{x.get('next_experiment', '')}")
+            a(f"- 验收标准：{x.get('acceptance', '')}")
+            a("")
+        if dx.get("caveat"):
+            a(f"> {dx['caveat']}")
+            a("")
+        a("> 诊断结论与归类规则事前声明于 `research/verify/diagnosis.py`，先于任何策略被分类——"
+          "与证伪规则同一条纪律。实验建议不是投资建议。")
+        a("")
+    else:
+        a("- （本报告无诊断信息）")
+        a("")
+
     # -- disclosure ---------------------------------------------------------
-    a("## 8. 未建模事项（阅读前必读）")
+    a("## 9. 未建模事项（阅读前必读）")
     a("")
     for t in unmodeled_notes(result):
         a(f"- {t}")
@@ -429,7 +461,7 @@ def render(result: dict) -> str:
     # -- reproduce ----------------------------------------------------------
     repro = result.get("repro")
     if repro:
-        a("## 9. 复现命令")
+        a("## 10. 复现命令")
         a("")
         a("本次报告由以下命令产生；在同一目录重跑，可复现同样数字：")
         a("")

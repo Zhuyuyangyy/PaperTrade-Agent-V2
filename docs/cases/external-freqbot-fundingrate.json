@@ -2458,6 +2458,38 @@
       }
     ]
   },
+  "diagnosis": {
+    "primary": "randomness",
+    "primary_label": "随机对照未通过",
+    "tags": [
+      "overfitting"
+    ],
+    "tag_labels": [
+      "过拟合迹象"
+    ],
+    "evidence": [
+      "对照组：策略 − 随机 = +0.06%/笔，95% 区间 [-0.05%, +0.17%] 跨 0——无法证明入场逻辑优于随机（随机对照未通过的弱形式：分不清）",
+      "参数网格正格率 11% 低于 spec 声明的 50%（1/9 格为正）——edge 只在一小撮参数组合下存在"
+    ],
+    "experiments": [
+      {
+        "diagnosis": "入场信号未展示出独立于随机入场的优势（统计上无法区分或显著更差）",
+        "next_experiment": "给入场加一个正交过滤器（趋势方向 / 时段 / 量能任选其一），信号数预计降到约 1/5——这是实验假设，不是目标",
+        "acceptance": "对照组差值 95% CI 下界 > 0（严格为正；下界为 0 时裁决引擎仍判未通过），且成交数仍 ≥ min_fills；若 CI 仍跨 0，换过滤器而不是降阈值"
+      },
+      {
+        "diagnosis": "账面 -27.22% 且打不过随机：没有可测量的正期望",
+        "next_experiment": "停止调参。写下 edge 的市场学基础（谁在犯错、错误定价为什么持续）；写不出来就换假设，不要换参数",
+        "acceptance": "新假设的对照组差值 CI 下界 > 0（严格为正，不是 ≥ 0）"
+      },
+      {
+        "diagnosis": "附带问题：样本外/网格显示参数脆弱",
+        "next_experiment": "主实验收敛后，用更少的参数重跑一次作为确认",
+        "acceptance": "砍参数后的结论与砍之前一致"
+      }
+    ],
+    "caveat": "以上为下一步实验假设，不是已证最优方案——按验收标准判定，不按感觉判定。"
+  },
   "repro": {
     "command": "python -m research.verify --spec docs/cases/external-freqbot-fundingrate-spec.json --out docs/cases/external-freqbot-fundingrate.md --json",
     "spec": "docs/cases/external-freqbot-fundingrate-spec.json",

@@ -802,7 +802,10 @@ class TestParamGrid:
         text = report.render(verify(spec, candles, entries))
         assert "## 6. 参数敏感性网格" in text
         assert "## 7. 事前证伪规则判定" in text
-        assert "## 8. 未建模事项" in text
+        assert "## 8. 诊断结论与下一步实验" in text
+        assert "## 9. 未建模事项" in text
+        # the diagnosis must name a cause and prescribe something numeric
+        assert "主要结论：" in text and "下一步实验：" in text and "验收标准：" in text
         assert "take_profit ↓ ＼ stop_loss →" in text
         assert "**样本内（前 2 折）**" in text and "**样本外（最后 1 折）**" in text
         # seeded numbers (real execution): in-sample 6/6 positive, oos 2/6
@@ -1292,8 +1295,9 @@ class TestHtmlReport:
         assert 'class="badge' in html
         for section in ("1. Path-aware 回放", "2. 成本敏感性", "3. 障碍可达性",
                         "4. 随机入场对照组", "5. Walk-forward", "6. 参数敏感性网格",
-                        "7. 事前证伪规则判定", "8. 未建模事项", "9. 复现命令"):
-            assert section in html, section
+                        "7. 事前证伪规则判定", "8. 诊断结论与下一步实验",
+                        "9. 未建模事项", "10. 复现命令"):
+            assert section in html or section.replace("## ", "") in html, section
 
     def test_self_contained_no_external_resources(self):
         from research.verify.html_report import render_html
@@ -1426,6 +1430,239 @@ class TestSpecCarriedData:
         p.write_text("t,rate\n1,0.0001\nnot-a-number,0.0002\n", encoding="utf-8")
         with pytest.raises(data.CandleError):
             data.load_funding_csv(p)
+
+
+class TestDiagnosis:
+    """The diagnosis layer: cause taxonomy, priority order, and prescriptions
+    that quote the customer's own numbers."""
+
+    @staticmethod
+    def _result(**over):
+        base = {
+            "verdict": {"outcome": "FALSIFIED", "reason": "", "checks": []},
+            "runs": {"worst_case": {"stats": {"n": 100, "sum_pct": -5.0, "mean_pct": -0.05}},
+                     "best_case": {"stats": {"n": 100, "sum_pct": -5.0, "mean_pct": -0.05}}},
+            "control": {"diff_pct": -0.30, "diff_ci": [-0.50, -0.10], "selectivity": "refuted"},
+            "cost_sensitivity": [{"fee_multiple": 1, "fee_bps": 8, "net_sum_pct": -5.0},
+                                 {"fee_multiple": 2, "fee_bps": 16, "net_sum_pct": -12.0}],
+            "walk_forward": {"in_sample": {"runs": {"worst_case": {"stats": {"sum_pct": 10.0}}}},
+                             "out_sample": {"runs": {"worst_case": {"stats": {"sum_pct": 8.0}}}}},
+            "barrier_reach": {"reached_tp_pct": 60.0},
+        }
+        base.update(over)
+        return base
+
+    def test_real_cases_classify_as_expected(self):
+        """The published cases must classify the way their narratives say --
+        this is the anti-drift guard for the whole taxonomy."""
+        from research.verify.diagnosis import diagnose
+
+        expected = {
+            "docs/verify-sample-report.json": "randomness",
+            "docs/cases/case1_rsi_dip_btc.json": "randomness",
+            "docs/cases/case2_rsi_breakout_btc.json": "randomness",
+            "docs/cases/case3_rsi_dip_eth.json": "randomness",
+            "docs/cases/case4_rsi_dip_btc_maker.json": "randomness",
+            "docs/cases/external-cascade-fader.json": "insufficient",
+            "docs/cases/external-freqbot-fundingrate.json": "randomness",
+            "docs/cases/external-grid-freqbot.json": "randomness",
+        }
+        import json
+
+        for path, cause in expected.items():
+            d = json.load(open(path, encoding="utf-8"))
+            assert diagnose(d)["primary"] == cause, path
+
+    def test_inconclusive_is_insufficient_not_a_death(self):
+        from research.verify.diagnosis import diagnose
+
+        d = diagnose(self._result(verdict={"outcome": "INCONCLUSIVE", "reason": "", "checks": []}))
+        assert d["primary"] == "insufficient"
+        assert any("min_fills" in x["acceptance"] for x in d["experiments"])
+
+    def test_refuted_is_randomness_with_negative_ci_evidence(self):
+        from research.verify.diagnosis import diagnose
+
+        d = diagnose(self._result())
+        assert d["primary"] == "randomness"
+        assert any("整体为负" in e for e in d["evidence"])
+
+    def test_profitable_but_unproven_names_beta(self):
+        from research.verify.diagnosis import diagnose
+
+        r = self._result()
+        r["control"] = {"diff_pct": 0.03, "diff_ci": [-0.27, 0.35], "selectivity": "unproven"}
+        r["runs"]["worst_case"]["stats"]["sum_pct"] = 34.35
+        d = diagnose(r)
+        assert d["primary"] == "randomness"
+        assert any("beta" in e for e in d["evidence"]), d["evidence"]
+        assert any("beta" in x["diagnosis"] for x in d["experiments"])
+
+    def test_proven_edge_killed_by_doubled_fees_is_cost(self):
+        from research.verify.diagnosis import diagnose
+
+        r = self._result()
+        r["control"] = {"diff_pct": 0.40, "diff_ci": [0.15, 0.46], "selectivity": "proven"}
+        r["runs"]["worst_case"]["stats"]["sum_pct"] = 20.0
+        r["cost_sensitivity"] = [{"fee_multiple": 1, "fee_bps": 8, "net_sum_pct": 20.0},
+                                 {"fee_multiple": 2, "fee_bps": 16, "net_sum_pct": -3.0}]
+        d = diagnose(r)
+        assert d["primary"] == "cost"
+        assert any("maker" in x["next_experiment"] for x in d["experiments"])
+
+    def test_losing_at_1x_without_selectivity_is_edge_absent(self):
+        from research.verify.diagnosis import diagnose
+
+        r = self._result(control=None)
+        d = diagnose(r)
+        assert d["primary"] == "edge_absent"
+
+    def test_proven_but_collapses_out_of_sample_is_overfitting(self):
+        from research.verify.diagnosis import diagnose
+
+        r = self._result()
+        r["control"] = {"diff_pct": 0.40, "diff_ci": [0.15, 0.46], "selectivity": "proven"}
+        r["runs"]["worst_case"]["stats"]["sum_pct"] = 30.0
+        r["cost_sensitivity"] = [{"fee_multiple": 1, "fee_bps": 8, "net_sum_pct": 30.0},
+                                 {"fee_multiple": 2, "fee_bps": 16, "net_sum_pct": 28.0}]
+        r["walk_forward"] = {"in_sample": {"runs": {"worst_case": {"stats": {"sum_pct": 30.0}}}},
+                             "out_sample": {"runs": {"worst_case": {"stats": {"sum_pct": -8.0}}}}}
+        d = diagnose(r)
+        assert d["primary"] == "overfitting"
+        assert any("砍自由度" in x["next_experiment"] for x in d["experiments"])
+
+    def test_take_profit_never_reached_is_barrier(self):
+        from research.verify.diagnosis import diagnose
+
+        r = self._result()
+        r["control"] = {"diff_pct": 0.40, "diff_ci": [0.15, 0.46], "selectivity": "proven"}
+        r["runs"]["worst_case"]["stats"]["sum_pct"] = 30.0
+        r["cost_sensitivity"] = [{"fee_multiple": 1, "fee_bps": 8, "net_sum_pct": 30.0},
+                                 {"fee_multiple": 2, "fee_bps": 16, "net_sum_pct": 28.0}]
+        r["walk_forward"] = None
+        r["barrier_reach"] = {"reached_tp_pct": 2.0}
+        d = diagnose(r)
+        assert d["primary"] == "barrier"
+        assert any("ATR" in x["next_experiment"] for x in d["experiments"])
+
+    def test_survived_carries_the_absence_of_disproof_caveat(self):
+        from research.verify.diagnosis import diagnose
+
+        r = self._result(verdict={"outcome": "NOT_FALSIFIED", "reason": "", "checks": []},
+                         control=None)
+        d = diagnose(r)
+        assert d["primary"] == "survived"
+        assert any("未被证伪" in x["diagnosis"] for x in d["experiments"])
+
+    def test_randomness_outranks_cost_when_both_fire(self):
+        """Priority is part of the contract: an entry that cannot beat coin
+        flips is the more fundamental failure, even if fees also hurt."""
+        from research.verify.diagnosis import diagnose
+
+        r = self._result()
+        r["control"] = {"diff_pct": 0.03, "diff_ci": [-0.27, 0.35], "selectivity": "unproven"}
+        r["runs"]["worst_case"]["stats"]["sum_pct"] = 34.35
+        r["cost_sensitivity"] = [{"fee_multiple": 1, "fee_bps": 8, "net_sum_pct": 34.35},
+                                 {"fee_multiple": 2, "fee_bps": 16, "net_sum_pct": -96.69}]
+        d = diagnose(r)
+        assert d["primary"] == "randomness"
+        assert "cost" in d["tags"]
+        assert any("成本翻倍即亏损" in x["diagnosis"] for x in d["experiments"])
+
+    def test_grid_only_spec_is_classified_overfitting(self):
+        """A spec with param_grid but no walk_forward must still be readable:
+        the grid lives in result['param_grid'].scopes, not in
+        walk_forward.out_sample_grid."""
+        from research.verify.diagnosis import diagnose
+
+        r = self._result()
+        r["control"] = {"diff_pct": 0.40, "diff_ci": [0.15, 0.46], "selectivity": "proven"}
+        r["runs"]["worst_case"]["stats"]["sum_pct"] = 30.0
+        r["cost_sensitivity"] = [{"fee_multiple": 1, "fee_bps": 8, "net_sum_pct": 30.0},
+                                 {"fee_multiple": 2, "fee_bps": 16, "net_sum_pct": 28.0}]
+        r["walk_forward"] = None
+        r["barrier_reach"] = {"reached_tp_pct": 60.0}
+        r["param_grid"] = {"scopes": [{"scope": "全窗口", "n_cells": 9,
+                                       "positive_cells": 1, "positive_ratio": 1 / 9}]}
+        d = diagnose(r)
+        assert d["primary"] == "overfitting", d["primary"]
+        assert any("正格率" in e for e in d["evidence"])
+
+    def test_cost_requires_proven_selectivity(self):
+        """A profitable book that dies at doubled fees is NOT automatically a
+        'real edge killed by cost': with the control group disabled, the
+        source of return is unverified and that is the main reading."""
+        from research.verify.diagnosis import diagnose
+
+        r = self._result()
+        r["control"] = None  # the buyer never enabled the control group
+        r["runs"]["worst_case"]["stats"]["sum_pct"] = 20.0
+        r["cost_sensitivity"] = [{"fee_multiple": 1, "fee_bps": 8, "net_sum_pct": 20.0},
+                                 {"fee_multiple": 2, "fee_bps": 16, "net_sum_pct": -3.0}]
+        r["walk_forward"] = None
+        d = diagnose(r)
+        assert d["primary"] == "edge_absent", d["primary"]
+        assert "cost" in d["tags"]
+        assert any("对照组未启用" in e for e in d["evidence"])
+
+    def test_acceptance_criterion_matches_engine_rule_exactly(self):
+        """The engine's control rule fires unless lo > 0 (lo == 0 FAILS). The
+        experiment's acceptance criterion must say strictly-greater, or a
+        reader would call an experiment passed that the engine still calls
+        failed."""
+        from research.verify.diagnosis import diagnose
+
+        r = self._result()
+        r["control"] = {"diff_pct": 0.03, "diff_ci": [-0.27, 0.35], "selectivity": "unproven"}
+        r["runs"]["worst_case"]["stats"]["sum_pct"] = 34.35
+        d = diagnose(r)
+        acc = d["experiments"][0]["acceptance"]
+        assert "> 0" in acc and "严格为正" in acc, acc
+        assert "≥ 0" not in acc, f"acceptance still admits the engine-rejected boundary: {acc}"
+
+    def test_grid_threshold_comes_from_the_spec_not_a_constant(self):
+        """A spec declaring grid_positive_ratio_min=0.7 with an actual 0.6
+        must classify as overfitting; the same 0.6 under the default 0.5
+        must not. The threshold is the spec's declaration, never a second
+        hardcoded opinion."""
+        from research.verify.diagnosis import diagnose
+
+        def _spec_result(declared: float | None, ratio: float) -> dict:
+            r = self._result()
+            r["control"] = {"diff_pct": 0.40, "diff_ci": [0.15, 0.46], "selectivity": "proven"}
+            r["runs"]["worst_case"]["stats"]["sum_pct"] = 30.0
+            r["cost_sensitivity"] = [{"fee_multiple": 1, "fee_bps": 8, "net_sum_pct": 30.0},
+                                     {"fee_multiple": 2, "fee_bps": 16, "net_sum_pct": 28.0}]
+            r["walk_forward"] = None
+            r["barrier_reach"] = {"reached_tp_pct": 60.0}
+            r["param_grid"] = {"scopes": [{"scope": "全窗口", "n_cells": 10,
+                                           "positive_cells": round(ratio * 10),
+                                           "positive_ratio": ratio}]}
+            spec_fi: dict = {}
+            if declared is not None:
+                spec_fi["grid_positive_ratio_min"] = declared
+            r["spec"] = {"name": "t", "symbol": "TESTUSDT", "interval": "1h",
+                         "venue": "futures", "falsify_if": spec_fi}
+            return r
+
+        strict = diagnose(_spec_result(0.7, 0.6))
+        assert strict["primary"] == "overfitting", strict["primary"]
+        assert any("spec 声明的 70%" in e for e in strict["evidence"]), strict["evidence"]
+
+        default = diagnose(_spec_result(None, 0.6))
+        assert default["primary"] != "overfitting", default["primary"]
+
+    def test_diagnosis_is_in_the_verify_output(self):
+        candles = make_candles(1500, seed=11)
+        spec = Spec.from_dict(BASE_SPEC)
+        entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
+        result = verify(spec, candles, entries)
+        dx = result["diagnosis"]
+        assert dx["primary"] in dict((c, l) for c, l in
+                                     __import__("research.verify.diagnosis", fromlist=["OUTCOMES"]).OUTCOMES)
+        assert dx["primary_label"] and isinstance(dx["experiments"], list)
+        for x in dx["experiments"]:
+            assert x.get("diagnosis") and x.get("next_experiment") and x.get("acceptance")
 
 
 def _exit_rule():

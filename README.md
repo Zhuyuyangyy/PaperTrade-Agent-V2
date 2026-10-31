@@ -46,7 +46,7 @@ python -m research.verify --demo --out report.md    # 30 秒看一份真实数�
 
 - 输入一份策略 spec，输出一份**试图杀死它**的报告：path-aware 回放（最坏/最好并列）、成本敏感性 ×1/2/5、障碍可达性、随机入场对照组、事前证伪规则判定
 - 样例（真实 BTC 数据，三年 +34% 的策略仍被判 FALSIFIED）：[`docs/verify-sample-report.md`](docs/verify-sample-report.md) · 案例矩阵：[`docs/cases/`](docs/cases/) · 落地页：[`docs/index.html`](docs/index.html)（GitHub Pages）
-- **首 10 单免费**，换匿名公开发布权 · 付费档 $99 / $299（[服务说明](docs/dist/toku-profile.md)，Toku 搜 StrategyFalsifier）
+- **首 10 单免费**，换匿名公开发布权 · 付费档 $99 标准审计 / **$129 诊断增强审计（含人工核验与解读）** / $299 深度（[服务说明](docs/dist/toku-profile.md)，Toku 搜 StrategyFalsifier）
 - 不荐股、不带单、不代管资金、不承诺收益——只回答一个问题：**你的曲线是不是幻觉**
 - 新克隆无行情缓存也能跑 demo（内置 5000 根近期 K 线，自动降级并披露）
 
@@ -247,7 +247,9 @@ python -m research.verify --list-market                   # 本地行情缓存�
 
 **裁决不是分数，是事前证伪规则的判定结果**：`falsify_if` 写在 spec 里、先于任何数字存在（对照/证伪规则触发→FALSIFIED；样本不足→INCONCLUSIVE，不下结论；否则 NOT_FALSIFIED，并附"未被证伪≠被证实"）。报告固定含"未建模事项"一节——不知道仪器边界的人会滥用仪器。
 
-样例报告（真实数据，RSI 抄底 BTC 策略 3 年 1310 笔）：`docs/verify-sample-report.md`——裁决 FALSIFIED：基线即亏损、×2 成本净 -610%、**显著差于随机入场**（差值 -0.37%，95% CI [-0.70%, -0.03%]）、**样本外段 -265.31% 且 9 格参数网格样本内外全负**（行业第一死因样本内过拟合的两台专用仪器）。spec 模板：`research/verify/samples/demo_spec.json`。
+**裁决之后还有诊断**（报告第 8 节，`research/verify/diagnosis.py`）：七类诊断结论（证据不足 / 随机对照未通过 / 成本敏感 / 正期望未证实 / 过拟合迹象 / 结构受限 / 未被证伪）+ 附带结论 + 证据 + 下一步实验（每条含诊断、实验假设、验收标准，如"加一个正交过滤器，信号数预计降到 1/5——这是实验假设；验收标准：对照组差值 CI 下界 > 0（严格为正）且成交 ≥ min_fills"）。归类规则事前声明、先于任何策略被分类。这是付费档与"看一眼数字"的本质区别：**前者给出证据指向和可验收的下一步**。
+
+样例报告（真实数据，RSI 抄底 BTC 策略 3 年 1310 笔）：`docs/verify-sample-report.md`——裁决 FALSIFIED：基线即亏损、×2 成本净 -610%、**显著差于随机入场**（差值 -0.37%，95% CI [-0.70%, -0.03%]）、**样本外段 -265.31% 且 9 格参数网格样本内外全负**（行业第一痛点样本内过拟合的两台专用仪器）。spec 模板：`research/verify/samples/demo_spec.json`。
 
 **案例矩阵**（`docs/cases/`，四个事前声明变体全部发布）：抄底 BTC / 追涨 BTC / 抄底 ETH / maker 限价成交，统一 29,347 根 1h futures 真实 K 线。三个被对照组击败，第四个 **+34% 三年曲线仍被判 FALSIFIED——统计上无法与随机入场区分（CI 跨 0），钱是 beta 不是 alpha**。另有三个外部真实策略案例（CascadeFader / FundingRateEnhanced / GridTradingStrategy，spec 自带数据可复现）。引擎同时支持客户自带信号（CSV 进场 + CSV 信号退出）。
 

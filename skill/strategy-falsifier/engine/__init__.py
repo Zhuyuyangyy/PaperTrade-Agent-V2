@@ -115,6 +115,12 @@ def verify(spec: Spec, candles: list[dict], entries: dict[int, str],
         wf=wf,
         grids=result["param_grid"]["scopes"] if result["param_grid"] else None,
     )
+    # Diagnosis: HOW it died and what to change. Same measurements, no new
+    # assumptions -- the classification rules live in diagnosis.py, declared
+    # before any strategy is classified.
+    from .diagnosis import diagnose
+
+    result["diagnosis"] = diagnose(result)
     return result
 
 
