@@ -224,7 +224,7 @@ No signals, no subscriptions, no managed capital. The only question the tool ans
 第二行是重点。三年 +34%，曲线很能发朋友圈。但同一窗口随机入场，差值 +0.03%/笔，
 CI 跨 0。2023-06 到 2026-10 是加密牛市，随机入场也赚钱。那条曲线卖的是 beta，包装成 alpha。
 
-## 四件仪器（都可以离线复现）
+## 六件仪器 + 诊断层（都可以离线复现）
 
 1. Path-aware 回放：逐根 K 线走价，同一根 K 线止损止盈同时触发默认判止损，乐观读法并列打印。
    CascadeFader 仓库自己记录：用"是否触及过止盈价"分析得 +469%/91% 胜率，路径回放同一批信号是
@@ -290,7 +290,7 @@ search → risk → smart-money → LLM judge → FOMO → exit。每个 agent �
 
 ## 所以我做了个专门杀曲线的东西
 
-四件仪器：
+六件仪器 + 诊断层：
 
 1. Path-aware 回放。逐根 K 线走价，一根 K 线里止损止盈同时出现默认判止损，乐观读法并列打印。
    某策略仓库自己记录"触及过止盈价"分析得 +469%/91% 胜率；同一批信号路径回放是 +132%/PF 1.62。
@@ -395,14 +395,14 @@ NOT_FALSIFIED 也不等于被证实——报告固定带"未建模事项"一节�
 三个是输家。第四个：RSI 追涨 BTC，1638 笔，三年 +34.35%。同窗口随机入场对照只差
 +0.03%/笔，CI 跨 0——牛市里随机入场也赚钱，这条曲线是 beta 不是 alpha。判定 FALSIFIED。
 
-四件仪器：
+六件仪器 + 诊断层：
 1. Path-aware 回放（SL/TP 同现判 SL，乐观读法并列）：某仓库自记 +469%/91% 胜率，
    同批信号路径回放 +132%/PF 1.62
 2. 成本敏感性 ×1/×2/×5
 3. 障碍可达性（止损位市场到底去不去）
 4. 随机入场对照组 + bootstrap CI
 
-MIT，297 测试，离线可跑，新克隆无行情缓存也能跑 demo。
+MIT，360 测试，离线可跑，新克隆无行情缓存也能跑 demo。
 
 仓库：https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2
 落地页：https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/
@@ -441,8 +441,8 @@ lift 的 95% CI 全部跨 0；毛利 +18bps vs LP 费地板 50bps。
 对照只差 +0.03%/笔、CI 跨 0。牛市里随机入场也赚钱。判定 FALSIFIED——这是整个产品
 想解决的问题：杀死那些你看不出和运气的区别的策略。
 
-四件仪器：path-aware 回放、成本敏感性 ×1/2/5、障碍可达性、随机入场对照组。
-裁决来自事前写死的 falsify_if 规则。MIT，297 测试，离线可跑。
+六件仪器 + 诊断层：path-aware 回放、成本敏感性 ×1/2/5、障碍可达性、随机入场对照组。
+裁决来自事前写死的 falsify_if 规则。MIT，360 测试，离线可跑。
 
 仓库：https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2
 落地页：https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/

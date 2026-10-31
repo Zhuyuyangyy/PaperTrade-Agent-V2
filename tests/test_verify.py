@@ -1605,6 +1605,53 @@ class TestDiagnosis:
         assert "cost" in d["tags"]
         assert any("对照组未启用" in e for e in d["evidence"])
 
+    def test_acceptance_criterion_matches_engine_rule_exactly(self):
+        """The engine's control rule fires unless lo > 0 (lo == 0 FAILS). The
+        experiment's acceptance criterion must say strictly-greater, or a
+        reader would call an experiment passed that the engine still calls
+        failed."""
+        from research.verify.diagnosis import diagnose
+
+        r = self._result()
+        r["control"] = {"diff_pct": 0.03, "diff_ci": [-0.27, 0.35], "selectivity": "unproven"}
+        r["runs"]["worst_case"]["stats"]["sum_pct"] = 34.35
+        d = diagnose(r)
+        acc = d["experiments"][0]["acceptance"]
+        assert "> 0" in acc and "严格为正" in acc, acc
+        assert "≥ 0" not in acc, f"acceptance still admits the engine-rejected boundary: {acc}"
+
+    def test_grid_threshold_comes_from_the_spec_not_a_constant(self):
+        """A spec declaring grid_positive_ratio_min=0.7 with an actual 0.6
+        must classify as overfitting; the same 0.6 under the default 0.5
+        must not. The threshold is the spec's declaration, never a second
+        hardcoded opinion."""
+        from research.verify.diagnosis import diagnose
+
+        def _spec_result(declared: float | None, ratio: float) -> dict:
+            r = self._result()
+            r["control"] = {"diff_pct": 0.40, "diff_ci": [0.15, 0.46], "selectivity": "proven"}
+            r["runs"]["worst_case"]["stats"]["sum_pct"] = 30.0
+            r["cost_sensitivity"] = [{"fee_multiple": 1, "fee_bps": 8, "net_sum_pct": 30.0},
+                                     {"fee_multiple": 2, "fee_bps": 16, "net_sum_pct": 28.0}]
+            r["walk_forward"] = None
+            r["barrier_reach"] = {"reached_tp_pct": 60.0}
+            r["param_grid"] = {"scopes": [{"scope": "全窗口", "n_cells": 10,
+                                           "positive_cells": round(ratio * 10),
+                                           "positive_ratio": ratio}]}
+            spec_fi: dict = {}
+            if declared is not None:
+                spec_fi["grid_positive_ratio_min"] = declared
+            r["spec"] = {"name": "t", "symbol": "TESTUSDT", "interval": "1h",
+                         "venue": "futures", "falsify_if": spec_fi}
+            return r
+
+        strict = diagnose(_spec_result(0.7, 0.6))
+        assert strict["primary"] == "overfitting", strict["primary"]
+        assert any("spec 声明的 70%" in e for e in strict["evidence"]), strict["evidence"]
+
+        default = diagnose(_spec_result(None, 0.6))
+        assert default["primary"] != "overfitting", default["primary"]
+
     def test_diagnosis_is_in_the_verify_output(self):
         candles = make_candles(1500, seed=11)
         spec = Spec.from_dict(BASE_SPEC)

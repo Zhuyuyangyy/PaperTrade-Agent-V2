@@ -3095,6 +3095,12 @@ def diagnose(result: dict) -> dict:
                 grid = scope
                 break
     br = result.get("barrier_reach") or {}
+    # The brittleness threshold is the one the SPEC declared (the same value
+    # the falsification rule uses) -- never a hardcoded second opinion. A
+    # spec declaring 70% with an actual 60% must classify as overfitting.
+    min_ratio = float(
+        ((result.get("spec") or {}).get("falsify_if") or {}).get(
+            "grid_positive_ratio_min", 0.5))
 
     worst_net = worst.get("sum_pct")
     x2_net = row_x2.get("net_sum_pct") if row_x2 else None
@@ -3153,11 +3159,12 @@ def diagnose(result: dict) -> dict:
         primary = "overfitting"
         ev(f"样本内净 {_dx_pct(isb['sum_pct'])} vs 样本外净 {_dx_pct(oos['sum_pct'])}——"
            "edge 在没见过的数据上撑不住")
-    elif grid.get("positive_ratio") is not None and grid["positive_ratio"] < 0.5:
+    elif grid.get("positive_ratio") is not None and grid["positive_ratio"] < min_ratio:
         # grid-only spec (no walk-forward): a brittle grid is still an
         # overfitting reading -- edge existing only in a few cells.
         primary = "overfitting"
-        ev(f"参数网格正格率 {grid['positive_ratio'] * 100:.0f}%"
+        ev(f"参数网格正格率 {grid['positive_ratio'] * 100:.0f}%，低于 spec 声明的 "
+           f"{min_ratio * 100:.0f}%"
            f"（{grid.get('positive_cells', 0)}/{grid.get('n_cells', 0)} 格为正）——"
            "edge 只在一小撮参数组合下存在，是曲线拟合不是规律")
     elif br.get("reached_tp_pct") is not None and br["reached_tp_pct"] < 10:
@@ -3178,10 +3185,11 @@ def diagnose(result: dict) -> dict:
             and oos["sum_pct"] < isb["sum_pct"] * 0.5 and primary != "overfitting":
         add_tag("overfitting")
         ev(f"样本外净 {_dx_pct(oos['sum_pct'])} 不足样本内 {_dx_pct(isb['sum_pct'])} 的一半")
-    if grid.get("positive_ratio") is not None and grid["positive_ratio"] < 0.5 \
+    if grid.get("positive_ratio") is not None and grid["positive_ratio"] < min_ratio \
             and primary != "overfitting":
         add_tag("overfitting")
-        ev(f"样本外参数网格仅 {grid.get('positive_cells', 0)}/{grid.get('n_cells', 0)} 格为正——"
+        ev(f"参数网格正格率 {grid['positive_ratio'] * 100:.0f}% 低于 spec 声明的 "
+           f"{min_ratio * 100:.0f}%（{grid.get('positive_cells', 0)}/{grid.get('n_cells', 0)} 格为正）——"
            "edge 只在一小撮参数组合下存在")
     if br.get("reached_tp_pct") is not None and br["reached_tp_pct"] < 10 \
             and primary not in ("barrier", "insufficient"):
@@ -3206,7 +3214,8 @@ def diagnose(result: dict) -> dict:
             "diagnosis": "入场信号未展示出独立于随机入场的优势（统计上无法区分或显著更差）",
             "next_experiment": "给入场加一个正交过滤器（趋势方向 / 时段 / 量能任选其一），"
                                "信号数预计降到约 1/5——这是实验假设，不是目标",
-            "acceptance": "对照组差值 95% CI 下界 ≥ 0，且成交数仍 ≥ min_fills；"
+            "acceptance": "对照组差值 95% CI 下界 > 0（严格为正；下界为 0 时裁决引擎仍判未通过），"
+                          "且成交数仍 ≥ min_fills；"
                           "若 CI 仍跨 0，换过滤器而不是降阈值",
         })
         if worst_net is not None and worst_net > 0:
@@ -3250,7 +3259,8 @@ def diagnose(result: dict) -> dict:
             acc = (f"样本外净收益 ≥ 样本内的一半（当前样本内 {_dx_pct(isb['sum_pct'])} "
                    f"vs 样本外 {_dx_pct(oos['sum_pct'])}），且网格正格率 ≥ 声明值")
         else:
-            acc = (f"网格正格率 ≥ 声明值（当前 {grid.get('positive_ratio', 0) * 100:.0f}%）；"
+            acc = (f"网格正格率 ≥ spec 声明的 {min_ratio * 100:.0f}%"
+                   f"（当前 {grid.get('positive_ratio', 0) * 100:.0f}%）；"
                    "若同时启用 walk-forward，样本外净收益还应 ≥ 样本内的一半")
         experiments.append({
             "diagnosis": "样本内成立但样本外崩溃/参数网格脆弱——拟合了历史而非规律",

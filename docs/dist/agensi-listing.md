@@ -110,8 +110,8 @@ network, no account, no data leaves your machine.
 |---|---|---|
 | **Falsifier (base)** | **Free** | Full six-instrument battery + diagnosis layer, single strategy or comparison, md/json/html outputs. The engine is MIT and public; the free tier is genuinely complete — no crippled demo. |
 | **Falsifier Pro** | $9 one-time | Everything in base, plus: bundled reference exporter (turn a freqtrade-style strategy into engine signal CSVs), the public case matrix as worked examples, priority re-runs when the engine updates. |
-| **Standard audit** | $99 (off-platform) | The author ports YOUR strategy, verifies the signal fidelity, runs the full battery, delivers in 24-72h. |
-| **Diagnosis-enhanced audit** | $129 (off-platform) | $99 plus: diagnosis layer with experiments and acceptance criteria, variant comparison matrix (≤5), forwardable HTML report, **human data verification** (ported-signal fidelity checked line by line against your original code/config), a 30-minute recorded walkthrough, one re-run within 7 days. Weekly capacity 2-3 orders. |
+| **Standard audit** | $99 (off-platform) | Single strategy: the author ports YOUR strategy, runs the full battery, and **verifies the signal fidelity** (ported signals checked against your original code/config). Delivered in 24-72h. |
+| **Diagnosis-enhanced audit** | $129 (off-platform) | $99 plus: **a human re-checks every diagnosis outcome** (the engine's seven conclusions confirmed line by line, not taken on faith), a comparison matrix for up to 5 variants, a **calibrated experiment plan** (your next experiments and acceptance criteria reviewed by a human), a forwardable HTML report, a 30-minute recorded walkthrough, one re-run within 7 days. Weekly capacity 2-3 orders. You are buying human judgement, not the algorithm -- the free tier already includes the automatic diagnosis. |
 | **Deep audit** | $299 (off-platform) | $129 plus: ×10 cost stress, re-run after data refresh, 60-minute walkthrough. |
 
 Rationale: the base tier being complete and free is the marketing — the paid
