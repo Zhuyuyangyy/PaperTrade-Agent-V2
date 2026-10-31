@@ -151,4 +151,4 @@
 
 ## 9. 诊断层
 
-每份报告第 8 节是诊断：主死因（`insufficient` / `randomness` / `cost` / `edge_absent` / `overfitting` / `barrier` / `survived`）+ 附带问题 + 证据 + 处方。归类规则事前声明于 `research/verify/diagnosis.py`（优先级：样本不足 > NOT_FALSIFIED 短路 > 随机性 > 成本 > 无 edge > 过拟合 > 结构），处方每条引用本次运行的真实数字。JSON 产物中位于 `diagnosis` 字段。
+每份报告第 8 节是诊断结论与下一步实验：七类结论（`insufficient` 证据不足 / `randomness` 随机性未排除 / `cost` 成本敏感 / `edge_absent` 未测出正期望 / `overfitting` 过拟合迹象 / `barrier` 结构受限 / `survived` 未被证伪）+ 附带结论 + 证据 + 下一步实验（每条含 `diagnosis` / `next_experiment` / `acceptance` 三字段）。归类规则事前声明于 `research/verify/diagnosis.py`（优先级：证据不足 > NOT_FALSIFIED 短路 > 随机性 > 成本 > 无 edge > 过拟合 > 结构）。JSON 产物中位于 `diagnosis` 字段（`experiments` 列表）。

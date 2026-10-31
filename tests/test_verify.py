@@ -802,10 +802,10 @@ class TestParamGrid:
         text = report.render(verify(spec, candles, entries))
         assert "## 6. 参数敏感性网格" in text
         assert "## 7. 事前证伪规则判定" in text
-        assert "## 8. 诊断：死因与处方" in text
+        assert "## 8. 诊断结论与下一步实验" in text
         assert "## 9. 未建模事项" in text
         # the diagnosis must name a cause and prescribe something numeric
-        assert "主死因：" in text and "处方（按优先级" in text
+        assert "主要结论：" in text and "下一步实验：" in text and "验收标准：" in text
         assert "take_profit ↓ ＼ stop_loss →" in text
         assert "**样本内（前 2 折）**" in text and "**样本外（最后 1 折）**" in text
         # seeded numbers (real execution): in-sample 6/6 positive, oos 2/6
@@ -1295,7 +1295,7 @@ class TestHtmlReport:
         assert 'class="badge' in html
         for section in ("1. Path-aware 回放", "2. 成本敏感性", "3. 障碍可达性",
                         "4. 随机入场对照组", "5. Walk-forward", "6. 参数敏感性网格",
-                        "7. 事前证伪规则判定", "8. 诊断：死因与处方",
+                        "7. 事前证伪规则判定", "8. 诊断结论与下一步实验",
                         "9. 未建模事项", "10. 复现命令"):
             assert section in html or section.replace("## ", "") in html, section
 
@@ -1478,7 +1478,7 @@ class TestDiagnosis:
 
         d = diagnose(self._result(verdict={"outcome": "INCONCLUSIVE", "reason": "", "checks": []}))
         assert d["primary"] == "insufficient"
-        assert any("样本" in p for p in d["prescriptions"])
+        assert any("min_fills" in x["acceptance"] for x in d["experiments"])
 
     def test_refuted_is_randomness_with_negative_ci_evidence(self):
         from research.verify.diagnosis import diagnose
@@ -1496,7 +1496,7 @@ class TestDiagnosis:
         d = diagnose(r)
         assert d["primary"] == "randomness"
         assert any("beta" in e for e in d["evidence"]), d["evidence"]
-        assert any("beta" in p for p in d["prescriptions"])
+        assert any("beta" in x["diagnosis"] for x in d["experiments"])
 
     def test_proven_edge_killed_by_doubled_fees_is_cost(self):
         from research.verify.diagnosis import diagnose
@@ -1508,7 +1508,7 @@ class TestDiagnosis:
                                  {"fee_multiple": 2, "fee_bps": 16, "net_sum_pct": -3.0}]
         d = diagnose(r)
         assert d["primary"] == "cost"
-        assert any("maker" in p for p in d["prescriptions"])
+        assert any("maker" in x["next_experiment"] for x in d["experiments"])
 
     def test_losing_at_1x_without_selectivity_is_edge_absent(self):
         from research.verify.diagnosis import diagnose
@@ -1529,7 +1529,7 @@ class TestDiagnosis:
                              "out_sample": {"runs": {"worst_case": {"stats": {"sum_pct": -8.0}}}}}
         d = diagnose(r)
         assert d["primary"] == "overfitting"
-        assert any("砍自由度" in p for p in d["prescriptions"])
+        assert any("砍自由度" in x["next_experiment"] for x in d["experiments"])
 
     def test_take_profit_never_reached_is_barrier(self):
         from research.verify.diagnosis import diagnose
@@ -1543,7 +1543,7 @@ class TestDiagnosis:
         r["barrier_reach"] = {"reached_tp_pct": 2.0}
         d = diagnose(r)
         assert d["primary"] == "barrier"
-        assert any("ATR" in p for p in d["prescriptions"])
+        assert any("ATR" in x["next_experiment"] for x in d["experiments"])
 
     def test_survived_carries_the_absence_of_disproof_caveat(self):
         from research.verify.diagnosis import diagnose
@@ -1552,7 +1552,7 @@ class TestDiagnosis:
                          control=None)
         d = diagnose(r)
         assert d["primary"] == "survived"
-        assert any("未被证伪" in p for p in d["prescriptions"])
+        assert any("未被证伪" in x["diagnosis"] for x in d["experiments"])
 
     def test_randomness_outranks_cost_when_both_fire(self):
         """Priority is part of the contract: an entry that cannot beat coin
@@ -1567,7 +1567,7 @@ class TestDiagnosis:
         d = diagnose(r)
         assert d["primary"] == "randomness"
         assert "cost" in d["tags"]
-        assert any("toll" in p for p in d["prescriptions"])
+        assert any("成本翻倍即亏损" in x["diagnosis"] for x in d["experiments"])
 
     def test_diagnosis_is_in_the_verify_output(self):
         candles = make_candles(1500, seed=11)
@@ -1576,8 +1576,10 @@ class TestDiagnosis:
         result = verify(spec, candles, entries)
         dx = result["diagnosis"]
         assert dx["primary"] in dict((c, l) for c, l in
-                                     __import__("research.verify.diagnosis", fromlist=["CAUSES"]).CAUSES)
-        assert dx["primary_label"] and isinstance(dx["prescriptions"], list)
+                                     __import__("research.verify.diagnosis", fromlist=["OUTCOMES"]).OUTCOMES)
+        assert dx["primary_label"] and isinstance(dx["experiments"], list)
+        for x in dx["experiments"]:
+            assert x.get("diagnosis") and x.get("next_experiment") and x.get("acceptance")
 
 
 def _exit_rule():

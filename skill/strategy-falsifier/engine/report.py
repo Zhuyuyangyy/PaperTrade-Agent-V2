@@ -420,13 +420,13 @@ def render(result: dict) -> str:
     a("")
 
     # -- diagnosis ----------------------------------------------------------
-    a("## 8. 诊断：死因与处方")
+    a("## 8. 诊断结论与下一步实验")
     a("")
     dx = result.get("diagnosis") or {}
     if dx:
-        a(f"**主死因：{dx.get('primary_label', dx.get('primary', '?'))}**")
+        a(f"**主要结论：{dx.get('primary_label', dx.get('primary', '?'))}**")
         if dx.get("tag_labels"):
-            a(f"**附带问题：{' · '.join(dx['tag_labels'])}**")
+            a(f"**附带结论：{' · '.join(dx['tag_labels'])}**")
         a("")
         if dx.get("evidence"):
             a("证据（全部来自本次测量，无新增假设）：")
@@ -434,14 +434,18 @@ def render(result: dict) -> str:
             for e in dx["evidence"]:
                 a(f"- {e}")
             a("")
-        if dx.get("prescriptions"):
-            a("处方（按优先级；每条都引用本次运行的真实数字）：")
+        for i, x in enumerate(dx.get("experiments") or [], 1):
+            a(f"**实验 {i}**")
             a("")
-            for i, p in enumerate(dx["prescriptions"], 1):
-                a(f"{i}. {p}")
+            a(f"- 诊断：{x.get('diagnosis', '')}")
+            a(f"- 下一步实验：{x.get('next_experiment', '')}")
+            a(f"- 验收标准：{x.get('acceptance', '')}")
             a("")
-        a("> 死因归类规则事前声明于 `research/verify/diagnosis.py`，先于任何策略被分类——"
-          "与证伪规则同一条纪律。处方是工程建议，不是投资建议。")
+        if dx.get("caveat"):
+            a(f"> {dx['caveat']}")
+            a("")
+        a("> 诊断结论与归类规则事前声明于 `research/verify/diagnosis.py`，先于任何策略被分类——"
+          "与证伪规则同一条纪律。实验建议不是投资建议。")
         a("")
     else:
         a("- （本报告无诊断信息）")

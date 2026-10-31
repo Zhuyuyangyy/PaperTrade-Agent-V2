@@ -143,7 +143,7 @@ def render_comparison(results: list[dict], title: str = "多策略对比") -> st
 
     a("## 对比矩阵")
     a("")
-    a("| 排名 | 策略 | 裁决 | 死因 | 成交 | 最坏净 | 最好净 | ×2 成本净 | 对照组 CI | 选择性 | 样本外净 | 样本外网格 | 触发规则 |")
+    a("| 排名 | 策略 | 裁决 | 诊断结论 | 成交 | 最坏净 | 最好净 | ×2 成本净 | 对照组 CI | 选择性 | 样本外净 | 样本外网格 | 触发规则 |")
     a("|---:|---|---|---|---:|---:|---:|---:|---|---|---:|---|---|")
     for i, r in enumerate(ranked, 1):
         spec = r.get("spec") or {}
@@ -196,13 +196,16 @@ def render_comparison(results: list[dict], title: str = "多策略对比") -> st
         a(f"{v.get('reason', '（无理由）')}")
         a("")
         if dx:
-            cause = f"**死因：{dx.get('primary_label', dx.get('primary', '?'))}**"
+            cause = f"**诊断结论：{dx.get('primary_label', dx.get('primary', '?'))}**"
             if dx.get("tag_labels"):
                 cause += f"（附带：{'、'.join(dx['tag_labels'])}）"
             a(cause)
-            if dx.get("prescriptions"):
+            exps = dx.get("experiments") or []
+            if exps:
                 a("")
-                a("首要处方：" + dx["prescriptions"][0])
+                a(f"首要实验——诊断：{exps[0].get('diagnosis', '')}")
+                a(f"下一步实验：{exps[0].get('next_experiment', '')}")
+                a(f"验收标准：{exps[0].get('acceptance', '')}")
             a("")
         # Per-strategy provenance: what data, what assumptions. A comparison
         # across different symbols/windows must say so on its face.

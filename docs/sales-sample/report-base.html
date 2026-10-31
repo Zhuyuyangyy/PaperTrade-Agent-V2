@@ -107,16 +107,23 @@ footer a{color:var(--accent)}
 <table><thead><tr><th>参数组合</th><th class="num">成交</th><th class="num">净收益</th><th class="num">均值/笔</th><th class="num">胜率</th><th class="num">PF</th></tr></thead><tbody><tr><td>take_profit=+2.0% · stop_loss=-6.0%</td><td class="num">1,310</td><td class="num"><span class="neg">-575.67%</span></td><td class="num"><span class="neg">-0.44%</span></td><td class="num">53%</td><td class="num">0.64</td></tr><tr><td>take_profit=+2.0% · stop_loss=-8.0%</td><td class="num">1,310</td><td class="num"><span class="neg">-519.13%</span></td><td class="num"><span class="neg">-0.40%</span></td><td class="num">54%</td><td class="num">0.66</td></tr><tr><td>take_profit=+2.0% · stop_loss=-10.0%</td><td class="num">1,310</td><td class="num"><span class="neg">-547.96%</span></td><td class="num"><span class="neg">-0.42%</span></td><td class="num">54%</td><td class="num">0.65</td></tr><tr><td>take_profit=+3.0% · stop_loss=-6.0%</td><td class="num">1,310</td><td class="num"><span class="neg">-585.63%</span></td><td class="num"><span class="neg">-0.45%</span></td><td class="num">49%</td><td class="num">0.66</td></tr><tr><td>take_profit=+3.0% · stop_loss=-8.0%</td><td class="num">1,310</td><td class="num"><span class="neg">-505.65%</span></td><td class="num"><span class="neg">-0.39%</span></td><td class="num">50%</td><td class="num">0.69</td></tr><tr><td>take_profit=+3.0% · stop_loss=-10.0%</td><td class="num">1,310</td><td class="num"><span class="neg">-532.07%</span></td><td class="num"><span class="neg">-0.41%</span></td><td class="num">50%</td><td class="num">0.69</td></tr><tr><td>take_profit=+4.0% · stop_loss=-6.0%</td><td class="num">1,310</td><td class="num"><span class="neg">-575.82%</span></td><td class="num"><span class="neg">-0.44%</span></td><td class="num">48%</td><td class="num">0.67</td></tr><tr><td>take_profit=+4.0% · stop_loss=-8.0%</td><td class="num">1,310</td><td class="num"><span class="neg">-488.50%</span></td><td class="num"><span class="neg">-0.37%</span></td><td class="num">48%</td><td class="num">0.71</td></tr><tr><td>take_profit=+4.0% · stop_loss=-10.0%</td><td class="num">1,310</td><td class="num"><span class="neg">-506.25%</span></td><td class="num"><span class="neg">-0.39%</span></td><td class="num">49%</td><td class="num">0.70</td></tr></tbody></table>
 <h2>7. 事前证伪规则判定</h2>
 <table><thead><tr><th>规则</th><th>范围</th><th>结果</th><th>明细</th></tr></thead><tbody><tr class="hit"><td><code>worst_case_net_negative</code></td><td>全窗口</td><td>触发</td><td>最坏优先口径净收益 -505.65% ≤ 0</td></tr><tr class="hit"><td><code>net_negative_at_fee_multiple=2</code></td><td>全窗口</td><td>触发</td><td>成本 ×2（往返 16bps）时净收益 -610.45% ≤ 0，edge 付不起 toll</td></tr><tr class="hit"><td><code>control_lift_ci_includes_zero</code></td><td>全窗口</td><td>触发</td><td>策略 − 随机对照组 = -0.37%，95% 区间 [-0.70, -0.03] 整体为负——显著差于随机入场</td></tr></tbody></table>
-<h2>8. 诊断：死因与处方</h2>
-<p class="sentence" style="border-left-color:var(--kill)">主死因：<b>随机性杀死</b></p>
+<h2>8. 诊断结论与下一步实验</h2>
+<p class="sentence" style="border-left-color:var(--kill)">主要结论：<b>随机性未排除</b></p>
 <p><b>证据</b>（全部来自本次测量，无新增假设）：</p><ul>
 <li>对照组：策略 − 随机 = -0.37%/笔，95% 区间 [-0.70%, -0.03%] 整体为负——入场逻辑显著差于随机</li>
 </ul>
-<p><b>处方</b>（按优先级；每条都引用本次运行的真实数字）：</p><ol>
-<li>把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声</li>
-<li>账面 -505.65% 且打不过随机：回到假设阶段——这个 edge 的市场学基础是什么（谁在犯错、错误定价为什么持续）？写不出来就不要回测了</li>
-</ol>
-<p class="note">死因归类规则事前声明于 <code>research/verify/diagnosis.py</code>，先于任何策略被分类——与证伪规则同一条纪律。处方是工程建议，不是投资建议。</p>
+<p><b>实验 1</b></p><ul>
+<li><b>诊断：</b>入场信号未展示出独立于随机入场的优势（统计上无法区分或显著更差）</li>
+<li><b>下一步实验：</b>给入场加一个正交过滤器（趋势方向 / 时段 / 量能任选其一），信号数预计降到约 1/5——这是实验假设，不是目标</li>
+<li><b>验收标准：</b>对照组差值 95% CI 下界 ≥ 0，且成交数仍 ≥ min_fills；若 CI 仍跨 0，换过滤器而不是降阈值</li>
+</ul>
+<p><b>实验 2</b></p><ul>
+<li><b>诊断：</b>账面 -505.65% 且打不过随机：没有可测量的正期望</li>
+<li><b>下一步实验：</b>停止调参。写下 edge 的市场学基础（谁在犯错、错误定价为什么持续）；写不出来就换假设，不要换参数</li>
+<li><b>验收标准：</b>新假设的对照组差值 CI 下界 &gt; 0（严格为正，不是 ≥ 0）</li>
+</ul>
+<p class="note">以上为下一步实验假设，不是已证最优方案——按验收标准判定，不按感觉判定。</p>
+<p class="note">诊断结论与归类规则事前声明于 <code>research/verify/diagnosis.py</code>，先于任何策略被分类——与证伪规则同一条纪律。实验建议不是投资建议。</p>
 <h2>9. 未建模事项（阅读前必读）</h2>
 <ul>
 <li>滑点与部分成交：只按费率+成交模型计成本，真实盘口的排队与部分成交不在模型内；</li>

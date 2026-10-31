@@ -114,25 +114,29 @@ positions, exchange/link risk) -- read it before trusting any number.
 
 ## The diagnosis layer
 
-Verdict alone answers "did it die". The diagnosis section (section 8 of every
-report) answers **how it died and what to change**:
+Verdict alone answers "was it falsified". The diagnosis section (section 8 of
+every report) answers **what the evidence points to, and what to test next**:
 
-- **Primary cause** from a declared taxonomy: `insufficient` (non-measurement),
-  `randomness` (cannot beat / loses to random entries -- the most fundamental
-  failure), `cost` (real edge, toll eats it), `edge_absent`, `overfitting`
-  (real in-sample, gone out-of-sample or grid-brittle), `barrier` (take-profit
-  never visited -- lottery structure), `survived`.
-- **Secondary tags** for strategies that fail several ways at once.
+- **Seven diagnostic outcomes** (not "causes of death" -- a NOT_FALSIFIED
+  strategy did not die, and an INCONCLUSIVE one was never measured):
+  `insufficient` (non-measurement), `randomness` (cannot beat / loses to
+  random entries -- the most fundamental reading), `cost` (real edge, toll
+  eats it), `edge_absent`, `overfitting` (real in-sample, gone out-of-sample
+  or grid-brittle), `barrier` (take-profit never visited -- lottery
+  structure), `survived` (not falsified under the declared rules -- which is
+  the absence of disproof, not the presence of proof).
+- **Secondary outcomes** for strategies that trip several at once.
 - **Evidence** -- every claim quotes numbers from THIS run, no new assumptions.
-- **Prescriptions** -- concrete next steps, each tied to the customer's own
-  numbers ("your +0.03%/trade becomes -0.41%/trade at doubled fees"; "tighten
-  entries by an order of magnitude and re-test with 1/5 the signals").
+- **Next experiments** -- each is a hypothesis + an acceptance criterion:
+  diagnosis, the falsifiable bet ("add one orthogonal filter, expect ~1/5 the
+  signals -- a hypothesis, not a target"), and what result counts as an
+  answer ("control CI lower bound >= 0 with fills still >= min_fills").
 
 The classification rules are declared in code before any strategy is
 classified -- the same rules-before-numbers discipline as `falsify_if`. In
-`--compare` mode every row of the matrix carries its cause label, so a set of
-variants can be read at a glance: which died to fees, which to randomness,
-which to overfitting.
+`--compare` mode every row of the matrix carries its outcome label, so a set
+of variants can be read at a glance: which points to fees, which to
+randomness, which to overfitting.
 
 ## Honest limits
 

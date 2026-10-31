@@ -129,6 +129,12 @@
   .dim .v { font-family: var(--mono); font-size: 22px; font-weight: 800; color: var(--kill); line-height: 1.15; }
   .dim .l { font-size: 12.5px; color: var(--ink-3); margin-top: 4px; }
   .stat .v.sm { font-size: 16px; }
+  .sample-strip { margin: 22px 0 0; padding: 18px 20px; border: 1px solid var(--line); border-left: 4px solid var(--kill); border-radius: 0 12px 12px 0; background: var(--bg-soft); }
+  .sample-strip .kicker { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); font-weight: 700; margin-bottom: 8px; }
+  .sample-lines { margin: 0 0 10px; font-size: 17px; line-height: 1.75; color: var(--ink); }
+  .sample-lines b, .sample-lines strong { color: var(--kill); }
+  .sample-meta { margin: 0; font-size: 13px; color: var(--ink-2); }
+  .sample-meta a { color: var(--accent); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -146,10 +152,19 @@
       <a class="btn btn-ghost" href="cases/">案例矩阵：同一台引擎，四种死法</a>
     </div>
     <div class="stats">
-      <div class="stat"><div class="v bad">-14.3pp</div><div class="l">回测 → 实盘的收益中位差（行业第一死因：样本内过拟合）</div></div>
+      <div class="stat"><div class="v bad">-14.3pp</div><div class="l">回测 → 实盘的收益中位差（行业第一痛点：样本内过拟合）</div></div>
       <div class="stat"><div class="v bad">+34.35%</div><div class="l">三年赚钱曲线仍被判 FALSIFIED——统计上无法与随机入场区分</div></div>
-      <div class="stat"><div class="v">6</div><div class="l">台仪器，一个裁决：回放 / 成本 / 障碍 / 对照 / walk-forward / 参数网格</div></div>
-      <div class="stat"><div class="v">297</div><div class="l">个自动化测试守着规则——事后不许改规则，不许挑好看的说</div></div>
+      <div class="stat"><div class="v">6+1</div><div class="l">六台仪器 + 诊断层：回放 / 成本 / 障碍 / 对照 / walk-forward / 参数网格 → 诊断结论与下一步实验</div></div>
+      <div class="stat"><div class="v">356</div><div class="l">个自动化测试守着规则——事后不许改规则，不许挑好看的说</div></div>
+    </div>
+    <div class="sample-strip">
+      <div class="kicker">Sales Sample · 免费样张</div>
+      <p class="sample-lines">
+        <b>三个策略，三条漂亮的收益曲线。</b><br>
+        结果<strong>全部无法证明优于随机入场</strong>。<br>
+        你以为需要优化止盈止损，实际上需要<b>重新审视入场逻辑</b>。
+      </p>
+      <p class="sample-meta">一位买家的真实问题：“我入场定死了，止盈止损设多少？”——三个变体一次过，诊断结论全部指向同一处。<a href="sales-sample/">看完整样张（含 spec / 报告 / 复现命令）→</a></p>
     </div>
   </div>
 </header>

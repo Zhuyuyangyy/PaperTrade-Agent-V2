@@ -3709,22 +3709,35 @@
   "param_grid": null,
   "diagnosis": {
     "primary": "randomness",
-    "primary_label": "随机性杀死",
+    "primary_label": "随机性未排除",
     "tags": [
       "cost"
     ],
     "tag_labels": [
-      "成本杀死"
+      "成本敏感"
     ],
     "evidence": [
       "对照组：策略 − 随机 = +0.03%/笔，95% 区间 [-0.27%, +0.35%] 跨 0——无法证明入场逻辑优于随机",
       "账面净收益 +34.35% 是真实的，但它与随机入场的差异在统计上不存在：赚的是 beta，包装成 alpha"
     ],
-    "prescriptions": [
-      "把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + 量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声",
-      "承认定位：这份账面（+34.35%）大概率是 beta。若目标就是赚 beta，该做的是定投/资产配置工具，不是策略引擎——先把目的想清楚，再决定要不要继续",
-      "附带问题：成本翻倍即亏损（×2 净 -96.69%）——即使主死因修好了，toll 预算仍是硬约束"
-    ]
+    "experiments": [
+      {
+        "diagnosis": "入场信号未展示出独立于随机入场的优势（统计上无法区分或显著更差）",
+        "next_experiment": "给入场加一个正交过滤器（趋势方向 / 时段 / 量能任选其一），信号数预计降到约 1/5——这是实验假设，不是目标",
+        "acceptance": "对照组差值 95% CI 下界 ≥ 0，且成交数仍 ≥ min_fills；若 CI 仍跨 0，换过滤器而不是降阈值"
+      },
+      {
+        "diagnosis": "账面 +34.35% 与随机入场无统计差异——赚的是 beta",
+        "next_experiment": "若目标就是赚 beta：改用买入持有/定投做基准对比，本引擎的回答是“不优于随机”，不是“不能赚”",
+        "acceptance": "策略对买入持有的超额收益 CI 下界 > 0（那是另一个实验，本引擎不测这个——先想清楚要回答哪个问题）"
+      },
+      {
+        "diagnosis": "附带问题：成本翻倍即亏损（×2 净 -96.69%）",
+        "next_experiment": "主实验之外，单独跑一次 ×5 成本压力，确认 toll 预算的上限",
+        "acceptance": "×5 下的亏损幅度在可接受范围内（由你定义，写进 spec）"
+      }
+    ],
+    "caveat": "以上为下一步实验假设，不是已证最优方案——按验收标准判定，不按感觉判定。"
   },
   "repro": {
     "command": "python -m research.verify --spec research/verify/samples/cases/case2_rsi_breakout_btc.json --out docs/cases/case2_rsi_breakout_btc.md --json",

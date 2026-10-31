@@ -1987,13 +1987,13 @@ def render(result: dict) -> str:
     a("")
 
     # -- diagnosis ----------------------------------------------------------
-    a("## 8. 诊断：死因与处方")
+    a("## 8. 诊断结论与下一步实验")
     a("")
     dx = result.get("diagnosis") or {}
     if dx:
-        a(f"**主死因：{dx.get('primary_label', dx.get('primary', '?'))}**")
+        a(f"**主要结论：{dx.get('primary_label', dx.get('primary', '?'))}**")
         if dx.get("tag_labels"):
-            a(f"**附带问题：{' · '.join(dx['tag_labels'])}**")
+            a(f"**附带结论：{' · '.join(dx['tag_labels'])}**")
         a("")
         if dx.get("evidence"):
             a("证据（全部来自本次测量，无新增假设）：")
@@ -2001,14 +2001,18 @@ def render(result: dict) -> str:
             for e in dx["evidence"]:
                 a(f"- {e}")
             a("")
-        if dx.get("prescriptions"):
-            a("处方（按优先级；每条都引用本次运行的真实数字）：")
+        for i, x in enumerate(dx.get("experiments") or [], 1):
+            a(f"**实验 {i}**")
             a("")
-            for i, p in enumerate(dx["prescriptions"], 1):
-                a(f"{i}. {p}")
+            a(f"- 诊断：{x.get('diagnosis', '')}")
+            a(f"- 下一步实验：{x.get('next_experiment', '')}")
+            a(f"- 验收标准：{x.get('acceptance', '')}")
             a("")
-        a("> 死因归类规则事前声明于 `research/verify/diagnosis.py`，先于任何策略被分类——"
-          "与证伪规则同一条纪律。处方是工程建议，不是投资建议。")
+        if dx.get("caveat"):
+            a(f"> {dx['caveat']}")
+            a("")
+        a("> 诊断结论与归类规则事前声明于 `research/verify/diagnosis.py`，先于任何策略被分类——"
+          "与证伪规则同一条纪律。实验建议不是投资建议。")
         a("")
     else:
         a("- （本报告无诊断信息）")
@@ -2195,7 +2199,7 @@ def render_comparison(results: list[dict], title: str = "多策略对比") -> st
 
     a("## 对比矩阵")
     a("")
-    a("| 排名 | 策略 | 裁决 | 死因 | 成交 | 最坏净 | 最好净 | ×2 成本净 | 对照组 CI | 选择性 | 样本外净 | 样本外网格 | 触发规则 |")
+    a("| 排名 | 策略 | 裁决 | 诊断结论 | 成交 | 最坏净 | 最好净 | ×2 成本净 | 对照组 CI | 选择性 | 样本外净 | 样本外网格 | 触发规则 |")
     a("|---:|---|---|---|---:|---:|---:|---:|---|---|---:|---|---|")
     for i, r in enumerate(ranked, 1):
         spec = r.get("spec") or {}
@@ -2248,13 +2252,16 @@ def render_comparison(results: list[dict], title: str = "多策略对比") -> st
         a(f"{v.get('reason', '（无理由）')}")
         a("")
         if dx:
-            cause = f"**死因：{dx.get('primary_label', dx.get('primary', '?'))}**"
+            cause = f"**诊断结论：{dx.get('primary_label', dx.get('primary', '?'))}**"
             if dx.get("tag_labels"):
                 cause += f"（附带：{'、'.join(dx['tag_labels'])}）"
             a(cause)
-            if dx.get("prescriptions"):
+            exps = dx.get("experiments") or []
+            if exps:
                 a("")
-                a("首要处方：" + dx["prescriptions"][0])
+                a(f"首要实验——诊断：{exps[0].get('diagnosis', '')}")
+                a(f"下一步实验：{exps[0].get('next_experiment', '')}")
+                a(f"验收标准：{exps[0].get('acceptance', '')}")
             a("")
         # Per-strategy provenance: what data, what assumptions. A comparison
         # across different symbols/windows must say so on its face.
@@ -2779,12 +2786,12 @@ def render_html(result: dict) -> str:
         a('<p class="note">spec 未声明任何 falsify_if 规则——本报告只呈现测量，不下裁决。</p>')
 
     # ---- 8. diagnosis ------------------------------------------------------
-    a("<h2>8. 诊断：死因与处方</h2>")
+    a("<h2>8. 诊断结论与下一步实验</h2>")
     dx = result.get("diagnosis") or {}
     if dx:
         a(f'<p class="sentence" style="border-left-color:var(--kill)">'
-          f'主死因：<b>{_esc(dx.get("primary_label", dx.get("primary", "?")))}</b>'
-          + (f'　·　附带问题：{_esc(" · ".join(dx.get("tag_labels") or []))}'
+          f'主要结论：<b>{_esc(dx.get("primary_label", dx.get("primary", "?")))}</b>'
+          + (f'　·　附带结论：{_esc(" · ".join(dx.get("tag_labels") or []))}'
              if dx.get("tag_labels") else "")
           + "</p>")
         if dx.get("evidence"):
@@ -2792,13 +2799,16 @@ def render_html(result: dict) -> str:
             for e in dx["evidence"]:
                 a(f"<li>{_esc(e)}</li>")
             a("</ul>")
-        if dx.get("prescriptions"):
-            a("<p><b>处方</b>（按优先级；每条都引用本次运行的真实数字）：</p><ol>")
-            for p in dx["prescriptions"]:
-                a(f"<li>{_esc(p)}</li>")
-            a("</ol>")
-        a('<p class="note">死因归类规则事前声明于 <code>research/verify/diagnosis.py</code>，'
-          "先于任何策略被分类——与证伪规则同一条纪律。处方是工程建议，不是投资建议。</p>")
+        for i, x in enumerate(dx.get("experiments") or [], 1):
+            a(f"<p><b>实验 {i}</b></p><ul>")
+            a(f"<li><b>诊断：</b>{_esc(x.get('diagnosis', ''))}</li>")
+            a(f"<li><b>下一步实验：</b>{_esc(x.get('next_experiment', ''))}</li>")
+            a(f"<li><b>验收标准：</b>{_esc(x.get('acceptance', ''))}</li>")
+            a("</ul>")
+        if dx.get("caveat"):
+            a(f'<p class="note">{_esc(dx["caveat"])}</p>')
+        a('<p class="note">诊断结论与归类规则事前声明于 <code>research/verify/diagnosis.py</code>，'
+          "先于任何策略被分类——与证伪规则同一条纪律。实验建议不是投资建议。</p>")
     else:
         a('<p class="note">（本报告无诊断信息）</p>')
 
@@ -2904,7 +2914,7 @@ def render_comparison_html(results: list[dict], title: str = "多策略对比") 
         ])
         rc.append("hit" if outcome == "FALSIFIED" else
                   ("pass" if outcome == "NOT_FALSIFIED" else "weak"))
-    a(_table(["#", "策略", "裁决", "死因", "成交", "最坏净", "最好净", "×2 成本净",
+    a(_table(["#", "策略", "裁决", "诊断结论", "成交", "最坏净", "最好净", "×2 成本净",
               "对照组 CI", "选择性", "样本外净", "样本外网格", "触发规则"],
              rows, num_cols={0, 4, 5, 6, 7, 10, 11}, row_class=rc))
 
@@ -2931,12 +2941,15 @@ def render_comparison_html(results: list[dict], title: str = "多策略对比") 
         a(f'<p>{_esc((r.get("verdict") or {}).get("reason", "（无理由）"))}</p>')
         dx = r.get("diagnosis") or {}
         if dx:
-            cause = f'死因：<b>{_esc(dx.get("primary_label", dx.get("primary", "?")))}</b>'
+            cause = f'诊断结论：<b>{_esc(dx.get("primary_label", dx.get("primary", "?")))}</b>'
             if dx.get("tag_labels"):
                 cause += "（附带：" + _esc("、".join(dx["tag_labels"])) + "）"
             a(f"<p>{cause}</p>")
-            if dx.get("prescriptions"):
-                a(f'<p class="hypo">首要处方：{_esc(dx["prescriptions"][0])}</p>')
+            exps = dx.get("experiments") or []
+            if exps:
+                a(f'<p class="hypo">首要实验：{_esc(exps[0].get("diagnosis", ""))} → '
+                  f'{_esc(exps[0].get("next_experiment", ""))} → 验收：'
+                  f'{_esc(exps[0].get("acceptance", ""))}</p>')
         chips = _key_numbers(r)
         if chips:
             a('<div class="chips">')
@@ -2970,26 +2983,43 @@ def render_comparison_html_to(results: list[dict], path, title: str = "多策略
     p.write_text(render_comparison_html(results, title=title), encoding="utf-8")
 
 # ==== from diagnosis.py ================================================
-"""Diagnosis: not just "the strategy died" but HOW, and what to do next.
+"""Diagnosis: not just "did it survive" but WHAT the evidence says, and what
+to test next.
 
 The falsification battery answers "is this strategy real". A customer with a
-real strategy on the line needs the next two answers: "which failure is this"
-and "what would I even change". This module derives both from the SAME
-measurements the battery already made -- no new runs, no new assumptions.
+real strategy on the line needs the next answers: "which failure mode is
+this", "what do I test next", and "what result would count as an answer".
+This module derives all three from the SAME measurements the battery already
+made -- no new runs, no new assumptions.
+
+Two vocabulary decisions, both deliberate:
+
+1. These are DIAGNOSTIC OUTCOMES, not "causes of death". A strategy that is
+   NOT_FALSIFIED did not "survive a kill" -- it simply was not falsified
+   under the declared rules. An INCONCLUSIVE result is not a death either:
+   it is a non-measurement. Calling every outcome a death teaches customers
+   to distrust the instrument when it says anything other than "guilty".
+
+2. Every prescription is an EXPERIMENT HYPOTHESIS with an acceptance
+   criterion, not advice. "Tighten your entries" is an opinion; "add one
+   orthogonal filter, expect ~1/5 the signals, accept if the control CI's
+   lower bound clears zero" is a falsifiable next step. The customer -- or
+   the customer's critic -- can check whether the experiment was run and
+   whether its acceptance criterion was met. Numbers get opinions nowhere.
 
 The classification rules below are the contract; they are declared here, in
 code, before any strategy is classified -- the same rules-before-numbers
 discipline the falsification rules follow. Priority order is part of the
-contract: a strategy can trip several causes at once, and the PRIMARY cause
-is the most fundamental one, because fixing a symptom while the root cause
-stands is how people waste another six months.
+contract: a strategy can trip several outcomes at once, and the PRIMARY one
+is the most fundamental reading of the evidence, because treating a symptom
+while the root cause stands is how people waste another six months.
 
-Cause taxonomy (primary, by priority):
+Outcome taxonomy (primary, by priority):
   insufficient  verdict is INCONCLUSIVE: not a death, a non-measurement.
                 Nothing below it can be assessed honestly.
   randomness    entries cannot beat random entries (CI spans zero) or lose
                 to them (CI entirely negative). The most fundamental
-                failure: the entry logic contributes nothing (or worse).
+                reading: the entry logic contributes nothing (or worse).
   cost          the edge is REAL (control proves selectivity) but the book
                 only survives at the declared fee -- doubling it kills the
                 strategy. A toll problem, not an edge problem.
@@ -3002,23 +3032,23 @@ Cause taxonomy (primary, by priority):
                 the hold window: a lottery structure wearing a backtest.
   survived      NOT_FALSIFIED. Reported with the standing caveat that this
                 is the absence of disproof, not the presence of proof.
-
-Prescriptions are actionable and numeric: each one quotes the customer's own
-numbers from THIS run, because "reduce fees" is noise and "your +0.03%/trade
-becomes -0.41%/trade at 8bps round trip" is a decision.
 """
 
 # The taxonomy, in priority order. Kept as data so the report can print the
 # whole ladder (a reader deserves to see what was ruled out and why).
-CAUSES = [
-    ("insufficient", "样本不足"),
-    ("randomness", "随机性杀死"),
-    ("cost", "成本杀死"),
-    ("edge_absent", "无 edge"),
-    ("overfitting", "过拟合杀死"),
-    ("barrier", "结构杀死（彩票）"),
+OUTCOMES = [
+    ("insufficient", "证据不足"),
+    ("randomness", "随机性未排除"),
+    ("cost", "成本敏感"),
+    ("edge_absent", "未测出正期望"),
+    ("overfitting", "过拟合迹象"),
+    ("barrier", "结构受限"),
     ("survived", "未被证伪"),
 ]
+
+# Every prescription is a hypothesis + acceptance criterion. The caveat is
+# printed with all of them: a next experiment is a bet, not a verdict.
+CAVEAT = "以上为下一步实验假设，不是已证最优方案——按验收标准判定，不按感觉判定。"
 
 
 def _rule_triggered(verdict: dict, rule_prefix: str) -> bool:
@@ -3033,10 +3063,13 @@ def _dx_pct(v: float | None, digits: int = 2) -> str:
 
 
 def diagnose(result: dict) -> dict:
-    """Classify the failure mode(s) of one verified strategy and prescribe.
+    """Classify what the evidence says about one verified strategy and what
+    to test next.
 
     Returns {"primary": str, "primary_label": str, "tags": [...],
-             "evidence": [str, ...], "prescriptions": [str, ...]}.
+             "tag_labels": [...], "evidence": [str, ...],
+             "experiments": [{"diagnosis", "next_experiment", "acceptance"}],
+             "caveat": str}.
     """
     verdict = result.get("verdict") or {}
     outcome = verdict.get("outcome", "?")
@@ -3071,7 +3104,8 @@ def diagnose(result: dict) -> dict:
         ev(f"成交 {worst.get('n', 0)} 笔，低于 spec 声明的证据门槛——"
            + (min_fills["detail"] if min_fills else "样本不足"))
     elif outcome == "NOT_FALSIFIED":
-        # Nothing died: no cause below applies, however the numbers look.
+        # Nothing was falsified: no cause below applies, however the numbers
+        # look. Absence of disproof, not presence of proof.
         primary = "survived"
     elif selectivity == "refuted":
         primary = "randomness"
@@ -3086,7 +3120,7 @@ def diagnose(result: dict) -> dict:
                "赚的是 beta，包装成 alpha")
     elif x2_net is not None and x2_net <= 0 < (worst_net or 0):
         primary = "cost"
-        ev(f"×1 费率净 {_dx_pct(worst_net)}，×2 费率净 {_dx_pct(x2_net)}——edge 真实存在，"
+        ev(f"×1 费率净 {_dx_pct(worst_net)}，×2 费率净 {_dx_pct(x2_net)}——edge 在统计上成立，"
            "但付不起加倍的 toll")
     elif worst_net is not None and worst_net <= 0:
         primary = "edge_absent"
@@ -3101,7 +3135,7 @@ def diagnose(result: dict) -> dict:
         ev(f"止盈位在持仓窗口内仅被摸到 {br['reached_tp_pct']:.1f}%——盈利期望是彩票结构")
     else:
         primary = "insufficient"  # FALSIFIED but none of the above: say so honestly
-        ev("裁决为 FALSIFIED 但死因无法归入上述类别——请人工看第 7 节规则判定表")
+        ev("裁决为 FALSIFIED 但结论无法归入上述类别——请人工看第 7 节规则判定表")
 
     # ---- secondary tags (a strategy can fail several ways at once) --------
     def add_tag(t: str) -> None:
@@ -3127,59 +3161,118 @@ def diagnose(result: dict) -> dict:
             and primary not in ("barrier", "insufficient"):
         add_tag("barrier")
 
-    # ---- prescriptions: numeric, actionable, tied to THIS run --------------
-    rx: list[str] = []
+    # ---- next experiments: hypothesis + acceptance criterion --------------
+    # Each entry: diagnosis (what the evidence says), next_experiment (the
+    # falsifiable bet), acceptance (what result counts as an answer).
+    experiments: list[dict] = []
+    n = worst.get("n", 0)
+    mean = worst.get("mean_pct")
+
     if primary == "insufficient":
-        rx.append(f"先解决样本量：成交 {worst.get('n', 0)} 笔不足以支撑任何结论。"
-                  "扩窗口、加标的，或放宽入场阈值——但放宽后要在报告里重新声明 min_fills，"
-                  "不允许用同一个宽松阈值既扩样本又保裁决")
+        experiments.append({
+            "diagnosis": f"成交 {n} 笔低于自声明门槛，当前数据无法支持任何结论",
+            "next_experiment": "扩窗口、加标的、放宽阈值三者选一；若放宽阈值，"
+                               "必须同步下调 min_fills 并在同一 spec 内重跑全部规则",
+            "acceptance": f"成交 ≥ 新的 min_fills，且结论在 min_fills 的合理取值范围内不变",
+        })
     elif primary == "randomness":
-        rx.append("把入场条件加严一个量级：趋势过滤（如只在 EMA 多头侧做多）+ 时段过滤 + "
-                  "量能确认。信号数降到现在的 1/5 再测——宁少勿滥，30 笔真信号胜过 300 笔噪声")
+        experiments.append({
+            "diagnosis": "入场信号未展示出独立于随机入场的优势（统计上无法区分或显著更差）",
+            "next_experiment": "给入场加一个正交过滤器（趋势方向 / 时段 / 量能任选其一），"
+                               "信号数预计降到约 1/5——这是实验假设，不是目标",
+            "acceptance": "对照组差值 95% CI 下界 ≥ 0，且成交数仍 ≥ min_fills；"
+                          "若 CI 仍跨 0，换过滤器而不是降阈值",
+        })
         if worst_net is not None and worst_net > 0:
-            rx.append(f"承认定位：这份账面（{_dx_pct(worst_net)}）大概率是 beta。若目标就是赚 beta，"
-                      "该做的是定投/资产配置工具，不是策略引擎——先把目的想清楚，再决定要不要继续")
+            experiments.append({
+                "diagnosis": f"账面 {_dx_pct(worst_net)} 与随机入场无统计差异——赚的是 beta",
+                "next_experiment": "若目标就是赚 beta：改用买入持有/定投做基准对比，"
+                                   "本引擎的回答是“不优于随机”，不是“不能赚”",
+                "acceptance": "策略对买入持有的超额收益 CI 下界 > 0（那是另一个实验，"
+                              "本引擎不测这个——先想清楚要回答哪个问题）",
+            })
         else:
-            rx.append(f"账面 {_dx_pct(worst_net)} 且打不过随机：回到假设阶段——这个 edge 的"
-                      "市场学基础是什么（谁在犯错、错误定价为什么持续）？写不出来就不要回测了")
+            experiments.append({
+                "diagnosis": f"账面 {_dx_pct(worst_net)} 且打不过随机：没有可测量的正期望",
+                "next_experiment": "停止调参。写下 edge 的市场学基础（谁在犯错、错误定价"
+                                   "为什么持续）；写不出来就换假设，不要换参数",
+                "acceptance": "新假设的对照组差值 CI 下界 > 0（严格为正，不是 ≥ 0）",
+            })
     elif primary == "cost":
-        rx.append("三条路选一条：① 降频——当前每笔净 "
-                  f"{_dx_pct((worst.get('mean_pct')))}，频率砍半则 toll 占比同步砍半；"
-                  "② 改 maker 限价成交，单边费率通常减半；③ 拉长持仓周期，"
-                  "让每笔毛利润覆盖 toll（当前 ×2 成本净 "
-                  f"{_dx_pct(x2_net)}，这就是 toll 预算的上限）")
+        experiments.append({
+            "diagnosis": f"edge 统计上成立，但 ×2 费率净收益 {_dx_pct(x2_net)}——toll 预算不足",
+            "next_experiment": "三条互斥实验各跑一次：① 降频（加最小信号间隔）"
+                               "② 改 maker 限价成交（单边费率通常减半）③ 拉长持仓周期",
+            "acceptance": f"×2 费率下净收益 > 0（当前 {_dx_pct(x2_net)}），"
+                          "或 maker 改造后 ×2 净收益 > 0",
+        })
+        experiments.append({
+            "diagnosis": f"当前每笔净 {_dx_pct(mean)}，频率与单笔利润的乘积就是 toll 预算",
+            "next_experiment": "算出“频率 × 单笔毛利润”的盈亏平衡点，反推最低可行频率",
+            "acceptance": "在目标频率下，×2 成本敏感性仍为正",
+        })
     elif primary == "edge_absent":
-        rx.append("1x 费率下就亏损且无选择性证据：不要调参，调参是把噪声拟合得更漂亮。"
-                  "回到策略假设本身，或换标的/周期重测")
+        experiments.append({
+            "diagnosis": "1x 费率下即亏损且无选择性证据——没有可测量的正期望",
+            "next_experiment": "停止调参。写下 edge 的市场学基础（谁在犯错、错误定价"
+                               "为什么持续）；写不出来就换假设",
+            "acceptance": "新假设的对照组差值 CI 下界 > 0（严格为正，不是 ≥ 0）",
+        })
     elif primary == "overfitting":
-        rx.append("砍自由度：参数空间砍到 1-2 个自由度再测；若必须多参数，"
-                  "用滚动前向验证（每折内重新选参）而不是单次划分")
+        experiments.append({
+            "diagnosis": "样本内成立但样本外崩溃/参数网格脆弱——拟合了历史而非规律",
+            "next_experiment": "砍自由度：参数空间砍到 1-2 个维度再测；必须多参数时改用"
+                               "滚动前向验证（每折内重新选参，而不是单次划分）",
+            "acceptance": f"样本外净收益 ≥ 样本内的一半（当前样本内 {_dx_pct(isb.get('sum_pct'))} "
+                          f"vs 样本外 {_dx_pct(oos.get('sum_pct'))}），且网格正格率 ≥ 声明值",
+        })
         if grid.get("n_cells"):
-            rx.append(f"当前网格 {grid.get('positive_cells', 0)}/{grid.get('n_cells', 0)} 格为正："
-                      "把表现最好的格子附近再加密采样——如果 edge 真实，邻域应该活着；"
-                      "邻域全死说明你拟合了一个尖峰")
+            experiments.append({
+                "diagnosis": f"样本外网格 {grid.get('positive_cells', 0)}/{grid.get('n_cells', 0)} "
+                             "格为正——edge 只在一小撮参数组合下存在",
+                "next_experiment": "在表现最好的格子附近加密采样：edge 若真实，邻域应该活着",
+                "acceptance": "邻域格子多数为正；邻域全死说明拟合了一个尖峰，回到上一条",
+            })
     elif primary == "barrier":
-        rx.append(f"止盈位只被摸到 {br.get('reached_tp_pct', 0):.1f}%：把止盈放到市场真实波动"
-                  "距离上（用 ATR 或近期已实现波动校准），别用整数百分比的心理价位")
+        experiments.append({
+            "diagnosis": f"止盈位在持仓窗口内仅被摸到 {br.get('reached_tp_pct', 0):.1f}%——"
+                         "盈利期望是彩票结构",
+            "next_experiment": "止盈改到市场真实波动距离（用 ATR 或已实现波动校准），"
+                               "不要用整数百分比的心理价位",
+            "acceptance": f"止盈可达率 ≥ 30%（当前 {br.get('reached_tp_pct', 0):.1f}%），"
+                          "或显式声明更长的持仓窗口并重跑",
+        })
     elif primary == "survived":
-        rx.append("未被证伪 ≠ 被证实。下一步是模拟盘跑满一个完整的样本外周期——"
-                  "本引擎回答统计问题，不回答执行问题（滑点、成交率、心理）")
+        experiments.append({
+            "diagnosis": "当前检验条件下未被证伪——这是“没有反证”，不是“已被证实”",
+            "next_experiment": "模拟盘跑满一个完整的样本外周期，重点记录滑点与成交率"
+                               "（引擎不建模的两项）",
+            "acceptance": "模拟成交率 ≥ 回测假设，且净收益不低于样本外口径的 50%",
+        })
 
-    for t in tags:
-        if t == "cost" and primary != "cost":
-            rx.append(f"附带问题：成本翻倍即亏损（×2 净 {_dx_pct(x2_net)}）——即使主死因修好了，"
-                      "toll 预算仍是硬约束")
-        if t == "overfitting" and primary != "overfitting":
-            rx.append("附带问题：样本外/网格显示参数脆弱——主死因修好后，用更少的参数重测")
+    # secondary-tag follow-ups: the primary experiment does not retire these
+    if "cost" in tags:
+        experiments.append({
+            "diagnosis": f"附带问题：成本翻倍即亏损（×2 净 {_dx_pct(x2_net)}）",
+            "next_experiment": "主实验之外，单独跑一次 ×5 成本压力，确认 toll 预算的上限",
+            "acceptance": "×5 下的亏损幅度在可接受范围内（由你定义，写进 spec）",
+        })
+    if "overfitting" in tags:
+        experiments.append({
+            "diagnosis": "附带问题：样本外/网格显示参数脆弱",
+            "next_experiment": "主实验收敛后，用更少的参数重跑一次作为确认",
+            "acceptance": "砍参数后的结论与砍之前一致",
+        })
 
-    label = dict(CAUSES).get(primary, primary)
+    label = dict(OUTCOMES).get(primary, primary)
     return {
         "primary": primary,
         "primary_label": label,
         "tags": tags,
-        "tag_labels": [dict(CAUSES).get(t, t) for t in tags],
+        "tag_labels": [dict(OUTCOMES).get(t, t) for t in tags],
         "evidence": evidence,
-        "prescriptions": rx,
+        "experiments": experiments,
+        "caveat": CAVEAT,
     }
 
 # ==== from __init__.py =================================================
