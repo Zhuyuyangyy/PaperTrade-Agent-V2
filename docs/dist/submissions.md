@@ -73,7 +73,7 @@ Adds one project under `## Trading & Backtesting`.
 - [PaperTrade-Agent-V2](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2) - `Python` `CLI` - Strategy falsification engine: path-aware bar replay, cost sensitivity, barrier reachability, and a random-entry control group, with verdicts from pre-declared falsification rules.
 
 Notes for the reviewer:
-- Active repo: last commits 2026-10-28, MIT, 361 tests (60 in the verify suite).
+- Active repo: last commits 2026-10-28, MIT, 380 tests (60 in the verify suite).
 - Distinct from backtesting frameworks: it doesn't produce equity curves, it tries to kill them. Verdicts (FALSIFIED / NOT_FALSIFIED / INCONCLUSIVE) come from `falsify_if` rules written into the spec before any number is read.
 - Sample report on real cached Binance data and a 4-case matrix (including a +34% strategy ruled FALSIFIED because it can't beat random entry) are in the repo.
 - I searched the existing README and open PRs first; no duplicate found.
@@ -169,7 +169,7 @@ Then I pointed the same instruments at published strategies. Four of them:
 
 The case I care about: RSI momentum on BTC 1h, 1638 trades, +34.35% over three years — a publishable curve. The random-entry control in the same window differs by +0.03%/trade with a CI spanning zero. 2023-06 to 2026-10 was a crypto bull run; random entries made money too. That curve sells beta packaged as alpha. Verdict: FALSIFIED.
 
-Verdicts come from `falsify_if` rules written into the spec before any number is read. MIT, 361 tests, offline replay, sample report on real cached Binance data in the repo.
+Verdicts come from `falsify_if` rules written into the spec before any number is read. MIT, 380 tests, offline replay, sample report on real cached Binance data in the repo.
 
 No signals, no subscriptions, no managed capital. The only question the tool answers is whether your curve is real.
 ```
@@ -473,7 +473,7 @@ Open-source strategy falsification engine: path-aware replay, cost sensitivity, 
 ```
 Sharing a tool I built after measuring my own system and finding no edge. The angle is model risk: most published backtests are unfalsifiable by construction, so I built instruments that try to falsify them.
 
-Six instruments plus a diagnosis layer (all offline-replayable, MIT, 361 tests):
+Six instruments plus a diagnosis layer (all offline-replayable, MIT, 380 tests):
 
 1. Path-aware replay. Bars are walked, not sampled; a bar containing both stop and target resolves to the stop, optimistic read printed alongside. One repo's own notes claim +469%/91% win from "did price touch TP"; the same signals under path-aware replay give +132%/PF 1.62. Same signals, 3.5x apart.
 2. Cost sensitivity. Replay at 1x/2x/5x the assumed fee. Measured here: $100 order into a median-$799k pool costs 60bps round trip, 50bps of it an LP floor.
@@ -512,7 +512,7 @@ Input a strategy spec (market, timeframe, signal rule, exit rule, falsification 
 
 **Target audience**
 
-Anyone with a backtest they can't fully trust — including my past self. It's a CLI, offline, MIT, 361 tests. `python -m research.verify --demo` runs on bundled real BTC data with no API keys.
+Anyone with a backtest they can't fully trust — including my past self. It's a CLI, offline, MIT, 380 tests. `python -m research.verify --demo` runs on bundled real BTC data with no API keys.
 
 **Comparison**
 
@@ -552,7 +552,7 @@ Four instruments: path-aware bar replay (a bar containing both stop and target r
 
 The case that says it best: +34.35% over three years, 1638 trades — and a random-entry control in the same window differs by +0.03%/trade with a CI spanning zero. Published as FALSIFIED.
 
-MIT, Python, 361 tests, offline replay: https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2
+MIT, Python, 380 tests, offline replay: https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2
 ```
 
 **注意事项**：社区小，预期低；这里可以更学术口吻，有人讨论 multiple-testing / Bonferroni 一类问题就认真回——那是免费的方法论曝光。
@@ -585,7 +585,7 @@ What it answers: not "what would this strategy have returned", but "is that retu
 
 The case I'd point to: RSI momentum BTC 1h, 1638 trades, +34.35% over three years — ruled FALSIFIED, because a random-entry control in the same window differs by +0.03%/trade with a CI spanning zero. In a bull run, random entries make money too.
 
-MIT, 361 tests, offline replay, demo runs on bundled real data with no API keys. First 10 falsification reports free in exchange for publication rights — no signals, no subscriptions, no managed capital.
+MIT, 380 tests, offline replay, demo runs on bundled real data with no API keys. First 10 falsification reports free in exchange for publication rights — no signals, no subscriptions, no managed capital.
 
 Happy to answer anything, especially where the methodology is weakest (no walk-forward capacity modelling yet).
 ```
@@ -603,7 +603,7 @@ Happy to answer anything, especially where the methodology is weakest (no walk-f
 **Name**：PaperTrade-Agent-V2
 **Description**（无链接版）：
 ```
-Open-source strategy falsification engine for trading strategies. Runs path-aware bar replay (worst-case stop/target precedence), cost sensitivity at 1x/2x/5x fees, barrier reachability checks, and a random-entry control group with bootstrap confidence intervals. Verdicts come from falsification rules declared before any number is read. MIT licensed, Python, offline replay, 361 tests.
+Open-source strategy falsification engine for trading strategies. Runs path-aware bar replay (worst-case stop/target precedence), cost sensitivity at 1x/2x/5x fees, barrier reachability checks, and a random-entry control group with bootstrap confidence intervals. Verdicts come from falsification rules declared before any number is read. MIT licensed, Python, offline replay, 380 tests.
 ```
 **Category/Tags**：Development · Trading / Backtesting
 **Suggested "alternative to"**：backtrader、vectorbt、zipline（定位写清：不是替代回测框架，是跑在回测之后的验证层）
@@ -632,7 +632,7 @@ python
 **同时建议改 About 描述**（现描述 "Six-agent paper trading desk... Paper only." 讲的是已死系统的前世，新访客 3 秒内看不出这是产品）：
 
 ```
-Strategy falsification engine: path-aware replay, cost sensitivity, and random-entry control with pre-declared verdicts. MIT, offline, 361 tests. (Archive of a 6-agent paper-trading experiment that measured no edge.)
+Strategy falsification engine: path-aware replay, cost sensitivity, and random-entry control with pre-declared verdicts. MIT, offline, 380 tests. (Archive of a 6-agent paper-trading experiment that measured no edge.)
 ```
 
 Website 栏填：`https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/`
