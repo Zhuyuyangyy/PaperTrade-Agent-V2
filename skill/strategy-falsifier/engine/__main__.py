@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 from . import data, report
+from .contract_lock import check_lock, write_lock, EXIT_TAMPERED
 from .spec import Spec, SpecError
 
 # Dual-layout path resolution. The SAME file runs in two places:
@@ -248,6 +249,19 @@ def _run_one(args, spec_path: str | None, raw_argv: list[str]) -> dict:
     else:
         spec = Spec.load(spec_path)
         _spec_path[0] = spec_path
+
+    # -- contract lock: the judge's rules may not move mid-iteration --------
+    if getattr(args, "lock", None):
+        spec_doc = vars(spec) if not hasattr(spec, "to_dict") else spec.to_dict()
+        ok, detail = check_lock(spec_doc, args.lock)
+        if not ok:
+            print(f"[契约锁] {detail}", file=sys.stderr)
+            print("[契约锁] EXIT 99 CONTRACT_TAMPERING_DETECTED —— 本次运行不作为证据，"
+                  "报告作废。修改规则即新的实验：重新 lock-contract，重新计数。",
+                  file=sys.stderr)
+            raise SystemExit(EXIT_TAMPERED)
+        print(f"[契约锁] {detail}", file=sys.stderr)
+
     candles = _load_candles(args, spec)
     entries = _build_entries(args, spec, candles)
     exit_signals = None
@@ -286,6 +300,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", help="报告输出路径（markdown；.html 输出 HTML 版）；缺省打印到 stdout")
     ap.add_argument("--json", action="store_true", help="额外输出机器可读 JSON（与 --out 同名 .json）")
     ap.add_argument("--list-market", action="store_true", help="列出本地行情缓存内容后退出")
+    ap.add_argument("--lock-contract", action="store_true",
+                    help="契约锁模式：对 spec 的事前证伪规则生成 sha256 锁文件后退出（防迭代中偷改规则）")
+    ap.add_argument("--lock", help="校验 spec 的证伪契约与此锁文件一致（不一致以退出码 99 终止并在报告盖章）")
+    ap.add_argument("--trades-csv", help="交易记录尸检模式：TradingView 'List of Trades' CSV，"
+                    "无 K 线也能跑（成本压力 + bootstrap 重抽样 + 尾部截断；"
+                    "路径回放/随机对照/参数网格做不了，报告会披露）")
     args = ap.parse_args(argv)
     raw_argv = list(argv) if argv is not None else sys.argv[1:]
 
@@ -296,8 +316,46 @@ def main(argv: list[str] | None = None) -> int:
             ap.error("--compare 与 --spec 不能同用（把全部 spec 都给 --compare）")
         if len(args.compare) < 2:
             ap.error("--compare 至少需要 2 个 spec；单策略请用 --spec")
-    elif not args.spec and not args.demo:
-        ap.error("必须提供 --spec 或 --demo（或用 --list-market 查看缓存）")
+    elif not args.spec and not args.demo and not args.trades_csv:
+        ap.error("必须提供 --spec 或 --demo（交易记录尸检用 --trades-csv；--list-market 查看缓存）")
+
+    # -- trade-records autopsy: no candles needed --------------------------
+    if args.trades_csv:
+        from . import csv_auditor
+
+        try:
+            trades = csv_auditor.load_trades_csv(args.trades_csv)
+        except Exception as exc:  # noqa: BLE001 - CLI boundary
+            print(f"无法读取交易记录 {args.trades_csv}: {exc}", file=sys.stderr)
+            return 2
+        if not trades:
+            print("交易记录为空（或没有可识别的盈亏列）", file=sys.stderr)
+            return 2
+        result = csv_auditor.audit_trades(trades)
+        md = csv_auditor.render(result)
+        if args.out:
+            Path(args.out).write_text(md, encoding="utf-8")
+            print(f"已写出 {args.out}", file=sys.stderr)
+        else:
+            print(md)
+        if args.json:
+            p = Path(args.out).with_suffix(".json") if args.out else Path("trades_autopsy.json")
+            p.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+        return 0 if result["outcome"] != "INSUFFICIENT" else 3
+
+    # -- contract lock mode: no data, no run, just seal the rules ----------
+    if args.lock_contract:
+        if not args.spec:
+            ap.error("--lock-contract 需要 --spec")
+        from .spec import Spec
+
+        spec_obj = Spec.load(args.spec)
+        lock_path = Path(args.lock) if args.lock else Path(args.spec).with_suffix(".verdict_lock.json")
+        write_lock(spec_obj.to_dict() if hasattr(spec_obj, "to_dict") else vars(spec_obj), lock_path)
+        print(f"[契约锁] 已锁定 {lock_path}")
+        print(f"[契约锁] sha256 见文件内 contract_sha256；迭代中若修改 falsify_if，"
+              f"--lock 校验将以退出码 99 拒绝")
+        return 0
 
     market = Path(args.market) if args.market else DEFAULT_MARKET
     if args.list_market:

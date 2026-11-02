@@ -66,6 +66,68 @@ OUTCOMES = [
 # printed with all of them: a next experiment is a bet, not a verdict.
 CAVEAT = "以上为下一步实验假设，不是已证最优方案——按验收标准判定，不按感觉判定。"
 
+# The edit licence, per outcome: what an agent MAY change while iterating and
+# what it may NOT -- the forbidden list exists because every one of these is
+# a move that makes a dead strategy look alive without making it alive.
+# next_experiment_prompt is written as an instruction the agent can execute
+# verbatim.
+DIRECTIVES: dict[str, dict] = {
+    "insufficient": {
+        "allowed_edits": ["扩大数据窗口或增加标的", "在同步下调 min_fills 后重新锁定契约并重跑全部规则"],
+        "forbidden_edits": ["严禁只降 min_fills 不重新 lock-contract（那是移动门柱）",
+                            "严禁引用当前样本下的任何结论——证据不足时所有数字都是噪声"],
+        "next_experiment_prompt": "当前成交数低于证据门槛，先解决样本量：扩窗口/加标的/同步下调 min_fills 三者选一，"
+                                  "若下调门槛必须重新生成契约锁并重跑，不允许在同一个锁下换门槛。",
+    },
+    "randomness": {
+        "allowed_edits": ["重构入场触发逻辑", "增加一个正交过滤条件（趋势方向/时段/量能任选其一）",
+                          "更换信号源"],
+        "forbidden_edits": ["严禁微调现有均线/指标周期参数凑数字",
+                            "严禁修改止盈止损来掩盖入场缺陷",
+                            "严禁降低 min_fills 或放宽对照组规则让结论翻盘"],
+        "next_experiment_prompt": "保持出场结构与仓位管理完全不变，只改入场：加一个正交过滤器"
+                                  "（趋势/时段/量能任选其一），预期信号数降到约 1/5，重跑后检查对照组差值 "
+                                  "95% CI 下界是否 > 0（严格为正）。不达标就换过滤器，不是降阈值。",
+    },
+    "cost": {
+        "allowed_edits": ["降低交易频率（加最小信号间隔）", "改 maker 限价成交假设",
+                          "拉长持仓周期让单笔利润覆盖 toll"],
+        "forbidden_edits": ["严禁下调 fee_rate 假设来证明策略能活（换假设不换事实）",
+                            "严禁删除或放宽成本敏感性规则"],
+        "next_experiment_prompt": "edge 已被对照证明，问题是 toll 预算：三条互斥实验各跑一次"
+                                  "（降频 / maker 改造 / 拉长持仓），验收标准是 ×2 费率净收益 > 0。",
+    },
+    "edge_absent": {
+        "allowed_edits": ["更换策略假设", "更换标的或周期", "先启用随机对照组再谈其他"],
+        "forbidden_edits": ["严禁在现有框架内调参——没有可测量正期望时，调参是把噪声拟合得更漂亮",
+                            "严禁用账面盈利冒充 edge（对照组未证明的选择性不是 edge）"],
+        "next_experiment_prompt": "停止调参。写下这个 edge 的市场学基础（谁在犯错、错误定价为什么持续）；"
+                                  "写不出来就换假设。新假设的验收标准：对照组差值 CI 下界严格 > 0。",
+    },
+    "overfitting": {
+        "allowed_edits": ["砍参数自由度（参数空间砍到 1-2 个维度）", "改用滚动前向验证（每折内重新选参）"],
+        "forbidden_edits": ["严禁按全窗口表现选参然后宣称样本外有效",
+                            "严禁只报告参数网格里最好的格子"],
+        "next_experiment_prompt": "砍自由度重跑：参数空间砍到 1-2 个维度；必须多参数时用滚动前向验证。"
+                                  "验收标准：样本外净收益 ≥ 样本内的一半，且网格正格率 ≥ spec 声明值。",
+    },
+    "barrier": {
+        "allowed_edits": ["用 ATR/已实现波动校准止盈距离", "显式声明更长的持仓窗口并重跑"],
+        "forbidden_edits": ["严禁把止盈放在市场几乎不可达的心理价位",
+                            "严禁删除或规避障碍可达仪器"],
+        "next_experiment_prompt": "止盈改到市场真实波动距离（ATR 或已实现波动校准），重跑后止盈可达率"
+                                  "应 ≥ 30%；若坚持宽止盈，必须显式拉长持仓窗口并重新声明。",
+    },
+    "survived": {
+        "allowed_edits": ["进入模拟盘验证周期", "记录滑点与成交率（引擎不建模的两项）"],
+        "forbidden_edits": ["严禁把'未被证伪'写成'已证实'对外表述",
+                            "严禁跳过模拟盘直接给实盘结论"],
+        "next_experiment_prompt": "当前检验条件下未被证伪——这是'没有反证'，不是'已被证实'。"
+                                  "下一步是模拟盘跑满一个完整样本外周期，验收标准：成交率 ≥ 回测假设，"
+                                  "净收益不低于样本外口径的 50%。",
+    },
+}
+
 
 def _rule_triggered(verdict: dict, rule_prefix: str) -> bool:
     return any(
@@ -323,6 +385,15 @@ def diagnose(result: dict) -> dict:
         })
 
     label = dict(OUTCOMES).get(primary, primary)
+    directive = {"outcome": primary, "outcome_label": label}
+    directive.update(DIRECTIVES.get(primary, DIRECTIVES["insufficient"]))
+    # secondary outcomes contribute their forbidden lists: a strategy dying
+    # two ways must not be "fixed" in a way the second outcome forbids
+    directive["secondary_directives"] = [
+        {"outcome": t, "outcome_label": dict(OUTCOMES).get(t, t),
+         "forbidden_edits": DIRECTIVES.get(t, {}).get("forbidden_edits", [])}
+        for t in tags
+    ]
     return {
         "primary": primary,
         "primary_label": label,
@@ -331,4 +402,5 @@ def diagnose(result: dict) -> dict:
         "evidence": evidence,
         "experiments": experiments,
         "caveat": CAVEAT,
+        "agent_directive": directive,
     }

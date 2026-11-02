@@ -97,3 +97,4 @@ done | jq -s '[.[].jobPosts[]] | {
 | 日期 | stars | issues | Toku jobs | qualified inbound | 动作 |
 |---|---|---|---|---|---|
 | 2026-10-30 | 0 | 0 | 378（买家真 job 5） | 0 | 建立指标基线；创建周巡检 automation |
+| 2026-11-02 | 0 | 1（本人 release issue #1，非买家询盘） | 378（买家真 job 5，名单与上周一致，均与证伪无关） | 0 | qualified inbound 仍为 0：本周安排增长实验——Reddit（r/algotrading）首发帖 + X thread 分发 + 闲鱼上架三线推进，唯一验收标准 qualified inbound 0→1；landing page 仍未 instrumented，同步接入访问统计 |

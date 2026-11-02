@@ -1490,7 +1490,7 @@ class TestDiagnosis:
     def test_profitable_but_unproven_names_beta(self):
         from research.verify.diagnosis import diagnose
 
-        r = self._result()
+        r = TestDiagnosis._result()
         r["control"] = {"diff_pct": 0.03, "diff_ci": [-0.27, 0.35], "selectivity": "unproven"}
         r["runs"]["worst_case"]["stats"]["sum_pct"] = 34.35
         d = diagnose(r)
@@ -1559,7 +1559,7 @@ class TestDiagnosis:
         flips is the more fundamental failure, even if fees also hurt."""
         from research.verify.diagnosis import diagnose
 
-        r = self._result()
+        r = TestDiagnosis._result()
         r["control"] = {"diff_pct": 0.03, "diff_ci": [-0.27, 0.35], "selectivity": "unproven"}
         r["runs"]["worst_case"]["stats"]["sum_pct"] = 34.35
         r["cost_sensitivity"] = [{"fee_multiple": 1, "fee_bps": 8, "net_sum_pct": 34.35},
@@ -1612,7 +1612,7 @@ class TestDiagnosis:
         failed."""
         from research.verify.diagnosis import diagnose
 
-        r = self._result()
+        r = TestDiagnosis._result()
         r["control"] = {"diff_pct": 0.03, "diff_ci": [-0.27, 0.35], "selectivity": "unproven"}
         r["runs"]["worst_case"]["stats"]["sum_pct"] = 34.35
         d = diagnose(r)
@@ -1663,6 +1663,59 @@ class TestDiagnosis:
         assert dx["primary_label"] and isinstance(dx["experiments"], list)
         for x in dx["experiments"]:
             assert x.get("diagnosis") and x.get("next_experiment") and x.get("acceptance")
+
+
+class TestAgentDirective:
+    """The edit licence: every outcome tells an iterating agent what it may
+    change and what it must not -- the forbidden list exists because each
+    entry is a real way to make a dead strategy look alive."""
+
+    def test_every_outcome_has_a_complete_directive(self):
+        from research.verify.diagnosis import DIRECTIVES, OUTCOMES
+
+        for key, _label in OUTCOMES:
+            d = DIRECTIVES[key]
+            assert d["allowed_edits"], key
+            assert d["forbidden_edits"], key
+            assert d["next_experiment_prompt"], key
+
+    def test_randomness_directive_forbids_the_classic_cheats(self):
+        from research.verify.diagnosis import DIRECTIVES
+
+        forbidden = " ".join(DIRECTIVES["randomness"]["forbidden_edits"])
+        # the three moves that fake a pass: parameter fiddling, exit tuning,
+        # and moving the evidence bar
+        assert "参数" in forbidden and "止盈" in forbidden and "min_fills" in forbidden
+
+    def test_cost_directive_forbids_relaxing_the_fee_assumption(self):
+        from research.verify.diagnosis import DIRECTIVES
+
+        forbidden = " ".join(DIRECTIVES["cost"]["forbidden_edits"])
+        assert "fee_rate" in forbidden
+
+    def test_diagnose_output_carries_the_directive(self):
+        from research.verify.diagnosis import diagnose
+
+        d = diagnose(TestDiagnosis._result())
+        directive = d["agent_directive"]
+        assert directive["outcome"] == d["primary"]
+        assert directive["allowed_edits"] and directive["forbidden_edits"]
+        assert directive["next_experiment_prompt"]
+
+    def test_secondary_outcomes_contribute_their_forbidden_lists(self):
+        """A strategy dying two ways must not be fixed in a way the second
+        outcome forbids -- e.g. tuning exits when cost fragility is present."""
+        from research.verify.diagnosis import diagnose
+
+        r = TestDiagnosis._result()
+        r["control"] = {"diff_pct": 0.03, "diff_ci": [-0.27, 0.35], "selectivity": "unproven"}
+        r["runs"]["worst_case"]["stats"]["sum_pct"] = 34.35
+        r["cost_sensitivity"] = [{"fee_multiple": 1, "fee_bps": 8, "net_sum_pct": 34.35},
+                                 {"fee_multiple": 2, "fee_bps": 16, "net_sum_pct": -96.69}]
+        d = diagnose(r)
+        assert d["primary"] == "randomness" and "cost" in d["tags"]
+        sec = d["agent_directive"]["secondary_directives"]
+        assert any(x["outcome"] == "cost" and x["forbidden_edits"] for x in sec)
 
 
 def _exit_rule():
