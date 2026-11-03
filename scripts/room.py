@@ -34,12 +34,26 @@ def build_room_html(now: datetime | None = None) -> str:
     )
 
 
+def build_floor_html(now: datetime | None = None) -> str:
+    """The living floor: same read-only snapshot, fed into the isometric office."""
+    state = build_state(now)
+    safe_json = json.dumps(state, ensure_ascii=False, separators=(",", ":"))
+    safe_json = safe_json.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    template = (ROOT / "templates" / "officeroom.html").read_text(encoding="utf-8")
+    return template.replace("__STATE_DATA__", safe_json).replace(
+        "__GENERATED_AT__", escape(state["generated_at"])
+    )
+
+
 def main() -> None:
     out = ROOT / "data" / "desk_room.html"
     out.parent.mkdir(parents=True, exist_ok=True)
     now = datetime.now(timezone.utc)
     out.write_text(build_room_html(now), encoding="utf-8")
     print(f"Multi-agent room generated: {out}")
+    floor_out = ROOT / "data" / "trading_floor.html"
+    floor_out.write_text(build_floor_html(now), encoding="utf-8")
+    print(f"Trading floor generated: {floor_out}")
 
 
 if __name__ == "__main__":
