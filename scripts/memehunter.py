@@ -235,6 +235,21 @@ def cmd_loop(desk: memehunter.Desk, args) -> int:
         if old and old != os.getpid() and _pid_alive(old):
             print(f"已有一个循环在跑（pid {old}）。先停掉它，再启动新的。")
             return 1
+
+    # The six-agent pipeline writes this same ledger. Two loops would open the
+    # same token twice and fight over the WAL write lock, so refuse to start
+    # while its heartbeat is fresh.
+    beat = root / "exit.memehunter.sqlite.heartbeat.json"
+    if beat.is_file():
+        try:
+            age = (memehunter.now_ms() - int(json.loads(beat.read_text(encoding="utf-8"))["last_pass_ms"])) / 1000
+        except (OSError, ValueError, KeyError):
+            age = 10_000
+        if age < 300:
+            print(f"六 agent 流水线正在跑（心跳 {age:.0f} 秒前），同一个账本不能开两个循环。")
+            print("要用轻量循环：先关掉流水线窗口，或等它停 5 分钟。")
+            return 1
+
     pid_file.write_text(str(os.getpid()), encoding="utf-8")
 
     cycle = 0

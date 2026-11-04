@@ -305,10 +305,15 @@ $PY -m pytest tests -q
 
 # 桌面交易（先删 STOP 文件）
 rm STOP
-$PY -m research.pipeline.orchestrator loop --sleep 100          # E 入口
+$PY -m research.pipeline.orchestrator loop --sleep 100          # E 入口（六 agent，含 LLM 研判）
 $PY -m research.pipeline.orchestrator exit-loop --interval 60   # E 退出
 $PY -m research.pipeline.orchestrator loop --sleep 240 \
     --config user_data/config.arm_stop22.json --db-name arm_stop22.sqlite   # 实验臂
+
+# 轻量循环：只扫描、标记、开仓，不调 LLM。与上面共用同一个账本，
+# 所以两者互斥——它会先读流水线的心跳，新鲜就拒绝启动。
+$PY scripts/memehunter.py loop --interval 180
+$PY scripts/memehunter.py loop --interval 60 --mark-only        # 只标记，不开仓
 
 # 外部策略审计（数据缓存在 runtime/audit/market.sqlite，可离线回放）
 $PY -m research.audit list                                     # 候选清单与假设
