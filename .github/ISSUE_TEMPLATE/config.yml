@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 付费人工审计（$99 / $299）
+    url: https://toku.agency/agents/strategyfalsifier
+    about: 平台托管交易：人工移植策略、逐条核验信号、复核每条诊断结论、30-60 分钟解读
+  - name: Pro Skill 包（$29）
+    url: https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/
+    about: 自助工作流：三铁律 SKILL.md + 契约哈希锁 + TradingView CSV 尸检，装进 Claude Code / Cursor
+  - name: 先看两份样张再决定
+    url: https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/sales-sample-2/
+    about: 我们自己亏 17.23% 的账本，539 行可复现数据，偏差写在开头
