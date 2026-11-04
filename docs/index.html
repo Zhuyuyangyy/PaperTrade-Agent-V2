@@ -148,6 +148,14 @@
   .sample-lines b, .sample-lines strong { color: var(--kill); }
   .sample-meta { margin: 0; font-size: 13px; color: var(--ink-2); }
   .sample-meta a { color: var(--accent); font-weight: 600; }
+  .floor-strip { margin: 18px 0 0; }
+  .floor-strip img { width: 100%; border: 1px solid var(--line); border-radius: 12px; display: block; }
+  .floor-strip p { font-size: 13px; color: var(--ink-2); margin: 10px 0 0; line-height: 1.7; }
+  .floor-strip p strong { color: var(--ink); }
+  .objection { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 0 12px 12px 0; background: #fff; padding: 14px 18px; margin: 12px 0 0; }
+  .objection h3 { font-size: 15.5px; margin: 0 0 6px; color: var(--ink); }
+  .objection p { margin: 0; font-size: 14px; color: var(--ink-2); line-height: 1.75; }
+  .objection a { color: var(--accent); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -257,6 +265,10 @@
       </div>
     </div>
     <p style="margin-top:14px"><a href="verify-sample-report.md">📄 完整样例报告（docs/verify-sample-report.md）</a> · <a href="cases/">📂 案例矩阵（docs/cases/）</a></p>
+    <div class="floor-strip">
+      <a href="floor.html"><img src="floor-preview.jpg" alt="交易现场预览：七个 agent 在等距办公室里各自忙活——走路、喝咖啡、白板讨论、复盘" width="1280" height="768" loading="lazy"></a>
+      <p>顺手造的<strong>交易现场</strong>：同一套账本渲染成一座等距办公室，七个 agent 各自有活干（赶路 / 喝咖啡 / 白板 huddle / 复盘），60 秒采样 101 agent·秒走动、每人 13–33 个 tile。点图打开可交互页面——<strong>单文件、零依赖、离线可跑</strong>，数字与仪表盘同一份快照。</p>
+    </div>
   </div>
 </section>
 
@@ -364,10 +376,31 @@
 </section>
 
 <!-- ============ PRICING ============ -->
+<!-- ============ OBJECTIONS ============ -->
+<section id="objections">
+  <div class="wrap">
+    <div class="kicker">Objections</div>
+    <h2><span class="no">08</span>三个你此刻正在想的问题</h2>
+    <div class="objection">
+      <h3>「我为什么不直接问 ChatGPT / Claude？」</h3>
+      <p>它会读你的代码——然后下意识帮你把它改得更好。LLM 的默认姿态是补全你的意图，不是杀死你的策略；你把曲线发给它，它多半回你「整体不错，注意风控」。这台仪器没有姿态：事前规则先于任何数字写死在 spec 里，一条不过就是不过；Pro 档的契约哈希锁甚至把规则本身锁住，迭代中偷改直接 exit 99。</p>
+    </div>
+    <div class="objection">
+      <h3>「免费回测工具我自己不会跑吗？」</h3>
+      <p>vectorbt / backtrader 出得了曲线，出不了裁决。「打不打得过随机入场」要对照组（同币、同时刻、同退出、同成本、固定 seed）；「是不是过拟合」要 walk-forward + 参数网格；「edge 付不付得起 toll」要 ×1/2/5 成本重放。这些<strong>全部开源（MIT）</strong>——欢迎白拿引擎，这正是它该存在的方式。$99 买的是「我替你跑、逐条核验、对结论负责」。</p>
+    </div>
+    <div class="objection">
+      <h3>「凭什么信你的结论？」</h3>
+      <p>三件事：① 我们公开自己亏 17.23% 的账本（<a href="sales-sample-2/">样张二</a>，539 行可复现数据，79% 幸存者偏差写在开头）；② 四个公开案例全是死法，包括一条三年 +34.35% 的「朋友圈曲线」——照样 FALSIFIED；③ 引擎 MIT、396 个测试守着规则，每个数字都能用仓库内命令重跑。一个只报喜的验货工具，没有存在意义。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRICING ============ -->
 <section id="pricing">
   <div class="wrap">
     <div class="kicker">Pricing</div>
-    <h2><span class="no">08</span>先看样例，再决定要不要付费</h2>
+    <h2><span class="no">09</span>先看样例，再决定要不要付费</h2>
     <p class="sub">三档付费，一个免费入口。价格按「这份报告能帮你避免多少损失」定，不是按「它能不能帮你赚钱」——后者我们明确不承诺。</p>
     <div class="free-banner">
       <div class="lead">
@@ -429,7 +462,7 @@
 <section id="contact">
   <div class="wrap">
     <div class="kicker">Boundaries &amp; Contact</div>
-    <h2><span class="no">09</span>边界先于生意</h2>
+    <h2><span class="no">10</span>边界先于生意</h2>
     <ul class="plain">
       <li>不荐股、不带单、不代管资金、不承诺收益——只回答一个问题：<strong>你的曲线是不是幻觉</strong>。</li>
       <li>不接任何需要访问客户交易所 API key 的委托。</li>
@@ -451,7 +484,7 @@
     <a href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2">源码</a> ·
     <a href="article-falsification.md">方法论文章</a> ·
     <a href="verify-sample-report.md">样例报告</a><br>
-    本页所有数字来自真实执行，可用仓库内命令复跑。生成于 2026-10-30。
+    本页所有数字来自真实执行，可用仓库内命令复跑。生成于 2026-11-04。
   </div>
 </footer>
 

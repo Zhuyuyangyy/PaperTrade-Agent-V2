@@ -1,0 +1,108 @@
+name: 免费证伪报告申请（前 3 单）
+description: 贴策略描述，24-72h 内交付完整证伪报告（含七类诊断结论），换匿名公开发布权
+title: "[免费申请] "
+labels: ["free-audit"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 输入契约（缺一项我们不启动）
+
+        免费档交付的是**完整证伪报告**（markdown + JSON，含七类诊断结论与下一步实验）——不是打分，是裁决。
+        代价只有一条：**报告会匿名化后公开**（策略名称、参数、市场会脱敏，你的账号不会出现）。
+
+        - 只回答一个问题：你的曲线是不是幻觉
+        - 不荐股、不带单、不代管资金、不承诺收益
+        - 不接任何需要交易所 API key 的委托
+        - 只收 3 单——要的是能公开的真实案例，不是流量；付费档起你的策略不出现在任何公开文档里
+
+  - type: input
+    id: strategy_name
+    attributes:
+      label: 策略名称 / 一句话
+      description: 例如「RSI(14)<30 抄底做多，止盈 3% 止损 8%」
+      placeholder: RSI 抄底 + 固定止盈止损
+    validations:
+      required: true
+
+  - type: dropdown
+    id: market
+    attributes:
+      label: 市场
+      options:
+        - 加密永续（Binance 风格，含资金费率）
+        - 加密现货
+        - A股 / 港股 / 美股
+        - 其他（在下方说明）
+    validations:
+      required: true
+
+  - type: dropdown
+    id: timeframe
+    attributes:
+      label: K 线周期
+      options:
+        - 5m
+        - 15m
+        - 1h
+        - 4h
+        - 1d
+    validations:
+      required: true
+
+  - type: textarea
+    id: signal_logic
+    attributes:
+      label: 信号逻辑（必填）
+      description: 用什么指标、什么条件入场？能贴代码/伪代码最好
+      placeholder: |
+        入场：RSI(14) < 30 且收盘价在布林下轨之上
+        过滤：成交量 > 20 期均值
+    validations:
+      required: true
+
+  - type: textarea
+    id: exit_rules
+    attributes:
+      label: 退出规则（止盈 / 止损 / 超时）
+      description: 没有写清楚退出规则的策略无法回放——这是必填项
+      placeholder: |
+        止盈 +3%
+        止损 -8%
+        超时 24h 平仓
+    validations:
+      required: true
+
+  - type: textarea
+    id: cost_assumptions
+    attributes:
+      label: 成本假设（费率 / 滑点）
+      description: taker 还是 maker？每边多少 bps？没有假设就按默认 taker 4bps/边并披露
+      placeholder: taker 4bps/边，无滑点（或：maker 2bps/边 + 1 tick 滑点）
+    validations:
+      required: true
+
+  - type: input
+    id: data_window
+    attributes:
+      label: 数据窗口与来源
+      description: 哪段行情、哪个交易所、能否提供 K 线（CSV/JSON）？没有数据我们用内置缓存并披露
+      placeholder: 2023-06 至 2026-10，Binance BTCUSDT 1h，可提供 CSV
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: 授权确认（必勾）
+      options:
+        - label: 我同意这份报告匿名化后公开发布（策略与参数脱敏，我的账号不出现）
+          required: true
+        - label: 我理解「未被证伪 ≠ 被证实」，报告不构成投资建议
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        不想等免费档、或策略不能公开？走付费档：[Toku · StrategyFalsifier](https://toku.agency/agents/strategyfalsifier)（$99 人工审计 / $299 深度审计，平台托管交易）。
