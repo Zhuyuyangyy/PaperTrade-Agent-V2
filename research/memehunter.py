@@ -82,6 +82,8 @@ CREATE TABLE IF NOT EXISTS candidates (
     net_buyers_5m INTEGER NOT NULL,
     vol_1h REAL NOT NULL,
     score REAL NOT NULL,
+    quality REAL,
+    timing REAL,
     eligible INTEGER NOT NULL,
     reject_reason TEXT,
     llm_score INTEGER,
@@ -140,15 +142,43 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "min_organic_score": 45.0,
     "min_organic_buy_ratio": 1.05,
     "min_organic_buy_usd": 3_000.0,
-    # --- anti-chase / anti-fade (penalties, not vetoes) ---
+    # --- anti-chase / anti-fade ---
     "min_chg_5m": -3.0,
+    # Deprecated: the score no longer reads max_chg_1h. Kept so old config files
+    # do not raise, and so the value stays visible for anyone diffing configs.
     "max_chg_1h": 55.0,
     "min_chg_1h": -12.0,
+    # Hard ceiling on entry. Above this the cohort's forward return is negative
+    # no matter how clean the token looks (see veto()).
+    "veto_max_chg_1h": 15.0,
     # A token below this score is not worth a clip even if it survives the vetoes.
-    "min_score_to_buy": 52.0,
+    "min_score_to_buy": 48.0,
+    # Two floors, not one. Quality answers "is this a scam", timing answers "is
+    # now the moment". A blended threshold let a clean token that was actively
+    # selling score 59 because its liquidity outvoted its price action.
+    # Calibrated on 539 marked candidates, then checked against the 112 with an
+    # independent quote (no survivorship bias). Two things are true and must be
+    # read together: (1) chasing is the one reliably negative behaviour, so the
+    # timing floor is not negotiable; (2) even the best joint filter returned
+    # about -0.3% per trade, i.e. this desk is being run to collect evidence,
+    # not to print money. Quality 40 keeps the rug screen without demanding a
+    # profile that never appears live; timing 65 accepts anything between
+    # roughly -4% and +7% on the hour, which is the only region the data does
+    # not punish.
+    "min_quality_to_buy": 40.0,
+    "min_timing_to_buy": 65.0,
     # --- exits ---
-    "take_profit_pct": 55.0,
-    "stop_loss_pct": -12.0,
+    # +55% was reached twice in 96 trades while 84 positions rode the timeout to
+    # a -1.4% average, i.e. the target was outside the distribution. A path
+    # replay over 347 candidates puts TP 20-30% at +2.0-2.1% expected versus
+    # +1.9% at 55%; 30 keeps the right tail without pretending every token is a
+    # ten-bagger.
+    "take_profit_pct": 30.0,
+    # -12% is inside the noise band of this asset class. Ten stops fired at an
+    # average -16.2% (slippage included) and every one of them was a loss; at
+    # -18% the same path replay fires one stop instead of five at no cost to
+    # expected return.
+    "stop_loss_pct": -18.0,
     # NOT tuned: the only positive-expectancy hold bucket in the ledger is
     # 90-180m (+9.8% mean, n=8). Setting this to 45 because dead positions
     # 'felt' too slow was fitting a symptom. Change it only from a
@@ -370,6 +400,13 @@ def veto(token: Token, cfg: dict) -> tuple[bool, str]:
         # A five-minute double-digit drop is a dump in progress, not a dip. A
         # 100 USDT clip cannot outrun the crowd holding the same bag.
         return False, "COLLAPSING"
+    if token.chg_1h > cfg["veto_max_chg_1h"]:
+        # Not a survival risk, but the one cohort with a reliably negative
+        # forward return: candidates up 15-60% over an hour returned -5.3% and
+        # -5.7% over the next 20-300 minutes (n=44 and n=18). Score penalties
+        # alone still let the best of a bad cohort through on volume and holder
+        # count, which is how the desk kept buying tops. Refuse the cohort.
+        return False, "ALREADY_RUN_UP"
     if token.fdv_usd > cfg["veto_max_fdv_usd"]:
         # JUP trades at a ~$1.9B FDV. A 100 USDT clip there cannot move, and a
         # blue chip's 5-minute momentum is noise rather than a meme run-up.
@@ -391,45 +428,72 @@ def veto(token: Token, cfg: dict) -> tuple[bool, str]:
     return True, ""
 
 
-def score(token: Token, cfg: dict) -> float:
-    """0-100, weighted toward evidence of genuine demand.
+def quality(token: Token, cfg: dict) -> float:
+    """0-100: how likely this token is to take the whole clip, not how well it
+    will do. Clean supply, real holders, a pool you can exit, organic volume.
 
-    Each component is capped so one spectacular input cannot carry a token, and
-    explicit penalties encode the ways this asset class usually hurts you.
+    Deliberately blind to price change. Mixing "is this a scam" with "is now a
+    good moment" in one number is what let a clean, liquid, actively-selling
+    token score 59 while falling 3% -- the quality points simply outvoted the
+    timing points.
     """
     organic = min(30.0, token.organic_score * 0.30)
     if token.organic_sell_1h > 0:
         ratio = token.organic_buy_1h / token.organic_sell_1h
     else:
         ratio = 3.0 if token.organic_buy_1h > 0 else 0.0
-    pressure = max(0.0, min(25.0, (ratio - 1.0) * 18.0))
-    # Activity is absolute traded value, not volume divided by pool depth. Using
-    # the ratio inverted the ranking: a $45k pool with the same turnover scored
-    # 72.9 against 55.1 for a $400k pool, so the desk preferred the venue it
-    # could not exit.
-    activity = max(0.0, min(12.0, token.vol_1h / 25_000.0))
-    depth = max(0.0, min(8.0, token.liquidity_usd / 50_000.0))
-    breadth = max(0.0, min(15.0, token.holder_count / 1_500.0))
-    momentum = max(0.0, min(10.0, token.chg_5m * 1.5 + token.chg_1h * 0.15))
+    pressure = max(0.0, min(20.0, (ratio - 1.0) * 15.0))
+    activity = max(0.0, min(10.0, token.vol_1h / 30_000.0))
+    depth = max(0.0, min(10.0, token.liquidity_usd / 60_000.0))
+    breadth = max(0.0, min(20.0, token.holder_count / 1_200.0))
     penalty = 0.0
-    if token.chg_1h > cfg["max_chg_1h"]:
-        penalty += 20.0          # already vertical: buying the top of the move
-    if token.chg_5m < 0:
-        # Graded, not a cliff. A fixed -15 turned the same token from 59.5 to
-        # 44.5 across four minutes of noise, so the buy decision was decided by
-        # the scan's timing rather than by the token.
-        penalty += min(8.0, -token.chg_5m * 0.8)
     if ratio < 1.0:
-        penalty += 12.0          # organic sellers outnumber organic buyers
-    if token.net_buyers_5m <= 0:
-        penalty += 10.0          # net distribution in the last five minutes
+        penalty += 10.0          # organic sellers outnumber organic buyers
     if token.organic_buy_1h < cfg["min_organic_buy_usd"]:
-        penalty += 10.0          # real demand too thin to read
-    # Concentration is the strongest single predictor of a rug, yet it only
-    # mattered as a veto at 55%. Between 25% and that line the score was blind
-    # to it, so 52% and 18% ranked identically.
-    penalty += min(15.0, max(0.0, token.top_holders_pct - 25.0) * 0.5)
-    return round(max(0.0, organic + pressure + activity + depth + breadth + momentum - penalty), 2)
+        penalty += 8.0           # real demand too thin to read
+    # Concentration used to be blind between 25% and the 55% veto line. Now it
+    # bites from 12%, because 18% and 52% are not the same risk.
+    penalty += min(20.0, max(0.0, token.top_holders_pct - 12.0) * 0.8)
+    return round(max(0.0, organic + pressure + activity + depth + breadth - penalty), 2)
+
+
+def timing(token: Token, cfg: dict) -> float:
+    """0-100: whether the next 20-300 minutes are likely up or down.
+
+    Fitted on 539 eligible candidates with a forward mark: 1h change is the
+    strongest single predictor and it is *contrarian* (IC -0.38 overall, -0.26
+    in the quote-only subsample that has no survivorship bias). The 0-5% bucket
+    was the least bad; the 15%+ bucket returned -6.8% overall and -12.9% in the
+    unbiased cut. So the peak sits just above flat and the floor is at the
+    ceiling the veto already enforces.
+    """
+    c = token.chg_1h
+    # Peak at +1.5%, linear falloff to zero at -12% and +15%.
+    t = 100.0 * max(0.0, 1.0 - abs(c - 1.5) / 13.5)
+    if token.chg_5m > 2.0:
+        # A five-minute spike is the sound of the move already happening.
+        t -= min(30.0, (token.chg_5m - 2.0) * 3.0)
+    if token.chg_5m < -4.0:
+        # Falling, but not collapsing: -6% is a knife, -2% is a red candle.
+        t -= min(25.0, (-token.chg_5m - 4.0) * 3.0)
+    if token.organic_sell_1h > 0:
+        ratio = token.organic_buy_1h / token.organic_sell_1h
+        if ratio < 0.6:
+            t -= 25.0            # sellers outweigh buyers five to one
+        elif ratio < 1.0:
+            t -= 12.0
+    return round(max(0.0, min(100.0, t)), 2)
+
+
+def score(token: Token, cfg: dict) -> float:
+    """0-100 ranking score: quality and timing, weighted.
+
+    Kept as one number because the ledger, the dashboard and the CLI all sort
+    by it. The two components are gated separately in record_candidates -- a
+    token has to be both clean and well-timed, not one of them strongly enough
+    to drag the other across the line.
+    """
+    return round(quality(token, cfg) * 0.55 + timing(token, cfg) * 0.45, 2)
 
 
 def entry_slippage_bps(notional: float, liquidity_usd: float) -> float:
@@ -452,6 +516,10 @@ def connect(path: Path) -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA busy_timeout=15000")
     conn.executescript(SCHEMA)
+    # Ledgers written before the quality/timing split have the old schema. The
+    # migration is idempotent, and running it here means every entry point --
+    # CLI, loop, pipeline -- opens the same shape.
+    ensure_candidate_columns(conn)
     return conn
 
 
@@ -463,6 +531,8 @@ def ensure_candidate_columns(conn: sqlite3.Connection) -> None:
         ("llm_score", "ALTER TABLE candidates ADD COLUMN llm_score INTEGER"),
         ("llm_flags", "ALTER TABLE candidates ADD COLUMN llm_flags TEXT"),
         ("llm_reason", "ALTER TABLE candidates ADD COLUMN llm_reason TEXT"),
+        ("quality", "ALTER TABLE candidates ADD COLUMN quality REAL"),
+        ("timing", "ALTER TABLE candidates ADD COLUMN timing REAL"),
     ):
         if name not in columns:
             conn.execute(ddl)
@@ -486,8 +556,24 @@ def record_candidates(
     ranked: list[tuple[Token, float]] = []
     for token in tokens:
         ok, reason = veto(token, cfg)
+        q = quality(token, cfg) if ok else 0.0
+        t = timing(token, cfg) if ok else 0.0
         pts = score(token, cfg) if ok else 0.0
-        buyable = ok and pts >= float(cfg["min_score_to_buy"])
+        # Two independent floors, on purpose. A token that is clean but badly
+        # timed must fail on timing, not be rescued by its liquidity; one that
+        # is well timed but structurally dirty must fail on quality. A single
+        # blended threshold let both mistakes through.
+        if not ok:
+            reject = reason
+        elif q < float(cfg["min_quality_to_buy"]):
+            reject = "QUALITY_BELOW_FLOOR"
+        elif t < float(cfg["min_timing_to_buy"]):
+            reject = "TIMING_BELOW_FLOOR"
+        elif pts < float(cfg["min_score_to_buy"]):
+            reject = "SCORE_BELOW_FLOOR"
+        else:
+            reject = None
+        buyable = reject is None
         if buyable:
             eligible += 1
             ranked.append((token, pts))
@@ -500,16 +586,16 @@ def record_candidates(
             "INSERT INTO candidates (scan_id, scanned_at_ms, mint, symbol, price_usd, "
             "liquidity_usd, fdv_usd, organic_score, organic_label, holder_count, "
             "top_holders_pct, chg_5m, chg_1h, chg_24h, organic_buy_5m, organic_sell_5m, "
-            "net_buyers_5m, vol_1h, score, eligible, reject_reason) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "net_buyers_5m, vol_1h, score, quality, timing, eligible, reject_reason) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 scan_id, started_ms, token.mint, token.symbol, token.price_usd,
                 token.liquidity_usd, token.fdv_usd, token.organic_score,
                 token.organic_label, token.holder_count, token.top_holders_pct,
                 token.chg_5m, token.chg_1h, token.chg_24h, token.organic_buy_5m,
                 token.organic_sell_5m, token.net_buyers_5m, token.vol_1h,
-                pts, 1 if buyable else 0,
-                reason or (None if buyable else "SCORE_BELOW_FLOOR"),
+                pts, q, t, 1 if buyable else 0,
+                reject,
             ),
         )
     conn.execute("UPDATE scans SET tokens_eligible=? WHERE id=?", (eligible, scan_id))
@@ -697,6 +783,58 @@ class Desk:
         )
 
     # ---------- reporting ----------
+    def health(self, window: int = 30, since_ms: int | None = None) -> dict:
+        """Rolling expectancy of the most recent closed trades.
+
+        Not a risk parameter and not a prediction: it is the stop condition. A
+        desk whose last 30 closes average below zero is paying tuition, and the
+        honest response is to stop opening until someone shows a reason to
+        start again. The 30-trade window is deliberately longer than the 20-trade
+        noise band measured on this ledger (a 20-trade sample swung +-1.3 USDT
+        per trade between consecutive windows).
+
+        since_ms exists so a rule change can start a fresh verdict: judging a
+        re-fitted score by trades placed under the old one guarantees a halt
+        before the new rule has ever been tested.
+        """
+        sql = (
+            "SELECT pnl_usd, pnl_pct FROM positions WHERE status='closed' "
+            "AND pnl_usd IS NOT NULL"
+        )
+        params: list = []
+        if since_ms:
+            sql += " AND exit_at_ms >= ?"
+            params.append(int(since_ms))
+        sql += " ORDER BY exit_at_ms DESC LIMIT ?"
+        params.append(window)
+        rows = list(self.conn.execute(sql, params))
+        n = len(rows)
+        if n < window:
+            return {
+                "ready": False, "n": n, "window": window,
+                "expectancy": None, "halt": False,
+                "note": f"只有 {n} 笔平仓，还没到 {window} 笔的判定线",
+            }
+        expectancy = sum(float(r["pnl_usd"]) for r in rows) / n
+        expectancy_pct = sum(float(r["pnl_pct"]) for r in rows) / n
+        wins = sum(1 for r in rows if float(r["pnl_usd"]) > 0)
+        # Percentage, not USDT: the stop line must survive a change in clip size.
+        # -0.5% per trade is small enough to be noise and large enough that 30
+        # of them in a row is a trend, against a 1.2% round-trip cost.
+        halt = expectancy_pct < -0.5
+        return {
+            "ready": True, "n": n, "window": window,
+            "expectancy": round(expectancy, 4),
+            "expectancy_pct": round(expectancy_pct, 3),
+            "win_rate": round(wins / n * 100.0, 1),
+            "halt": halt,
+            "note": (
+                f"最近 {n} 笔期望 {expectancy_pct:+.2f}%/笔（{expectancy:+.3f} USDT），"
+                f"胜率 {wins / n * 100:.0f}%"
+                + ("，已跌破 -0.5% 停手线" if halt else "")
+            ),
+        }
+
     def report(self) -> dict:
         at = now_ms()
         opens = self.open_positions()

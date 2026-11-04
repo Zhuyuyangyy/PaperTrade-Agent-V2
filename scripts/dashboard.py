@@ -740,6 +740,7 @@ def memehunter_snapshot(now_ms: int) -> dict:
         "open_positions": [],
         "closed_positions": [],
         "recent_picks": [],
+        "health": None,
         "pipeline": None,
         "status": "尚未启动",
         "status_level": "warn",
@@ -792,6 +793,38 @@ def memehunter_snapshot(now_ms: int) -> dict:
             wins = sum(1 for p in closed if float(p["pnl_usd"] or 0) > 0)
             result["win_rate"] = round(wins / len(closed) * 100.0, 1)
         result["scans"] = scans
+        # Same stop condition the loop enforces, surfaced so a halted desk does
+        # not look like a healthy one on the wall. Measured from the rule-change
+        # timestamp: judging a re-fitted score by trades placed under the old one
+        # guarantees a halt before the new rule has been tested.
+        since = 0
+        try:
+            _cfg = json.loads(
+                (ROOT / "user_data" / "config.memehunter.json").read_text(encoding="utf-8")
+            )
+            since = int(_cfg.get("health_since_ms") or 0)
+        except (OSError, ValueError):
+            since = 0
+        window = sorted(
+            (p for p in closed if int(p["exit_at_ms"] or 0) >= since),
+            key=lambda p: p["exit_at_ms"] or 0,
+            reverse=True,
+        )[:30]
+        if len(window) >= 30:
+            expectancy = sum(float(p["pnl_pct"] or 0.0) for p in window) / len(window)
+            result["health"] = {
+                "n": len(window),
+                "expectancy_pct": round(expectancy, 2),
+                "halt": expectancy < -0.5,
+                "note": f"最近 {len(window)} 笔期望 {expectancy:+.2f}%/笔",
+            }
+        else:
+            result["health"] = {
+                "n": len(window),
+                "expectancy_pct": None,
+                "halt": False,
+                "note": f"整改后 {len(window)}/30 笔，样本还不够判定",
+            }
         if last_scan:
             result["last_scan_age_seconds"] = max(0, (now_ms - int(last_scan["scanned_at_ms"])) // 1000)
             result["tokens_seen"] = int(last_scan["tokens_seen"])
@@ -799,6 +832,10 @@ def memehunter_snapshot(now_ms: int) -> dict:
 
         scan_id = conn.execute("SELECT MAX(id) FROM scans").fetchone()[0]
         if scan_id:
+            # quality/timing only exist after the 2026-11 split; a ledger
+            # restored from an older backup still has to render.
+            cols = {r[1] for r in conn.execute("PRAGMA table_info(candidates)")}
+            extra = "quality, timing" if {"quality", "timing"} <= cols else "NULL AS quality, NULL AS timing"
             for row in conn.execute(
                 "SELECT reject_reason, COUNT(*) n FROM candidates WHERE scan_id=? "
                 "GROUP BY reject_reason ORDER BY n DESC",
@@ -807,7 +844,7 @@ def memehunter_snapshot(now_ms: int) -> dict:
                 key = row["reject_reason"] or "PASS"
                 result["veto_breakdown"][key] = int(row["n"])
             for row in conn.execute(
-                "SELECT symbol, score, eligible, reject_reason FROM candidates "
+                f"SELECT symbol, score, eligible, reject_reason, {extra} FROM candidates "
                 "WHERE scan_id=? ORDER BY score DESC LIMIT 6",
                 (scan_id,),
             ):
@@ -815,6 +852,8 @@ def memehunter_snapshot(now_ms: int) -> dict:
                     {
                         "symbol": row["symbol"],
                         "score": round(float(row["score"] or 0.0), 1),
+                        "quality": round(float(row["quality"]), 1) if row["quality"] is not None else None,
+                        "timing": round(float(row["timing"]), 1) if row["timing"] is not None else None,
                         "eligible": bool(row["eligible"]),
                         "reason": row["reject_reason"] or "PASS",
                     }

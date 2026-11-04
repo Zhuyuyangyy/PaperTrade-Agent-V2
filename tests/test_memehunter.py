@@ -20,7 +20,9 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from research import memehunter  # noqa: E402
-from research.memehunter import Desk, Token, score, veto  # noqa: E402
+from research.memehunter import (  # noqa: E402
+    Desk, Token, quality, record_candidates, score, timing, veto,
+)
 
 
 def make_token(**overrides) -> Token:
@@ -220,3 +222,196 @@ def test_a_token_without_organic_data_cannot_reach_the_buy_floor():
         holder_count=200_000, chg_5m=5.0, chg_1h=20.0,
     )
     assert score(token, memehunter.DEFAULT_CONFIG) < memehunter.DEFAULT_CONFIG["min_score_to_buy"]
+
+
+def test_already_run_up_is_refused_before_scoring():
+    """The one cohort with a reliably negative forward return.
+
+    Across 539 eligible candidates the 1h-up-15-to-60% bucket returned -5.3%
+    and -5.7% over the next 20-300 minutes (n=44 and n=18); in the unbiased
+    quote-only subsample it returned -12.9%. A score penalty alone still let
+    the cleanest of them through on volume and holder count, which is exactly
+    how the desk bought every top it traded.
+    """
+    ok, reason = veto(make_token(chg_1h=15.1), memehunter.DEFAULT_CONFIG)
+    assert not ok
+    assert reason == "ALREADY_RUN_UP"
+    # Just under the line still trades: the ceiling is a cohort filter, not a
+    # ban on anything green.
+    ok2, _ = veto(make_token(chg_1h=14.9), memehunter.DEFAULT_CONFIG)
+    assert ok2
+
+
+def test_score_prefers_a_flat_hour_to_a_rising_one():
+    """Momentum used to be a bonus; that is what made the score buy tops.
+
+    Same token, only the last hour differs. The flat one must score higher,
+    and the relationship has to hold in both directions (a small rise still
+    beats a large one).
+    """
+    flat = score(make_token(chg_1h=0.0, chg_5m=0.0), memehunter.DEFAULT_CONFIG)
+    small = score(make_token(chg_1h=4.0, chg_5m=1.5), memehunter.DEFAULT_CONFIG)
+    large = score(make_token(chg_1h=12.0, chg_5m=6.0), memehunter.DEFAULT_CONFIG)
+    assert flat > small > large
+
+
+def test_score_punishes_a_falling_knife_not_a_red_candle():
+    """-2% over five minutes is noise and should cost little; -9% is a dump."""
+    red = score(make_token(chg_5m=-2.0, chg_1h=0.0), memehunter.DEFAULT_CONFIG)
+    knife = score(make_token(chg_5m=-9.0, chg_1h=0.0), memehunter.DEFAULT_CONFIG)
+    assert knife < red
+
+
+def test_health_is_silent_until_the_window_is_full(desk):
+    """A stop condition that fires on five trades is a coin flip with a label."""
+    h = desk.health(window=30)
+    assert h["ready"] is False
+    assert h["halt"] is False
+
+
+def test_health_halts_a_window_that_loses_money(desk):
+    for _ in range(31):
+        desk.conn.execute(
+            "INSERT INTO positions (opened_at_ms, mint, symbol, score, notional_usd, "
+            "entry_ref_price, entry_fill_price, qty, entry_slippage_bps, entry_cost_usd, "
+            "entry_reason, status, exit_at_ms, exit_reason, exit_fill_price, exit_cost_usd, "
+            "pnl_usd, pnl_pct) VALUES (1,'m','X',50,60,1,1,60,0,0.3,'t','closed',"
+            "2,'TIMEOUT',0.99,0.3,-1.2,-2.0)"
+        )
+    h = desk.health(window=30)
+    assert h["ready"] is True
+    assert h["halt"] is True
+    assert h["expectancy_pct"] < 0
+
+
+def test_health_does_not_halt_a_profitable_window(desk):
+    for _ in range(30):
+        desk.conn.execute(
+            "INSERT INTO positions (opened_at_ms, mint, symbol, score, notional_usd, "
+            "entry_ref_price, entry_fill_price, qty, entry_slippage_bps, entry_cost_usd, "
+            "entry_reason, status, exit_at_ms, exit_reason, exit_fill_price, exit_cost_usd, "
+            "pnl_usd, pnl_pct) VALUES (1,'m','X',50,60,1,1,60,0,0.3,'t','closed',"
+            "2,'TAKE_PROFIT',1.3,0.3,17.7,29.5)"
+        )
+    h = desk.health(window=30)
+    assert h["ready"] is True
+    assert h["halt"] is False
+
+
+def test_already_run_up_is_refused_before_scoring():
+    """The one cohort with a reliably negative forward return.
+
+    Across 539 eligible candidates the 1h-up-15-to-60% bucket returned -5.3%
+    and -5.7% over the next 20-300 minutes (n=44 and n=18); in the unbiased
+    quote-only subsample it returned -12.9%. A score penalty alone still let
+    the cleanest of them through on volume and holder count, which is exactly
+    how the desk bought every top it traded.
+    """
+    ok, reason = veto(make_token(chg_1h=15.1), memehunter.DEFAULT_CONFIG)
+    assert not ok
+    assert reason == "ALREADY_RUN_UP"
+    # Just under the line still trades: the ceiling is a cohort filter, not a
+    # ban on anything green.
+    ok2, _ = veto(make_token(chg_1h=14.9), memehunter.DEFAULT_CONFIG)
+    assert ok2
+
+
+def test_score_prefers_a_flat_hour_to_a_rising_one():
+    """Momentum used to be a bonus; that is what made the score buy tops.
+
+    Same token, only the last hour differs. The flat one must score higher,
+    and the relationship has to hold in both directions (a small rise still
+    beats a large one).
+    """
+    flat = score(make_token(chg_1h=0.0, chg_5m=0.0), memehunter.DEFAULT_CONFIG)
+    small = score(make_token(chg_1h=4.0, chg_5m=1.5), memehunter.DEFAULT_CONFIG)
+    large = score(make_token(chg_1h=12.0, chg_5m=6.0), memehunter.DEFAULT_CONFIG)
+    assert flat > small > large
+
+
+def test_score_punishes_a_falling_knife_not_a_red_candle():
+    """-2% over five minutes is noise and should cost little; -9% is a dump."""
+    red = score(make_token(chg_5m=-2.0, chg_1h=0.0), memehunter.DEFAULT_CONFIG)
+    knife = score(make_token(chg_5m=-9.0, chg_1h=0.0), memehunter.DEFAULT_CONFIG)
+    assert knife < red
+
+
+def test_health_is_silent_until_the_window_is_full(desk):
+    """A stop condition that fires on five trades is a coin flip with a label."""
+    h = desk.health(window=30)
+    assert h["ready"] is False
+    assert h["halt"] is False
+
+
+def test_health_halts_a_window_that_loses_money(desk):
+    for _ in range(31):
+        desk.conn.execute(
+            "INSERT INTO positions (opened_at_ms, mint, symbol, score, notional_usd, "
+            "entry_ref_price, entry_fill_price, qty, entry_slippage_bps, entry_cost_usd, "
+            "entry_reason, status, exit_at_ms, exit_reason, exit_fill_price, exit_cost_usd, "
+            "pnl_usd, pnl_pct) VALUES (1,'m','X',50,60,1,1,60,0,0.3,'t','closed',"
+            "2,'TIMEOUT',0.99,0.3,-1.2,-2.0)"
+        )
+    h = desk.health(window=30)
+    assert h["ready"] is True
+    assert h["halt"] is True
+    assert h["expectancy_pct"] < 0
+
+
+def test_health_does_not_halt_a_profitable_window(desk):
+    for _ in range(30):
+        desk.conn.execute(
+            "INSERT INTO positions (opened_at_ms, mint, symbol, score, notional_usd, "
+            "entry_ref_price, entry_fill_price, qty, entry_slippage_bps, entry_cost_usd, "
+            "entry_reason, status, exit_at_ms, exit_reason, exit_fill_price, exit_cost_usd, "
+            "pnl_usd, pnl_pct) VALUES (1,'m','X',50,60,1,1,60,0,0.3,'t','closed',"
+            "2,'TAKE_PROFIT',1.3,0.3,17.7,29.5)"
+        )
+    h = desk.health(window=30)
+    assert h["ready"] is True
+    assert h["halt"] is False
+
+
+# ---------- quality and timing are separate decisions ----------
+
+def _record_one(desk, token):
+    scan_id = desk.conn.execute(
+        "INSERT INTO scans (scanned_at_ms, tokens_seen, tokens_eligible, errors) "
+        "VALUES (1,1,0,'[]')"
+    ).lastrowid
+    record_candidates(desk.conn, scan_id, 1, [token], desk.cfg)
+    return desk.conn.execute("SELECT * FROM candidates ORDER BY id DESC LIMIT 1").fetchone()
+
+
+def test_clean_but_badly_timed_is_refused_on_timing_not_rescued_by_liquidity(desk):
+    """The exact failure that made the old score buy tops.
+
+    A token with 12k holders, a $400k pool and organic volume scores well on
+    quality, but it is up 10% on the hour and 8% on the minute. Blended into
+    one number those quality points outvoted the price action and it scored
+    above the buy floor -- while falling, in the live ledger.
+    """
+    token = make_token(chg_1h=10.0, chg_5m=8.0)
+    assert quality(token, desk.cfg) >= desk.cfg["min_quality_to_buy"]
+    assert timing(token, desk.cfg) < desk.cfg["min_timing_to_buy"]
+    row = _record_one(desk, token)
+    assert row["eligible"] == 0
+    assert row["reject_reason"] == "TIMING_BELOW_FLOOR"
+
+
+def test_a_well_timed_clean_token_still_passes(desk):
+    """The mirror case: turning the vetoes up must not leave a desk that never
+    trades. Flat hour, no spike, clean supply -- this one is buyable."""
+    token = make_token(chg_1h=1.0, chg_5m=0.0)
+    row = _record_one(desk, token)
+    assert row["eligible"] == 1, row["reject_reason"]
+    assert row["quality"] is not None and row["timing"] is not None
+
+
+def test_a_dirty_token_is_refused_on_quality_even_with_a_perfect_entry(desk):
+    """Timing cannot buy its way past a rug profile."""
+    token = make_token(chg_1h=1.0, chg_5m=0.0, top_holders_pct=40.0, holder_count=350)
+    assert timing(token, desk.cfg) >= desk.cfg["min_timing_to_buy"]
+    row = _record_one(desk, token)
+    assert row["eligible"] == 0
+    assert row["reject_reason"] in ("QUALITY_BELOW_FLOOR", "HOLDERS_TOO_CONCENTRATED")

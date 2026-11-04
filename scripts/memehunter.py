@@ -5,13 +5,16 @@
     python scripts/memehunter.py update          # mark to market, apply exits
     python scripts/memehunter.py status          # equity and open book
     python scripts/memehunter.py candidates      # latest scan, including rejects
+    python scripts/memehunter.py loop            # stay alive: scan + mark forever
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,6 +36,36 @@ def _line(token: "memehunter.Token", pts: float) -> str:
         f"集中 {token.top_holders_pct:>4.1f}% | 5m {token.chg_5m:>+6.2f}% | "
         f"1h {token.chg_1h:>+6.2f}% | 有机买/卖 {ratio:>5.2f}"
     )
+
+
+def _why(token: "memehunter.Token", pts: float) -> str:
+    return (
+        f"分{pts:.1f} 有机{token.organic_score:.1f}({token.organic_label}) "
+        f"持币{token.holder_count} 集中{token.top_holders_pct:.1f}% "
+        f"5m{token.chg_5m:+.2f}% 1h{token.chg_1h:+.2f}% "
+        f"有机买{token.organic_buy_5m:.0f}/卖{token.organic_sell_5m:.0f} "
+        f"净买家{token.net_buyers_5m} 流动性{token.liquidity_usd:.0f}"
+    )
+
+
+def _try_open(desk: "memehunter.Desk", ranked, limit: int) -> tuple[list, list]:
+    """Open ranked candidates until the book is full or the list runs out.
+
+    Returns (opened, skipped). Kept separate from cmd_scan because the loop
+    needs the same behaviour without the per-token narration -- and because
+    forgetting it in the loop is how the desk ends up scanning for hours and
+    never trading.
+    """
+    opened, skipped = [], []
+    for token, pts in ranked:
+        if len(opened) >= limit:
+            break
+        out = desk.open_position(token, _why(token, pts))
+        if out["opened"]:
+            opened.append(out)
+        else:
+            skipped.append((token.symbol, out["reason"]))
+    return opened, skipped
 
 
 def cmd_scan(desk: memehunter.Desk, args) -> int:
@@ -153,10 +186,144 @@ def cmd_candidates(desk: memehunter.Desk, args) -> int:
     return 0
 
 
+def _pid_alive(pid: int) -> bool:
+    """True if a process with this pid is still running.
+
+    os.kill(pid, 0) is not usable on Windows: it raises for every pid, alive or
+    not. The Win32 pair used here is the portable way to ask the kernel.
+    """
+    if pid <= 0:
+        return False
+    try:
+        if os.name == "nt":
+            import ctypes
+
+            handle = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)
+            if not handle:
+                return False
+            code = ctypes.c_ulong()
+            ctypes.windll.kernel32.GetExitCodeProcess(handle, ctypes.byref(code))
+            ctypes.windll.kernel32.CloseHandle(handle)
+            return code.value == 259  # STILL_ACTIVE
+        os.kill(pid, 0)
+        return True
+    except Exception:
+        return False
+
+
+def cmd_loop(desk: memehunter.Desk, args) -> int:
+    """Stay alive. Mark first, then scan.
+
+    The desk used to run from a shell `for` loop that stopped after 30 cycles,
+    so every time the terminal closed the book froze mid-position: five
+    positions sat at a six-day-old mark and the dashboard kept rendering them.
+    This is the same loop with an owner: a pid file, a heartbeat the dashboard
+    can read, and a stop condition that survives a bad week.
+    """
+    interval = max(45, int(args.interval))
+    root = ROOT / "runtime" / "memehunter"
+    root.mkdir(parents=True, exist_ok=True)
+    pid_file = root / ".loop.pid"
+    beat_file = root / "loop.heartbeat.json"
+    halt_file = root / "halt.json"
+
+    if pid_file.exists():
+        try:
+            old = int(pid_file.read_text(encoding="utf-8").strip() or 0)
+        except ValueError:
+            old = 0
+        if old and old != os.getpid() and _pid_alive(old):
+            print(f"已有一个循环在跑（pid {old}）。先停掉它，再启动新的。")
+            return 1
+    pid_file.write_text(str(os.getpid()), encoding="utf-8")
+
+    cycle = 0
+    halted = halt_file.exists()
+    print(f"循环启动 pid={os.getpid()} 间隔={interval}s 首次扫描…", flush=True)
+    try:
+        while True:
+            cycle += 1
+            started = time.time()
+            lines = []
+            # ---- 1. mark and exit first: an unmarked position is a blind one
+            try:
+                upd = desk.update()
+                parts = [f"标记 {upd['marked']}"]
+                if upd["stale"]:
+                    parts.append(f"无报价 {len(upd['stale'])}")
+                for c in upd["closed"]:
+                    parts.append(f"平 {c['symbol']} {c['reason']} {c['pnl_pct']:+.1f}%")
+                lines.append(" · ".join(parts))
+            except Exception as exc:                       # noqa: BLE001
+                lines.append(f"update 失败: {type(exc).__name__}: {exc}")
+
+            # ---- 2. stop condition
+            h = desk.health(since_ms=int(desk.cfg.get("health_since_ms") or 0))
+            if h["halt"] and not halted:
+                halted = True
+                halt_file.write_text(
+                    json.dumps({**h, "at": memehunter.now_ms()}, ensure_ascii=False),
+                    encoding="utf-8",
+                )
+                lines.append("已熔断：" + h["note"])
+            elif not h["halt"] and halted:
+                halted = False
+                halt_file.unlink(missing_ok=True)
+                lines.append("熔断解除，恢复开仓")
+
+            # ---- 3. always scan: it records the candidate snapshot the replay
+            #      engine needs. Only open when the desk is allowed to trade.
+            try:
+                res = desk.scan()
+                line = f"扫 {res['seen']} 合格 {res['eligible']}"
+                if res["errors"]:
+                    line += f" | {res['errors'][0]}"
+                if halted or args.mark_only:
+                    line += "（只记录，不开仓）"
+                else:
+                    room = int(desk.cfg["max_open_positions"]) - len(desk.open_positions())
+                    opened, skipped = _try_open(desk, res["ranked"], room)
+                    if opened:
+                        line += " 开仓 " + "、".join(o["symbol"] for o in opened)
+                    elif room <= 0:
+                        line += "（满仓）"
+                    elif res["eligible"]:
+                        line += f"（{skipped[0][1] if skipped else '候选已持有'}）"
+                lines.append(line)
+            except Exception as exc:                       # noqa: BLE001
+                lines.append(f"scan 失败: {type(exc).__name__}: {exc}")
+
+            beat = {
+                "pid": os.getpid(), "cycle": cycle, "interval_s": interval,
+                "at_ms": memehunter.now_ms(), "halted": halted,
+                "equity_usd": round(desk.report()["equity_usd"], 2),
+                "line": " | ".join(lines),
+            }
+            beat_file.write_text(json.dumps(beat, ensure_ascii=False), encoding="utf-8")
+            print(f"[{cycle}] " + " | ".join(lines), flush=True)
+
+            sleep_s = interval - (time.time() - started)
+            if sleep_s > 0:
+                time.sleep(sleep_s)
+    except KeyboardInterrupt:
+        print("\n收到 Ctrl+C，正在收尾…", flush=True)
+        try:
+            desk.update()
+        except Exception:                                  # noqa: BLE001
+            pass
+        return 0
+    finally:
+        pid_file.unlink(missing_ok=True)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("action", choices=["scan", "update", "status", "candidates"])
+    ap.add_argument("action", choices=["scan", "update", "status", "candidates", "loop"])
     ap.add_argument("--dry-run", action="store_true", help="scan only, open nothing")
+    ap.add_argument("--interval", type=int, default=180,
+                    help="loop: seconds between cycles (default 180)")
+    ap.add_argument("--mark-only", action="store_true",
+                    help="loop: mark and exit, never open")
     args = ap.parse_args()
 
     cfg = None
@@ -172,6 +339,7 @@ def main() -> int:
         "update": cmd_update,
         "status": cmd_status,
         "candidates": cmd_candidates,
+        "loop": cmd_loop,
     }[args.action](desk, args)
 
 
