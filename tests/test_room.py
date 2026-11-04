@@ -76,3 +76,48 @@ def test_room_portfolio_total_only_exists_when_every_ledger_can_be_valued() -> N
         assert portfolio["pnl_usdt"] is None
     else:
         assert portfolio["total_usdt"] == pytest.approx(sum(parts), abs=1e-6)
+
+
+# ---------------------------------------------------------------- trading floor
+from scripts.room import build_floor_html
+
+
+def test_floor_page_embeds_the_same_state_as_the_room() -> None:
+    now = datetime(2026, 10, 25, 15, 0, tzinfo=timezone.utc)
+    html = build_floor_html(now)
+    state = _state(html)
+    assert state["portfolio"] == build_room_state(now)["portfolio"]
+    assert state["memehunter"] == build_room_state(now)["memehunter"]
+    # the template placeholder must be gone, otherwise the page silently
+    # falls back to demo numbers while looking live
+    assert "__STATE_DATA__" not in html
+
+
+def build_room_state(now: datetime) -> dict:
+    from scripts.dashboard import build_state
+
+    return build_state(now)
+
+
+def test_floor_page_is_offline_and_self_contained() -> None:
+    html = build_floor_html()
+    assert "https://" not in html
+    assert "<script src=" not in html
+    assert "<link " not in html
+    # no canvas library, no isometric helper: one file, stdlib only
+    assert "three" not in html.lower()
+    assert "<canvas" in html
+
+
+def test_floor_page_wires_every_agent_and_hud_node() -> None:
+    html = build_floor_html()
+    for agent in ("SEARCH", "RISK", "GMGN", "JUDGE", "GROK", "FOMO", "EXIT"):
+        assert f"key:'{agent}'" in html
+    for element_id in ("scene", "k-eq", "k-pnl", "k-eng", "k-win", "roster", "feed", "inspect"):
+        assert f'id="{element_id}"' in html
+
+
+def test_floor_page_never_invents_numbers_when_a_step_is_missing() -> None:
+    html = build_floor_html()
+    # brief() must fall back to a word, not to a made-up figure
+    assert "待研判" in html and "待调度" in html

@@ -1752,6 +1752,23 @@
       }
     ]
   },
+  "diagnosis": {
+    "primary": "insufficient",
+    "primary_label": "证据不足",
+    "tags": [],
+    "tag_labels": [],
+    "evidence": [
+      "成交 3 笔，低于 spec 声明的证据门槛——成交 3 笔 < 声明下限 30，样本不足以下结论（其余规则未评估）"
+    ],
+    "experiments": [
+      {
+        "diagnosis": "成交 3 笔低于自声明门槛，当前数据无法支持任何结论",
+        "next_experiment": "扩窗口、加标的、放宽阈值三者选一；若放宽阈值，必须同步下调 min_fills 并在同一 spec 内重跑全部规则",
+        "acceptance": "成交 ≥ 新的 min_fills，且结论在 min_fills 的合理取值范围内不变"
+      }
+    ],
+    "caveat": "以上为下一步实验假设，不是已证最优方案——按验收标准判定，不按感觉判定。"
+  },
   "repro": {
     "command": "python -m research.verify --spec docs/cases/external-cascade-fader-spec.json --out docs/cases/external-cascade-fader.md --json",
     "spec": "docs/cases/external-cascade-fader-spec.json",

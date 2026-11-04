@@ -92,3 +92,79 @@ def test_repo_mode_env_still_works():
              cwd=ROOT, env_extra={"STRATEGY_FALSIFIER_USE_REPO": "1"})
     assert r.returncode == 0, r.stderr
     assert "仓库引擎" in r.stderr
+
+
+# --------------------------------------------------------------------------
+# wrapper argument handling (bugs found by an external reviewer)
+# --------------------------------------------------------------------------
+
+def _write_compare_specs(tmp_path: Path) -> tuple[Path, Path]:
+    """Two minimal rule specs the wrapper can run through --compare."""
+    import csv as _csv
+
+    candles = tmp_path / "klines.csv"
+    rng_rows = []
+    t0 = 1_700_000_000_000
+    px = 100.0
+    import random as _random
+
+    rng = _random.Random(7)
+    for i in range(1500):
+        px *= 1.0 + rng.gauss(0.0004, 0.01)
+        o = px
+        c = px * (1.0 + rng.gauss(0.0, 0.004))
+        h = max(o, c) * 1.003
+        l = min(o, c) * 0.997
+        rng_rows.append({"t": t0 + i * 3_600_000, "o": o, "h": h, "l": l, "c": c, "v": 1000.0})
+    with candles.open("w", newline="", encoding="utf-8") as fh:
+        w = _csv.DictWriter(fh, fieldnames=["t", "o", "h", "l", "c", "v"])
+        w.writeheader()
+        w.writerows(rng_rows)
+    specs = []
+    for name, threshold in (("cmp-alpha", 30), ("cmp-beta", 45)):
+        d = {
+            "name": name, "symbol": "TESTUSDT", "interval": "1h", "venue": "futures",
+            "fee_rate": 0.0004, "funding": False,
+            "exit": {"take_profit": 0.03, "stop_loss": -0.08, "timeout_bars": 12},
+            "signals": {"kind": "rule", "rule": "rsi_below", "period": 14, "threshold": threshold},
+            "control": {"enabled": True, "n_random": 100, "seed": 42},
+            "fee_multiples": [1, 2, 5],
+            "falsify_if": {"min_fills": 10},
+        }
+        p = tmp_path / f"{name}.json"
+        p.write_text(json.dumps(d), encoding="utf-8")
+        specs.append(p)
+    return specs[0], specs[1], candles
+
+
+def test_wrapper_compare_mode(tmp_path: Path):
+    """--compare through the wrapper used to get --spec inserted in front of
+    the first spec path, colliding with the engine's own guard. Now it runs."""
+    a, b, candles = _write_compare_specs(tmp_path)
+    # relative paths on purpose: they must resolve against the CALLER's cwd
+    # (here tmp_path itself, since every path below is relative to it)
+    r = _run([PY, str(SKILL / "scripts" / "verify.py"),
+              "--compare", "cmp-alpha.json", "cmp-beta.json",
+              "--candles", "klines.csv", "--out", "cmp.md", "--json"],
+             cwd=tmp_path)
+    assert r.returncode == 0, r.stderr
+    out = tmp_path / "cmp.md"
+    text = out.read_text(encoding="utf-8")
+    assert "多策略对比" in text and "cmp-alpha" in text and "cmp-beta" in text
+    payload = json.loads((tmp_path / "cmp.json").read_text(encoding="utf-8"))
+    assert isinstance(payload, list) and len(payload) == 2
+
+
+def test_wrapper_positional_spec_still_works(tmp_path: Path):
+    """The original convenience form must survive the --compare fix."""
+    a, _, candles = _write_compare_specs(tmp_path)
+    out = tmp_path / "solo.md"
+    r = _run([PY, str(SKILL / "scripts" / "verify.py"),
+              str(a), "--candles", str(candles), "--out", str(out)], cwd=tmp_path)
+    assert r.returncode == 0, r.stderr
+    assert "cmp-alpha" in out.read_text(encoding="utf-8")
+
+
+# --------------------------------------------------------------------------
+# wrapper argument handling (bugs found by an external reviewer)
+

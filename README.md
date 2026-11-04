@@ -46,7 +46,7 @@ python -m research.verify --demo --out report.md    # 30 秒看一份真实数�
 
 - 输入一份策略 spec，输出一份**试图杀死它**的报告：path-aware 回放（最坏/最好并列）、成本敏感性 ×1/2/5、障碍可达性、随机入场对照组、事前证伪规则判定
 - 样例（真实 BTC 数据，三年 +34% 的策略仍被判 FALSIFIED）：[`docs/verify-sample-report.md`](docs/verify-sample-report.md) · 案例矩阵：[`docs/cases/`](docs/cases/) · 落地页：[`docs/index.html`](docs/index.html)（GitHub Pages）
-- **首 10 单免费**，换匿名公开发布权 · 付费档 $99 / $299（[服务说明](docs/dist/toku-profile.md)，Toku 搜 StrategyFalsifier）
+- **前 3 单免费**，换匿名公开发布权 · 付费档 Pro Skill $29（自助）/ **$99 人工审计** / $299 深度（[服务说明](docs/dist/toku-profile.md)，Toku 搜 StrategyFalsifier）
 - 不荐股、不带单、不代管资金、不承诺收益——只回答一个问题：**你的曲线是不是幻觉**
 - 新克隆无行情缓存也能跑 demo（内置 5000 根近期 K 线，自动降级并披露）
 
@@ -107,6 +107,22 @@ python skill/strategy-falsifier/scripts/verify.py spec.json --candles klines.csv
 | `arm_bold.sqlite` | 实验臂 | 单笔 $100→$300、持仓 5→8、每轮 2→4 笔、分数线 45→35 |
 
 每个臂的假设和证伪规则**开工前写死在配置文件里**（`user_data/config.arm_*.json` 的 `_arm` 字段），测试强制校验字段完整——事后不许改规则，不许挑好看的说。
+
+### 2026-11-04：E 账户的第一次证伪
+
+96 笔平仓、胜率 25%、每笔期望 -1.01 USDT。翻账本找原因，结论是结构性的，不是参数没调好：
+
+| 发现 | 数据 |
+|---|---|
+| 评分对收益零预测力 | 539 个有前向标记的合格候选，`score` 与 20–300 分钟收益的秩相关 **+0.02** |
+| 追高是唯一稳定的亏损源 | `chg_1h` IC **-0.38**；1h 涨 15–60% 的组，扣成本 **-6.8%/笔**，无偏子样本 **-12.9%** |
+| 实际买的正好是这一档 | 旧规则成交的 70 笔里，`score>=52 && chg_1h>=15`，正收益率 16% |
+| 止盈线在分布之外 | +55% 只触发 2 次，84 笔走 180 分钟超时，均 -1.4% |
+| 止损线在噪音之内 | -12% 触发 10 次全部亏损，均值 -16.2%（含滑点） |
+
+所以评分拆成两个独立判断：`quality`（是不是骗局）和 `timing`（现在是不是买点），各自设门槛。追高从"少加分"升级成硬拒绝（`ALREADY_RUN_UP`）。
+
+**但必须说清楚**：拆开之后，即使取最严格的组合（timing≥85 且 quality≥55），在 112 个独立报价样本上仍然只有 **-0.3%/笔**。这说明的不是"参数还没调好"，而是**当前信息集（Jupiter 的 organic / holder / 涨跌幅快照）里没有可交易的 alpha**。E 账户因此降为观察仓（单笔 60、最多 3 仓），并加上滚动 30 笔期望跌破 -0.5% 就自动停手的熔断。要赚钱得换信息源，不是换权重。
 
 ---
 
@@ -247,7 +263,9 @@ python -m research.verify --list-market                   # 本地行情缓存�
 
 **裁决不是分数，是事前证伪规则的判定结果**：`falsify_if` 写在 spec 里、先于任何数字存在（对照/证伪规则触发→FALSIFIED；样本不足→INCONCLUSIVE，不下结论；否则 NOT_FALSIFIED，并附"未被证伪≠被证实"）。报告固定含"未建模事项"一节——不知道仪器边界的人会滥用仪器。
 
-样例报告（真实数据，RSI 抄底 BTC 策略 3 年 1310 笔）：`docs/verify-sample-report.md`——裁决 FALSIFIED：基线即亏损、×2 成本净 -610%、**显著差于随机入场**（差值 -0.37%，95% CI [-0.70%, -0.03%]）、**样本外段 -265.31% 且 9 格参数网格样本内外全负**（行业第一死因样本内过拟合的两台专用仪器）。spec 模板：`research/verify/samples/demo_spec.json`。
+**裁决之后还有诊断**（报告第 8 节，`research/verify/diagnosis.py`）：七类诊断结论（证据不足 / 随机对照未通过 / 成本敏感 / 正期望未证实 / 过拟合迹象 / 结构受限 / 未被证伪）+ 附带结论 + 证据 + 下一步实验（每条含诊断、实验假设、验收标准，如"加一个正交过滤器，信号数预计降到 1/5——这是实验假设；验收标准：对照组差值 CI 下界 > 0（严格为正）且成交 ≥ min_fills"）。归类规则事前声明、先于任何策略被分类。这是付费档与"看一眼数字"的本质区别：**前者给出证据指向和可验收的下一步**。
+
+样例报告（真实数据，RSI 抄底 BTC 策略 3 年 1310 笔）：`docs/verify-sample-report.md`——裁决 FALSIFIED：基线即亏损、×2 成本净 -610%、**显著差于随机入场**（差值 -0.37%，95% CI [-0.70%, -0.03%]）、**样本外段 -265.31% 且 9 格参数网格样本内外全负**（行业第一痛点样本内过拟合的两台专用仪器）。spec 模板：`research/verify/samples/demo_spec.json`。
 
 **案例矩阵**（`docs/cases/`，四个事前声明变体全部发布）：抄底 BTC / 追涨 BTC / 抄底 ETH / maker 限价成交，统一 29,347 根 1h futures 真实 K 线。三个被对照组击败，第四个 **+34% 三年曲线仍被判 FALSIFIED——统计上无法与随机入场区分（CI 跨 0），钱是 beta 不是 alpha**。另有三个外部真实策略案例（CascadeFader / FundingRateEnhanced / GridTradingStrategy，spec 自带数据可复现）。引擎同时支持客户自带信号（CSV 进场 + CSV 信号退出）。
 
@@ -287,10 +305,15 @@ $PY -m pytest tests -q
 
 # 桌面交易（先删 STOP 文件）
 rm STOP
-$PY -m research.pipeline.orchestrator loop --sleep 100          # E 入口
+$PY -m research.pipeline.orchestrator loop --sleep 100          # E 入口（六 agent，含 LLM 研判）
 $PY -m research.pipeline.orchestrator exit-loop --interval 60   # E 退出
 $PY -m research.pipeline.orchestrator loop --sleep 240 \
     --config user_data/config.arm_stop22.json --db-name arm_stop22.sqlite   # 实验臂
+
+# 轻量循环：只扫描、标记、开仓，不调 LLM。与上面共用同一个账本，
+# 所以两者互斥——它会先读流水线的心跳，新鲜就拒绝启动。
+$PY scripts/memehunter.py loop --interval 180
+$PY scripts/memehunter.py loop --interval 60 --mark-only        # 只标记，不开仓
 
 # 外部策略审计（数据缓存在 runtime/audit/market.sqlite，可离线回放）
 $PY -m research.audit list                                     # 候选清单与假设
@@ -313,7 +336,23 @@ $PY -m research.verify --spec research/verify/samples/demo_spec.json --out r.md
 ## 仪表盘（只读）
 
 `http://127.0.0.1:8765/office` — 一页档案：停止说明、六本账最终结果、外部策略审计结论
-`http://127.0.0.1:8765/classic` — 完整报表 · `/room` — 旧办公室视图 · `/api/state` — 原始 JSON
+`http://127.0.0.1:8765/classic` — 完整报表 · `/room` — 卡片式账本室 · `/api/state` — 原始 JSON
+`http://127.0.0.1:8765/floor` — **交易现场**：等距办公室，7 个 agent 在屋里自由走动
+
+### 交易现场（`/floor`）
+
+不是又一张表，是一间屋子。7 个 agent 各自有工位、有自己的工位椅和显示器，
+每一段时间自己决定下一步做什么：继续盯盘、去咖啡角、到白板前推演、去窗边站着、
+找同事对表、起身伸懒腰、摊在沙发上。走动是真寻路（A* + 视线平滑，绕开桌子、机柜和花盆），
+不是沿固定轨迹滑行。屏幕上的气泡说的是账本里的真话——`87 个代币`、`放行 2`、`研判 5`
+——不是随机占位文本；右侧日志同步记录每一次起身。
+
+页面只读：`build_state()` 一次快照塞进模板，`/api/state` 每 20 秒刷新数字，
+人物行为全部在前端本地演算，不写任何状态、不发任何请求。直接双击
+`data/trading_floor.html` 也能看（未接账本时退化为标注 `DEMO` 的演示数据）。
+
+实现是单文件 canvas 2D：等距投影 + 深度排序 + 接地阴影 + 吊灯光池，
+无第三方依赖、无 CDN、离线可用。`Shift` 不必按——拖拽平移、滚轮缩放、点人物看详情。
 
 ## 最终判定
 

@@ -17,7 +17,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.dashboard import build_html
-from scripts.room import build_room_html
+from scripts.room import build_floor_html, build_room_html
 from scripts.state import build_state
 
 REFRESH_META = '<meta http-equiv="refresh" content="15">'
@@ -37,6 +37,14 @@ def render_live_page() -> str:
     if "</head>" not in page:
         raise RuntimeError("Dashboard template is missing </head>")
     return page.replace("</head>", f"{REFRESH_META}\n</head>", 1)
+
+
+def render_floor_page() -> str:
+    """Isometric trading floor: seven agents moving around one room."""
+    page = build_floor_html()
+    if "</body>" not in page:
+        raise RuntimeError("Floor template is incomplete")
+    return page
 
 
 def render_room_page() -> str:
@@ -79,6 +87,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/api/state":
             self._send_json(build_state())
+            return
+        if self.path in ("/floor", "/floor/", "/floor.html"):
+            self._send_html(render_floor_page())
             return
         if self.path in ("/room", "/room/", "/room.html"):
             self._send_html(render_room_page())

@@ -47,3 +47,9 @@ STOP
 
 # runtime lock artifacts
 *.pid
+
+# Internal agent state (daily memory logs, automation notes, night-shift
+# plans). These are working notes, not product artifacts: local absolute
+# paths and internal decisions do not belong in a public repo. The distilled,
+# publishable version lives in docs/.
+.workbuddy/

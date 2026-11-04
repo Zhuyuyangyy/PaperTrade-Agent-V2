@@ -47,3 +47,7 @@ done
 | [external-grid-freqbot](external-grid-freqbot.md) | FreqBot GridTradingStrategy（零售最常跑的网格类） | 360 | **+61.06%** | unproven [-0.40,+0.44] | FALSIFIED（又一条“赚钱但打不过随机”的曲线） |
 
 三个外部案例共用同一条信息：**能赚钱的策略很多，能证明自己不是运气的策略很少**。grid 案例额外是一次完整客户旅程盲测——从客户格式 CSV（`date` 列名）到参考导出器（`skill/strategy-falsifier/examples/export_grid_signals.py`）到证伪报告，全程只用公开文档；旅程中踩到的六个摩擦点已全部修复并配回归测试。
+
+## 诊断层：每份报告现在回答“怎么死的，怎么办”
+
+每份报告第 8 节是**诊断结论与下一步实验**：主要结论（证据不足 / 随机对照未通过 / 成本敏感 / 正期望未证实 / 过拟合迹象 / 结构受限 / 未被证伪）+ 附带结论 + 证据（全部来自本次测量）+ 下一步实验（每条含诊断、实验假设、验收标准）。归类规则事前声明于 `research/verify/diagnosis.py`，先于任何策略被分类——与证伪规则同一条纪律。多策略对比矩阵（`docs/compare-sample.md`）每行带诊断结论列，一眼看清一组变体各自的证据指向。

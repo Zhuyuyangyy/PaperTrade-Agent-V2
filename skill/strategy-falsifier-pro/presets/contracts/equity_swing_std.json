@@ -1,0 +1,51 @@
+{
+  "name": "your-strategy-name",
+  "symbol": "SPY",
+  "interval": "1d",
+  "venue": "equity",
+  "fee_rate": 0.0001,
+  "fill_model": "taker",
+  "funding": false,
+  "exit": {
+    "take_profit": 0.05,
+    "stop_loss": -0.03,
+    "timeout_bars": 10
+  },
+  "signals": {
+    "kind": "rule",
+    "rule": "rsi_below",
+    "period": 14,
+    "threshold": 30
+  },
+  "control": {
+    "enabled": true,
+    "n_random": 200,
+    "seed": 42
+  },
+  "walk_forward": {
+    "folds": 3
+  },
+  "param_grid": {
+    "axes": {
+      "take_profit": [
+        0.03,
+        0.05,
+        0.07
+      ],
+      "stop_loss": [
+        -0.02,
+        -0.03,
+        -0.05
+      ]
+    }
+  },
+  "falsify_if": {
+    "worst_case_net_negative": true,
+    "net_negative_at_fee_multiple": 2,
+    "control_lift_ci_includes_zero": true,
+    "grid_positive_ratio_min": 0.5,
+    "min_fills": 30
+  },
+  "hypothesis": "写在这里：这个 edge 的市场学基础是什么。写不出来就不要回测。",
+  "source": "equity_swing_std 契约起点：标准费率、标准证据门槛"
+}

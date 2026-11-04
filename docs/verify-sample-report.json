@@ -3,6 +3,8 @@
     "name": "rsi-dip-btc-1h-demo",
     "hypothesis": "BTC 1 小时 RSI(14) 低于 30 后做多，捕捉均值回复",
     "source": "内置演示（规则信号，无需外部信号文件）",
+    "candles_path": null,
+    "funding_path": null,
     "port_notes": "",
     "symbol": "BTCUSDT",
     "interval": "1h",
@@ -7088,10 +7090,44 @@
       }
     ]
   },
+  "diagnosis": {
+    "primary": "randomness",
+    "primary_label": "随机对照未通过",
+    "tags": [
+      "overfitting"
+    ],
+    "tag_labels": [
+      "过拟合迹象"
+    ],
+    "evidence": [
+      "对照组：策略 − 随机 = -0.37%/笔，95% 区间 [-0.70%, -0.03%] 整体为负——入场逻辑显著差于随机（这是随机对照未通过的强形式：不是分不清，是更差）",
+      "样本外净 -265.31% 不足样本内 -240.34% 的一半",
+      "参数网格正格率 0% 低于 spec 声明的 50%（0/9 格为正）——edge 只在一小撮参数组合下存在"
+    ],
+    "experiments": [
+      {
+        "diagnosis": "入场信号未展示出独立于随机入场的优势（统计上无法区分或显著更差）",
+        "next_experiment": "给入场加一个正交过滤器（趋势方向 / 时段 / 量能任选其一），信号数预计降到约 1/5——这是实验假设，不是目标",
+        "acceptance": "对照组差值 95% CI 下界 > 0（严格为正；下界为 0 时裁决引擎仍判未通过），且成交数仍 ≥ min_fills；若 CI 仍跨 0，换过滤器而不是降阈值"
+      },
+      {
+        "diagnosis": "账面 -505.65% 且打不过随机：没有可测量的正期望",
+        "next_experiment": "停止调参。写下 edge 的市场学基础（谁在犯错、错误定价为什么持续）；写不出来就换假设，不要换参数",
+        "acceptance": "新假设的对照组差值 CI 下界 > 0（严格为正，不是 ≥ 0）"
+      },
+      {
+        "diagnosis": "附带问题：样本外/网格显示参数脆弱",
+        "next_experiment": "主实验收敛后，用更少的参数重跑一次作为确认",
+        "acceptance": "砍参数后的结论与砍之前一致"
+      }
+    ],
+    "caveat": "以上为下一步实验假设，不是已证最优方案——按验收标准判定，不按感觉判定。"
+  },
   "repro": {
     "command": "python -m research.verify --demo --out docs/verify-sample-report.md --json",
     "spec": "内置演示 spec（--demo；DEMO_SPEC 定义于 research/verify/__main__.py）",
     "candles": "D:\\ZYY_Inovation\\money\\PaperTrade-Agent-V2-Fast\\runtime\\audit\\market.sqlite（本地行情缓存 sqlite）",
-    "signals": "规则信号（rsi_below，period=14，threshold=30，由 K 线实时计算，无需外部文件）"
+    "signals": "规则信号（rsi_below，period=14，threshold=30，由 K 线实时计算，无需外部文件）",
+    "funding": "D:\\ZYY_Inovation\\money\\PaperTrade-Agent-V2-Fast\\runtime\\audit\\market.sqlite（本地行情缓存 funding 表）"
   }
 }

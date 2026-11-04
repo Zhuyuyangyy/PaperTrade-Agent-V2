@@ -311,7 +311,7 @@ class Spec:
         ctrl_d = d.get("control") or {}
         wf_d = d.get("walk_forward") or {}
         pg_d = d.get("param_grid") or {}
-        spec = cls(
+        spec_obj = cls(
             name=str(d["name"]),
             symbol=str(d["symbol"]).upper(),
             interval=str(d["interval"]),
@@ -360,8 +360,8 @@ class Spec:
             funding_path=(str(d["funding_path"]) if d.get("funding_path") else None),
             port_notes=str(d.get("port_notes", "")),
         )
-        spec.validate()
-        return spec
+        spec_obj.validate()
+        return spec_obj
 
     @classmethod
     def load(cls, path: str | Path) -> "Spec":
