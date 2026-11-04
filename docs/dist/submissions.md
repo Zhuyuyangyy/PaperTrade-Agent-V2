@@ -169,7 +169,7 @@ Then I pointed the same instruments at published strategies. Four of them:
 
 The case I care about: RSI momentum on BTC 1h, 1638 trades, +34.35% over three years — a publishable curve. The random-entry control in the same window differs by +0.03%/trade with a CI spanning zero. 2023-06 to 2026-10 was a crypto bull run; random entries made money too. That curve sells beta packaged as alpha. Verdict: FALSIFIED.
 
-Verdicts come from `falsify_if` rules written into the spec before any number is read. MIT, 380 tests, offline replay, sample report on real cached Binance data in the repo.
+Verdicts come from `falsify_if` rules written into the spec before any number is read. MIT, 398 tests, offline replay, sample report on real cached Binance data in the repo.
 
 No signals, no subscriptions, no managed capital. The only question the tool answers is whether your curve is real.
 ```
@@ -585,7 +585,7 @@ What it answers: not "what would this strategy have returned", but "is that retu
 
 The case I'd point to: RSI momentum BTC 1h, 1638 trades, +34.35% over three years — ruled FALSIFIED, because a random-entry control in the same window differs by +0.03%/trade with a CI spanning zero. In a bull run, random entries make money too.
 
-MIT, 380 tests, offline replay, demo runs on bundled real data with no API keys. First 10 falsification reports free in exchange for publication rights — no signals, no subscriptions, no managed capital.
+MIT, 398 tests, offline replay, demo runs on bundled real data with no API keys. First 3 falsification reports free in exchange for publication rights — no signals, no subscriptions, no managed capital.
 
 Happy to answer anything, especially where the methodology is weakest (no walk-forward capacity modelling yet).
 ```

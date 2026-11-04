@@ -38,11 +38,11 @@
 - Agent Feed 可发动态（`POST /api/agents/feed`）——服务更新后可以去 feed 发一条 announce（需要 agent 的 Bearer token，在凭据档）
 - job 板流量早期有限，按 gate 标准投入，不建自动交付
 
-## 试单获取（第一个 $129 的真正来源）
+## 试单获取（第一个付费单的真正来源）
 
 渠道是等量，试单是变量。三个可执行切入点：
-1. **样张即钩子**：`docs/sales-sample/` 的“止盈止损设多少”案例是任何人都会问的问题——在 HN/Reddit/掘金都用这个故事切入，结尾一句“第一个 10 单免费换匿名案例授权”
-2. **GitHub issue 即订单**：免费档入口就是 issue 模板——每个认真提交的 issue 都是 $99/$129 的候选（提交者已经有策略要决策）
+1. **样张即钩子**：`docs/sales-sample/` 的“止盈止损设多少”案例是任何人都会问的问题——在 HN/Reddit/掘金都用这个故事切入，结尾一句“前 3 单免费换匿名案例授权”
+2. **GitHub issue 即订单**：免费档入口就是 issue 模板——每个认真提交的 issue 都是 $99 的候选（提交者已经有策略要决策）
 3. **竞品评论区**：Agensi 上 Backtest-Validator（$5）和 Trading Strategy Backtest Auditor（$9.99）的评论区——找“想要更多”的买家（这个我无法代看，需要你账号）
 
 ## 本环境做不到的（需要你）

@@ -108,11 +108,14 @@ network, no account, no data leaves your machine.
 
 | Tier | Price | Contents |
 |---|---|---|
-| **Falsifier (base)** | **Free** | Full six-instrument battery + diagnosis layer, single strategy or comparison, md/json/html outputs. The engine is MIT and public; the free tier is genuinely complete — no crippled demo. |
-| **Falsifier Pro** | $9 one-time | Everything in base, plus: bundled reference exporter (turn a freqtrade-style strategy into engine signal CSVs), the public case matrix as worked examples, priority re-runs when the engine updates. |
-| **Standard audit** | $99 (off-platform) | Single strategy: the author ports YOUR strategy, runs the full battery, and **verifies the signal fidelity** (ported signals checked against your original code/config). Delivered in 24-72h. |
-| **Diagnosis-enhanced audit** | $129 (off-platform) | $99 plus: **a human re-checks every diagnosis outcome** (the engine's seven conclusions confirmed line by line, not taken on faith), a comparison matrix for up to 5 variants, a **calibrated experiment plan** (your next experiments and acceptance criteria reviewed by a human), a forwardable HTML report, a 30-minute recorded walkthrough, one re-run within 7 days. Weekly capacity 2-3 orders. You are buying human judgement, not the algorithm -- the free tier already includes the automatic diagnosis. |
-| **Deep audit** | $299 (off-platform) | $129 plus: ×10 cost stress, re-run after data refresh, 60-minute walkthrough. |
+| **Falsifier (base)** | **Free** | Full six-instrument battery + diagnosis layer, single strategy or comparison, md/json/html outputs. The engine is MIT and public; the free tier is genuinely complete — no crippled demo. First 3 submitted strategies get a full report in exchange for publication rights. |
+| **Falsifier Pro** | **$29** one-time | Everything in base, plus: the agent workflow (three iron rules + four guardrails), the contract hash lock, `agent_directive` edit licences, the seven-outcome playbooks, two contract presets, one-command installer, and the TradingView CSV autopsy mode. Same price on every channel. |
+| **Human audit** | **$99** (off-platform) | Single strategy: the author ports YOUR strategy, runs the full battery, **verifies the signal fidelity** against your original code, **re-checks every diagnosis outcome** line by line, builds a comparison matrix for up to 5 variants, calibrates the next experiment and its acceptance criteria, and walks you through it in a 30-minute recording with one re-run within 7 days. Delivered in 24-72h. Weekly capacity 2-3 orders. |
+| **Deep audit** | **$299** (off-platform) | The human audit plus: ×10 cost stress, a re-run after a data refresh, and a 60-minute walkthrough. |
+
+Three paid tiers, not five: the former $129 "diagnosis-enhanced" content now
+sits inside the $99 audit, because a human re-check is what that price should
+have included all along.
 
 Rationale: the base tier being complete and free is the marketing — the paid
 tiers sell convenience and human time (a USD price point needs the human
@@ -123,7 +126,7 @@ step), not a key that unlocks the verdict. All prices USD.
 1. ZIP: `skill/strategy-falsifier/agensi/strategy-falsifier-agensi-v1.0.0.zip`
    (SHA256 in `SHA256SUMS.txt` next to it; verified by extract-and-run)
 2. Submit at https://www.agensi.io/dashboard/submit
-3. Free tier can go live immediately; the $9 tier and any payout need the
+3. Free tier can go live immediately; the $29 tier and any payout need the
    payout method verified first (Zoneless USDC / Solana route for creators in
    mainland China — still requires provider verification)
 4. Do not submit the paid tier as "mature" until at least a few free-tier runs

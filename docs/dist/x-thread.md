@@ -63,7 +63,7 @@ Verdicts come from falsification rules written BEFORE the numbers exist. Post-ho
 **8/**
 Engine is open source (MIT), 380 tests, offline replay, sample report on real data in the repo.
 
-First 10 strategy-falsification reports free in exchange for publication rights. No signals, no subscriptions, no managed capital — the only question it answers is whether your curve is real.
+First 3 strategy-falsification reports free in exchange for publication rights. No signals, no subscriptions, no managed capital — the only question it answers is whether your curve is real.
 
 Repo + case matrix: https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2
 Landing page: https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/

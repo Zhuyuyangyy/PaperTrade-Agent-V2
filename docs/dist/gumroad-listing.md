@@ -95,10 +95,12 @@ presets, the playbooks, and the installer, not an algorithm black box.
 
 | 产品 | 价格 | 内容 |
 |---|---|---|
-| GitHub 仓库（MIT） | 免费 | 完整引擎：六仪器 + 诊断层 + 361 测试 |
-| **Falsifier Pro（Gumroad）** | **$29** | SKILL.md 三铁律 + 契约锁 + agent_directive + 剧本 + presets + 安装器 + TradingView 模式 |
-| 标准审计（人工，Toku/issue） | $99 | 人工跑 + 数据核验 |
-| 诊断增强审计（人工） | $129 | 人工复核诊断 + 变体矩阵 + 定制实验 + 解读 |
+| GitHub 仓库（MIT） | 免费 | 完整引擎：六仪器 + 诊断层 + 398 测试 |
+| **Falsifier Pro（Gumroad）** | **$29** | SKILL.md 三铁律 + 四条 guardrails + 契约锁 + agent_directive + 剧本 + presets + 安装器 + TradingView 模式 |
+| 人工审计（Toku/issue） | $99 | 人工跑 + 数据核验 + 人工复核诊断 + 变体矩阵 + 定制实验 + 录屏解读 |
+| 深度审计（人工） | $299 | $99 全部 + ×10 成本压力 + 数据刷新复跑 + 60 分钟解读 |
+
+$99 已含原 $129 档的全部人工内容。五档改三档：档位越少，决策越快；"人工复核"本该是这个价位的标配。
 
 ## 上架清单
 
