@@ -18,8 +18,8 @@
 | FundingRate：三档费率 × 两种成交模型，maker 真实成交 PF 1.00 | README |
 | A 股可转债：509 只券、334,639 债券日、55,412 信号，1 日超额 ±0.5bp 内（噪声） | README |
 | 行业外部数据：backtest→live 中位差 -14.3pp；17/22 零售 bot 是指数 beta（Broker Tested Reviews） | docs/dist/ 现有文案 |
-| 测试：verify 引擎 60 用例，全套 358 passed / 2 skipped；MIT | README |
-| 服务口径：前 10 单免费换匿名公开发布权 / $99 / $299；不接荐股带单代管资金 | toku-profile.md |
+| 测试：verify 引擎 60 用例，全套 401 passed / 2 skipped；MIT | README |
+| 服务口径：前 3 单免费换匿名公开发布权 / Pro Skill $29 / $99 / $299；不接荐股带单代管资金 | toku-profile.md |
 
 链接（全文统一用这两个）：
 - 仓库：https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2
@@ -239,7 +239,7 @@ CI 跨 0。2023-06 到 2026-10 是加密牛市，随机入场也赚钱。那条�
 
 输入一份策略 spec，输出一份试图杀死它的报告。裁决不是分数，是事前证伪规则的判定结果：
 falsify_if 先于任何数字写进 spec，样本不足判 INCONCLUSIVE 永不放过。
-MIT，358 个测试，新克隆无行情缓存也能跑 demo。
+MIT，401 个测试，新克隆无行情缓存也能跑 demo。
 
 仓库：https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2
 落地页（30 秒 demo + 案例矩阵）：https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/
@@ -305,7 +305,7 @@ NOT_FALSIFIED 也不等于被证实——报告固定带"未建模事项"一节�
 
 ## 它现在是个产品
 
-输入一份策略 spec，输出一份试图杀死它的报告。MIT，358 个测试，离线可复现。
+输入一份策略 spec，输出一份试图杀死它的报告。MIT，401 个测试，离线可复现。
 前 10 份免费，换匿名公开发布权——我想建公开案例库，不想吵架。
 不荐股、不带单、不代管资金、不承诺收益。
 
@@ -664,7 +664,7 @@ Website 栏填：`https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/`
 ## 8. 通用纪律（所有渠道适用）
 
 1. **同一套数字**：所有帖子只用 §0 口径表里的数，一个新数字都别加；加之前先在仓库里复现一遍
-2. **不承诺效果**：所有文案不出现"提升 star 保证""流量保证"式表述；服务口径统一为"前 10 免费换授权 / $99 / $299 / 不荐股不带单不代管资金"
+2. **不承诺效果**：所有文案不出现"提升 star 保证""流量保证"式表述；服务口径统一为"前 3 单免费换授权 / Pro Skill $29 / $99 / $299 / 不荐股不带单不代管资金"
 3. **错峰**：Reddit 三篇分三个不同天；中文社区与 Reddit 不同周；同一账号不要在短时间内跨版块发同内容
 4. **养号**：HN/Reddit/LINUX DO 发前先有几天真实评论历史；r/Python 注意 karma 与账号时长门槛
 5. **不买 star、不互赞圈**：star 是信任货币，刷它等于印假钞，被 GitHub 或社区识别的成本远高于收益
