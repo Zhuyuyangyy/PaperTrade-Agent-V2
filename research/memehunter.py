@@ -196,13 +196,18 @@ _last_call = 0.0
 _MIN_GAP_S = 1.2
 
 
-def _get(url: str, timeout: float = 20.0, retries: int = 2) -> Any:
-    """One GET, throttled, and patient about 429.
+def _get(url: str, timeout: float = 20.0, retries: int = 3) -> Any:
+    """One GET, throttled, and patient about throttling and bad gateways.
 
     A scan fires eight of these back to back, and Jupiter answers some of them
     with 429. Dropping the source on the first 429 is why every scan reported
     "数据源异常" -- the desk was not losing data to the market, it was losing
     it to its own impatience. Now it honours Retry-After and backs off.
+
+    5xx and transport errors are retried for the same reason. On 2026-11-04 at
+    10:05 a run of 502s through an upstream tunnel left three positions with no
+    mark for a full cycle: the API was having a bad minute, and the desk treated
+    it as a permanent condition.
     """
     global _last_call
     for attempt in range(retries + 1):
@@ -217,7 +222,9 @@ def _get(url: str, timeout: float = 20.0, retries: int = 2) -> Any:
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 return json.load(response)
         except urllib.error.HTTPError as exc:
-            if exc.code == 429 and attempt < retries:
+            # 429 is throttling, 5xx is the upstream having a bad minute. Both
+            # are transient and both used to abandon the whole scan.
+            if exc.code in (429, 500, 502, 503, 504) and attempt < retries:
                 wait = 0.0
                 headers = getattr(exc, "headers", None)
                 if headers is not None:
@@ -225,12 +232,19 @@ def _get(url: str, timeout: float = 20.0, retries: int = 2) -> Any:
                         wait = float(headers.get("Retry-After") or 0.0)
                     except (TypeError, ValueError):
                         wait = 0.0
-                time.sleep(min(max(wait, 1.5 * (attempt + 1)), 10.0))
+                backoff = 1.5 * (attempt + 1) if exc.code == 429 else 2.0 * (attempt + 1)
+                time.sleep(min(max(wait, backoff), 10.0))
                 continue
             raise SourceError(f"HTTP {exc.code}") from exc
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            # A tunnel 502 surfaces here as URLError, not HTTPError. Retrying
+            # costs a second; not retrying costs a 180-second cycle of blind
+            # positions.
+            if attempt < retries:
+                time.sleep(min(2.0 * (attempt + 1), 8.0))
+                continue
             raise SourceError(f"数据源不可达: {exc}") from exc
-    raise SourceError("HTTP 429 重试后仍失败")
+    raise SourceError(f"重试 {retries} 次后仍失败")
 
 
 def _f(value: Any, default: float = 0.0) -> float:
@@ -772,7 +786,15 @@ class Desk:
     def _sample_equity(self, at: int) -> None:
         cash = self.cash()
         opens = self.open_positions()
-        complete = all(p["mark_at_ms"] for p in opens)
+        # A mark older than this is not a price, it is a memory. Counting a
+        # stale mark as complete is how five positions sat at a six-day-old
+        # value while the dashboard printed 905 on a book worth 824. When the
+        # quote endpoint is down, the sample must say "incomplete", not repeat
+        # yesterday's number as if it were today's.
+        fresh_ms = 10 * 60 * 1000
+        complete = all(
+            p["mark_at_ms"] and (at - int(p["mark_at_ms"])) < fresh_ms for p in opens
+        )
         holdings = sum(
             float(p["mark_price"]) * float(p["qty"]) for p in opens if p["mark_price"]
         )

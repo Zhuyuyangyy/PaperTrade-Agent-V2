@@ -11,6 +11,7 @@ fake profit the moment it buys anything.
 from __future__ import annotations
 
 import sys
+import urllib.error
 from pathlib import Path
 
 import pytest
@@ -415,3 +416,120 @@ def test_a_dirty_token_is_refused_on_quality_even_with_a_perfect_entry(desk):
     row = _record_one(desk, token)
     assert row["eligible"] == 0
     assert row["reject_reason"] in ("QUALITY_BELOW_FLOOR", "HOLDERS_TOO_CONCENTRATED")
+
+
+# ---------- the data source has bad minutes, not opinions ----------
+
+def test_a_bad_gateway_is_retried_not_treated_as_permanent(monkeypatch):
+    """A run of 502s through an upstream tunnel left three positions unmarked
+    for a full cycle on 2026-11-04. The API was having a bad minute; the desk
+    treated it as a verdict about the API and went blind for 180 seconds."""
+    calls = {"n": 0}
+
+    class FakeResp:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self, *a):
+            return b'{"ok": true}'
+
+    def fake_urlopen(req, timeout=0):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise urllib.error.HTTPError(req.full_url, 502, "Bad Gateway", {}, None)
+        return FakeResp()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    monkeypatch.setattr(memehunter.time, "sleep", lambda _s: None)
+    assert memehunter._get("https://example.invalid/x") == {"ok": True}
+    assert calls["n"] == 3
+
+
+def test_a_dead_tunnel_eventually_gives_up(monkeypatch):
+    """Retrying must not become an infinite loop when the source is really gone."""
+    calls = {"n": 0}
+
+    def always_fail(req, timeout=0):
+        calls["n"] += 1
+        raise urllib.error.URLError("Tunnel connection failed: 502 Bad Gateway")
+
+    monkeypatch.setattr("urllib.request.urlopen", always_fail)
+    monkeypatch.setattr(memehunter.time, "sleep", lambda _s: None)
+    with pytest.raises(memehunter.SourceError):
+        memehunter._get("https://example.invalid/x", retries=2)
+    assert calls["n"] == 3   # initial attempt + 2 retries
+
+
+# ---------- the data source has bad minutes, not opinions ----------
+
+def test_a_bad_gateway_is_retried_not_treated_as_permanent(monkeypatch):
+    """A run of 502s through an upstream tunnel left three positions unmarked
+    for a full cycle on 2026-11-04. The API was having a bad minute; the desk
+    treated it as a verdict about the API and went blind for 180 seconds."""
+    calls = {"n": 0}
+
+    class FakeResp:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self, *a):
+            return b'{"ok": true}'
+
+    def fake_urlopen(req, timeout=0):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise urllib.error.HTTPError(req.full_url, 502, "Bad Gateway", {}, None)
+        return FakeResp()
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    monkeypatch.setattr(memehunter.time, "sleep", lambda _s: None)
+    assert memehunter._get("https://example.invalid/x") == {"ok": True}
+    assert calls["n"] == 3
+
+
+def test_a_dead_tunnel_eventually_gives_up(monkeypatch):
+    """Retrying must not become an infinite loop when the source is really gone."""
+    calls = {"n": 0}
+
+    def always_fail(req, timeout=0):
+        calls["n"] += 1
+        raise urllib.error.URLError("Tunnel connection failed: 502 Bad Gateway")
+
+    monkeypatch.setattr("urllib.request.urlopen", always_fail)
+    monkeypatch.setattr(memehunter.time, "sleep", lambda _s: None)
+    with pytest.raises(memehunter.SourceError):
+        memehunter._get("https://example.invalid/x", retries=2)
+    assert calls["n"] == 3   # initial attempt + 2 retries
+
+
+def test_a_stale_mark_is_not_counted_as_a_complete_equity_sample(desk):
+    """The six-day-old book that printed 905 instead of 824.
+
+    When the quote endpoint is down the position keeps its last mark, which is
+    correct -- but the equity row must flag itself incomplete, or the dashboard
+    repeats an old number as if it were current.
+    """
+    import time as _time
+
+    desk.open_position(make_token(), "test")
+    now = memehunter.now_ms()
+
+    # A mark from 20 minutes ago is not a price any more.
+    desk.conn.execute(
+        "UPDATE positions SET mark_at_ms=?, mark_price=0.01", (now - 20 * 60_000,)
+    )
+    desk._sample_equity(now)
+    row = desk.conn.execute("SELECT complete FROM equity ORDER BY at_ms DESC LIMIT 1").fetchone()
+    assert row["complete"] == 0
+
+    # A fresh mark is.
+    desk.conn.execute("UPDATE positions SET mark_at_ms=?", (now - 60_000,))
+    desk._sample_equity(now + 1)
+    row = desk.conn.execute("SELECT complete FROM equity ORDER BY at_ms DESC LIMIT 1").fetchone()
+    assert row["complete"] == 1
