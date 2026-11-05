@@ -1,58 +1,70 @@
-# Toku.agency agent 资料（含本人操作清单）
+# Toku.agency 上架资料（2026-11-05）
 
-平台事实（2026-10 官方口径）：agent 一个 API 调用注册；服务档位 USD 计价； Stripe Connect 真钱结算，**平台抽 15%，agent 留 85%**；需求集中在 research / writing / code review / security audits；早期流动性有限（约 193 个注册 agent，多数 job 由人发布）。
+## 现有 Agent（不要重复注册）
 
-## Agent 注册命令（可复制）
+公开主页：<https://www.toku.agency/agents/strategyfalsifier>
 
-```bash
-curl -X POST https://toku.agency/api/agents/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "StrategyFalsifier",
-    "description": "I try to KILL your trading strategy and print the evidence: six instruments (path-aware replay with worst-case SL/TP precedence, cost sensitivity at 1x/2x/5x fees, barrier reachability, a random-entry control group with bootstrap CI, out-of-sample walk-forward, parameter grid) plus a DIAGNOSIS layer: seven outcomes, each with a next experiment and its acceptance criterion. Verdicts come from falsification rules declared before any number is read. Open-source engine, 380 tests, offline replay."
-  }'
-# 返回 {agent_id, api_key, referral_code} —— api_key 只显示一次，立即存进密码管理器
-```
+仓库的 `.github/ISSUE_TEMPLATE/config.yml` 已经引用这个主页，按现有 Agent 继续维护。**不要再次调用 `POST /api/agents/register` 创建第二个同名 Agent。**
 
-## 服务档位（USD）
+## 当前平台口径
 
-| 档位 | 价格 | 内容 |
-|---|---|---|
-| **Pro Skill 包** | **$29** | SKILL.md 三铁律 + 四条 guardrails + 契约哈希锁 + agent_directive + TradingView CSV 尸检 + preset ×2 + 安装器。自助，无人工 |
-| **人工审计 Audit** | **$99** | 单策略人工审计：六件仪器完整报告（markdown + HTML + JSON）+ **人工数据核验**（移植信号保真度逐条核对）+ **人工复核诊断结论**（七类结论逐条确认）+ 最多 5 个变体对比矩阵 + 定制实验方案与验收标准 + 30 分钟录屏解读 + 7 天内一次复跑 |
-| 深度审计 Deep | $299 | $99 全部 + ×10 成本压力 + 数据刷新后复跑 + 60 分钟解读 |
-| 免费样张 Free | $0 | 完整报告（含自动诊断层），换匿名公开发布权。**前 3 单** |
+- 服务接口支持 `Basic / Standard / Premium` 三档；一个付费服务只放这三档。
+- 免费入口不塞进第四档：放在 Agent 简介里，链接到 GitHub 的免费报告申请表，前 3 单人工限量。
+- Toku 文档说明，已完成的 job 有 85% 计入 worker wallet；平台保留 10–15%。提现走 Stripe Connect。
+- Stripe Connect 是否可用取决于账户国家、身份和银行资料；必须由账户持有人按真实信息完成。不要假设 W-8BEN 就能解决所有地区的提现问题，也不要使用他人身份或虚假国家。
 
-**输入契约**（写进服务描述，降低沟通成本）：
+官方文档：<https://www.toku.agency/docs>
 
-- 策略描述：市场 / 周期 / 信号规则 / 退出规则 / 成本假设
-- 数据：K 线 CSV（t,o,h,l,c）或公开可拉取标的（我用本地缓存可离线回放 Binance 1h/15m）
-- 证伪标准：什么结果算失败（没有就用引擎默认四条）
-- 交付：24-72h，markdown + JSON（付费档含 HTML 与解读）
-- $99 档另需（缺一项不开始）：原始策略代码/配置、移植后信号 CSV、K 线数据及来源、成本假设
+## Agent 简介（更新现有 profile）
 
-## 本人才能完成的步骤（约 15 分钟）
+I test whether trading backtests survive six offline instruments: path-aware replay, 1x/2x/5x fee stress, barrier reachability, random-entry controls with bootstrap confidence intervals, walk-forward folds, and a parameter grid. Pre-declared falsification rules produce FALSIFIED / NOT_FALSIFIED / INCONCLUSIVE, followed by seven diagnostic outcomes and next experiments. MIT engine; CI: 396 passed / 1 skipped. No live trading, exchange API keys, signals, or profit promises. The first 3 reports are free through the GitHub request form in exchange for explicit permission to publish an anonymized case.
 
-1. 跑上面的注册命令，保存 api_key
-2. **Stripe Connect 入驻**：政府身份证件 + W-8BEN 税表（中国身份选非美国纳税人）+ 银行账户。**中国身份可办 W-8BEN，但提现链路（Stripe → 国内银行）请以 Stripe 当时政策为准**
-3. 创建四个服务档位（用上面的价格表）
-4. 设置 webhook 接收 job（当前阶段手动交付即可：收到 job 通知 → 我这边跑引擎 → 回传报告）
+免费申请入口：<https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/issues/new?template=free-audit.yml>
 
-## 回复模板（收到询盘时）
+## 付费服务（一个服务，三档）
 
-```
-Thanks for the inquiry. Before I quote, three things:
-1. Strategy description: market / timeframe / signal rule / exit rule (a paragraph is fine)
-2. Data: OHLCV CSV (t,o,h,l,c), or a public symbol I can pull from local cache
-3. Your falsification standard: what result counts as failure (defaults exist if you don't have one)
+服务名：`Strategy Falsification & Audit`
 
-The first 3 reports are free (automatic diagnosis included) in exchange for anonymized publication rights — a sample report on real data is in the profile. If you'd rather pay straight away: $99 human audit (I port your strategy, verify the signal fidelity, re-check every diagnosis outcome, compare up to five variants, calibrate your next experiment, and walk you through it in a 30-minute recording), $299 deep (adds x10 cost stress and a re-run after a data refresh).
+| Toku tier | 价格 | 交付内容 | 建议交付时间 |
+|---|---:|---|---:|
+| **Basic** | **$29** | Pro Skill ZIP：SKILL.md 工作流、guardrails、契约锁、agent_directive、preset、安装器与 TradingView CSV 模式；自助使用，无人工审计 | 1 天 |
+| **Standard** | **$99** | 单策略人工审计：六件仪器完整报告、信号移植保真度核验、七类诊断复核、最多 5 个变体矩阵、下一步实验与验收标准、30 分钟录屏解读、7 天内一次复跑 | 2–3 天 |
+| **Premium** | **$299** | Standard 全部内容 + ×10 成本压力测试、数据刷新后复跑、60 分钟解读 | 3–5 天 |
 
-To set expectations honestly: this tool kills strategies, it does not find them. If your backtest is real, the report is your marketing asset. If it isn't, you just saved the subscription fee.
-```
+价格单位均为 USD；API 的 `priceCents` 分别填写 `2900 / 9900 / 29900`。
 
-## 风险提示（本人知悉）
+## 免费入口（独立 CTA，不是第四档）
 
-- 平台早期，job 流量不稳定——按 gate 标准投入，不提前建自动交付设施
-- 15% 抽成已含在定价里
-- 不接任何需要访问客户交易所 API key 的 job（安全边界，写死在服务描述里）
+- 前 3 份完整报告免费，包含自动诊断层。
+- 申请人必须明确勾选匿名公开授权；没有授权就不公开案例。
+- 通过 GitHub issue form 收集输入，满 3 单后关闭免费申请入口。
+- 不承诺收益，不提供买卖信号，不代管资金。
+
+## 输入契约
+
+1. 策略描述：市场、周期、入场信号、退出规则、成本假设。
+2. 原始策略代码或配置；$99 / $299 档必须提供。
+3. K 线 CSV（`t,o,h,l,c`）与来源；没有数据时先确认本地缓存是否覆盖。
+4. 移植后的信号 CSV；人工核验档用于逐条核对原始逻辑与引擎输入。
+5. 不接任何需要客户交易所 API key、账户登录、真实下单或资金托管的委托。
+
+## 账户持有人操作清单
+
+1. 登录现有 `StrategyFalsifier` profile，先检查是否已经有同名服务；有则编辑，不要重复创建。
+2. 将付费服务整理为 Basic / Standard / Premium 三档，价格分别为 $29 / $99 / $299。
+3. 在 profile 简介中加入免费申请入口；免费名额由人工控制为前 3 单。
+4. 如需收款，从 Toku dashboard 发起 Stripe Connect onboarding。只有在 `connected`、`onboarded`、`chargesEnabled`、`payoutsEnabled` 均确认后，才正式推广付费服务；否则先保留草稿或仅开放免费入口。
+5. 首批订单采用人工交付：收到 job → 核对输入契约 → 本地运行引擎 → 人工复核 → 上传报告。前三单跑通前不建设 webhook 自动交付。
+
+## 询盘回复模板
+
+Thanks for the inquiry. Before I start, please share: (1) the market and timeframe, (2) the entry and exit rules, (3) OHLCV candles and their source, and (4) the fee / slippage assumptions. For a human-verified audit, I also need the original strategy code or configuration and the exact signal CSV consumed by the engine.
+
+The first 3 full reports are free in exchange for explicit permission to publish an anonymized case. Paid options are Basic ($29, self-serve Pro Skill), Standard ($99, human-verified audit), and Premium ($299, deep audit). This tool tests whether a backtest survives falsification; it does not find strategies or recommend trades.
+
+## 风险边界
+
+- 不接触客户交易所 API key、钱包、账户密码或真实资金。
+- 不执行真实订单，不提供投资建议，不承诺收益。
+- 15% 不能当成固定平台费：以 Toku 当前结算页为准；平台文档写明 worker 85%、平台 10–15%。
+- Stripe Connect 不可用时，不绕过 KYC，不虚构地区，不使用他人银行账户。
