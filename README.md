@@ -290,7 +290,7 @@ python -m research.verify --list-market                   # 本地行情缓存�
 | 停止后循环反复复活 | `loop.sh` while true 守护 + 排队后台任务到点自启 | STOP 文件 kill switch（幂等） |
 | 后台任务约 3 小时被系统回收 | 环境事实 | 主+副班双看门狗，故障窗口 30 分钟 |
 
-**301 passed, 2 skipped**（`test_convertible` 缺 akshare、`test_migrate_ledgers` 缺 Windows symlink 权限，各跳 1 个）。
+**CI：396 passed，1 skipped**（`pytest -q tests`；本地 Windows 与全仓库口径不同，详见 `docs/dist/submissions.md`）。
 
 ---
 
