@@ -184,7 +184,7 @@ done
 
 - 行情数据解析顺序：`--candles` CSV > 本地缓存 `runtime/audit/market.sqlite` > 内置演示包（fresh clone 无缓存时 demo 仍可跑，报告披露差异）。
 - 信号三种来源：`kind=rule`（从 K 线算）/ `kind=csv`（外部信号文件）/ `kind=random`（对照组自身）。
-- 测试：`test_verify.py` 覆盖 spec 校验/数据加载/RSI/指标/障碍可达/对照组/walk-forward/参数网格/诊断层/HTML/对比/单文件等价，全仓 361 个全绿（CI 实测）。
+- 测试：`test_verify.py` 覆盖 spec 校验/数据加载/RSI/指标/障碍可达/对照组/walk-forward/参数网格/诊断层/HTML/对比/单文件等价，CI 实测 396 passed / 1 skipped。
 
 最后说句超出工程的：这套仪器的本质是**内部逻辑一致性优先于外部叙事**——规则先于数字，对照组先于结论，披露先于推销。事后改规则是营销，不是研究。
 
