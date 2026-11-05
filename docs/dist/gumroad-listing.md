@@ -95,7 +95,7 @@ presets, the playbooks, and the installer, not an algorithm black box.
 
 | 产品 | 价格 | 内容 |
 |---|---|---|
-| GitHub 仓库（MIT） | 免费 | 完整引擎：六仪器 + 诊断层 + 398 测试 |
+| GitHub 仓库（MIT） | 免费 | 完整引擎：六仪器 + 诊断层；CI 实测 396 passed / 1 skipped |
 | **Falsifier Pro（Gumroad）** | **$29** | SKILL.md 三铁律 + 四条 guardrails + 契约锁 + agent_directive + 剧本 + presets + 安装器 + TradingView 模式 |
 | 人工审计（Toku/issue） | $99 | 人工跑 + 数据核验 + 人工复核诊断 + 变体矩阵 + 定制实验 + 录屏解读 |
 | 深度审计（人工） | $299 | $99 全部 + ×10 成本压力 + 数据刷新复跑 + 60 分钟解读 |
