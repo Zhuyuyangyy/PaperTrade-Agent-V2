@@ -162,6 +162,8 @@ def _plain_sentence(result: dict) -> str:
             bits.append("表现和随机入场区分不开")
         if "grid_positive_ratio_min" in rules:
             bits.append("只有个别参数组合赚钱，换个参数就不成立")
+        if "net_below_buy_and_hold" in rules:
+            bits.append("跑不赢同等敞口的买入持有")
         tail = "、".join(bits) if bits else "事前写好的证伪规则被触发"
         return f"人话：{tail}——规则先于报告存在，这次没能活下来。"
     if v["outcome"] == "INCONCLUSIVE":
@@ -186,6 +188,60 @@ def unmodeled_notes(result: dict) -> list[str]:
         "同时持仓相关性：信号逐一独立回放，重叠持仓的相关性风险不计入；",
         "交易所/链路风险：宕机、API 限流、插针、宕机重启后的订单状态，一概不在模型内。",
     ]
+
+
+def _bh_scope_lines(label: str, bh: dict) -> list[str]:
+    """One scope of the buy-and-hold baseline as plain sentences."""
+    rng = bh.get("bar_range") or [None, None]
+    head = f"{label}（第 {_n(rng[0])} → {_n(rng[1])} 根，{_n(bh.get('bars_in_segment'))} 根 K 线）"
+    if bh.get("bh_net_pct") is None:
+        return [f"{head}：{bh.get('note') or '无法计算'}"]
+    hold = "买入持有" if bh["side"] == "long" else "做空持有"
+    lines = [
+        f"{head}：{hold} {_pct(bh['bh_net_pct'])}"
+        f"（首开→末收毛 {_pct(bh['bh_gross_pct'])}，扣一次往返费 {bh['fee_round_trip_pct']:.2f}%）",
+        f"{label}：策略在场 {_n(bh['bars_in_market'])} 根 / {_n(bh['bars_in_segment'])} 根"
+        f"（敞口 {bh['exposure']:.1%}）；同敞口基线 = 每根净漂移 {_pct(bh['drift_per_bar_pct'], 4)}"
+        f" × {_n(bh['bars_in_market'])} 根 = {_pct(bh['matched_bh_pct'])}",
+    ]
+    if bh.get("beats_buy_and_hold") is None:
+        lines.append(f"{label}：{bh.get('note') or '无成交，无从比较'}")
+    else:
+        mark = "跑赢" if bh["beats_buy_and_hold"] else "未跑赢"
+        lines.append(
+            f"{label}：策略净收益（最坏口径）{_pct(bh['strategy_net_pct'])} vs 同敞口基线"
+            f" {_pct(bh['matched_bh_pct'])}，差值 {bh['diff_pct']:+.2f}pp → {mark}同敞口{hold}")
+    return lines
+
+
+def buy_and_hold_lines(result: dict) -> list[str]:
+    """The buy-and-hold baseline section as plain sentences, one list for
+    both renderers (markdown bullets, HTML <li>) so the two cannot drift.
+    Presents numbers already in the result; computes nothing new."""
+    bh = result.get("buy_and_hold")
+    if not bh:
+        return []
+    lines = _bh_scope_lines("全窗口", bh)
+    wf = result.get("walk_forward") or {}
+    for seg, label in (("in_sample", "样本内"), ("out_sample", "样本外")):
+        b = (wf.get(seg) or {}).get("buy_and_hold")
+        if b:
+            lines.extend(_bh_scope_lines(label, b))
+    if bh["side"] == "short":
+        lines.append("方向：策略主方向为 short，基线镜像为做空持有（1 − 末收/首开），与随机对照组同一镜像规则")
+    if bh.get("mixed_sides"):
+        lines.append(f"方向：策略多空混合，基线按主方向 {bh['side']} 计算——与随机对照组同一规则，混合账本的对比是近似")
+    lines.append(
+        "口径：同敞口基线 = 每根 K 线的净漂移 × 策略在场根数；漂移按对数计"
+        "（[ln(末收/首开) − 一次往返费] ÷ 段内根数，做空持有取反），因为策略净收益是逐笔单利相加，"
+        "拿复利的买入持有收益按敞口缩放会在上涨段抬高、下跌段压低门槛；"
+        "在场根数取最坏口径成交，入场根与出场根都计入，重叠持仓累加，故敞口可超过 100%；基线不计资金费"
+        + ("（策略净收益含资金费）" if result.get("funding_applied") else ""))
+    if (result.get("spec") or {}).get("falsify_if", {}).get("net_below_buy_and_hold"):
+        lines.append("裁决：spec 事前声明了 falsify_if.net_below_buy_and_hold——未跑赢同敞口基线即触发证伪，见第 7 节")
+    else:
+        lines.append("裁决：仅作信息展示，不参与裁决（spec 可事前声明 falsify_if.net_below_buy_and_hold 启用）")
+    return lines
 
 
 def render(result: dict) -> str:
@@ -337,6 +393,15 @@ def render(result: dict) -> str:
     else:
         a("- 未启用对照组（spec.control.enabled=false）——没有对照组的回放只是叙事。")
     a("")
+
+    # -- 4b. buy-and-hold baseline -------------------------------------------
+    bh_lines = buy_and_hold_lines(result)
+    if bh_lines:
+        a("## 4b. 买入持有基线（漂移对照）")
+        a("")
+        for ln in bh_lines:
+            a(f"- {ln}")
+        a("")
 
     # -- 5. walk-forward ------------------------------------------------------
     if wf:

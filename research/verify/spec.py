@@ -239,6 +239,11 @@ class Spec:
                 raise SpecError(
                     f"falsify_if.grid_positive_ratio_min 必须在 (0, 1] 内，得到 {min_ratio}"
                 )
+        # Opt-in buy-and-hold criterion: absent/false = off (the baseline is
+        # still measured and reported, it just cannot falsify anything).
+        bh_rule = self.falsify_if.get("net_below_buy_and_hold")
+        if bh_rule is not None and not isinstance(bh_rule, bool):
+            raise SpecError("falsify_if.net_below_buy_and_hold 必须是 true/false")
         self.exit.validate()
         self.signals.validate()
         self.control.validate()

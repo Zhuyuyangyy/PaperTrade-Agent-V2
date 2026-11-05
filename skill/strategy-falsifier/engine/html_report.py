@@ -13,7 +13,7 @@ coloured cell also states its number in text.
 """
 from __future__ import annotations
 
-from .report import _fmt_axis, _n, _params_txt, _pf, _pct, _plain_sentence, _key_numbers, unmodeled_notes
+from .report import _fmt_axis, _n, _params_txt, _pf, _pct, _plain_sentence, _key_numbers, unmodeled_notes, buy_and_hold_lines
 
 _VERDICT_CLASS = {
     "FALSIFIED": "kill",
@@ -433,6 +433,15 @@ def render_html(result: dict) -> str:
     else:
         a('<p class="note">本 run 未启用对照组。</p>')
 
+    # ---- 4b. buy-and-hold baseline (shared sentences with markdown) ---------
+    bh_lines = buy_and_hold_lines(result)
+    if bh_lines:
+        a("<h2>4b. 买入持有基线（漂移对照）</h2>")
+        a("<ul>")
+        for ln in bh_lines:
+            a(f"<li>{_esc(ln)}</li>")
+        a("</ul>")
+
     # ---- 5. walk-forward --------------------------------------------------
     a("<h2>5. Walk-forward（样本内 / 样本外）</h2>")
     if wf and wf.get("out_sample"):
@@ -558,7 +567,7 @@ def render_html(result: dict) -> str:
     # ---- footer -----------------------------------------------------------
     a("<footer>")
     a('<p>由策略证伪引擎生成（六件仪器：path-aware 回放 · 成本敏感性 · 障碍可达性 · '
-      '随机对照组 · walk-forward · 参数网格）。规则先于数字，失败同样发布。</p>')
+      '随机对照组 · walk-forward · 参数网格；另附买入持有基线，仅作参考）。规则先于数字，失败同样发布。</p>')
     a('<p><a href="https://zhuyuyangyy.github.io/PaperTrade-Agent-V2/">落地页</a> · '
       '<a href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2">开源仓库</a> · '
       '服务：带策略来，我出证伪报告 —— 前 3 单免费（换匿名公开案例授权）；自助 Pro Skill $29 / 人工审计 $99 / 深度 $299。</p>')
