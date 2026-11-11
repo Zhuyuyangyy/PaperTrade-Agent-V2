@@ -33,6 +33,12 @@ real data:
                              fit; the distribution across cells, not the best
                              cell, is the measurement.
 
+Next to the battery, a buy-and-hold baseline (control.buy_and_hold) reports
+what simply holding the coin paid over the same segment, scaled to the
+strategy's market exposure -- a dip-buy book in a rising market can be "net
+positive" on drift alone. It is informational unless the spec opts in with
+falsify_if.net_below_buy_and_hold.
+
 The verdict is not a score. It is the outcome of falsification criteria that
 were written into the spec BEFORE the numbers were read. That ordering is the
 whole point: a criterion chosen after seeing the report is marketing.
@@ -97,6 +103,7 @@ def verify(spec: Spec, candles: list[dict], entries: dict[int, str],
         "cost_sensitivity": full["cost_sensitivity"],
         "barrier_reach": full["barrier_reach"],
         "control": full["control"],
+        "buy_and_hold": full["buy_and_hold"],
         "verdict": full["verdict"],
         "walk_forward": None,
         "param_grid": None,
@@ -114,6 +121,7 @@ def verify(spec: Spec, candles: list[dict], entries: dict[int, str],
         spec, full["runs"], full["cost_sensitivity"], full["control"],
         wf=wf,
         grids=result["param_grid"]["scopes"] if result["param_grid"] else None,
+        bh=full["buy_and_hold"],
     )
     # Diagnosis: HOW it died and what to change. Same measurements, no new
     # assumptions -- the classification rules live in diagnosis.py, declared
@@ -145,17 +153,22 @@ def _param_grid_result(spec: Spec, candles: list[dict], entries: dict[int, str],
 def _battery(spec: Spec, candles: list[dict], entries: dict[int, str], exit_rule,
              funding: list[dict] | None = None, *,
              control_range: tuple[int, int] | None = None,
+             segment: tuple[int, int] | None = None,
              scope: str = "全窗口") -> dict:
     """The full instrument battery over ONE entry set (one segment or the
     whole window). Kept separate from verify() so the walk-forward segments
     run exactly the same measurements as the headline run -- an instrument
     that measures the sample differently from the sample-out is not a control.
+
+    `segment` is the inclusive bar range the entries belong to (None = the
+    whole window); the buy-and-hold baseline is measured over it.
     """
     from . import control, excursions, metrics
     from ._pathsim import simulate
 
     # --- 1. path-aware replay, worst case and best case side by side ---------
     runs = {}
+    sims = {}
     for case_name, worst in (("worst_case", spec.worst_case), ("best_case", not spec.worst_case)):
         sim = simulate(
             candles, entries, exit_rule,
@@ -164,6 +177,7 @@ def _battery(spec: Spec, candles: list[dict], entries: dict[int, str], exit_rule
             worst_case=worst, fill_model=spec.fill_model,
         )
         nets = sim.net_pct_series()
+        sims[case_name] = sim
         runs[case_name] = {
             "fills": sim.closed,
             "unfilled": sim.unfilled_entries,
@@ -223,13 +237,22 @@ def _battery(spec: Spec, candles: list[dict], entries: dict[int, str], exit_rule
                 "diff_pct": None, "diff_ci": None, "selectivity": "unknown",
             }
 
+    # --- 5. buy-and-hold baseline (drift), same segment, same fee ----------
+    # Exposure comes from the same worst-case fills the headline net uses.
+    bh = control.buy_and_hold(
+        candles, sims["worst_case"].fills, spec, entries,
+        strategy_net_pct=runs["worst_case"]["stats"]["sum_pct"],
+        bar_range=segment,
+    )
+
     return {
         "n_signals": len(entries),
         "runs": runs,
         "cost_sensitivity": cost_rows,
         "barrier_reach": reach,
         "control": ctrl,
-        "verdict": _verdict(spec, runs, cost_rows, ctrl, scope=scope),
+        "buy_and_hold": bh,
+        "verdict": _verdict(spec, runs, cost_rows, ctrl, scope=scope, bh=bh),
     }
 
 
@@ -269,11 +292,13 @@ def _walk_forward(spec: Spec, candles: list[dict], entries: dict[int, str],
         # selectivity it is supposed to be blind to
         "in_sample": _battery(spec, candles, is_entries, exit_rule, funding,
                               control_range=(CONTROL_WARMUP, boundary - 1),
+                              segment=(0, boundary - 1),
                               scope="样本内") if is_entries else None,
         # the out-of-sample control may only draw entries from the out-of-
         # sample segment, or it is not a control for that segment
         "out_sample": _battery(spec, candles, oos_entries, exit_rule, funding,
                                control_range=(boundary, len(candles) - 2),
+                               segment=(boundary, len(candles) - 1),
                                scope="样本外") if oos_entries else None,
         "in_sample_grid": None,
         "out_sample_grid": None,
@@ -294,6 +319,7 @@ def _walk_forward(spec: Spec, candles: list[dict], entries: dict[int, str],
                 battery["verdict"] = _verdict(
                     spec, battery["runs"], battery["cost_sensitivity"], battery["control"],
                     scope=seg_grid["scope"], grids=[seg_grid],
+                    bh=battery.get("buy_and_hold"),
                 )
     return wf
 
@@ -331,7 +357,7 @@ def _outcome(checks: list[dict]) -> str:
 
 
 def _evaluate_criteria(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict | None,
-                       scope: str, prefix: str = "") -> list[dict]:
+                       scope: str, prefix: str = "", bh: dict | None = None) -> list[dict]:
     """Apply the spec's PRE-DECLARED criteria to one battery.
 
     The criteria live in the spec and were fixed before the report existed;
@@ -403,6 +429,21 @@ def _evaluate_criteria(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict
                 "detail": detail,
                 "triggered": True,
             })
+
+    # Opt-in only (absent = off): the buy-and-hold baseline stays a reported
+    # number unless the spec declared, before the numbers, that failing to
+    # beat exposure-matched holding falsifies the strategy.
+    if spec.falsify_if.get("net_below_buy_and_hold") and bh is not None \
+            and bh.get("beats_buy_and_hold") is False:
+        hold = "持有" if bh["side"] == "long" else "做空持有"
+        checks.append({
+            "rule": "net_below_buy_and_hold",
+            "scope": scope,
+            "detail": (f"{prefix}策略净收益 {bh['strategy_net_pct']:+.2f}% ≤ 同敞口买入{hold}"
+                       f" {bh['matched_bh_pct']:+.2f}%（敞口 {bh['exposure']:.0%}）"
+                       f"——账面收益可由标的自身漂移解释"),
+            "triggered": True,
+        })
     return checks
 
 
@@ -450,7 +491,7 @@ def _grid_checks(spec: Spec, grid: dict, scope: str, prefix: str = "") -> list[d
 
 def _verdict(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict | None,
              scope: str = "全窗口", wf: dict | None = None,
-             grids: list[dict] | None = None) -> dict:
+             grids: list[dict] | None = None, bh: dict | None = None) -> dict:
     """Evaluate the pre-declared falsification criteria. Criteria live in the
     spec and were fixed before the report existed; this function only reads
     them and the numbers, it never invents a new rule.
@@ -465,7 +506,7 @@ def _verdict(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict | None,
     or the walk-forward segments). The declared grid criterion is evaluated
     on every scope; a knife-edge grid falsifies wherever it was measured.
     """
-    checks = _evaluate_criteria(spec, runs, cost_rows, ctrl, scope=scope)
+    checks = _evaluate_criteria(spec, runs, cost_rows, ctrl, scope=scope, bh=bh)
     for grid in (grids or []):
         prefix = ""
         if wf is not None and grid["scope"] == "样本外":
@@ -488,6 +529,7 @@ def _verdict(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict | None,
                 spec, oos["runs"], oos["cost_sensitivity"], oos["control"],
                 scope="样本外",
                 prefix=f"样本外段（第 {wf['boundary_bar']} 根起）：",
+                bh=oos.get("buy_and_hold"),
             ))
 
     triggered = [c for c in checks if c.get("triggered")]

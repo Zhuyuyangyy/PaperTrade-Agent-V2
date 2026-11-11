@@ -73,13 +73,15 @@ python -m research.verify --list-market        # 本地行情缓存里有什么
 | 5 | walk-forward | 窗口切 N 折，最后一折作样本外重跑全电池；样本外触雷整体证伪 | `walk_forward` |
 | 6 | 参数网格 | 退出参数网格逐格回放，看分布不看最佳格——只在一格活着的是曲线拟合 | `param_grid` |
 
+另附买入持有基线（报告第 4b 节）：同段买入持有（扣一次往返费，空头账本镜像为做空持有）按策略在场根数折算成同敞口基线，与策略净收益对比；仅作参考，`falsify_if.net_below_buy_and_hold: true` 时才参与裁决。
+
 裁决三态：`FALSIFIED`（有事前规则被触发）、`INCONCLUSIVE`（样本不足，既不能证实也不能证伪）、`NOT_FALSIFIED`（本窗口本成本下未触雷——注意，未被证伪 ≠ 被证实）。各仪器的真实数字案例见 [references/instruments.md](references/instruments.md)。
 
 ## spec 格式要点
 
 spec 是一份 JSON：`name`、`symbol`、`interval`、`exit`、`signals` 为必填，其余全部有默认值。核心纪律：
 
-- **证伪规则事前声明**：`falsify_if` 支持 `min_fills`（默认 30）、`worst_case_net_negative`、`net_negative_at_fee_multiple`、`control_lift_ci_includes_zero`、`grid_positive_ratio_min`（(0,1]）。注意：没有 `falsify_if` 的 spec 不会被判"不可证伪"——没有任何规则可触发时，只要成交够，裁决是 `NOT_FALSIFIED`（报告第 7 节仅注明"未声明任何 falsify_if 规则"）。不写证伪规则的审计等于没审计。
+- **证伪规则事前声明**：`falsify_if` 支持 `min_fills`（默认 30）、`worst_case_net_negative`、`net_negative_at_fee_multiple`、`control_lift_ci_includes_zero`、`grid_positive_ratio_min`（(0,1]）、`net_below_buy_and_hold`（可选，默认关闭）。注意：没有 `falsify_if` 的 spec 不会被判"不可证伪"——没有任何规则可触发时，只要成交够，裁决是 `NOT_FALSIFIED`（报告第 7 节仅注明"未声明任何 falsify_if 规则"）。不写证伪规则的审计等于没审计。
 - **`min_fills` 是总闸**：成交数低于声明下限时，其余规则一律不评估，裁决只能是 `INCONCLUSIVE`——spec 自己定的证据门槛，不允许被一条 8 笔样本的亏损规则绕过。
 - **`control_lift_ci_includes_zero` 实为“未证明更优即证伪”**：对照组差值 95% 区间跨 0（区分不开随机）**或整体为负（显著差于随机）**都触发；只有区间完全为正（证明更优）才不触发。
 - **最坏/最好口径按盈亏选，不按槽位选**：移动止盈触发时它占的是止损槽但是盈利退出——平局裁决按本侧实际盈亏取更差/更好，保证最坏口径永远不优于最好口径（这条规则来自一次外部复核抓到的倒挂 bug）。

@@ -10,6 +10,7 @@ agents), generalised so any strategy can be held to the same standard.
 """
 from __future__ import annotations
 
+import math
 import random
 import statistics
 from collections import Counter
@@ -103,4 +104,93 @@ def compare(strategy_stats: dict, control: dict, seed: int = 42) -> dict:
         "refuted" if ci and ci[1] < 0 else
         "unproven" if ci else "unknown"
     )
+    return out
+
+
+def buy_and_hold(candles: list[dict], fills: list, spec_obj, entries: dict[int, str], *,
+                 strategy_net_pct: float, bar_range: tuple[int, int] | None = None) -> dict:
+    """The drift baseline: what holding the coin over the same segment paid.
+
+    A dip-buy book in a rising market can show a positive net that is nothing
+    but the coin's own drift. The random-entry control asks "is the entry
+    timing better than chance?"; this baseline asks the cruder question "did
+    the strategy beat just sitting in the market for as long as it was in?".
+
+    Definitions (all from data already in the run, nothing new assumed):
+      * segment      = candles[lo..hi] inclusive (the whole window, or one
+                       walk-forward segment's bar range)
+      * B&H return   = last close / first open - 1, minus ONE round trip of
+                       fees (spec.fee_rate * 2). Mirrored to short-and-hold
+                       (1 - last/first) when the book's DOMINANT side is short,
+                       the same side rule the random control uses.
+      * bars in market = sum over the worst-case fills of (exit bar - entry
+                       bar + 1): entry and exit bars both count, matching the
+                       B&H span of open-of-first to close-of-last. Overlapping
+                       positions add up, the same way the strategy's net sum
+                       adds up overlapping trades -- so exposure can exceed 1.
+      * exposure     = bars in market / bars in segment
+      * matched B&H  = per-bar net drift * bars in market, where the drift is
+                       LOGARITHMIC: (ln(last/first) - round-trip fee) / bars
+                       in segment, sign-flipped for short-and-hold. Equal to
+                       (log B&H net) * exposure. The log form is deliberate:
+                       the strategy's net is a SUM of per-trade simple returns
+                       (no compounding), and scaling the compounded B&H
+                       return by exposure would overstate the hurdle in an
+                       uptrend and understate it in a downtrend. Per trade,
+                       a short hold's simple return is ~ its log return, so
+                       the log drift is the like-for-like per-bar number, and
+                       it mirrors exactly for the short side.
+      * beats        = strategy net sum (worst case) > matched B&H; None when
+                       the strategy has no fills (no evidence either way).
+
+    Funding is not charged to the baseline; the report says so when the
+    strategy's own net includes funding. Informational unless the spec opts
+    in via falsify_if.net_below_buy_and_hold.
+    """
+    n = len(candles)
+    lo, hi = (0, n - 1) if bar_range is None else (int(bar_range[0]), int(bar_range[1]))
+    lo, hi = max(lo, 0), min(hi, n - 1)
+    sides = list(entries.values())
+    counts = Counter(sides)
+    side = counts.most_common(1)[0][0] if sides else "long"
+    out = {
+        "side": side,
+        "mixed_sides": len(counts) > 1,
+        "bar_range": [lo, hi],
+        "bars_in_segment": max(hi - lo + 1, 0),
+        "fee_round_trip_pct": spec_obj.fee_rate * 2 * 100,
+        "bh_gross_pct": None,
+        "bh_net_pct": None,
+        "drift_per_bar_pct": None,
+        "fills": len(fills),
+        "bars_in_market": sum(f.exit_i - f.entry_i + 1 for f in fills),
+        "exposure": None,
+        "matched_bh_pct": None,
+        "strategy_net_pct": strategy_net_pct,
+        "diff_pct": None,
+        "beats_buy_and_hold": None,
+        "note": None,
+    }
+    if hi < lo:
+        out["note"] = "该段没有 K 线，无法计算买入持有基线"
+        return out
+    first_open, last_close = candles[lo]["o"], candles[hi]["c"]
+    if not first_open or not last_close or first_open < 0 or last_close < 0:
+        out["note"] = "该段首开或末收价格非正，无法计算买入持有基线"
+        return out
+    fee_rt = spec_obj.fee_rate * 2
+    ratio = last_close / first_open
+    gross = (ratio - 1.0) if side == "long" else (1.0 - ratio)
+    log_gross = math.log(ratio) if side == "long" else -math.log(ratio)
+    exposure = out["bars_in_market"] / out["bars_in_segment"]
+    out["bh_gross_pct"] = gross * 100
+    out["bh_net_pct"] = (gross - fee_rt) * 100
+    out["drift_per_bar_pct"] = (log_gross - fee_rt) / out["bars_in_segment"] * 100
+    out["exposure"] = exposure
+    out["matched_bh_pct"] = (log_gross - fee_rt) * exposure * 100
+    if fills:
+        out["diff_pct"] = strategy_net_pct - out["matched_bh_pct"]
+        out["beats_buy_and_hold"] = out["diff_pct"] > 0
+    else:
+        out["note"] = "策略在该段无成交，无从比较（无证据不算输，也不算赢）"
     return out
