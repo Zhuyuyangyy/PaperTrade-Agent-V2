@@ -49,14 +49,33 @@ correction + effect size + CI）。
 | 无前视（P0 安全） | — | `test_no_lookahead.py` |
 | 数据源探测 | `research/cross_market/network_probe.py` → `network_probe.json` | — |
 
-## 数据源实测（2026-11-18，部署节点）
+## 审查后加固（2026-11-18/19）
+
+1. **可用性门禁（P0）**：事件在 `max(event_ts, ingest_ts)` 之前不可用——
+   `event_ts=1000 / ingest_ts=5000` 的行情在 `decision=2000` 时不可使用
+   （延迟到达 = 隐蔽前视）。`ReplayEngine.run(decision_now_ms=...)` 实现该门禁；
+   `ingest_ts` 只判可用性，**永不作为特征**。恶意用例：
+   `test_delayed_arrival_is_not_available_at_decision_time`。
+2. **OI 三字段拆分**：`price_direction / oi_direction / taker_flow_direction`
+   相互独立；taker 方向只能来自实际成交数据，缺数据 = `None`（禁推断）。
+   修正了"价格涨+OI 平被吞成 FLAT"的旧错误。
+3. **强平覆盖受约束枚举**：`coverage ∈ {PARTIAL, UNKNOWN}`，禁传 FULL。
+4. **CI 依赖**：`requirements-dev.txt` 增加 `PyYAML>=6.0,<7`。
+5. **探测诚实化**：DNS 落在 `198.18.0.0/15` → 标记
+   `SUSPECTED_FAKE_IP_OR_PROXY`（不宣称全链路直连）；hostname 仅记录，
+   附 `deployment_node: UNCONFIRMED` 待操作者确认。
+
+## 数据源实测（2026-11-18 初测 / 2026-11-19 加固）
 
 ```
 gamma-api.polymarket.com  OK（markets 查询，clobTokenIds 结构确认）
 clob.polymarket.com/book  OK（REST 订单簿，真实 token_id）
-ws-subscriptions-clob…    OK（WebSocket 握手）
-verdict: ALL_REACHABLE（直连，无代理绕过）
+ws-subscriptions-clob…    握手 OK，但订阅后 0 消息（两种订阅格式均试过）
+                           → 消息流未证明：P1 阻塞项，不伪造成功
+directness: SUSPECTED_FAKE_IP_OR_PROXY（DNS 解析落在 198.18.0.0/15）
 ```
+
+**验收口径（遵审查裁定）：API 可访问 ✓；生产采集链路 ✗ 未验证。**
 
 ## 已知预先存在环境问题（非本分支引入）
 
@@ -65,6 +84,14 @@ verdict: ALL_REACHABLE（直连，无代理绕过）
    本分支未触碰该路径（git status 全部为新增文件）。
 2. `tests/test_roundlock.py` — 本环境偶发挂起（代码无循环，`os.kill` 探测 0.1s），
    未诊断到根因；同样预先存在。
+
+## P1 阻塞项（审查裁定，启动前必须解决）
+
+1. **CLOB WS 消息流未证明**：握手 OK 但订阅后 0 消息（已试
+   `assets_id` 数组 + `/ws/` 路径）。需定位正确订阅格式并在活跃市场上
+   捕获真实消息。
+2. **部署节点确认**：hostname 仅为记录；需操作者确认探测机器即部署节点。
+3. **直连性未证明**：DNS 落在 fake-ip 段，Python 层未挂代理不等于全链路直连。
 
 ## 边界
 

@@ -1,28 +1,34 @@
 {
   "probe": "cross-market-v2.2 datasource reachability (read-only)",
-  "at": "2026-11-18T14:49:18.442094+00:00",
-  "python": "LAPTOP-CKUGPPR5",
+  "at": "2026-11-18T16:00:19.786020+00:00",
+  "hostname": "LAPTOP-CKUGPPR5",
+  "deployment_node": "UNCONFIRMED — 操作者须确认本机即部署节点（hostname 仅为记录）",
+  "python": "3.x stdlib + websocket-client",
   "dns": [
     {
       "host": "gamma-api.polymarket.com",
       "ips": [
         "198.18.1.101"
-      ]
+      ],
+      "fake_ip_detected": true,
+      "note": "解析落在 198.18.0.0/15（保留段）= fake-ip/透明代理特征；Python 层未挂代理不等于全链路直连——directness_unproven"
     },
     {
       "host": "clob.polymarket.com",
       "ips": [
         "198.18.2.185"
-      ]
+      ],
+      "fake_ip_detected": true,
+      "note": "解析落在 198.18.0.0/15（保留段）= fake-ip/透明代理特征；Python 层未挂代理不等于全链路直连——directness_unproven"
     }
   ],
   "endpoints": [
     {
       "name": "gamma_markets",
       "url": "https://gamma-api.polymarket.com/markets?limit=3&active=true&closed=false",
-      "ts": "2026-11-18T14:49:18.456384+00:00",
+      "ts": "2026-11-18T16:00:19.797919+00:00",
       "http_status": 200,
-      "latency_ms": 3219.0,
+      "latency_ms": 3593.0,
       "response_kind": "list",
       "item_count": 3,
       "first_item_keys": [
@@ -42,15 +48,15 @@
         "competitive",
         "conditionId"
       ],
-      "sample": "{\"id\": \"559651\", \"question\": \"Xi Jinping out before 2027?\", \"conditionId\": \"0xa467b14d51f01b957109d9cbb1d6c124fab2a089d52ed8f471d23c2812e743b7\", \"slug\": \"xi-jinping-out-before-2027\", \"resolutionSource\": \"\", \"endDate\": \"2027-01-01T04:59:00Z\", \"liquidity\": \"336791.58671\", \"startDate\": \"2025-07-03T20:37:00.228Z\", \"image\": \"https://polymarket-upload.s3.us-east-2.amazonaws.com/xi-jinping-out-in-2025-EjF4SM20eaa3.jpg\", \"icon\": \"https://polymarket-upload.s3.us-east-2.amazonaws.com/xi-jinping-out-in-2025-EjF4SM20eaa3.jpg\", \"description\": \"This market will resolve to \\\"Yes\\\" if China's General Secretar",
+      "sample": "{\"id\": \"559651\", \"question\": \"Xi Jinping out before 2027?\", \"conditionId\": \"0xa467b14d51f01b957109d9cbb1d6c124fab2a089d52ed8f471d23c2812e743b7\", \"slug\": \"xi-jinping-out-before-2027\", \"resolutionSource\": \"\", \"endDate\": \"2027-01-01T04:59:00Z\", \"liquidity\": \"334041.69509\", \"startDate\": \"2025-07-03T20:37:00.228Z\", \"image\": \"https://polymarket-upload.s3.us-east-2.amazonaws.com/xi-jinping-out-in-2025-EjF4SM20eaa3.jpg\", \"icon\": \"https://polymarket-upload.s3.us-east-2.amazonaws.com/xi-jinping-out-in-2025-EjF4SM20eaa3.jpg\", \"description\": \"This market will resolve to \\\"Yes\\\" if China's General Secretar",
       "reachable": true
     },
     {
       "name": "clob_book",
       "url": "https://clob.polymarket.com/book?token_id=32338220190071351435772801779725302244575775216413325951443816017994629993401",
-      "ts": "2026-11-18T14:49:24.337094+00:00",
+      "ts": "2026-11-18T16:00:34.080373+00:00",
       "http_status": 200,
-      "latency_ms": 7796.0,
+      "latency_ms": 8234.0,
       "response_kind": "dict",
       "keys": [
         "asks",
@@ -64,22 +70,27 @@
         "tick_size",
         "timestamp"
       ],
-      "sample": "{\"market\": \"0xa467b14d51f01b957109d9cbb1d6c124fab2a089d52ed8f471d23c2812e743b7\", \"asset_id\": \"32338220190071351435772801779725302244575775216413325951443816017994629993401\", \"timestamp\": \"1795013375049\", \"hash\": \"fe7c0c2042331e6489622132a8775d1e0c06775c\", \"bids\": [{\"price\": \"0.001\", \"size\": \"556728.61\"}, {\"price\": \"0.002\", \"size\": \"107501.24\"}, {\"price\": \"0.003\", \"size\": \"133496.37\"}, {\"price\": \"0.004\", \"size\": \"85490.08\"}, {\"price\": \"0.005\", \"size\": \"28380.53\"}, {\"price\": \"0.006\", \"size\": \"26243.73\"}, {\"price\": \"0.007\", \"size\": \"125408.69\"}, {\"price\": \"0.008\", \"size\": \"12865.91\"}, {\"price\": \"",
+      "sample": "{\"market\": \"0xa467b14d51f01b957109d9cbb1d6c124fab2a089d52ed8f471d23c2812e743b7\", \"asset_id\": \"32338220190071351435772801779725302244575775216413325951443816017994629993401\", \"timestamp\": \"1795017644002\", \"hash\": \"37e01f5bcc82a77b85fbeba4e13652980170116e\", \"bids\": [{\"price\": \"0.001\", \"size\": \"556728.61\"}, {\"price\": \"0.002\", \"size\": \"107501.24\"}, {\"price\": \"0.003\", \"size\": \"133496.37\"}, {\"price\": \"0.004\", \"size\": \"85490.08\"}, {\"price\": \"0.005\", \"size\": \"20180.53\"}, {\"price\": \"0.006\", \"size\": \"26243.73\"}, {\"price\": \"0.007\", \"size\": \"125408.69\"}, {\"price\": \"0.008\", \"size\": \"12865.91\"}, {\"price\": \"",
       "reachable": true,
       "token_id_used": "32338220190071351435772801779725302244575775216413325951443816017994629993401"
     },
     {
       "name": "clob_ws",
       "url": "wss://ws-subscriptions-clob.polymarket.com/ws/market",
-      "ts": "2026-11-18T14:49:32.140956+00:00",
+      "ts": "2026-11-18T16:00:42.317051+00:00",
       "ws_handshake": "OK",
-      "latency_ms": 6672.0
+      "ws_subscribe": "NO_MESSAGE",
+      "messages_received": 0,
+      "note": "握手成功但订阅后 10s 无消息（已试 assets_id 数组 / /ws/ 路径，均未收到）——消息流未证明，P1 阻塞项",
+      "latency_ms": 22344.0,
+      "ws_ok": false
     }
   ],
   "summary": {
     "gamma_markets": "OK",
     "clob_book": "OK",
-    "clob_ws": "OK"
+    "clob_ws": "FAIL"
   },
-  "verdict": "ALL_REACHABLE"
+  "directness": "SUSPECTED_FAKE_IP_OR_PROXY",
+  "verdict": "PARTIAL"
 }

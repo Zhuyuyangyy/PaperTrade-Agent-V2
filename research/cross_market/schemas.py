@@ -57,8 +57,12 @@ class LiquidationObservation:
     observed_notional_usdt: Decimal
     observation_count: int
     venue: str = "BINANCE"
-    coverage: str = "PARTIAL"  # PARTIAL | UNKNOWN（禁写 FULL——我们没有全网数据）
+    coverage: str = "PARTIAL"  # PARTIAL | UNKNOWN——受约束枚举（禁 FULL：我们没有全网数据）
     sampling_mode: str = "FORCE_ORDER_STREAM"
+
+    def __post_init__(self) -> None:
+        if self.coverage not in COVERAGE_VALUES:
+            raise ValueError(f"coverage 必须是 {COVERAGE_VALUES} 之一（禁伪造 FULL）")
 
     def describe(self) -> str:
         return (
@@ -67,34 +71,46 @@ class LiquidationObservation:
         )
 
 
-# ---------- OI 状态机（观察性语言，规格 §5） ----------
-
-OI_STATES = (
-    "PRICE_UP_OI_EXPANSION_BUY_FLOW",
-    "PRICE_DOWN_OI_EXPANSION_SELL_FLOW",
-    "PRICE_UP_OI_CONTRACTION_BUY_FLOW",
-    "PRICE_DOWN_OI_CONTRACTION_SELL_FLOW",
-    "PRICE_FLAT_OI_FLAT",
-)
+COVERAGE_VALUES = ("PARTIAL", "UNKNOWN")
 
 
-def classify_oi_state(price_delta_pct: Decimal, oi_delta_pct: Decimal) -> str:
-    """按观察到的价格/OI 变动分类。描述市场看到了什么，不猜交易员在干什么。"""
-    p_threshold = Decimal("0.01")
-    o_threshold = Decimal("0.01")
-    up = price_delta_pct > p_threshold
-    down = price_delta_pct < -p_threshold
-    expand = oi_delta_pct > o_threshold
-    contract = oi_delta_pct < -o_threshold
-    if up and expand:
-        return OI_STATES[0]
-    if down and expand:
-        return OI_STATES[1]
-    if up and contract:
-        return OI_STATES[2]
-    if down and contract:
-        return OI_STATES[3]
-    return OI_STATES[4]
+# ---------- OI 状态机（观察性语言，规格 §5；2026-11-18 审查后修正） ----------
+# 旧实现的错误：价格涨+OI 平 → PRICE_FLAT_OI_FLAT（把价格方向吞了）；
+# 且 BUY_FLOW/SELL_FLOW 是推断（价格+OI 推不出主动成交方向）。
+# 修正：三个独立观测字段，方向必须来自对应数据；taker 方向缺数据就是 None。
+
+PRICE_DIRECTIONS = ("UP", "DOWN", "FLAT")
+OI_DIRECTIONS = ("EXPANSION", "CONTRACTION", "FLAT")
+TAKER_FLOW_DIRECTIONS = ("BUY_FLOW", "SELL_FLOW")  # 必须来自实际 taker 成交数据
+
+
+def classify_price_direction(price_delta_pct: Decimal, threshold_pct: Decimal = Decimal("0.01")) -> str:
+    if price_delta_pct > threshold_pct:
+        return "UP"
+    if price_delta_pct < -threshold_pct:
+        return "DOWN"
+    return "FLAT"
+
+
+def classify_oi_direction(oi_delta_pct: Decimal, threshold_pct: Decimal = Decimal("0.01")) -> str:
+    if oi_delta_pct > threshold_pct:
+        return "EXPANSION"
+    if oi_delta_pct < -threshold_pct:
+        return "CONTRACTION"
+    return "FLAT"
+
+
+@dataclass(frozen=True)
+class MicrostructureObservation:
+    """三个独立观测字段的组合——描述市场看到了什么，不猜交易员在干什么。"""
+
+    price_direction: str          # PRICE_DIRECTIONS
+    oi_direction: str             # OI_DIRECTIONS
+    taker_flow_direction: str | None  # TAKER_FLOW_DIRECTIONS or None（无成交方向数据时不猜）
+
+    def describe(self) -> str:
+        flow = self.taker_flow_direction or "UNKNOWN_FLOW"
+        return f"PRICE_{self.price_direction} / OI_{self.oi_direction} / TAKER_{flow}"
 
 
 # ---------- Feature / Label 分离（规格 §7，无前视） ----------

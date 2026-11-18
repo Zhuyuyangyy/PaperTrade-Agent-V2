@@ -10,8 +10,10 @@ from research.cross_market.schemas import (
     BinanceSnapshot,
     FeatureSnapshot,
     LiquidationObservation,
+    MicrostructureObservation,
     PolyBookEvent,
-    classify_oi_state,
+    classify_oi_direction,
+    classify_price_direction,
 )
 from research.cross_market.timestamp import Timestamped, align, is_stale, lag_ms
 from research.cross_market.storage import EventStore
@@ -60,13 +62,31 @@ def test_liquidation_is_partial_observation() -> None:
     assert "120000" in text
 
 
-def test_oi_state_is_observational() -> None:
-    s = classify_oi_state(Decimal("0.5"), Decimal("0.3"))
-    assert s == "PRICE_UP_OI_EXPANSION_BUY_FLOW"
-    s2 = classify_oi_state(Decimal("-0.5"), Decimal("0.2"))
-    assert s2 == "PRICE_DOWN_OI_EXPANSION_SELL_FLOW"
-    s3 = classify_oi_state(Decimal("0"), Decimal("0"))
-    assert s3 == "PRICE_FLAT_OI_FLAT"
+def test_liquidation_coverage_rejects_full() -> None:
+    """审查 P1：覆盖范围受约束枚举——禁伪造 FULL。"""
+    import pytest
+    with pytest.raises(ValueError, match="coverage"):
+        LiquidationObservation(symbol="ETHUSDT", observed_notional_usdt=Decimal("1"), observation_count=1, coverage="FULL")
+
+
+def test_oi_directions_are_independent() -> None:
+    """审查 P1：价格涨+OI 平 不再被吞成 FLAT——三个字段各自独立。"""
+    assert classify_price_direction(Decimal("0.5")) == "UP"
+    assert classify_oi_direction(Decimal("0")) == "FLAT"
+    obs = MicrostructureObservation(
+        price_direction=classify_price_direction(Decimal("0.5")),
+        oi_direction=classify_oi_direction(Decimal("0")),
+        taker_flow_direction=None,  # 无成交方向数据时不猜
+    )
+    d = obs.describe()
+    assert "PRICE_UP" in d
+    assert "OI_FLAT" in d
+    assert "UNKNOWN_FLOW" in d  # 禁推断 BUY/SELL
+
+
+def test_oi_direction_expansion_contraction() -> None:
+    assert classify_oi_direction(Decimal("0.3")) == "EXPANSION"
+    assert classify_oi_direction(Decimal("-0.3")) == "CONTRACTION"
 
 
 # ---------- 存储（append-only + 时间查询） ----------
@@ -111,14 +131,16 @@ def test_replay_deterministic(tmp_path: Path) -> None:
 
 
 def test_replay_rejects_out_of_order(tmp_path: Path) -> None:
-    """存储层保证查询有序；引擎守卫防的是实时流直喂（_apply 层）。"""
+    """按可用时间乱序直喂（_apply 层）→ 拒绝。"""
+    from research.cross_market.replay import usable_at
+
     store = EventStore(tmp_path / "events.sqlite")
     engine = ReplayEngine(store)
     engine._apply({"source": "binance", "event_type": "snapshot", "key": "ETHUSDT",
-                   "event_ts_ms": 5000, "ingest_ts_ms": 5000, "payload": {}})
+                   "event_ts_ms": 1000, "ingest_ts_ms": 5000, "payload": {}}, usable_at(1000, 5000))
     with pytest.raises(ValueError, match="乱序事件"):
         engine._apply({"source": "binance", "event_type": "snapshot", "key": "ETHUSDT",
-                       "event_ts_ms": 1000, "ingest_ts_ms": 1000, "payload": {}})
+                       "event_ts_ms": 2000, "ingest_ts_ms": 2000, "payload": {}}, usable_at(2000, 2000))
     store.close()
 
 
