@@ -18,7 +18,7 @@ from research.cross_market.schemas import (
 from research.cross_market.timestamp import Timestamped, align, is_stale, lag_ms
 from research.cross_market.storage import EventStore
 from research.cross_market.replay import ReplayEngine
-from research.cross_market.market_mapping import MarketMapping, is_researchable, load_mapping
+from research.cross_market.market_mapping import MarketMapping, is_researchable, load_mapping, researchable_markets
 
 
 # ---------- 时间戳（规格 §8） ----------
@@ -210,3 +210,39 @@ def test_mapping_rejects_bad_comparator(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="event_comparator"):
         load_mapping(p)
+
+
+def test_expired_markets_are_not_researchable(tmp_path: Path) -> None:
+    """过期市场禁入研究（48h 过滤的生产对应物）。"""
+    p = tmp_path / "m.yaml"
+    p.write_text(
+        "live_market:\n"
+        "  underlying_asset: BTC\n  event_threshold: 100000\n  event_comparator: ABOVE\n"
+        "  event_expiry: '2099-01-01T00:00:00Z'\n  resolution_source: uma\n"
+        "  target_horizons: [5m]\n  primary_horizon: 5m\n"
+        "  gamma_id: '1'\n  clob_token_ids: ['111', '222']\n"
+        "dead_market:\n"
+        "  underlying_asset: BTC\n  event_threshold: 50000\n  event_comparator: BELOW\n"
+        "  event_expiry: '2020-01-01T00:00:00Z'\n  resolution_source: uma\n"
+        "  target_horizons: [5m]\n  primary_horizon: 5m\n",
+        encoding="utf-8",
+    )
+    mapping = load_mapping(p)
+    assert mapping["dead_market"].expired is True
+    assert mapping["live_market"].expired is False
+    live = researchable_markets(mapping)
+    assert "live_market" in live
+    assert "dead_market" not in live
+
+
+def test_real_mapping_config_loads() -> None:
+    """仓库里的真实映射（Gamma 实拉）必须能加载且字段齐全。"""
+    cfg = Path(__file__).resolve().parents[2] / "config" / "market_mapping.yaml"
+    if not cfg.exists():
+        pytest.skip("config/market_mapping.yaml 不存在")
+    mapping = load_mapping(cfg)
+    live = researchable_markets(mapping)
+    for m in live.values():
+        assert m.gamma_id, f"{m.market_id} 缺 gamma_id"
+        assert len(m.clob_token_ids) == 2, f"{m.market_id} 缺 clob_token_ids"
+        assert m.primary_horizon in m.target_horizons

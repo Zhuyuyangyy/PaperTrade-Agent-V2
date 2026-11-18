@@ -6,6 +6,7 @@ mapping 未登记的市场一律不可研究（fail-closed）。
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
@@ -21,6 +22,9 @@ class MarketMapping:
     resolution_source: str
     target_horizons: tuple[str, ...]
     primary_horizon: str   # 预注册主视界（其余 secondary，禁多重检验钓鱼）
+    gamma_id: str = ""
+    clob_token_ids: tuple[str, ...] = ()
+    expired: bool = False  # 加载时按 event_expiry 计算；过期市场禁入研究
 
 
 VALID_COMPARATORS = ("ABOVE", "BELOW")
@@ -29,6 +33,7 @@ VALID_COMPARATORS = ("ABOVE", "BELOW")
 def load_mapping(path: Path) -> dict[str, MarketMapping]:
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     out: dict[str, MarketMapping] = {}
+    now = datetime.now(timezone.utc)
     for mid, m in (data or {}).items():
         comparator = str(m["event_comparator"]).upper()
         if comparator not in VALID_COMPARATORS:
@@ -37,17 +42,32 @@ def load_mapping(path: Path) -> dict[str, MarketMapping]:
         primary = str(m.get("primary_horizon") or horizons[0])
         if primary not in horizons:
             raise ValueError(f"{mid}: primary_horizon {primary} 不在 target_horizons")
+        # 过期判定（禁把过期市场当研究标的）
+        expiry_str = str(m["event_expiry"])
+        try:
+            exp = datetime.fromisoformat(expiry_str.replace("Z", "+00:00"))
+            expired = exp <= now
+        except ValueError:
+            expired = False  # 解析不了不猜，由调用方决定
         out[mid] = MarketMapping(
             market_id=mid,
             underlying_asset=str(m["underlying_asset"]),
             event_threshold=float(m["event_threshold"]),
             event_comparator=comparator,
-            event_expiry=str(m["event_expiry"]),
+            event_expiry=expiry_str,
             resolution_source=str(m.get("resolution_source", "")),
             target_horizons=horizons,
             primary_horizon=primary,
+            gamma_id=str(m.get("gamma_id", "")),
+            clob_token_ids=tuple(str(t) for t in (m.get("clob_token_ids") or [])),
+            expired=expired,
         )
     return out
+
+
+def researchable_markets(mapping: dict[str, MarketMapping]) -> dict[str, MarketMapping]:
+    """只返回未过期的已登记市场（过期禁入）。"""
+    return {k: v for k, v in mapping.items() if not v.expired}
 
 
 def is_researchable(market_id: str, mapping: dict[str, MarketMapping]) -> bool:
