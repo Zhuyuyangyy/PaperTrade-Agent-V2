@@ -1,0 +1,12 @@
+# Cross-Market v2.2 市场映射（示例配置）。
+# 只有登记在此的市场可被研究；primary_horizon 是预注册主视界，
+# 其余为 secondary——禁多重检验钓鱼（规格 §10/§12）。
+#
+# eth_above_2000:
+#   underlying_asset: ETH
+#   event_threshold: 2000
+#   event_comparator: ABOVE          # ABOVE | BELOW
+#   event_expiry: '2026-11-20T00:00:00Z'
+#   resolution_source: binance
+#   target_horizons: [30s, 1m, 5m, 15m, 1h]
+#   primary_horizon: 5m              # 预注册：只有一个主视界
