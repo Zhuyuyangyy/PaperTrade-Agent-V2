@@ -2,7 +2,7 @@
   "name": "your-strategy-name",
   "symbol": "SPY",
   "interval": "1d",
-  "venue": "equity",
+  "venue": "spot",
   "fee_rate": 0.0001,
   "fill_model": "taker",
   "funding": false,
