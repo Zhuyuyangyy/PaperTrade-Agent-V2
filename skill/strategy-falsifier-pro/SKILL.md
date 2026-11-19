@@ -69,11 +69,15 @@ cannot fill a cell in the table from this run's `result.json`, write
 
 ```
 0. PINE AUDIT  Strategy comes from TradingView / Pine Script?
-             -> run references/pine-strategy-audit.md FIRST (timezone/DST,
-                lookahead, repaint, alert-on-history, bounded state, HTF deps).
+             -> run references/pine-strategy-audit.md FIRST (11 items:
+                timezone/DST, lookahead, repaint, alert-on-history, bounded
+                state, HTF deps, holiday-glued bars, conditional/shared ta.*,
+                gate on/off/na semantics, data-feed semantics, Pine v6 traps).
                 These bugs live UPSTREAM of any CSV: the engine cannot see a
                 session drawn 7 hours early. Fix the Pine, re-export, then come.
-                Record the audit result in the spec's port_notes.
+                Record the audit result in the spec's port_notes. The engine
+                discloses anomalous timestamp gaps (data hygiene) on every
+                run -- read that block before trusting the window.
 
 1. INTAKE    User describes the strategy (market/timeframe/signal/exit/costs)
              -> write strategy.json (spec). No candles? TradingView users:
@@ -160,6 +164,7 @@ vocabulary is honestly smaller: SURVIVED_STRESS / FAILED_STRESS / INSUFFICIENT).
 - `references/spec-format.md` — the spec contract (falsify_if, signals,
   exit, control, walk_forward, param_grid).
 - `references/pine-strategy-audit.md` — pre-port audit for TradingView/Pine
+  (11 items, each traced to a real published repo's CHANGELOG fix)
   strategies (timezone/DST, lookahead, repaint). Read it BEFORE writing the
   spec when the source is Pine; the engine cannot catch upstream script bugs.
 - `presets/contracts/` — starting verdict contracts (crypto perp strict,

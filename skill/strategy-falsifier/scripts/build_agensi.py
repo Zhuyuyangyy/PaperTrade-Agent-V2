@@ -56,6 +56,7 @@ ORDER = [
     ("excursions", SRC_VERIFY / "excursions.py"),
     ("grid", SRC_VERIFY / "grid.py"),
     ("data", SRC_VERIFY / "data.py"),
+    ("data_hygiene", SRC_VERIFY / "data_hygiene.py"),
     ("report", SRC_VERIFY / "report.py"),
     ("compare", SRC_VERIFY / "compare.py"),
     ("html_report", SRC_VERIFY / "html_report.py"),
