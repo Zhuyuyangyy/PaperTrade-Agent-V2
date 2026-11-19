@@ -4,11 +4,21 @@
 > 这些 bug 发生在 Pine 脚本里、在引擎看到任何 CSV **之前**——引擎从导出的信号/成交 CSV 里抓不到它们。
 > 上游脚本错了，下游证伪得再严谨也是在给一个错策略做尸检。
 
-## 为什么有这份清单：一个真实的已发布脚本案例
+## 为什么有这份清单：三个真实的已发布脚本案例
 
-本清单的每一条都来自一个真实公开仓库的 CHANGELOG，不是假想：
-[`mehmeterenyasar/tradingview-key-levels-indicator`](https://github.com/mehmeterenyasar/tradingview-key-levels-indicator)
-（Pine v6，MPL-2.0，已发布在 TradingView）。它的 v1.0 → v1.1 修了两个会**静默改变每一个信号**的 bug：
+本清单的每一条都来自真实公开仓库的 CHANGELOG（并在源码里核对过修复代码），不是假想：
+
+1. [`mehmeterenyasar/tradingview-key-levels-indicator`](https://github.com/mehmeterenyasar/tradingview-key-levels-indicator)
+   （Pine v6，MPL-2.0，已发布在 TradingView）——第 1-6 项的来源。
+2. [`345-strategies/thestrat-suite`](https://github.com/345-strategies/thestrat-suite)
+   （Pine v6，MPL-2.0，TradingView 开源上架，36★）——第 7/8/10 项的来源。它经历过一次外部正确性审计
+   （v2.2.2 "audit release"），每个修复带 `FIX` 标签可在源码 grep，另有
+   `docs/engineering/repaint-prevention.md` 把重绘 bug 提炼成 8 条规则。
+3. [`casoon/pine-scripts`](https://github.com/casoon/pine-scripts)
+   （Pine v6 合集，MIT，30★，108 份 per-indicator CHANGELOG）——第 8/9/10/11 项的来源。
+   其 wavetrend v1.3.0 是一次外部代码审查后的合并修复，两个 critical 都是"开关语义"类 bug。
+
+第一个 repo 的 v1.0 → v1.1 修了两个会**静默改变每一个信号**的 bug：
 
 - **时区 bug**：会话时间按纽约时间填写（ICT 惯例），却用 `Europe/Istanbul`（固定 UTC+3）读取。
   结果每个会话框**提前约 7 小时**画出，美国夏令时期间再漂 1 小时。图表上看着"差不多对"，
@@ -89,13 +99,107 @@
 - **引擎能抓吗**：**不能**。引擎按 spec 的 interval 回放，不会重建 Pine 里的 HTF 引用。
 - **动作**：移植时把 HTF 依赖显式写进信号定义（或导出已含 HTF 信息的信号 CSV），别让它在移植中静默丢失。
 
+### 7. 假日粘连 bar / 会话边界（用 time_close，不用日历推算）
+
+- **症状**：用 bar 的 open 时间戳判断"市场是否收盘/数据是否过期"，或用日历（周几/几月）推算周期边界。
+- **真实案例**（[345-strategies/thestrat-suite](https://github.com/345-strategies/thestrat-suite)，MPL-2.0，
+  已发布在 TradingView；FIX 标签可在源码 grep）：
+  - CME 把假日半日市**粘进下一个交易日**：2026-07-03（周五半日市）活在 07-06 周一的 bar 里，
+    周一实时 bar 的 open 戳是周四晚。`timenow - time` 读出 ~87 小时"过期"，preview 机制在**实时盘中**
+    误触发，把正在交易的周/日降级成 C1——周线触发位变成了当天的区间（`GLUE-1`/`GLUE-2b`）。
+    修复：过期与否只看 `timenow - time_close`（计划收盘时刻）——实时 bar 的计划收盘永远在未来，不可能误判。
+  - 期货月 bar 的 open 戳落在上月（7 月 bar 开在 6/30 18:00 ET），按日历月比较把当前月读成上个月（`PREVIEW-CALCLOSE-1`）。
+  - 粘连的 47 小时日线 bar（ES 劳动节后）让"画到 open+1 个周期"的水平线全部停在半路（`LINEEND-CLOSE-1`）。
+- **必查**：所有"收盘了吗/换周期了吗/数据旧了吗"的判断，是问 `time_close`（交易所计划收盘，
+  自动含假日/提前收盘/外国时段），还是在拿 open 戳或日历做算术？
+- **引擎能抓吗**：**部分间接**。K 线时间戳里的粘连表现为超长 gap——引擎的数据卫生检查（见下）会披露
+  异常间隔，但"上游把哪根 bar 归到哪个周期"它无法重建。
+- **动作**：Pine 里全部改用 `time_close`；导出 CSV 后核对假日周的 bar 数与时间戳归属。
+
+### 8. 条件调用 / 共享缓冲的 ta.*（历史值被静默跳算或串线）
+
+- **症状 A（短路跳算）**：`ta.*` 调用写在 `and`/`or`/`if` 的分支里，前面的条件不满足时整个调用不执行，
+  该 bar 的历史值缺失/沿用旧值。
+- **真实案例**（[casoon/pine-scripts](https://github.com/casoon/pine-scripts) `wavetrend`，MIT，CHANGELOG "Fixed"）：
+  WT crosses、波动率 gate 里的 ATR、止损用的 swing high/low、TP/SL 命中判断原本嵌在条件表达式里，
+  "只在前置条件通过的 bar 上计算"——历史 bar 的值被跳过。修复：全部提升到顶层每 bar 无条件计算。
+- **症状 B（共享缓冲串线）**：`ta.*` 的历史缓冲属于**词法调用点**，不属于循环迭代。一个函数在
+  `for` 循环里对 6 个 timeframe slot 各调一次，6 个 slot 仍共享**同一个**缓冲——`[1]` 拿到的是
+  上一个 slot 的值。
+- **真实案例**（thestrat-suite `P0-1`，docs/engineering/repaint-prevention.md Rule 3）：
+  `ta.change(time(tf))` 检测新周期，6 个 slot 共享缓冲导致"新周期"几乎每根 bar 都触发，
+  不停清空 crossed 标志和 sticky stops。修复：每 slot 显式存储 `lastPeriodStart` 自己比较。
+- **症状 C（islast 门内的状态）**：状态更新只写在 `if barstate.islast` 里——历史 bar 永不更新，
+  reload 后锁存状态消失（thestrat `P1-a`：sticky stop 只在实时锁存，刷新后止损失踪；
+  wavetrend 源码注释同样记录 decay 状态曾困在 `islast and showDashboard` 里）。
+- **必查**：逐个 `ta.*` 调用问三件事——它在条件分支里吗？它在循环/多 slot 路径里吗？
+  它喂的状态在历史 bar 上会重建吗（"现在刷新图表，bar 历史能重建这个锁存吗"）？
+- **引擎能抓吗**：**不能**。这是 Pine 运行时语义，CSV 里只有结果。间接信号：Pine 回测成交与引擎
+  path-aware 回放系统性对不上时，把它列为怀疑对象。
+- **动作**：`ta.*` 全部提顶层；循环内改显式 per-slot 状态；每个 `var` 锁存过一遍 reload 测试。
+
+### 9. 开关与计分的语义（off ≠ pass，na ≠ pass）
+
+- **症状 A（关掉的 gate 送分）**：gate 计分写成 `not enabled or passed` 再求和——关掉的 gate 恒贡献 1 分。
+- **真实案例**（casoon wavetrend v1.3.0，CHANGELOG 标 critical）：默认 8 个 gate 全关时得分恒 8/8；
+  开一个 gate 且它失败，仍可能过 `minGateScore=6`。修复：只对**启用的** gate 算通过率。
+- **症状 B（缺数据 fail-open）**：HTF 确认 gate 把 `na(htfWtOsc)`（暖机/数据缺口）当通过——
+  "要求 HTF 确认"的 gate 在最没有东西可确认的时候恰好不设防（同 repo 修复：fail-closed，
+  要求真实非 na 值且方向正确；手动 HTF 设得不高于图表周期也判无效）。
+- **症状 C（开关只关显示不关效果）**：`useExtD=false` 只隐藏了仪表盘行，评分组件照算（同 repo）；
+  HTF Trend Filter 算好了却只被 debug log 读——开了等于没开（critical）。
+- **症状 D（na 比较静默走 else）**：Pine 里对 `na` 的任何阈值比较都是 false，三元链静默落到最后一个
+  分支——比较标的无数据的 bar 上仪表盘凭空显示 'Bear'（wavetrend v1.3.1）。
+- **必查**：每个 gate/toggle 三问——关掉它，分数/信号变吗？数据缺失时它放行还是拦截？
+  它控制的是显示还是判定路径？对每个可能为 na 的序列找显式 `na()` 分支。
+- **引擎能抓吗**：**不能**（上游语义）。但移植时把 gate 语义写错会直接改变信号 CSV——
+  在 port_notes 里逐 gate 记录 on/off/na 三态的语义，再导出。
+- **动作**：移植前对每个 gate 做三态真值表（enabled-passed / enabled-failed / disabled / na）。
+
+### 10. 数据源语义（volume 类型、合成蜡烛）
+
+- **症状 A（volume 类型误判）**：用 `syminfo.volumetype == "base"/"quote"` 判"有真实成交量"——
+  多数非加密 feed 报 `n/a`，期货/股票（如 EUREX:FDAX1!）被当成无量，量 gate 要么全拦要么全放。
+- **真实案例**（casoon wavetrend v1.3.3→1.3.4 + zigzag 同库惯例）：改为只拒 `tick` volume、
+  `n/a` 且 feed 实际交付量时算有量；无真实量时 gate 降级为 pass-through 并**披露**（Data Contract `CFD-degraded`）。
+- **症状 B（合成蜡烛喂进价格动作逻辑）**：Heikin Ashi 是平均价不是成交 OHLC，bar 分型/触发/目标全错，
+  且 HTF `request.security` 请求图表自身 ticker 时**悄悄继承** HA 价格。
+- **真实案例**（thestrat-suite v3.2.0 `NO-HA-1`）：直接拒绝 HA 图表并报错，而不是画着错的水平位。
+- **必查**：策略依赖 volume 吗？在目标市场（期货/股票/CFD/加密）上 volume 语义各是什么？
+  图表类型是真实蜡烛吗？HTF 引用会不会继承合成价格？
+- **引擎能抓吗**：**部分**。引擎把 volume 当可选上下文（缺失按 0），不会拿 tick 噪音当真实量做判定；
+  但上游 CSV 若从 HA 图表导出，OHLC 数值"完全合法"，引擎无法识别它是平均价。
+- **动作**：port_notes 记录数据源类型与 volume 语义；HA/合成图表一律重新用真实蜡烛导出。
+
+### 11. Pine v6 语言陷阱（移植/自检时的确定性雷区）
+
+来自真实 CHANGELOG 的语言级 bug，每条都已发布过、修过：
+
+| 陷阱 | 真实案例 | 后果 |
+|---|---|---|
+| `for i = 0 to n - 1` 在 n=0 时**倒着数** | casoon zigzag_core v2.2.2：LTF 无 intrabar 返回时运行错 | 空数据不报错反而越界 |
+| 显式历史偏移 `[n]` 超过 `max_bars_back` | wavetrend v1.3.0：自动校准把 lookback 推到 48000（默认缓冲 500）；v3 500→1000 | 运行时静默断历史 |
+| 多行三元 exit 文案触发编译错 CE10156 | wavetrend_v3 v3.2.1 | 改 if/else |
+| 平滑参数用错指数（`beta^length`≈0） | wavetrend_v2 v2.0.1：JMA 近似等于没平滑 | 指标整个失真 |
+| label/line 预算独立修剪超限 | zigzag v1.2.0：两个池合并预算才守住 500 label 上限 | 图对象被平台丢弃 |
+
+- **引擎能抓吗**：**不能**（编译/运行时行为）。但这些 bug 的共同点是**静默改变数值**——
+  移植到 Python 时逐条对照原实现，别把 bug 一起移植过来。
+- **动作**：移植清单里加一行"上游 CHANGELOG 读过吗"——已修的 bug 说明该代码路径高危，优先对照测试。
+
 ---
+
+## 引擎侧新增：数据卫生披露（本轮起）
+
+清单第 7 项的"部分间接"现在是引擎的真实能力：`research/verify/data_hygiene.py` 在每次回放前
+检查 K 线时间戳的**异常间隔**（相对 spec interval 的中位间隔），把超长 gap（假日粘连、停牌、
+数据缺口）作为事实披露进报告——不改裁决，只保证"你的数据里有 47 小时的 bar"这件事不会被静默吞掉。
 
 ## 移植流程（接在 SKILL.md 的 INTAKE 之后、LOCK 之前）
 
 ```
 0. PINE AUDIT  策略来自 TradingView/Pine？
-               -> 过本清单 6 项；跑 pine-audit（结构层）
+               -> 过本清单 11 项；跑 pine-audit（结构层）
                -> 时区/lookahead/重绘有任何一项不干净：先修 Pine、重新导出，再来
                -> 干净了，才进入 INTAKE 写 spec
 
