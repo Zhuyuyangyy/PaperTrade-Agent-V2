@@ -37,7 +37,7 @@ correction + effect size + CI）。
 `EV_net = EV_gross − fee − spread − slippage − latency − impact − funding`，
 `EV_net > threshold` 才允许 `ECONOMIC_SUPPORTED`。
 
-## P0 交付（本分支）
+## P1 交付（本分支，2026-11-19 完成）
 
 | 模块 | 文件 | 测试 |
 |---|---|---|
@@ -45,9 +45,26 @@ correction + effect size + CI）。
 | 三时间戳 | `research/cross_market/timestamp.py` | 同上 |
 | 事件存储 | `research/cross_market/storage.py` | 同上 |
 | 确定性回放 | `research/cross_market/replay.py` | 同上 |
-| 市场映射 | `research/cross_market/market_mapping.py` + `config/market_mapping.yaml` | 同上 |
+| 市场映射 | `market_mapping.py` + `config/market_mapping.yaml`（3 个真实市场） | 同上 |
 | 无前视（P0 安全） | — | `test_no_lookahead.py` |
-| 数据源探测 | `research/cross_market/network_probe.py` → `network_probe.json` | — |
+| Poly REST 采集器 | `collectors/polymarket_rest.py` | test_collectors.py |
+| Binance 微结构采集器 | `collectors/binance_microstructure.py` | test_binance_micro.py |
+| 特征对齐 | `feature_engine.py`（可用性门禁+时钟偏移保守处理） | test_experiment.py |
+| 标签引擎 | `label_engine.py`（仅未来窗口） | 同上 |
+| 成本模型 | `cost_model.py`（EV_net） | 同上 |
+| A/B/C 实验骨架 | `experiment.py`（预注册+Block Bootstrap+证伪适配器） | 同上 |
+| 数据源探测 | `network_probe.py` → `network_probe.json` | — |
+
+## P1 端到端实测（2026-11-19，部署节点）
+
+```
+双采集器真连：Binance 微结构（BTC $62,450 · OI 96,518 · CVD −1.272）
+              + Polymarket 盘口（BTC<60k 市场 Yes/No 双 token）
+EventStore：三时间戳落盘（event_ts=服务端时间，禁本地冒充）
+对齐层：双源特征齐备（poly 4 字段 + binance 7 字段）
+A/B/C：冒烟输出 INCONCLUSIVE（无未来标签——诚实）
+时钟偏移实况：CLOB 服务端比本地快 ~4s → 可用性门禁保守挡下（安全方向）
+```
 
 ## 审查后加固（2026-11-18/19）
 
