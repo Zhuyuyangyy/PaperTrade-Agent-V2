@@ -68,6 +68,13 @@ cannot fill a cell in the table from this run's `result.json`, write
 ## The workflow
 
 ```
+0. PINE AUDIT  Strategy comes from TradingView / Pine Script?
+             -> run references/pine-strategy-audit.md FIRST (timezone/DST,
+                lookahead, repaint, alert-on-history, bounded state, HTF deps).
+                These bugs live UPSTREAM of any CSV: the engine cannot see a
+                session drawn 7 hours early. Fix the Pine, re-export, then come.
+                Record the audit result in the spec's port_notes.
+
 1. INTAKE    User describes the strategy (market/timeframe/signal/exit/costs)
              -> write strategy.json (spec). No candles? TradingView users:
                 use --trades-csv with their List of Trades export instead.
@@ -152,6 +159,9 @@ vocabulary is honestly smaller: SURVIVED_STRESS / FAILED_STRESS / INSUFFICIENT).
   forbidden-move catalogue. Read the section for the outcome you just got.
 - `references/spec-format.md` — the spec contract (falsify_if, signals,
   exit, control, walk_forward, param_grid).
+- `references/pine-strategy-audit.md` — pre-port audit for TradingView/Pine
+  strategies (timezone/DST, lookahead, repaint). Read it BEFORE writing the
+  spec when the source is Pine; the engine cannot catch upstream script bugs.
 - `presets/contracts/` — starting verdict contracts (crypto perp strict,
   equity swing standard). Copy, adjust, THEN lock.
 
