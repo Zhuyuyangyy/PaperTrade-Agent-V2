@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 
@@ -16,12 +16,14 @@ class Heartbeat:
     updated_at_ms: int = 0
     last_ok_ms: int = 0
     last_round_ts_ms: int = 0
+    last_round_key_ms: int = 0          # 已收盘 K 线周期键（幂等键）
     last_error: str = ""
     consecutive_failures: int = 0
     halted: bool = False
     halt_reason: str = ""
     rounds: int = 0
     pid: int = 0
+    circuit: dict = field(default_factory=dict)  # 熔断状态持久化（跨重启恢复）
 
     def to_dict(self) -> dict:
         return asdict(self)

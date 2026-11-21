@@ -34,6 +34,7 @@ class LoopStopped(RuntimeError):
 @dataclass
 class LoopConfig:
     interval_ms: int = 3_600_000
+    decision_period_ms: int | None = None   # 幂等键的周期（默认 = interval）
     settle_ms: int = 30_000
     max_rounds: int | None = None
     stop_file: str = "STOP"
@@ -58,8 +59,16 @@ class RunLoop:
         self.log_path = Path(log_path) if log_path else self.root / "data" / "decisions.jsonl"
         self.heartbeat_path = (Path(heartbeat_path) if heartbeat_path
                                else self.root / "state" / "heartbeat.json")
-        self.circuit = circuit or CircuitBreaker(circuit_config)
         self.config = config or LoopConfig()
+        if circuit is not None:
+            self.circuit = circuit
+        else:
+            # 跨重启恢复：先读心跳里的熔断状态，再用显式配置覆盖阈值
+            hb = read_heartbeat(self.heartbeat_path)
+            saved = hb.circuit if hb else None
+            self.circuit = CircuitBreaker.from_dict(saved)
+            if circuit_config is not None:
+                self.circuit.config = circuit_config
         self.intel_fn = intel_fn
         self.day_start_ms = day_start_ms
         self.results: list[RoundResult] = []
@@ -72,10 +81,20 @@ class RunLoop:
             hb = Heartbeat(pid=os.getpid())
         return hb
 
+    def _round_key(self, as_of_ms: int) -> int:
+        """幂等键：绑到已收盘 K 线的周期，而不是运行时毫秒。
+
+        同一根 1h K 线内重复轮询不应该产生新的交易机会；只有进入下一根已收盘
+        K 线（新的周期键）才允许再决策一次。
+        """
+        period = self.config.decision_period_ms or self.config.interval_ms
+        return as_of_ms // period * period
+
     def step(self, as_of_ms: int) -> RoundResult | None:
+        key = self._round_key(as_of_ms)
         hb = self._heartbeat()
-        if hb.last_round_ts_ms >= as_of_ms:
-            return None                      # 幂等：同一时刻不重复执行
+        if hb.last_round_key_ms >= key:
+            return None                      # 幂等：同一根 K 线不重复决策
 
         stop = self.root / self.config.stop_file
         if stop.exists():
@@ -115,9 +134,11 @@ class RunLoop:
 
         hb.updated_at_ms = as_of_ms
         hb.last_round_ts_ms = as_of_ms
+        hb.last_round_key_ms = key
         hb.rounds += 1
         hb.halted = self.circuit.halted
         hb.halt_reason = self.circuit.reason
+        hb.circuit = self.circuit.to_dict()
         hb.pid = os.getpid()
         write_heartbeat(self.heartbeat_path, hb)
         if result is not None:

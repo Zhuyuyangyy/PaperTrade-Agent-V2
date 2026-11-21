@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import json
+import http.client
 import time
 import urllib.error
 import urllib.request
@@ -78,7 +79,8 @@ class BinanceKlineSource:
                     time.sleep(1.5 * (attempt + 1))
                     continue
                 break
-            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError,
+                    OSError, http.client.HTTPException) as exc:
                 last = exc
                 if attempt < self.retries:
                     time.sleep(1.0 * (attempt + 1))
