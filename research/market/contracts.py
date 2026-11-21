@@ -98,10 +98,15 @@ class Contradiction:
 
 @dataclass(frozen=True)
 class TimeframeView:
-    """单个周期在决策时刻的指标快照（只来自已收盘 K 线）。"""
+    """单个周期在决策时刻的指标快照（只来自已收盘 K 线）。
+
+    ``last_closed_ms`` 是最后一根的**收盘时刻**（open + timeframe），不是开盘时刻：
+    陈旧度必须按"数据什么时候变得完整"算，按 open 会把一根刚收盘的 K 线误判成
+    已经存在了一整个周期。
+    """
 
     timeframe: str
-    last_closed_ms: int
+    last_closed_ms: int          # 最后一根已收盘 K 线的 close_ms
     close: Decimal
     ema20: Decimal | None = None
     ema60: Decimal | None = None
@@ -113,11 +118,17 @@ class TimeframeView:
     volume_z: Decimal | None = None
     slope_bps: Decimal | None = None
     bars: int = 0
+    last_open_ms: int = 0
+    age_ms: int = 0
+    stale: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "timeframe": self.timeframe,
             "last_closed_ms": self.last_closed_ms,
+            "last_open_ms": self.last_open_ms,
+            "age_ms": self.age_ms,
+            "stale": self.stale,
             "close": _num(self.close),
             "ema20": _num(self.ema20),
             "ema60": _num(self.ema60),
@@ -134,7 +145,12 @@ class TimeframeView:
 
 @dataclass(frozen=True)
 class DataQuality:
-    """数据层的事实：够不够、断没断、旧不旧。判断层必须消费它，而不是假设数据完整。"""
+    """数据层的事实：每个周期够不够、断没断、旧不旧。
+
+    ``critical_stale`` 只看**趋势周期**（1h）：5m 新鲜不能证明 1h 趋势数据新鲜。
+    ``contiguous`` 同样只看 1h：趋势周期有缺口 → 风险层拒绝新开仓。
+    ``per_timeframe`` 保留每个周期自己的 age/stale/gaps，供看板与复盘使用。
+    """
 
     timeframes_seen: tuple[str, ...]
     gaps: tuple[dict[str, int], ...] = ()
@@ -143,6 +159,9 @@ class DataQuality:
     stale: bool = False
     complete: bool = True
     notes: tuple[str, ...] = ()
+    per_timeframe: dict[str, dict] = field(default_factory=dict)
+    critical_stale: bool = False
+    contiguous: bool = True
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -153,6 +172,9 @@ class DataQuality:
             "stale": self.stale,
             "complete": self.complete,
             "notes": list(self.notes),
+            "per_timeframe": {k: dict(v) for k, v in self.per_timeframe.items()},
+            "critical_stale": self.critical_stale,
+            "contiguous": self.contiguous,
         }
 
 
@@ -173,6 +195,8 @@ class MarketState:
     invalidations: tuple[str, ...] = ()
     data_quality: DataQuality | None = None
     timeframes: dict[str, TimeframeView] = field(default_factory=dict)
+    # 策略层直接消费的特征（区间上下沿/突破参考/ATR 绝对值等），禁止策略重算指标
+    features: dict[str, Decimal | None] = field(default_factory=dict)
     schema_version: int = SCHEMA_VERSION
 
     def __post_init__(self) -> None:
@@ -203,6 +227,7 @@ class MarketState:
             "invalidations": list(self.invalidations),
             "data_quality": self.data_quality.to_dict() if self.data_quality else None,
             "timeframes": {k: v.to_dict() for k, v in self.timeframes.items()},
+            "features": {k: _num(v) for k, v in self.features.items()},
         }
 
     def describe(self) -> str:

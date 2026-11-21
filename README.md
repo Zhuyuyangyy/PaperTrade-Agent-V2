@@ -302,11 +302,13 @@ python -m research.verify --list-market                   # 本地行情缓存�
 理解市场状态、选择并验证策略、在风控允许时做**模拟**交易的闭环。
 
 - **Sprint 0（已合并）**：审计 + 数据正确性修复。设计：[`docs/design/openalpha-v1-architecture.md`](docs/design/openalpha-v1-architecture.md)；审计：[`docs/audit/sprint-0-audit-report.md`](docs/audit/sprint-0-audit-report.md)
-- **Sprint 1（本分支）**：L2 市场理解层——多周期已收盘 K 线、指标、状态机、证据/冲突/失效条件、市场准入。设计与口径：[`docs/design/sprint-1-market-understanding.md`](docs/design/sprint-1-market-understanding.md)
+- **Sprint 1（已合并）**：L2 市场理解层——多周期已收盘 K 线、指标、状态机、证据/冲突/失效条件、市场准入。设计与口径：[`docs/design/sprint-1-market-understanding.md`](docs/design/sprint-1-market-understanding.md)
+- **Sprint 2（本分支）**：自主决策闭环——逐周期数据门、策略注册（三策略、影子模式）、确定性风控、模拟撮合（幂等/费用/滑点/恢复）、决策日志。设计与口径：[`docs/design/sprint-2-autonomous-loop.md`](docs/design/sprint-2-autonomous-loop.md)
 
 ```bash
-python -m research.market demo        # 三种 regime 的状态与证据
-python -m research.market analyze --csv klines_1m.csv --json
+python -m research.market demo                # 三种 regime 的状态与证据
+python -m research.runtime demo               # 完整决策链（默认全影子，不进账本）
+python -m research.runtime demo --verified range_revert   # 演示成交路径
 ```
 
 边界没有变：**只读采集 · 策略研究 · 模拟执行**；不接实盘、不接私钥、不自动跟单。
