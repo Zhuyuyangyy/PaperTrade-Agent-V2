@@ -198,9 +198,10 @@ class PaperBroker:
         qty = notional / price
         cur = self._db.execute(
             "INSERT OR IGNORE INTO orders (intent_id, ts_ms, symbol, side, qty, price, fee,"
-            " notional, strategy_id, strategy_version, shadow) VALUES (?,?,?,?,?,?,?,?,?,?,0)",
+            " notional, strategy_id, strategy_version, shadow) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (intent.intent_id, intent.decision_ts_ms, intent.symbol, intent.side, str(qty),
-             str(price), str(fee), str(notional), intent.strategy_id, intent.strategy_version),
+             str(price), str(fee), str(notional), intent.strategy_id, intent.strategy_version,
+             1 if intent.shadow else 0),
         )
         if cur.rowcount == 0:
             self._db.rollback()
@@ -251,9 +252,12 @@ class PaperBroker:
                               net_pnl, reason, ts_ms)
 
     def mark_bar(self, symbol: str, bar_open: Decimal, bar_high: Decimal, bar_low: Decimal,
-                 ts_ms: int) -> list[ClosedPosition]:
+                 ts_ms: int, bar_open_ms: int | None = None) -> list[ClosedPosition]:
         """按一根 K 线的 OHLC 检查止损/止盈（保守成交假设）。
 
+        - ``bar_open_ms`` 给出时：**开仓在本根 K 线内**的持仓跳过本根检查
+          （无法知道开仓前后的价格路径，用整根 OHLC 会把开仓前波动算进去），
+          下一根起正常判断；
         - 跳空：开盘已越过止损 → 按开盘价成交（更差），不假装在止损价成交；
         - 同 bar 止损与止盈都触发 → 按止损（最坏情形）；
         - 止盈跳空 → 最多按止盈价成交（不取更优价）。
@@ -262,6 +266,8 @@ class PaperBroker:
         for pos in self.open_positions():
             if pos["symbol"] != symbol:
                 continue
+            if bar_open_ms is not None and int(pos["entry_ts"]) > bar_open_ms:
+                continue                     # 开仓当根：路径未知，跳过
             stop, tp = Decimal(pos["stop_price"]), Decimal(pos["tp_price"])
             if pos["side"] == "LONG":
                 if bar_open <= stop:

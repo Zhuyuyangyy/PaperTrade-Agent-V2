@@ -31,6 +31,14 @@ class LoopStopped(RuntimeError):
     pass
 
 
+DAY_MS = 86_400_000
+
+
+def utc_day_start(ms: int) -> int:
+    """UTC 日界（00:00 UTC）。每日亏损限制必须在每轮按当前日界重新计算。"""
+    return ms // DAY_MS * DAY_MS
+
+
 @dataclass
 class LoopConfig:
     interval_ms: int = 3_600_000
@@ -50,8 +58,7 @@ class RunLoop:
                  circuit: CircuitBreaker | None = None,
                  circuit_config: CircuitConfig | None = None,
                  config: LoopConfig | None = None,
-                 intel_fn=None,
-                 day_start_ms: int = 0):
+                 intel_fn=None):
         self.root = Path(root)
         self.broker = broker
         self.shadow_broker = shadow_broker
@@ -72,7 +79,6 @@ class RunLoop:
             if circuit_config is not None:
                 self.circuit.config = circuit_config
         self.intel_fn = intel_fn
-        self.day_start_ms = day_start_ms
         self.results: list[RoundResult] = []
 
     # ---------- 单轮 ----------
@@ -119,7 +125,8 @@ class RunLoop:
             self.circuit.record_success()
             result = run_round(
                 "BTC/USDT", views, as_of_ms, self.broker, self.limits,
-                log_path=self.log_path, specs=self.specs, day_start_ms=self.day_start_ms,
+                log_path=self.log_path, specs=self.specs,
+                day_start_ms=utc_day_start(as_of_ms),
                 settle_ms=self.config.settle_ms, intel=intel,
                 allow_new_entries=not self.circuit.halted,
                 halt_reason=self.circuit.reason,
