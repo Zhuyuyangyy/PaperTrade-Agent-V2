@@ -80,10 +80,12 @@ def summarize(broker: PaperBroker, label: str = "book") -> dict:
 
 
 def summarize_books(root: Path | str, *, shadow_db: str = "shadow.sqlite",
-                    verified_db: str = "verified.sqlite") -> dict:
+                    verified_db: str = "verified.sqlite",
+                    deepseek_db: str = "deepseek_shadow.sqlite") -> dict:
     root = Path(root)
     out: dict = {"root": str(root)}
-    for label, name in (("shadow", shadow_db), ("verified", verified_db)):
+    for label, name in (("shadow", shadow_db), ("verified", verified_db),
+                        ("deepseek", deepseek_db)):
         path = root / name
         if path.is_file():
             b = PaperBroker(path, starting_cash=D("1000"))
