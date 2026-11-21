@@ -56,10 +56,12 @@ def test_align_clock_skew_is_conservative(tmp_path: Path) -> None:
     pts = align_features(store, "m", ["tok1"], "BTCUSDT", base, base + 10_000,
                          decision_now_ms=base + 1_000, step_ms=60_000)
     assert len(pts) == 0, "时钟超前的数据不得在本地决策时刻可用"
-    # 决策推到 base+4000 之后 → 可用
+    # 决策点推进到 base+4000 之后 → 数据在 t=base+4000 才可用（保守延迟 4s）
     pts2 = align_features(store, "m", ["tok1"], "BTCUSDT", base, base + 10_000,
-                          decision_now_ms=base + 4_000, step_ms=60_000)
-    assert len(pts2) == 1 and pts2[0].feature.polymarket.get("bid") == Decimal("0.60")
+                          decision_now_ms=base + 8_000, step_ms=4_000)
+    assert len(pts2) == 2, "t=base 时数据未到，不得被未来到达的数据回填"
+    assert pts2[0].decision_ts_ms == base + 4_000
+    assert pts2[0].feature.polymarket.get("yes_bid") == Decimal("0.60")
     store.close()
 
 
@@ -69,7 +71,7 @@ def test_align_after_ingest_includes_poly(tmp_path: Path) -> None:
     pts = align_features(store, "m", ["tok1"], "BTCUSDT", base, base + 120_000,
                          decision_now_ms=base + 60_000, step_ms=60_000)
     f = pts[0].feature
-    assert f.polymarket.get("bid") == Decimal("0.60")
+    assert f.polymarket.get("yes_bid") == Decimal("0.60")
     assert f.binance.get("price") == Decimal("67000")
     store.close()
 
@@ -97,7 +99,9 @@ def test_label_from_store_future_only(tmp_path: Path) -> None:
                  {"price": "67500", "oi_snapshot": "1", "volume": "1", "cvd_delta": "0",
                   "funding_rate": "0", "liquidation_observed_usdt": "0", "liquidation_coverage": "UNKNOWN"})
     lab = label_from_store(store, "BTCUSDT", base, 300_000)
-    assert lab is not None and lab.future_return == Decimal("67500")
+    assert lab is not None
+    expected = (Decimal("67500") - Decimal("67000")) / Decimal("67000")
+    assert abs(lab.future_return - expected) < Decimal("1e-18"), "标签必须是相对收益，不是价格"
     # 起点必须等于 origin
     assert lab.origin_ts_ms == base
     store.close()
@@ -156,21 +160,27 @@ def test_block_bootstrap_detects_positive_increment() -> None:
 
 def test_abc_supported_when_c_beats_a() -> None:
     h = _h()
-    # 构造 C 明显优于 A 的点序列（标签与 C 信号完全一致、与 A 部分一致）
+    # A 永远看涨；真值交替；B 只在看涨点同向 → C 在跌点弃权。
+    # 正确实现：C 的 payoff 明显高于 A（躲开了 A 在跌点的全部亏损）。
     points = []
     labels: list[Decimal | None] = []
     for i in range(60):
         up = i % 2 == 0
         points.append({
-            "binance": {"price": "1" if up else "-1", "oi_snapshot": "1"},
-            "polymarket": {"bid": "0.7" if up else "0.3", "ask": "0.72" if up else "0.32"},
+            "decision_ts_ms": 1_795_000_000_000 + i * 60_000,
+            "binance": {"price": "67000", "price_delta_bps": Decimal("30"), "oi_snapshot": "1"},
+            "polymarket": {"yes_mid": Decimal("0.60"),
+                           "yes_mid_delta_bps": Decimal("30") if up else Decimal("-30")},
         })
         labels.append(Decimal("1") if up else Decimal("-1"))
     v = run_abc(points, labels, h)
-    assert v.verdict in ("SUPPORTED", "INCONCLUSIVE")  # 样本内 C 应不劣于 A
+    assert v.verdict == "SUPPORTED", v.reason
+    assert v.increment_ci is not None and v.increment_ci[1] > 0
+    assert v.aligned_n == 30
     ev = FalsificationAdapter.to_evidence(v)
     assert ev["kind"] == "cross_market_abc"
     assert "A" in ev["arms"] and "C" in ev["arms"]
+    assert ev["aligned_n"] == 30
 
 
 def test_abc_inconclusive_without_samples() -> None:

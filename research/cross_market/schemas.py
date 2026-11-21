@@ -117,16 +117,28 @@ class MicrostructureObservation:
 
 @dataclass(frozen=True)
 class FeatureSnapshot:
-    """t 时刻已知的信息。禁含任何 t 之后的数据。"""
+    """t 时刻已知的信息。禁含任何 t 之后的数据。
+
+    schema_version=2（Sprint 0）：
+      - polymarket 侧统一成 YES 概率口径（yes_bid/yes_ask/yes_mid/no_mid/
+        consistent/prob_usable），不再把任一 token 的报价当概率；
+      - 两侧都带相对 lookback 的变化量（price_delta_bps / yes_mid_delta_bps），
+        方向信号必须用变化量，不能用水平值。
+    """
 
     feature_ts_ms: int
-    polymarket: dict = field(default_factory=dict)  # probability/spread_abs/spread_bps/book_imbalance/trade_flow
-    binance: dict = field(default_factory=dict)      # price/oi/oi_delta/cvd/funding/liquidation_observed
+    polymarket: dict = field(default_factory=dict)  # yes_bid/yes_ask/yes_mid/no_mid/consistent/prob_usable/yes_mid_delta_bps/spread_bps
+    binance: dict = field(default_factory=dict)      # price/price_delta_bps/oi_snapshot/oi_delta_bps/cvd_delta/funding_rate/liquidation_*
+    schema_version: int = 2
 
 
 @dataclass(frozen=True)
 class ResearchLabel:
-    """只能从未来数据生成。t+H 的标签。"""
+    """只能从未来数据生成。t+H 的标签。
+
+    future_return 是**相对收益**（future/origin − 1），不是价格。Sprint 0 之前
+    这里写的是价格，导致方向准确率恒为"全对"（任何正价格都 > 0）。
+    """
 
     origin_ts_ms: int
     horizon: str
@@ -134,6 +146,8 @@ class ResearchLabel:
     realized_volatility: Decimal | None = None
     max_adverse_excursion: Decimal | None = None
     tail_event: bool = False
+    origin_price: Decimal | None = None
+    label_ts_ms: int | None = None      # 生成标签所用未来快照的可用时间（可追溯）
 
 
 def assert_no_lookahead(feature: FeatureSnapshot, label: ResearchLabel) -> None:

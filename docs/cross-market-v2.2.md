@@ -114,3 +114,46 @@ directness: SUSPECTED_FAKE_IP_OR_PROXY（DNS 解析落在 198.18.0.0/15）
 
 Agent 只负责执行，不私自扩大范围；禁为凑 A/B/C 结果补造缺失数据；
 数据源不可达必须报告阻塞，不得伪造成功。
+
+---
+
+## P1.1 数据正确性修复（Sprint 0，2026-11-21）
+
+审计发现 13 项会让研究结论失效的缺陷（完整清单见 `docs/audit/sprint-0-audit-report.md`），
+本分支已修复并给出回归用例（`tests/cross_market/test_data_correctness.py`，18 项；
+修复前 17 failed / 1 passed，修复后 18 passed）。
+
+关键口径变化（会让旧结果不可比，必须重跑）：
+
+1. **标签是相对收益**：`ResearchLabel.future_return = future_price/origin_price − 1`，
+   不再是价格。旧数据里 `future_return` 的绝对值不能再当收益用。
+2. **方向信号用变化量**：A 臂看 `price_delta_bps`（含 deadband），B 臂看
+   `yes_mid_delta_bps` 并按 `event_comparator`（ABOVE/BELOW）映射到标的方向。
+   旧的"价格>0 → 做多"已在数学上被删除。
+3. **A/C 按共同决策点比较**：主指标是逐点 payoff 差（弃权=0，配对 Block Bootstrap），
+   输出 `aligned_n`；`aligned_n < 30` 一律 INCONCLUSIVE。
+   `common_hit_ci` 只是诊断，且在当前 C⊆A 构造下恒为 0。
+4. **特征 point-in-time**：`decision_now_ms` 只作实时天花板，不再让窗口内所有点
+   共用同一个决策时刻；每个点用 `t` 与 `t−lookback` 两个独立游标。
+5. **Polymarket 概率归一化**：`yes_mid`/`no_mid`/`consistent`/`prob_usable`；
+   一价关系破（|yes+no−1|>0.05）→ B 臂弃权。
+6. **采集**：best bid = max(bids)、best ask = min(asks)；缺服务端时间戳丢弃；
+   相同 book hash 去重；CVD 只用已收盘 K 线；资金费计入 `EV_net`。
+
+新增/修改的公共 API：
+
+```python
+store.query_available(source, start_ms, end_ms, as_of_ms=None)  # 按可用时间排序
+store.last_available(source, key, as_of_ms)                     # point-in-time 取值
+store.first_available_after(source, key, from_ms, until_ms=None) # 标签未来窗口
+store.append(..., dedupe=True)                                  # 重复盘口去重
+align_features(..., lookback_ms=300_000, max_age_ms=600_000)     # 双游标 + 变化量
+label_from_store(store, symbol, origin_ts_ms, horizon_ms, band_ms=600_000, with_mae=False)
+run_abc(points, labels, h)  # -> AbcVerdict(aligned_n, common_hit_ci, increment_ci, ...)
+```
+
+仍然阻塞（未在本次修复范围内）：
+
+- CLOB WS 消息流未验证（REST 仍是唯一可用链路）；
+- `config/market_mapping.yaml` 的市场与 5m 主视界不匹配（设计级问题，见审计报告 §4.1）；
+- 本机 Windows 全量 `pytest -q tests` 在 61% 处退出（既有环境问题，CI 不受影响）。

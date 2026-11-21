@@ -1,18 +1,29 @@
-"""A/B/C 实验骨架（P1，规格 §9-§12）。
+"""A/B/C 实验骨架（P1/P1.1，规格 §9-§12）。
 
 核心问题：Performance(C) − Performance(A) > 0？（Polymarket 的增量价值）
 不是 C 自己能否赚钱。
 
-预注册契约：hypothesis 在跑数据前锁定（primary horizon、特征集、模型类），
-禁跑完再挑显著的那个（多重检验钓鱼）。
+Sprint 0 修掉的两处（审计 S0-03/S0-04/S0-05）：
+  1. **方向信号必须用变化量**。旧实现 A 臂是 `price > 0 and oi > 0 → +1`——
+     价格是正数，恒为做多；B 臂是 `mid > 0.5 → +1`——概率水平不是方向，
+     而且 BELOW 类市场（"BTC 跌破 60k"）的概率上升对应标的看跌，方向反了。
+  2. **A/C 比较必须按共同决策时点对齐**。旧实现把两个臂的命中序列各自压缩成
+     列表，再按 index 截断相减；两臂出手时点不同，比较的是不同时刻的收益。
+     现在所有臂在同一个决策点向量上计算 payoff（弃权 = 0），配对 bootstrap；
+     另报"共同点命中率差"作为诊断，并明示它在 C⊆A 的构造下恒为 0。
 
-统计链（最小可用实现）：CCF → 方向准确率 → Block Bootstrap CI → DM 风格比较。
+预注册契约：hypothesis 在跑数据前锁定（primary horizon、特征集、模型类、
+事件比较符），禁跑完再挑显著的那个（多重检验钓鱼）。
+
+统计链：配对 payoff 差 → Block Bootstrap CI → 样本量/覆盖率门槛 → 裁定。
 """
 from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
 from decimal import Decimal
+
+BPS = Decimal("10000")
 
 
 # ---------- 预注册假设 ----------
@@ -25,11 +36,17 @@ class Hypothesis:
     primary_horizon_ms: int
     arms: tuple[str, ...] = ("A", "B", "C")   # A=Binance only, B=Poly only, C=both
     features: dict[str, tuple[str, ...]] = field(default_factory=lambda: {
-        "A": ("price", "oi_snapshot", "cvd_delta", "funding_rate"),
-        "B": ("bid", "ask", "spread_bps"),
-        "C": ("price", "oi_snapshot", "cvd_delta", "funding_rate", "bid", "ask", "spread_bps"),
+        "A": ("price_delta_bps", "oi_delta_bps", "cvd_delta", "funding_rate"),
+        "B": ("yes_mid", "yes_mid_delta_bps", "spread_bps"),
+        "C": ("price_delta_bps", "oi_delta_bps", "cvd_delta", "funding_rate",
+              "yes_mid", "yes_mid_delta_bps", "spread_bps"),
     })
     preregistered: bool = True   # False = 未预注册（结果只配进废纸篓）
+    # 事件方向：Polymarket "BTC above X" = ABOVE，"BTC dips to X" = BELOW。
+    # B 臂必须据此把"概率变化"翻译成"标的方向"，否则方向系统性反了。
+    event_comparator: str = "ABOVE"
+    deadband_bps: Decimal = Decimal("2")   # 小于该变化视为无信息（弃权）
+    min_aligned: int = 30                  # 共同决策点下限（不足 → INCONCLUSIVE）
 
 
 # ---------- 信号与评分 ----------
@@ -38,33 +55,44 @@ def _d(v) -> Decimal | None:
     if v is None:
         return None
     try:
-        return Decimal(str(v))
+        return v if isinstance(v, Decimal) else Decimal(str(v))
     except ArithmeticError:
         return None
 
 
-def arm_signal(arm: str, feature: dict, hypothesis: Hypothesis) -> Decimal | None:
-    """把特征压缩成一个方向性信号（+1/-1/0）。最小可解释模型：
+def _sign(v: Decimal | None, deadband: Decimal) -> Decimal | None:
+    if v is None or abs(v) < deadband:
+        return None
+    return Decimal("1") if v > 0 else Decimal("-1")
 
-    A：价格动量为正且 OI 扩张 → 多；反之为空（否则 0）。
-    B：概率（mid）上移 → 多；下移 → 空。
-    C：两侧同向才出手（否则 0）——增量价值若存在，应表现为 C 比 A 更稳。
-    返回 None 表示该时刻无信号（ abstain ）。原始值容许字符串（Decimal 化后比较）。
+
+def _dir_sign(v: Decimal | None, deadband: Decimal, comparator: str) -> Decimal | None:
+    s = _sign(v, deadband)
+    if s is None:
+        return None
+    if comparator.upper() == "BELOW":
+        return -s
+    return s
+
+
+def arm_signal(arm: str, feature: dict, hypothesis: Hypothesis) -> Decimal | None:
+    """把特征压缩成一个方向性信号（+1 看涨 / -1 看跌 / None 弃权 / 0 冲突）。
+
+    A：Binance 价格动量方向（|price_delta_bps| >= deadband）。
+    B：Polymarket YES 概率动量，按市场比较符映射到标的方向
+       （ABOVE：概率涨=看涨；BELOW：概率涨=看跌）。
+    C：A 与 B 同向才出手，否则弃权（0 = 两侧冲突）。
+    返回 None 表示该时刻无信号（abstain）。原始值容许字符串（Decimal 化后比较）。
     """
-    feats = hypothesis.features.get(arm, ())
     if arm == "A":
-        price = _d(feature.get("binance", {}).get("price"))
-        oi = _d(feature.get("binance", {}).get("oi_snapshot"))
-        if price is None or oi is None:
-            return None
-        return Decimal("1") if price > 0 and oi > 0 else None
+        return _sign(_d(feature.get("binance", {}).get("price_delta_bps")),
+                     hypothesis.deadband_bps)
     if arm == "B":
-        bid = _d(feature.get("polymarket", {}).get("bid"))
-        ask = _d(feature.get("polymarket", {}).get("ask"))
-        if bid is None or ask is None:
-            return None
-        mid = (bid + ask) / 2
-        return Decimal("1") if mid > Decimal("0.5") else Decimal("-1")
+        poly = feature.get("polymarket", {})
+        if poly.get("prob_usable") is False:
+            return None   # 两 token 一价关系破 → 这个"概率"不可用
+        return _dir_sign(_d(poly.get("yes_mid_delta_bps")),
+                         hypothesis.deadband_bps, hypothesis.event_comparator)
     if arm == "C":
         a = arm_signal("A", feature, hypothesis)
         b = arm_signal("B", feature, hypothesis)
@@ -75,7 +103,7 @@ def arm_signal(arm: str, feature: dict, hypothesis: Hypothesis) -> Decimal | Non
 
 
 def hit_rate(signals: list[Decimal | None], labels: list[Decimal | None]) -> tuple[float, int]:
-    """方向准确率（只在双方都有的时刻计算）。labels 为未来收益（>0 涨/<0 跌）。"""
+    """方向准确率（只在双方都有的时刻计算）。labels 为**未来收益**（>0 涨/<0 跌）。"""
     n = 0
     hits = 0
     for s, l in zip(signals, labels):
@@ -85,6 +113,17 @@ def hit_rate(signals: list[Decimal | None], labels: list[Decimal | None]) -> tup
         if (s > 0 and l > 0) or (s < 0 and l < 0):
             hits += 1
     return (hits / n if n else 0.0), n
+
+
+def payoff_bps(signal: Decimal | None, label: Decimal | None) -> float:
+    """逐决策点收益（bps）：方向 × 未来收益；弃权/无标签 = 0。
+
+    这是 A/C 比较的正确口径：同一决策点上，C 弃权时收益为 0，A 仍按自己的
+    方向持仓——两者的差就是"B 的信息让 C 躲过了多少亏损/错过了多少盈利"。
+    """
+    if signal is None or signal == 0 or label is None:
+        return 0.0
+    return float(signal) * float(label) * float(BPS)
 
 
 # ---------- Block Bootstrap（时间序列，禁有放回打乱时序） ----------
@@ -119,44 +158,95 @@ class ArmResult:
     hit: float
     n: int
     per_point: list[float]
+    coverage: float = 0.0
+    mean_payoff_bps: float = 0.0
 
 
 @dataclass
 class AbcVerdict:
     hypothesis_id: str
     arms: dict[str, ArmResult]
-    increment_ci: tuple[float, float, float] | None   # C − A 的 (point, lo, hi)
+    increment_ci: tuple[float, float, float] | None   # 全样本逐点 payoff 差 C−A
     verdict: str                                      # SUPPORTED / FALSIFIED / INCONCLUSIVE
     reason: str
+    aligned_n: int = 0                                # 所有臂都出手的共同决策点数
+    common_hit_ci: tuple[float, float, float] | None = None  # 共同点命中率差（诊断）
+    n_decision_points: int = 0
 
 
-def run_abc(points: list[dict], labels: list[Decimal | None], h: Hypothesis) -> AbcVerdict:
-    """points: [{"binance": {...}, "polymarket": {...}}]；labels: 与 points 对齐。"""
+def run_abc(points: list[dict], labels: list[Decimal | None], h: Hypothesis,
+            block: int = 20, iters: int = 1000) -> AbcVerdict:
+    """points: [{"decision_ts_ms": int, "binance": {...}, "polymarket": {...}}]；
+    labels: 与 points **逐点对齐**的未来收益（同一 length、同一 index 同一时刻）。
+    """
+    if len(points) != len(labels):
+        raise ValueError(f"points({len(points)}) 与 labels({len(labels)}) 必须逐点对齐")
+    n_points = len(points)
+    sig: dict[str, list[Decimal | None]] = {
+        arm: [arm_signal(arm, p, h) for p in points] for arm in h.arms
+    }
+
     arms: dict[str, ArmResult] = {}
-    per_point_by_arm: dict[str, list[float]] = {}
     for arm in h.arms:
-        sigs = [arm_signal(arm, p, h) for p in points]
-        hit, n = hit_rate(sigs, labels)
-        per_point = []
-        for s, l in zip(sigs, labels):
-            if s is None or l is None or s == 0:
-                continue
-            per_point.append(1.0 if (s > 0) == (l > 0) else 0.0)
-        arms[arm] = ArmResult(arm=arm, hit=hit, n=n, per_point=per_point)
-        per_point_by_arm[arm] = per_point
+        hit, n = hit_rate(sig[arm], labels)
+        payoff = [payoff_bps(s, l) for s, l in zip(sig[arm], labels)]
+        labelled = [i for i, l in enumerate(labels) if l is not None]
+        coverage = (n / len(labelled)) if labelled else 0.0
+        arms[arm] = ArmResult(
+            arm=arm, hit=hit, n=n,
+            per_point=[1.0 if (s > 0) == (l > 0) else 0.0
+                       for s, l in zip(sig[arm], labels)
+                       if s is not None and l is not None and s != 0],
+            coverage=coverage,
+            mean_payoff_bps=sum(payoff) / n_points if n_points else 0.0,
+        )
 
-    if "A" not in arms or "C" not in arms or not per_point_by_arm.get("A") or not per_point_by_arm.get("C"):
-        return AbcVerdict(h.hypothesis_id, arms, None, "INCONCLUSIVE", "A/C 臂样本不足")
-    # 逐点相减需要等长——取较短并对齐到公共决策点集合（此处简化：按 index 截断）
-    m = min(len(per_point_by_arm["A"]), len(per_point_by_arm["C"]))
-    ci = block_bootstrap_ci(per_point_by_arm["C"][:m], per_point_by_arm["A"][:m])
-    if ci[1] > 0:
-        verdict, reason = "SUPPORTED", f"C−A 增量 {ci[0]:.3f}，CI=({ci[1]:.3f},{ci[2]:.3f}) 不含 0"
-    elif ci[2] < 0:
-        verdict, reason = "FALSIFIED", f"C−A 增量 {ci[0]:.3f}，CI=({ci[1]:.3f},{ci[2]:.3f}) 显著为负"
+    # 共同决策点：所有臂都真正出手（方向非 0）且标签可用
+    common = [
+        i for i in range(n_points)
+        if labels[i] is not None
+        and all(sig[a][i] is not None and sig[a][i] != 0 for a in h.arms)
+    ]
+
+    if "A" not in arms or "C" not in arms or not common:
+        return AbcVerdict(
+            h.hypothesis_id, arms, None, "INCONCLUSIVE",
+            f"A/C 无共同决策点（A 出手 {arms.get('A').n if 'A' in arms else 0} / "
+            f"C 出手 {arms.get('C').n if 'C' in arms else 0}）",
+            aligned_n=len(common), n_decision_points=n_points,
+        )
+
+    # 1) 主指标：全样本逐点 payoff 差（同长、同点、配对）
+    c_pay = [payoff_bps(sig["C"][i], labels[i]) for i in range(n_points)]
+    a_pay = [payoff_bps(sig["A"][i], labels[i]) for i in range(n_points)]
+    inc_ci = block_bootstrap_ci(c_pay, a_pay, block=block, iters=iters)
+
+    # 2) 诊断指标：共同点命中率差（C⊆A 的构造下数学上恒为 0；显式报出来防误读）
+    c_hit_common = [1.0 if (sig["C"][i] > 0) == (labels[i] > 0) else 0.0 for i in common]
+    a_hit_common = [1.0 if (sig["A"][i] > 0) == (labels[i] > 0) else 0.0 for i in common]
+    common_ci = block_bootstrap_ci(c_hit_common, a_hit_common, block=block, iters=iters)
+
+    aligned_n = len(common)
+    if aligned_n < h.min_aligned:
+        verdict = "INCONCLUSIVE"
+        reason = (f"共同决策点 {aligned_n} < 门槛 {h.min_aligned}；"
+                  f"payoff 差 {inc_ci[0]:.1f}bps CI=({inc_ci[1]:.1f},{inc_ci[2]:.1f})")
+    elif inc_ci[1] > 0:
+        verdict = "SUPPORTED"
+        reason = (f"C−A payoff 增量 {inc_ci[0]:.1f}bps，CI=({inc_ci[1]:.1f},{inc_ci[2]:.1f}) 不含 0；"
+                  f"共同决策点 {aligned_n}")
+    elif inc_ci[2] < 0:
+        verdict = "FALSIFIED"
+        reason = (f"C−A payoff 增量 {inc_ci[0]:.1f}bps，CI=({inc_ci[1]:.1f},{inc_ci[2]:.1f}) 显著为负；"
+                  f"共同决策点 {aligned_n}")
     else:
-        verdict, reason = "INCONCLUSIVE", f"C−A 增量 {ci[0]:.3f}，CI=({ci[1]:.3f},{ci[2]:.3f}) 含 0"
-    return AbcVerdict(h.hypothesis_id, arms, ci, verdict, reason)
+        verdict = "INCONCLUSIVE"
+        reason = (f"C−A payoff 增量 {inc_ci[0]:.1f}bps，CI=({inc_ci[1]:.1f},{inc_ci[2]:.1f}) 含 0；"
+                  f"共同决策点 {aligned_n}（共同点命中率差恒为 0 是 C⊆A 的定义后果，不作为证据）")
+    return AbcVerdict(
+        h.hypothesis_id, arms, inc_ci, verdict, reason,
+        aligned_n=aligned_n, common_hit_ci=common_ci, n_decision_points=n_points,
+    )
 
 
 # ---------- 证伪适配器（规格 §14：Cross-Market → 既有验证体系） ----------
@@ -171,6 +261,13 @@ class FalsificationAdapter:
             "hypothesis": verdict.hypothesis_id,
             "verdict": verdict.verdict,
             "reason": verdict.reason,
-            "arms": {k: {"hit": v.hit, "n": v.n} for k, v in verdict.arms.items()},
+            "n_decision_points": verdict.n_decision_points,
+            "aligned_n": verdict.aligned_n,
+            "arms": {
+                k: {"hit": v.hit, "n": v.n, "coverage": v.coverage,
+                    "mean_payoff_bps": v.mean_payoff_bps}
+                for k, v in verdict.arms.items()
+            },
             "increment_ci": verdict.increment_ci,
+            "common_hit_ci": verdict.common_hit_ci,
         }

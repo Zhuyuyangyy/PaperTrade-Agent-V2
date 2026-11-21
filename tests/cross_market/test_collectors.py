@@ -80,15 +80,17 @@ def test_fetch_failure_is_loud(tmp_path: Path) -> None:
     assert store.count() == 0
 
 
-def test_recorder_captures_missing_server_timestamp(tmp_path: Path) -> None:
-    """服务端没给 timestamp 时：event_ts 退回 recv，但必须显式记录退化。"""
+def test_recorder_rejects_missing_server_timestamp(tmp_path: Path) -> None:
+    """服务端没给 timestamp：该快照必须丢弃并计数（禁拿本地接收时间冒充 event_ts）。"""
     store = EventStore(tmp_path / "e.sqlite")
     book = _book(1000)
     del book["timestamp"]
     c = PolyRestCollector(store, MARKETS, fetch_fn=lambda u: book)
-    ev = c.poll_once(now_ms=5000)[0]
-    assert ev.event_ts_ms == 5000  # 退化为本地时间
-    # 但 ingest 与 event 相同 → 可用性门禁不会误放（无伪造的服务端时间）
+    events = c.poll_once(now_ms=5000)
+    assert events == []
+    assert store.count() == 0
+    assert c.stats["skipped_missing_server_ts"] == 2  # Yes + No 两个 token 各一次
+    assert c.stats["events"] == 0
 
 
 def test_poll_respects_market_token_list(tmp_path: Path) -> None:
