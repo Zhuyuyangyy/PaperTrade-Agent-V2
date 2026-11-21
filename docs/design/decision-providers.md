@@ -75,3 +75,49 @@ decisions = run(snapshot, [RulesProvider(), DeepSeekProvider(cfg)], log_path="da
 - 用 `scripts/forward_test_v1.sh` 累积 ≥72 轮真实时间运行，保存 `providers.jsonl`；
 - 用消融框架比较四类 provider 的净收益，而不是比较它们的自述置信度；
 - 训练第一版 logistic 模型并导出 JSON，在 Windows 上验证推理一致。
+
+---
+
+## 7. 接线状态（Sprint 6.1）
+
+### 7.1 RunLoop 每轮生成 providers.jsonl
+
+`RunLoop(providers=[...], providers_log_path=...)`：每个**成功**决策点调用一次
+`compare.run()`，写入：
+
+- `as_of_ms` / `completed_at_ms` / `symbol`
+- `snapshot`（state 摘要 + 五类特征）
+- `decisions[]`（provider / version / status / choice / score / confidence /
+  rationale / evidence / latency_ms）
+- `note: research only; not applied to Selection/Risk`
+
+`live`/`replay` 默认 `rules`；有 `DEEPSEEK_API_KEY` 加 deepseek；有
+`JEV_ENDPOINT` + `JEV_API_KEY` 加 jev；`--model path.json` 加 linear。
+`--no-providers` 关闭。provider 失败只进 `provider_errors`，不影响交易。
+
+### 7.2 Jev 协议
+
+按公开资料改为 `{model, state, questions}` → `answers`；`noul` 映射 HOLD。
+兼容 `answers` 为 dict/list 与旧式 `output`。没有可验证访问权限时保持
+`UNAVAILABLE`，不付费、不阻塞。
+
+### 7.3 Point-in-time 数据集
+
+`research/decision/dataset.py`：
+
+- 从决策日志提取特征；标签用未来 1h/4h/24h 收盘价，**兑现后才写**，否则 `None`；
+- `purged_split()` 按时间切分并留 embargo；
+- `labelled()` 只返回已兑现样本。
+
+**30 条只是 `train()` 的代码下限，不是有效样本量。** 9 个特征 + 相邻小时高相关，
+至少需要数百个独立决策点并做 purged walk-forward，才有资格讨论"训练有效"。
+
+### 7.4 DeepSeek 真实快照实测（2026-11-21）
+
+```
+python scripts/deepseek_snapshot_smoke.py --rounds 20
+20 轮全部 OK，全 HOLD，平均 1175ms/次，总 23.6s
+```
+
+20 个历史决策点当时都是 `RANGE` + 弱 ADX（11–14），DeepSeek 的判断是
+"没有方向证据，不做"——这正是期望的 HOLD 行为，而不是为了给方向而给方向。

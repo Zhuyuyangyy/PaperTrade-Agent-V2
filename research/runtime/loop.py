@@ -26,6 +26,11 @@ from .heartbeat import Heartbeat, read as read_heartbeat, write as write_heartbe
 from .round import RoundResult, run_round
 from .sources import Source, SourceError
 
+from research.decision import MarketSnapshot
+from research.decision import run as run_providers
+from research.decision.contracts import Provider
+from research.intel.features import compute as compute_intel_features
+
 
 class LoopStopped(RuntimeError):
     pass
@@ -63,7 +68,9 @@ class RunLoop:
                  circuit: CircuitBreaker | None = None,
                  circuit_config: CircuitConfig | None = None,
                  config: LoopConfig | None = None,
-                 intel_fn=None):
+                 intel_fn=None,
+                 providers: list[Provider] | None = None,
+                 providers_log_path: Path | str | None = None):
         self.root = Path(root)
         self.broker = broker
         self.shadow_broker = shadow_broker
@@ -84,11 +91,24 @@ class RunLoop:
             if circuit_config is not None:
                 self.circuit.config = circuit_config
         self.intel_fn = intel_fn
+        self.providers = list(providers or [])
+        self.providers_log_path = (Path(providers_log_path) if providers_log_path
+                                   else self.root / "data" / "providers.jsonl")
         self.results: list[RoundResult] = []
         self.last_status = STATUS_SKIPPED
         self.last_reason = ""
+        self.provider_errors: list[str] = []
 
     # ---------- 单轮 ----------
+
+    def _compare_providers(self, result: RoundResult, intel, as_of_ms: int) -> None:
+        """同一快照交给所有 provider；只写日志，失败不影响交易结果。"""
+        try:
+            intel_features = compute_intel_features(result.state, intel) if intel is not None else None
+            snapshot = MarketSnapshot(as_of_ms, "BTC/USDT", result.state, intel_features)
+            run_providers(snapshot, self.providers, log_path=self.providers_log_path)
+        except Exception as exc:  # noqa: BLE001 - 研究记录失败不能拖垮交易
+            self.provider_errors.append(f"{type(exc).__name__}: {exc}")
 
     def _heartbeat(self) -> Heartbeat:
         hb = read_heartbeat(self.heartbeat_path)
@@ -152,6 +172,8 @@ class RunLoop:
             hb.successful_rounds += 1
             hb.last_round_key_ms = key        # 只有成功才推进幂等键
             self.last_status = STATUS_OK
+            if self.providers:
+                self._compare_providers(result, intel, as_of_ms)
         except LoopStopped:
             raise
         except Exception as exc:             # noqa: BLE001 - 断流/异常都走熔断
