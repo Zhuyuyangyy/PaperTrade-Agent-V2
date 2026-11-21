@@ -121,9 +121,11 @@ def _run_live(args) -> int:
     for i in range(args.rounds):
         as_of = int(time.time() * 1000)
         res = loop.step(as_of)
-        if res is None:
-            print(f"[{as_of}] skipped: 同一根 K 线已决策过（key={loop._round_key(as_of)}）")
-        else:
+        if loop.last_status == "SKIPPED":
+            print(f"[{as_of}] skipped: {loop.last_reason}（同一根 K 线已成功决策过）")
+        elif loop.last_status == "FAILED":
+            print(f"[{as_of}] FAILED: {loop.last_reason}（下一轮重试；连续失败会熔断）")
+        elif res is not None:
             intent = res.selection.intent
             print(f"[{as_of}] state={res.state.trend}/{res.state.volatility}/"
                   f"{res.state.momentum}/{res.state.risk} conf={res.state.confidence}")

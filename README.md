@@ -316,7 +316,11 @@ python -m research.runtime replay --rounds 72 # 真实历史 1h → 双账本 72
 python -m research.runtime report --root <run_dir>             # 双账本统计（胜率/回撤/资金费）
 python -m research.runtime shadow --root data/openalpha_live   # 影子信号 +1h/4h/24h 表现
 python -m research.runtime dashboard --root <run_dir> --html board.html
+python scripts/verify_forward_run.py --root data/openalpha_forward_v1 --rounds 73 --hours 72
 ```
+
+Forward Test V1 启动脚本：[`scripts/forward_test_v1.sh`](scripts/forward_test_v1.sh)（73 轮 × 1h ≈ 72h；
+验收不只看 `rounds`，要 `successful_rounds == 日志行数`、验证盘 0 单、订单可追溯）。
 
 边界没有变：**只读采集 · 策略研究 · 模拟执行**；不接实盘、不接私钥、不自动跟单。
 V1 只做 BTC/USDT 单标的，SOL 数据保留在研究库。

@@ -22,6 +22,7 @@ class Heartbeat:
     halted: bool = False
     halt_reason: str = ""
     rounds: int = 0
+    successful_rounds: int = 0          # 成功决策数（= 日志行数）；rounds 是尝试数
     pid: int = 0
     circuit: dict = field(default_factory=dict)  # 熔断状态持久化（跨重启恢复）
 
