@@ -29,9 +29,10 @@ def synthetic_1m(regime: str, bars: int = BARS_1M, seed: int = 7) -> list[Candle
     prev_close = 100.0
     for i in range(bars):
         if regime == "trend_up":
-            # 加速上行：末端 MACD 柱保持为正，RSI 在 50 以上
+            # 加速上行：末端 MACD 柱保持为正，RSI 在 50 以上；噪声给到 0.04
+            # 让 1h ATR% 落在成本门槛（20bps）之上，便于演示成交路径
             level = 100.0 * (1 + 0.000018 * i + 0.0000000016 * i * i)
-            noise = rng.gauss(0, 0.015)
+            noise = rng.gauss(0, 0.04)
             vol = 100 + 40 * (i / bars)
             close = level + noise
         elif regime == "range":

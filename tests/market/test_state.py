@@ -116,7 +116,7 @@ def test_unclosed_candles_are_ignored() -> None:
     last = candles[-1]
     as_of = last.open_ms + 60_000          # 最后一根还没收盘
     state = analyze("BTC/USDT", {"1h": candles}, as_of)
-    assert state.timeframes["1h"].last_closed_ms == candles[-2].open_ms
+    assert state.timeframes["1h"].last_closed_ms == candles[-2].close_ms
     assert state.timeframes["1h"].bars == 209
 
 
