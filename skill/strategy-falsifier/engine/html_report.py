@@ -330,6 +330,19 @@ def render_html(result: dict) -> str:
       f'{"含资金费" if spec.get("funding") else "不含资金费"}</p>')
     a("</header>")
 
+    # ---- data hygiene: facts about the candles, never about the edge ------
+    dh = result.get("data_hygiene") or {}
+    if dh.get("notes"):
+        a('<div class="warnbox"><b>数据卫生披露</b>（关于数据的事实，不参与裁决）：<ul style="margin:6px 0 0">')
+        for note in dh["notes"]:
+            a(f"<li>{_esc(note)}</li>")
+        for g in (dh.get("gaps") or [])[:3]:
+            import datetime as _dtm
+            fmt = lambda ms: _dtm.datetime.fromtimestamp(ms / 1000, _dtm.timezone.utc).strftime("%Y-%m-%d %H:%M")
+            a(f"<li>间隔 {fmt(g['after_t'])} → {fmt(g['before_t'])} UTC"
+              f"（{g['gap_ms'] / 3_600_000:.1f}h，中位×{g['multiple']}）</li>")
+        a("</ul></div>")
+
     # ---- 0. port notes ----------------------------------------------------
     if spec.get("port_notes"):
         a('<div class="port">')
