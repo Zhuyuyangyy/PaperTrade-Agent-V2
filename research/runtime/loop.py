@@ -25,6 +25,7 @@ from .circuit import CircuitBreaker, CircuitConfig
 from .heartbeat import Heartbeat, read as read_heartbeat, write as write_heartbeat
 from .round import RoundResult, run_round
 from .sources import Source, SourceError
+from research.market.klines import closed_only
 
 from research.decision import MarketSnapshot
 from research.decision import run as run_providers
@@ -70,7 +71,8 @@ class RunLoop:
                  config: LoopConfig | None = None,
                  intel_fn=None,
                  providers: list[Provider] | None = None,
-                 providers_log_path: Path | str | None = None):
+                 providers_log_path: Path | str | None = None,
+                 deepseek_desk=None):
         self.root = Path(root)
         self.broker = broker
         self.shadow_broker = shadow_broker
@@ -94,6 +96,7 @@ class RunLoop:
         self.providers = list(providers or [])
         self.providers_log_path = (Path(providers_log_path) if providers_log_path
                                    else self.root / "data" / "providers.jsonl")
+        self.deepseek_desk = deepseek_desk
         self.results: list[RoundResult] = []
         self.last_status = STATUS_SKIPPED
         self.last_reason = ""
@@ -174,6 +177,13 @@ class RunLoop:
             self.last_status = STATUS_OK
             if self.providers:
                 self._compare_providers(result, intel, as_of_ms)
+            if self.deepseek_desk is not None:
+                try:
+                    h1 = closed_only(sorted(views.get("1h") or [], key=lambda c: c.open_ms),
+                                     as_of_ms, self.config.settle_ms)
+                    self.deepseek_desk.step(result.state, as_of_ms, h1[-1] if h1 else None)
+                except Exception as exc:  # noqa: BLE001 - 实验盘失败不影响主盘
+                    self.provider_errors.append(f"deepseek_desk: {type(exc).__name__}: {exc}")
         except LoopStopped:
             raise
         except Exception as exc:             # noqa: BLE001 - 断流/异常都走熔断

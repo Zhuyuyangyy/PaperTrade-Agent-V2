@@ -53,3 +53,6 @@ STOP
 # paths and internal decisions do not belong in a public repo. The distilled,
 # publishable version lives in docs/.
 .workbuddy/
+
+# local runtime logs (never commit)
+logs/

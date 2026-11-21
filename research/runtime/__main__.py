@@ -25,6 +25,7 @@ from research.market.contracts import TF_15M_MS, TF_1H_MS, TF_4H_MS, TF_5M_MS
 from research.market.demo import REGIMES, demo_as_of_ms, synthetic_1m
 from research.market.klines import resample
 from research.paper.broker import PaperBroker
+from research.paper.deepseek_desk import DeepSeekDesk
 from research.risk.engine import RiskLimits
 from research.strategy.registry import DEFAULT_SPECS
 
@@ -57,6 +58,18 @@ def _build_providers(args):
     if model_path and Path(model_path).is_file():
         provs.append(LinearProvider(LogisticModel.load(model_path)))
     return provs
+
+
+def _build_deepseek_desk(root: Path, args):
+    """DeepSeek 独立盘：自己的 1000 USDT 与账本；无 key 则不启用。"""
+    key = os.environ.get("DEEPSEEK_API_KEY", "")
+    if not key or getattr(args, "no_deepseek_desk", False):
+        return None
+    broker = PaperBroker(root / "deepseek_shadow.sqlite", starting_cash=D("1000"),
+                         funding_bps_per_8h=D(str(getattr(args, "funding_bps", 1.0))),
+                         shadow_mode="allow")
+    return DeepSeekDesk(broker, DeepSeekProvider(LLMConfig(api_key=key)), RiskLimits(),
+                        root / "data" / "deepseek_decisions.jsonl")
 
 
 def _views(base) -> dict:
@@ -149,6 +162,7 @@ def _run_live(args) -> int:
         intel_fn=intel_fn,
         providers=_build_providers(args),
         providers_log_path=root / "data" / "providers.jsonl",
+        deepseek_desk=_build_deepseek_desk(root, args),
         config=LoopConfig(interval_ms=args.interval_ms,
                           decision_period_ms=args.interval_ms,
                           max_rounds=args.rounds),
@@ -208,6 +222,7 @@ def _run_replay(args) -> int:
                    log_path=root / "data" / "decisions.jsonl",
                    providers=_build_providers(args),
                    providers_log_path=root / "data" / "providers.jsonl",
+                   deepseek_desk=_build_deepseek_desk(root, args),
                    config=LoopConfig(interval_ms=TF_1H_MS,
                                      decision_period_ms=TF_1H_MS,
                                      max_rounds=args.rounds))
@@ -290,6 +305,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="关闭 rules/DeepSeek/Jev/linear 对照记录")
     p_live.add_argument("--model", default=None,
                         help="线性模型 JSON 路径（训练后导出，跨机器可迁移）")
+    p_live.add_argument("--no-deepseek-desk", action="store_true",
+                        help="关闭 DeepSeek 独立实验盘（默认有 key 即启用）")
 
     p_replay = sub.add_parser("replay", help="真实历史 1h K 线 → 双账本跑 N 轮（72h 回放）")
     p_replay.add_argument("--root", default=None)
@@ -300,6 +317,7 @@ def main(argv: list[str] | None = None) -> int:
     p_replay.add_argument("--funding-bps", type=float, default=1.0)
     p_replay.add_argument("--no-providers", action="store_true")
     p_replay.add_argument("--model", default=None)
+    p_replay.add_argument("--no-deepseek-desk", action="store_true")
 
     p_report = sub.add_parser("report", help="双账本统计（现金/成交/胜率/回撤）")
     p_report.add_argument("--root", required=True)
