@@ -33,7 +33,9 @@ def _equity_series(broker: PaperBroker) -> list[Decimal]:
     return [Decimal(r["equity"]) for r in rows]
 
 
-def summarize(broker: PaperBroker, label: str = "book") -> dict:
+def summarize(broker: PaperBroker, label: str = "book",
+              prices: dict[str, Decimal] | None = None) -> dict:
+    prices = prices or {}
     orders = int(broker._db.execute("SELECT COUNT(*) FROM orders").fetchone()[0])
     closed_rows = broker._db.execute(
         "SELECT pnl, strategy_id, funding_paid FROM positions WHERE status='closed'"
@@ -55,20 +57,27 @@ def summarize(broker: PaperBroker, label: str = "book") -> dict:
         s["win_rate"] = f"{s['wins'] / s['closed']:.3f}" if s["closed"] else None
     equity = _equity_series(broker)
     open_positions = broker.open_positions()
+    # 权益 = 现金 + 持仓本金 + 未实现盈亏（与 PaperBroker.equity 一致）
+    positions_value = D("0")
     unrealized = D("0")
     for p in open_positions:
         qty, entry = Decimal(p["qty"]), Decimal(p["entry_price"])
-        mark = Decimal(p["mark_price"]) if p.get("mark_price") else entry
+        mark = prices.get(p["symbol"], entry)
         direction = D("1") if p["side"] == "LONG" else D("-1")
+        positions_value += qty * entry
         unrealized += (mark - entry) * qty * direction
+    equity_now = broker.cash() + positions_value + unrealized
     return {
         "label": label,
         "cash": str(broker.cash()),
+        "positions_value": str(positions_value),
+        "margin_used": str(positions_value),
+        "unrealized_pnl": str(unrealized),
+        "equity": str(equity_now),
         "orders": orders,
         "closed": closed,
         "open_positions": len(open_positions),
         "realized_pnl": str(realized),
-        "unrealized_pnl": str(unrealized),
         "funding_paid": str(funding),
         # 资金费目前按固定费率估算（--funding-bps），不是历史真实费率
         "funding_source": "estimated",
@@ -81,7 +90,8 @@ def summarize(broker: PaperBroker, label: str = "book") -> dict:
 
 def summarize_books(root: Path | str, *, shadow_db: str = "shadow.sqlite",
                     verified_db: str = "verified.sqlite",
-                    deepseek_db: str = "deepseek_shadow.sqlite") -> dict:
+                    deepseek_db: str = "deepseek_shadow.sqlite",
+                    prices: dict[str, Decimal] | None = None) -> dict:
     root = Path(root)
     out: dict = {"root": str(root)}
     for label, name in (("shadow", shadow_db), ("verified", verified_db),
@@ -89,7 +99,7 @@ def summarize_books(root: Path | str, *, shadow_db: str = "shadow.sqlite",
         path = root / name
         if path.is_file():
             b = PaperBroker(path, starting_cash=D("1000"))
-            out[label] = summarize(b, label)
+            out[label] = summarize(b, label, prices=prices)
             b.close()
         else:
             out[label] = None

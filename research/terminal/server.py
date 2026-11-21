@@ -25,6 +25,7 @@ from urllib.parse import parse_qs, urlparse
 
 from research.market.contracts import TF_15M_MS, TF_1H_MS, TF_4H_MS, TF_5M_MS
 from research.runtime.heartbeat import read as read_heartbeat
+from .feed import BinanceFeed
 from research.runtime.metrics import summarize_books
 
 FAPI = "https://fapi.binance.com/fapi/v1/klines"
@@ -79,10 +80,10 @@ def _jsonl_last(path: Path, n: int = 1) -> list[dict]:
     return out
 
 
-def read_state(cfg: TerminalConfig) -> dict:
+def read_state(cfg: TerminalConfig, prices=None) -> dict:
     root = cfg.root
     hb = read_heartbeat(root / "state" / "heartbeat.json")
-    books = summarize_books(root)
+    books = summarize_books(root, prices=prices)
     decisions = _jsonl_last(root / "data" / "decisions.jsonl")
     ds = _jsonl_last(root / "data" / "deepseek_decisions.jsonl")
     rules_last = None
@@ -227,16 +228,25 @@ class Terminal:
         self.cfg = cfg
         self.hub = Hub()
         self.klines = KlineCache()
+        self.feed = BinanceFeed(symbol="btcusdt")
+        self.feed.start()
         self._stop = threading.Event()
+
+    def _prices(self):
+        from decimal import Decimal
+
+        p = self.feed.price()
+        return {"BTC/USDT": Decimal(str(p))} if p else None
 
     # ---------- 广播 ----------
     def snapshot(self) -> str:
         try:
-            state = read_state(self.cfg)
+            state = read_state(self.cfg, self._prices())
             marks = read_marks(self.cfg)
-            kline = self.klines.get("1m", 300)[-1]
-            return json.dumps({"type": "tick", "state": state, "kline": kline,
-                               "marks": marks}, ensure_ascii=False)
+            klines = {tf: self.feed.latest(tf) for tf in ("1m", "5m", "15m", "1h", "4h")}
+            return json.dumps({"type": "tick", "state": state, "klines": klines,
+                               "marks": marks, "feed": self.feed.status()},
+                              ensure_ascii=False)
         except Exception as exc:  # noqa: BLE001
             return json.dumps({"type": "error", "message": f"{type(exc).__name__}: {exc}"})
 
@@ -247,7 +257,7 @@ class Terminal:
 
     # ---------- HTTP ----------
     def handler(self):
-        cfg, hub, klines = self.cfg, self.hub, self.klines
+        cfg, hub, klines, feed, term = self.cfg, self.hub, self.klines, self.feed, self
 
         class Handler(BaseHTTPRequestHandler):
             protocol_version = "HTTP/1.1"
@@ -284,7 +294,7 @@ class Terminal:
                                 "lightweight-charts.standalone.production.js").read_bytes()
                         self._send(200, data, "application/javascript")
                     elif parsed.path == "/api/state":
-                        body = json.dumps(read_state(cfg), ensure_ascii=False).encode()
+                        body = json.dumps({**read_state(cfg, term._prices()), "feed": feed.status()}, ensure_ascii=False).encode()
                         self._send(200, body, "application/json")
                     elif parsed.path == "/api/marks":
                         body = json.dumps(read_marks(cfg), ensure_ascii=False).encode()
@@ -294,7 +304,7 @@ class Terminal:
                         if tf not in INTERVALS:
                             self._send(400, b'{"error":"bad tf"}', "application/json")
                             return
-                        body = json.dumps(klines.get(tf, 500), ensure_ascii=False).encode()
+                        body = json.dumps(feed.series(tf, 500) or klines.get(tf, 500), ensure_ascii=False).encode()
                         self._send(200, body, "application/json")
                     elif parsed.path == "/ws":
                         self._ws(parsed)
@@ -317,7 +327,7 @@ class Terminal:
                 sock = self.connection
                 hub.add(sock)
                 try:
-                    sock.sendall(_ws_frame(self_snapshot(cfg)))
+                    sock.sendall(_ws_frame(self_snapshot(cfg, term._prices())))
                     while True:
                         head = sock.recv(2)
                         if not head:
@@ -365,7 +375,7 @@ INDEX_HTML = r"""<!doctype html>
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:13px/1.5 -apple-system,Segoe UI,Roboto,sans-serif}
 header{display:flex;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line)}
 header h1{font-size:15px;margin:0} .pill{padding:2px 8px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}
-main{display:grid;grid-template-columns:1fr 360px;gap:12px;padding:12px;height:calc(100vh - 52px)}
+main{display:grid;grid-template-columns:1fr 360px;gap:12px;padding:12px;height:calc(100vh - 84px)}
 #chart{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-height:420px}
 aside{display:flex;flex-direction:column;gap:10px;overflow:auto}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
@@ -403,7 +413,7 @@ footer{color:var(--muted);font-size:11px;text-align:center;padding:4px}
 <span id="st-ws">ws: connecting</span><span id="st-hb">heartbeat: ?</span></div>
 <div id="modal"><div class="box"><h3 id="m-title"></h3><div id="m-body"></div></div></div>
 <script src="/static/chart.js"></script>
-<script>
+<script>window.onerror=(m)=>{if(/ResizeObserver/.test(m))return;document.getElementById('st-ws').textContent='JS ERROR: '+m;};function poll(){fetch('/api/state').then(r=>r.json()).then(s=>{drawBooks(s.books||{});drawDS(s.deepseek_last);drawRules(s.rules_last);setStatus(s);document.getElementById('mode').textContent=(/forward|replay/i.test(s.root||'')?'REPLAY':'LIVE');});fetch('/api/klines?tf='+tf).then(r=>r.json()).then(d=>{if(d&&d.length&&series){series.setData(d);}});}function setStatus(s){const hb=s.heartbeat||{};document.getElementById('st-proc').textContent='process: '+(hb.pid||'?')+(hb.halted?' HALTED':'');document.getElementById('st-hb').textContent='heartbeat: '+(hb.last_ok_ms?new Date(hb.last_ok_ms).toLocaleTimeString():'?');document.getElementById('st-lat').textContent='latency: '+(hb.last_ok_ms?((s.server_time_ms-hb.last_ok_ms)/1000).toFixed(0)+'s':'?');if(s.feed){const f=s.feed;document.getElementById('st-ws').textContent='feed: '+f.mode+(f.latency_ms!=null?(' '+f.latency_ms+'ms'):(f.poll_ago_ms!=null?(' poll '+f.poll_ago_ms+'ms'):''));}}
 const TF=['1m','5m','15m','1h','4h'];const TF_SEC={'1m':60,'5m':300,'15m':900,'1h':3600,'4h':14400};let tf='1h',chart,series,marksData={details:{}},lastKline=null,focused=false;
 const fmt=(x)=>x==null?'—':Number(x).toLocaleString(undefined,{maximumFractionDigits:2});
 const pct=(x)=>x==null?'—':(Number(x)*100).toFixed(2)+'%';
@@ -411,10 +421,11 @@ function drawBooks(b){
   const rows=[['rules','shadow'],['deepseek','deepseek'],['verified','verified']];
   document.getElementById('books').innerHTML=rows.map(([label,key])=>{
     const x=b[key];if(!x)return `<div class="row"><span class="k">${label}</span><span class="v">—</span></div>`;
-    const eq=Number(x.cash)+Number(x.unrealized_pnl||0);
-    const pnl=Number(x.realized_pnl)||0;
-    return `<div class="row"><span class="k">${label}</span><span class="v">${fmt(x.cash)} USDT</span></div>
-      <div class="row"><span class="k">equity</span><span class="v">${fmt(eq)}</span></div>
+    const eq=Number(x.equity), cash=Number(x.cash), margin=Number(x.margin_used||0);
+    const unr=Number(x.unrealized_pnl||0), pnl=Number(x.realized_pnl)||0;
+    return `<div class="row"><span class="k">${label} equity</span><span class="v"><b>${fmt(eq)}</b></span></div>
+      <div class="row"><span class="k">cash / margin</span><span class="v">${fmt(cash)} / ${fmt(margin)}</span></div>
+      <div class="row"><span class="k">unrealized</span><span class="v ${unr>=0?'up':'down'}">${unr>=0?'+':''}${fmt(unr)}</span></div>
       <div class="row"><span class="k">realized</span><span class="v ${pnl>=0?'up':'down'}">${pnl>=0?'+':''}${fmt(pnl)}</span></div>
       <div class="row"><span class="k">win / dd</span><span class="v">${pct(x.win_rate)} / ${pct(x.max_drawdown)}</span></div>
       <div style="height:6px"></div>`;
@@ -426,7 +437,7 @@ function drawDS(d){
   el.innerHTML=`<div class="row"><span class="k">choice</span><span class="v ${d.choice==='LONG'?'up':d.choice==='SHORT'?'down':''}">${d.choice}</span></div>
   <div class="row"><span class="k">status / version</span><span class="v">${d.status} / ${d.version}</span></div>
   <div class="row"><span class="k">confidence</span><span class="v">${d.confidence}</span></div>
-  <div class="row"><span class="k">inference</span><span class="v">${d.latency_ms==null?\x27—\x27:d.latency_ms+\x27ms\x27}</span></div>
+  <div class="row"><span class="k">inference</span><span class="v">${d.latency_ms==null?'-':d.latency_ms+'ms'}</span></div>
   <div class="row"><span class="k">reason</span><span class="v" style="max-width:210px;text-align:right">${d.rationale||''}</span></div>`;
 }
 function drawRules(r){document.getElementById('rules').innerHTML=r?`<div class="row"><span class="k">decision</span><span class="v">${r.decision}</span></div><div class="row"><span class="k">strategy</span><span class="v">${r.strategy||'—'}</span></div><div class="row"><span class="k">reason</span><span class="v" style="max-width:210px;text-align:right">${r.reason||''}</span></div>`:'<span class="k">no decision yet</span>'}
@@ -463,16 +474,19 @@ function init(){
   new ResizeObserver(()=>chart.applyOptions({width:el.clientWidth,height:el.clientHeight})).observe(el);
   const ws=new WebSocket((location.protocol==='https:'?'wss':'ws')+'://'+location.host+'/ws'+location.search);
   ws.onopen=()=>document.getElementById('st-ws').textContent='ws: connected';
-  ws.onclose=()=>document.getElementById('st-ws').textContent='ws: closed';
+  ws.onerror=()=>{document.getElementById('st-ws').textContent='ws: error (polling)';};
+  ws.onclose=()=>{document.getElementById('st-ws').textContent='ws: closed (polling)';setTimeout(()=>location.reload(),10000);};
+  setInterval(poll,5000); poll();
   ws.onmessage=e=>{const msg=JSON.parse(e.data);
-    if(msg.state){const s=msg.state;drawBooks(s.books||{});drawDS(s.deepseek_last);drawRules(s.rules_last);
+    if(msg.state){const s=msg.state;setStatus({...s,feed:msg.feed});drawBooks(s.books||{});drawDS(s.deepseek_last);drawRules(s.rules_last);document.getElementById('mode').textContent=(/forward|replay/i.test(s.root||'')?'REPLAY':'LIVE');
       const hb=s.heartbeat||{};document.getElementById('st-proc').textContent='process: '+(hb.pid||'?')+(hb.halted?' HALTED':'');
       document.getElementById('st-hb').textContent='heartbeat: '+(hb.last_ok_ms?new Date(hb.last_ok_ms).toLocaleTimeString():'?');
       document.getElementById('st-lat').textContent='latency: '+(hb.last_ok_ms?((s.server_time_ms-hb.last_ok_ms)/1000).toFixed(0)+'s':'?');}
-    if(msg.kline&&series&&tf==='1m'){series.update(msg.kline);lastKline=msg.kline;}
+    if(msg.klines&&series){const bar=msg.klines[tf];if(bar)series.update(bar);if(msg.klines['1m']&&tf==='1m')lastKline=msg.klines['1m'];}
+    if(msg.feed){const f=msg.feed;document.getElementById('st-ws').textContent='feed: '+(f.connected?'live':'down')+(f.latency_ms!=null?(' '+f.latency_ms+'ms'):'');}
     if(msg.marks)applyMarks(msg.marks);
   };
-  fetch('/api/state').then(r=>r.json()).then(s=>{drawBooks(s.books||{});drawDS(s.deepseek_last);drawRules(s.rules_last)});
+  fetch('/api/state').then(r=>r.json()).then(s=>{drawBooks(s.books||{});drawDS(s.deepseek_last);drawRules(s.rules_last);setStatus(s);document.getElementById('mode').textContent=(/forward|replay/i.test(s.root||'')?'REPLAY':'LIVE');});
   fetch('/api/marks').then(r=>r.json()).then(applyMarks);
 }
 init();
