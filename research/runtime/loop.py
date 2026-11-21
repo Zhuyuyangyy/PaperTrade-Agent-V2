@@ -31,6 +31,11 @@ class LoopStopped(RuntimeError):
     pass
 
 
+STATUS_OK = "OK"
+STATUS_FAILED = "FAILED"
+STATUS_SKIPPED = "SKIPPED"
+
+
 DAY_MS = 86_400_000
 
 
@@ -80,6 +85,8 @@ class RunLoop:
                 self.circuit.config = circuit_config
         self.intel_fn = intel_fn
         self.results: list[RoundResult] = []
+        self.last_status = STATUS_SKIPPED
+        self.last_reason = ""
 
     # ---------- 单轮 ----------
 
@@ -101,8 +108,11 @@ class RunLoop:
     def step(self, as_of_ms: int) -> RoundResult | None:
         key = self._round_key(as_of_ms)
         hb = self._heartbeat()
+        self.last_status = STATUS_SKIPPED
+        self.last_reason = ""
         if hb.last_round_key_ms >= key:
-            return None                      # 幂等：同一根 K 线不重复决策
+            self.last_reason = "duplicate_key"
+            return None                      # 幂等：同一根 K 线已成功决策过
 
         stop = self.root / self.config.stop_file
         if stop.exists():
@@ -121,30 +131,39 @@ class RunLoop:
             views = self.source.candles(as_of_ms)
             if not views or "1h" not in views:
                 raise SourceError("缺少 1h 数据")
-            # 数据可用即计入恢复：连续成功达到阈值时，本轮就允许开新仓
-            self.circuit.record_success()
+            # 恢复预判：连续成功达到阈值时，本轮就允许开新仓；但只有整轮真的
+            # 成功（取数 + run_round）才 record_success，避免"取数成功但决策失败"
+            # 被算成成功、把失败计数清零。
+            will_recover = (self.circuit.halted
+                            and self.circuit.successes + 1 >= self.circuit.config.recover_threshold)
             result = run_round(
                 "BTC/USDT", views, as_of_ms, self.broker, self.limits,
                 log_path=self.log_path, specs=self.specs,
                 day_start_ms=utc_day_start(as_of_ms),
                 settle_ms=self.config.settle_ms, intel=intel,
-                allow_new_entries=not self.circuit.halted,
+                allow_new_entries=(not self.circuit.halted) or will_recover,
                 halt_reason=self.circuit.reason,
                 shadow_broker=self.shadow_broker,
             )
+            self.circuit.record_success()
             hb.last_ok_ms = as_of_ms
             hb.consecutive_failures = 0
             hb.last_error = ""
+            hb.successful_rounds += 1
+            hb.last_round_key_ms = key        # 只有成功才推进幂等键
+            self.last_status = STATUS_OK
         except LoopStopped:
             raise
         except Exception as exc:             # noqa: BLE001 - 断流/异常都走熔断
             self.circuit.record_failure(str(exc))
             hb.consecutive_failures += 1
             hb.last_error = f"{type(exc).__name__}: {exc}"
+            self.last_status = STATUS_FAILED
+            self.last_reason = f"{type(exc).__name__}: {exc}"
+            # 失败不推进 key：同一根 K 线允许重试
 
         hb.updated_at_ms = as_of_ms
         hb.last_round_ts_ms = as_of_ms
-        hb.last_round_key_ms = key
         hb.rounds += 1
         hb.halted = self.circuit.halted
         hb.halt_reason = self.circuit.reason
@@ -158,26 +177,27 @@ class RunLoop:
     # ---------- 多轮 ----------
 
     def run(self, start_ms: int, until_ms: int) -> dict:
-        executed = 0
+        executed = failed = skipped = 0
         stopped = False
-        skipped = 0
         as_of = start_ms
         while as_of <= until_ms:
             if self.config.max_rounds is not None and executed >= self.config.max_rounds:
                 break
             try:
-                r = self.step(as_of)
-            except LoopStopped as exc:
+                self.step(as_of)
+            except LoopStopped:
                 stopped = True
-                last_error = str(exc)
                 break
-            if r is None:
-                skipped += 1
-            else:
+            if self.last_status == STATUS_OK:
                 executed += 1
+            elif self.last_status == STATUS_FAILED:
+                failed += 1
+            else:
+                skipped += 1
             as_of += self.config.interval_ms
         return {
-            "executed": executed,
+            "executed": executed,          # 成功决策数（= 日志行数）
+            "failed": failed,
             "skipped": skipped,
             "stopped": stopped,
             "last_round_ts_ms": as_of - self.config.interval_ms,

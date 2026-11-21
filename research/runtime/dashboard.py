@@ -128,6 +128,7 @@ table{{border-collapse:collapse;width:100%}}td,th{{border-bottom:1px solid #333;
 <p>health: <span class="k">{html.escape(str(state.get('health')))}</span> ·
 heartbeat age: {html.escape(str(state.get('heartbeat_age_ms')))} ms ·
 rounds: {html.escape(str(hb.get('rounds')))} ·
+successful: {html.escape(str(hb.get('successful_rounds')))} ·
 halted: {html.escape(str(hb.get('halted')))}</p>
 <p>halt reason: {html.escape(str(hb.get('halt_reason') or '-'))}</p>
 <p>cash: {html.escape(str(ledger.get('cash', 'UNKNOWN')))} ·

@@ -253,3 +253,83 @@ python -m research.runtime replay --rounds 72 --limit 500
 
 代价要说清：开仓当根不判止损，可能**漏掉**真实触发（下一根才处理），这是"不虚报亏损"的保守取舍；
 更精确的做法是接入 5m/15m 子周期，属于后续数据接线工作。
+
+---
+
+## 14. Sprint 4.4：Step 三态语义
+
+旧实现有两个会掩盖故障的问题：
+
+1. `record_success()` 在 `run_round()` 之前执行：取数成功但决策/账本连续失败时，失败计数每次被清零，
+   永远熔断不了；
+2. 失败也推进 `last_round_key_ms`：同一小时无法重试；`live` 还把失败的 `None` 显示成
+   "同一根 K 线已决策过"，把故障伪装成正常跳过。
+
+修法：
+
+| 语义 | 现在 |
+|---|---|
+| `OK` | 取数 **且** `run_round` 都成功 → `record_success()`、推进 `last_round_key_ms`、`successful_rounds+1` |
+| `FAILED` | 任一环节异常 → `record_failure()`、**不推进 key**（同一根可重试）、记录 `last_error` |
+| `SKIPPED` | 同一根 K 线已成功决策 → 不写心跳、不重复下单 |
+
+- `RunLoop.last_status` / `last_reason` 暴露三态，`live` 分别打印 `OK / FAILED / skipped`；
+- `run()` 返回 `executed`（成功）/ `failed` / `skipped`；
+- 心跳新增 `successful_rounds`：**验收用它与日志行数比对**，`rounds` 只是尝试数；
+- 恢复轮：连续成功将达到阈值时，本轮就允许开新仓；但只有整轮成功才计数。
+
+---
+
+## 15. Forward Test V1：启动与验收
+
+### 启动（节点上）
+
+```bash
+bash scripts/forward_test_v1.sh
+# 等价于：
+#   git pull --ff-only && pytest -q
+#   live --rounds 1 --root data/openalpha_smoke        # 冒烟
+#   nohup python -u -m research.runtime live \
+#     --interval-ms 3600000 --rounds 73 \
+#     --root data/openalpha_forward_v1 \
+#     > logs/openalpha_forward_v1.log 2>&1 &
+```
+
+73 轮 × 1h ≈ 72 小时（72 轮只跨 71 小时）。建议用 systemd 守护，nohup 只防 SSH 断开。
+
+### 验收（不能只看 rounds）
+
+```bash
+python scripts/verify_forward_run.py \
+  --root data/openalpha_forward_v1 --rounds 73 --hours 72
+```
+
+校验项：
+
+1. `successful_rounds == 日志行数`（成功决策可追溯）；
+2. `successful_rounds >= 73`；
+3. 首末日志时间差 ≥ 72h（2% 容差）；
+4. **验证盘订单数 = 0**（无 VERIFIED 就不该有单）；
+5. 每笔订单都能在日志里找到 `fill` / `shadow_fill`；
+6. 订单 `intent_id` 唯一；
+7. 失败尝试 = `rounds − successful_rounds`，且有 `last_error` 记录。
+
+任何一项失败 → 退出码 1，JSON 里列出原因。失败轮次、重复跳过、熔断次数单独统计，
+不为凑满 73 而隐瞒异常。
+
+### 三天内的观察命令
+
+```bash
+tail -f logs/openalpha_forward_v1.log
+python -m research.runtime report --root data/openalpha_forward_v1
+python -m research.runtime dashboard --root data/openalpha_forward_v1 --html board.html
+python -m research.runtime shadow --root data/openalpha_forward_v1
+```
+
+### 研究纪律
+
+- 这 72 小时首先验证**运行可靠性与前瞻模拟行为**；1h 模拟止损会漏掉开仓当根的部分波动，
+  不能仅凭收益数字认定策略有效；
+- 结束后与 Baseline V1（PR #16 的 72h 历史回放）对比，但**不回头优化已看过的样本**；
+- 趋势跟随若再次成为主要亏损源，针对入场时机/状态切换/止损设计新假设，
+  用再下一段未见过的数据验证。
