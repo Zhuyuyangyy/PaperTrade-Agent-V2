@@ -128,3 +128,31 @@ loop = RunLoop(root, broker, limits, source, ...)
 
 **尚未在部署节点验证**：网络链路仍是 fake-ip + MITM 代理，第一次真实运行时先看
 `stats()["errors"]` 与心跳的 `last_error`，再谈 72h。
+
+---
+
+## 10. 真实数据首跑（2026-11-21 20:52 CST）
+
+```bash
+python -m research.runtime live --rounds 1
+```
+
+```
+[1795265222491] state=TREND_DOWN/HIGH_VOL/FLAT/RISK_HIGH conf=0.85
+  decision=SHORT trend_follow shadow=True
+  risk=ALLOW ('OK',) — 放行 100 USDT（波动预算 76.4bps − 成本 20.0bps = 56.4bps；
+       这是波动空间，不是期望收益，需独立验证）
+  equity=1000  source.stats={'requests': 4, 'errors': 0}
+```
+
+- 数据：BTCUSDT 5m/15m/1h/4h 各 299 根已收盘 K 线，最新 5m 收盘 58942；
+- 状态：1h 空头排列 + ADX 强，波动率处于高分位 → `TREND_DOWN / HIGH_VOL / RISK_HIGH`；
+- 策略给出 SHORT；因为是 `UNTESTED`，**只生成影子意图，不进账本**；
+- 风控仍完整执行：波动预算 76.4bps，扣 20bps 成本后 56.4bps，放行额度 100 USDT。
+
+**这不是结论，是快照。** 单次运行无法证明任何优势；`shadow=True` 是故意的：
+未经独立验证的策略不允许占用模拟账本。真实 72h 运行与看板对账仍未做。
+
+首次运行还确认了两件事：真实端点在本机可拉通（4 请求 0 错误），以及
+`BinanceKlineSource` 的未收盘过滤在真实数据上生效（最新一根 5m 的 `close_ms`
+必须早于 `as_of`，否则会被丢弃）。

@@ -10,6 +10,7 @@ import argparse
 import json
 import sys
 import tempfile
+import time
 from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
@@ -23,6 +24,7 @@ from research.strategy.registry import DEFAULT_SPECS
 
 from .dashboard import build_state, render_html
 from .heartbeat import read as read_heartbeat
+from .live import BinanceKlineSource
 from .loop import LoopConfig, RunLoop
 from .sources import CandlesSource
 from .round import run_round
@@ -100,6 +102,39 @@ def _run_loop(args) -> int:
     return 0
 
 
+def _run_live(args) -> int:
+    """真实数据跑一轮（或 N 轮）：只读公开 K 线，模拟下单，默认影子。"""
+    root = Path(args.root) if args.root else Path("data/openalpha_live")
+    root.mkdir(parents=True, exist_ok=True)
+    source = BinanceKlineSource(symbol=args.symbol, limit=args.limit,
+                                timeout_s=args.timeout_s, retries=1)
+    broker = PaperBroker(root / "ledger.sqlite", starting_cash=D("1000"))
+    specs = _specs(args.verified)
+    limits = RiskLimits()
+    for i in range(args.rounds):
+        as_of = int(time.time() * 1000)
+        views = source.candles(as_of)
+        res = run_round("BTC/USDT", views, as_of, broker, limits,
+                        log_path=root / "data" / "decisions.jsonl", specs=specs)
+        intent = res.selection.intent
+        print(f"[{as_of}] state={res.state.trend}/{res.state.volatility}/"
+              f"{res.state.momentum}/{res.state.risk} conf={res.state.confidence}")
+        print(f"  decision={res.selection.decision}"
+              + (f" {intent.strategy_id} shadow={intent.shadow}" if intent else ""))
+        if res.risk:
+            print(f"  risk={res.risk.decision} {res.risk.codes} — {res.risk.reason}")
+        if res.fill:
+            print(f"  fill={res.fill.to_dict()}")
+        if res.selection.hold_reason:
+            print(f"  hold={res.selection.hold_reason}")
+        print(f"  equity={res.equity}  source.stats={source.stats()}")
+        if i + 1 < args.rounds:
+            time.sleep(args.sleep_s)
+    broker.close()
+    print(f"root={root}  ledger={root / 'ledger.sqlite'}")
+    return 0
+
+
 def _run_dashboard(args) -> int:
     root = Path(args.root)
     state = build_state(root, args.now_ms)
@@ -130,6 +165,15 @@ def main(argv: list[str] | None = None) -> int:
     p_run.add_argument("--max-rounds", type=int, default=None)
     p_run.add_argument("--verified", nargs="*", default=[])
 
+    p_live = sub.add_parser("live", help="真实 Binance K 线跑一轮/N 轮（模拟，默认影子）")
+    p_live.add_argument("--root", default=None)
+    p_live.add_argument("--symbol", default="BTCUSDT")
+    p_live.add_argument("--rounds", type=int, default=1)
+    p_live.add_argument("--sleep-s", type=float, default=300.0)
+    p_live.add_argument("--limit", type=int, default=300)
+    p_live.add_argument("--timeout-s", type=float, default=15.0)
+    p_live.add_argument("--verified", nargs="*", default=[])
+
     p_dash = sub.add_parser("dashboard", help="只读看板（JSON 或 HTML）")
     p_dash.add_argument("--root", required=True)
     p_dash.add_argument("--now-ms", type=int, default=0)
@@ -140,6 +184,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_demo(args)
     if args.cmd == "run":
         return _run_loop(args)
+    if args.cmd == "live":
+        return _run_live(args)
     return _run_dashboard(args)
 
 
