@@ -161,3 +161,24 @@ python -m pytest tests -q
 - 新闻与 Polymarket：默认 `advisory_only=true`，不改变 `Selection`，只写日志；
 - 增量验证通过后（样本外、成本、稳健性），才允许把信号接进 `StrategySpec` 的适用条件；
 - `VERIFIED` 的授予必须由独立验证链路产生，不能由运行时自动升级。
+
+---
+
+## 11. Sprint 2.1 修正（模拟账本正确性）
+
+复审发现 6 项会让模拟盘失真的问题，全部先写反例再修：
+
+| ID | 问题 | 修法 | 回归 |
+|---|---|---|---|
+| 2.1-1 | `expire()` 用开仓订单价平仓，且 `run_round()` 从不调用它 | 改为按**当前可用价**（`price_map`）平仓，无价格则跳过并计数；`run_round` 每轮在决策前调用 | `test_expire_uses_actual_price_not_entry`、`test_run_round_expires_positions_past_holding` |
+| 2.1-2 | `realized_pnl_since()` 不含开仓费；`day_start_ms` 默认 0 | 平仓 `pnl` 改为**净额**（毛盈亏 − 双边费）；持仓行记录 `entry_fee`；日亏损由调用方传入当日零点 | `test_realized_pnl_includes_both_fees` |
+| 2.1-3 | `submit()` 自己不拒绝 `shadow=True`，只靠编排层 | broker 内硬门：影子意图直接返回 `None`，不写订单 | `test_submit_rejects_shadow_intent`、`test_submit_never_accepts_shadow_intent` |
+| 2.1-4 | 风控把 `0.5×ATR%` 叫作 `EV_net` | 改名 `volatility_budget_bps`；门槛改为 `min_volatility_budget_bps`；文案明确"这是波动空间，不是期望收益，需独立验证" | `tests/risk/test_naming.py` |
+| 2.1-5 | 只按收盘价检查止损，跳空仍按止损价成交 | 新增 `mark_bar()`：开盘越过止损 → 按开盘价（更差）；同 bar 止损/止盈同触发 → 止损；止盈跳空不取更优价 | `test_stop_gap_through_uses_worse_open`、`test_same_bar_stop_and_tp_prefers_stop`、`test_take_profit_gap_through_does_not_overfill` |
+| 2.1-6 | 影子策略可能凭更小的 priority 盖过 VERIFIED | 选择排序改为 `(是否 VERIFIED, priority, id)`；`VERIFIED` 必须带 `verified_by`（独立报告 id），否则构造报错 | `tests/strategy/test_verification.py` |
+
+`--verified` 只保留在 demo 入口，写入 `verified_by="DEMO-ONLY"` 并打印警告；
+正式运行入口没有提升权限的参数。
+
+**验收**：超时按实际价结算、每日风险账含双边费、影子无法进账本、止损保守成交、
+验证权限不可由运行参数提升——全部有先失败后通过的用例。

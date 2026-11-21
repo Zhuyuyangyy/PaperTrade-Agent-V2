@@ -39,11 +39,19 @@ def _hold_reason(state: MarketState, candidates: list[Candidate]) -> str:
     return f"HOLD: 无策略适用（trend={state.trend}, vol={state.volatility}）；{reasons}"
 
 
+def _rank(spec: StrategySpec) -> tuple[int, int, str]:
+    """VERIFIED 先于影子；同级别按预注册 priority。
+
+    否则一个 priority 数字更小的影子策略会挡住已验证策略，导致"验证通过但永远不执行"。
+    """
+    return (0 if spec.verification == "VERIFIED" else 1, spec.priority, spec.strategy_id)
+
+
 def select(state: MarketState, specs: tuple[StrategySpec, ...] = DEFAULT_SPECS) -> Selection:
     candidates: list[Candidate] = []
     best: TradeIntent | None = None
 
-    for spec in sorted(specs, key=lambda s: (s.priority, s.strategy_id)):
+    for spec in sorted(specs, key=_rank):
         if spec.verification == "FALSIFIED":
             candidates.append(Candidate(spec.strategy_id, spec.version, False, "STRATEGY_FALSIFIED"))
             continue

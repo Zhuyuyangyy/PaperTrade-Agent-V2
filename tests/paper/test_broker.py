@@ -20,6 +20,7 @@ def _intent(side: str = "LONG", entry: str = "100", stop: str = "98",
         strategy_id="trend_follow", strategy_version="v1",
         entry_ref_price=D(entry), stop_price=D(stop), take_profit_price=D(tp),
         expected_holding_ms=3_600_000, confidence=D("0.7"), reason="test",
+        shadow=False,
     )
 
 
@@ -69,8 +70,8 @@ def test_short_stop_triggers_on_price_up(broker: PaperBroker) -> None:
 
 def test_timeout_expiry(broker: PaperBroker) -> None:
     broker.submit(_intent(), D("100"))
-    assert broker.expire(BASE + 1000, 3_600_000) == []
-    closed = broker.expire(BASE + 3_600_001, 3_600_000)
+    assert broker.expire(BASE + 1000, {"BTC/USDT": D("100")}) == []
+    closed = broker.expire(BASE + 3_600_001, {"BTC/USDT": D("100")})
     assert len(closed) == 1 and closed[0].reason == "TIMEOUT"
 
 

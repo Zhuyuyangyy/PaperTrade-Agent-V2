@@ -103,8 +103,8 @@ def test_falsified_strategy_is_excluded() -> None:
 
 
 def test_verified_strategy_is_not_shadow() -> None:
-    specs = tuple(replace(s, verification="VERIFIED") if s.strategy_id == "breakout_confirm"
-                  else s for s in DEFAULT_SPECS)
+    specs = tuple(replace(s, verification="VERIFIED", verified_by="test-report")
+                  if s.strategy_id == "breakout_confirm" else s for s in DEFAULT_SPECS)
     sel = select(_state(trend="RANGE", features=_features(close=D("101.2"), range_high=D("103"))), specs)
     assert sel.intent is not None and sel.intent.shadow is False
 

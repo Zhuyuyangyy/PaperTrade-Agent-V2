@@ -303,7 +303,7 @@ python -m research.verify --list-market                   # 本地行情缓存�
 
 - **Sprint 0（已合并）**：审计 + 数据正确性修复。设计：[`docs/design/openalpha-v1-architecture.md`](docs/design/openalpha-v1-architecture.md)；审计：[`docs/audit/sprint-0-audit-report.md`](docs/audit/sprint-0-audit-report.md)
 - **Sprint 1（已合并）**：L2 市场理解层——多周期已收盘 K 线、指标、状态机、证据/冲突/失效条件、市场准入。设计与口径：[`docs/design/sprint-1-market-understanding.md`](docs/design/sprint-1-market-understanding.md)
-- **Sprint 2（本分支）**：自主决策闭环——逐周期数据门、策略注册（三策略、影子模式）、确定性风控、模拟撮合（幂等/费用/滑点/恢复）、决策日志。设计与口径：[`docs/design/sprint-2-autonomous-loop.md`](docs/design/sprint-2-autonomous-loop.md)
+- **Sprint 2（已合并）**：自主决策闭环——逐周期数据门、策略注册（三策略、影子模式）、确定性风控、模拟撮合（幂等/费用/滑点/恢复）、决策日志；**2.1 修正**了超时结算、双边费、影子硬门、跳空止损与验证权限。设计与口径：[`docs/design/sprint-2-autonomous-loop.md`](docs/design/sprint-2-autonomous-loop.md)
 
 ```bash
 python -m research.market demo                # 三种 regime 的状态与证据

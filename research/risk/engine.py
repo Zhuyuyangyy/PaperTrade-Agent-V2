@@ -34,7 +34,7 @@ class RiskLimits:
     max_open_positions: int = 3
     daily_loss_limit: Decimal = Decimal("20")
     max_spread_bps: Decimal = Decimal("20")
-    min_ev_bps: Decimal = Decimal("5")
+    min_volatility_budget_bps: Decimal = Decimal("5")   # 波动预算门槛，不是"期望收益"
     fee_bps: Decimal = Decimal("5")
     slippage_bps: Decimal = Decimal("5")
     kill_switch: bool = False
@@ -56,6 +56,7 @@ class RiskDecision:
     notional: Decimal = Decimal("0")
     reason: str = ""
     shadow: bool = False
+    volatility_budget_bps: Decimal = Decimal("0")
 
     def to_dict(self) -> dict:
         return {
@@ -65,20 +66,27 @@ class RiskDecision:
             "notional": str(self.notional),
             "reason": self.reason,
             "shadow": self.shadow,
+            "volatility_budget_bps": str(self.volatility_budget_bps),
         }
 
 
 def _deny(code: str, reason: str, checks: dict[str, bool], shadow: bool,
-          notional: Decimal = Decimal("0")) -> RiskDecision:
-    return RiskDecision("DENY", (code,), checks, notional, reason, shadow)
+          notional: Decimal = Decimal("0"),
+          budget: Decimal = Decimal("0")) -> RiskDecision:
+    return RiskDecision("DENY", (code,), checks, notional, reason, shadow, budget)
 
 
-def _freeze(code: str, reason: str, checks: dict[str, bool], shadow: bool) -> RiskDecision:
-    return RiskDecision("FREEZE", (code,), checks, Decimal("0"), reason, shadow)
+def _freeze(code: str, reason: str, checks: dict[str, bool], shadow: bool,
+            budget: Decimal = Decimal("0")) -> RiskDecision:
+    return RiskDecision("FREEZE", (code,), checks, Decimal("0"), reason, shadow, budget)
 
 
-def expected_move_bps(state: MarketState) -> Decimal | None:
-    """用 1h ATR% 的半个 ATR 作为"一笔交易的目标移动"（保守、可解释）。"""
+def volatility_budget_bps(state: MarketState) -> Decimal | None:
+    """波动预算：0.5 × 1h ATR%。
+
+    **这不是期望收益**。它只回答"这笔交易有没有足够的波动空间覆盖成本"；
+    策略是否真的有优势，必须由独立样本外验证的收益分布回答，不能用 ATR 代理。
+    """
     atr_pct = state.features.get("atr_pct")
     if not isinstance(atr_pct, Decimal) or atr_pct <= 0:
         return None
@@ -142,17 +150,20 @@ def evaluate(intent: TradeIntent, state: MarketState, account: AccountSnapshot,
                      checks, intent.shadow)
     checks["spread_ok"] = True
 
-    gross = expected_move_bps(state)
+    budget = volatility_budget_bps(state)
     cost = limits.fee_bps * 2 + spread_bps + limits.slippage_bps
-    if gross is None:
+    if budget is None:
         checks["cost_ok"] = False
-        return _deny("COST_UNKNOWN", "缺少 ATR%，无法估算成本", checks, intent.shadow)
-    ev_net = gross - cost
-    if ev_net < limits.min_ev_bps:
+        return _deny("COST_UNKNOWN", "缺少 ATR%，无法估算波动预算", checks, intent.shadow)
+    net_budget = budget - cost
+    if net_budget < limits.min_volatility_budget_bps:
         checks["cost_ok"] = False
-        return _deny("COST_TOO_HIGH",
-                     f"EV_net={ev_net:.1f}bps < {limits.min_ev_bps}bps（毛 {gross:.1f} − 成本 {cost:.1f}）",
-                     checks, intent.shadow)
+        return _deny(
+            "COST_TOO_HIGH",
+            f"波动预算 {budget:.1f}bps − 成本 {cost:.1f}bps = {net_budget:.1f}bps "
+            f"< 门槛 {limits.min_volatility_budget_bps:.1f}bps（这不是期望收益，只说明波动空间不够）",
+            checks, intent.shadow, budget=budget,
+        )
     checks["cost_ok"] = True
 
     if account.open_positions >= limits.max_open_positions:
@@ -181,5 +192,7 @@ def evaluate(intent: TradeIntent, state: MarketState, account: AccountSnapshot,
 
     return RiskDecision(
         "ALLOW", ("OK",), checks, notional,
-        f"放行 {notional} USDT（EV_net={ev_net:.1f}bps）", intent.shadow,
+        f"放行 {notional} USDT（波动预算 {budget:.1f}bps − 成本 {cost:.1f}bps = "
+        f"{net_budget:.1f}bps；这是波动空间，不是期望收益，需独立验证）",
+        intent.shadow, budget,
     )

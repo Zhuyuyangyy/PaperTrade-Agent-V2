@@ -57,8 +57,8 @@ def _broker(tmp_path: Path) -> PaperBroker:
 
 
 def _verified(*ids: str):
-    return tuple(replace(s, verification="VERIFIED" if s.strategy_id in ids else s.verification)
-                 for s in DEFAULT_SPECS)
+    return tuple(replace(s, verification="VERIFIED", verified_by="test-report")
+                 if s.strategy_id in ids else s for s in DEFAULT_SPECS)
 
 
 def test_uptrend_produces_long_and_fills(tmp_path: Path) -> None:
@@ -196,4 +196,36 @@ def test_stop_loss_closes_on_mark(tmp_path: Path) -> None:
     closed = broker.mark("BTC/USDT", stop - Decimal("1"), _as_of(candles) + TF_1H_MS)
     assert len(closed) == 1 and closed[0].reason == "STOP_LOSS"
     assert closed[0].pnl < 0
+    assert broker.open_positions() == []
+
+
+def test_run_round_expires_positions_past_holding(tmp_path: Path) -> None:
+    """run_round 必须执行超时退出，且用当前可用价结算。"""
+    candles = _ramp(250, 100, 0.2, vol_last=1.0)
+    first_as_of = _as_of(candles)
+    broker = _broker(tmp_path)
+    specs = tuple(replace(s, verification="VERIFIED", verified_by="test-report",
+                          max_holding_ms=3_600_000)
+                  for s in DEFAULT_SPECS if s.strategy_id == "trend_follow")
+    r1 = run_round("BTC/USDT", {"1h": candles}, first_as_of, broker, RiskLimits(), specs=specs)
+    assert r1.fill is not None
+
+    extended = candles + [
+        _candle(250, 150.0, 150.1), _candle(251, 150.1, 150.2),
+    ]
+    later = _as_of(extended)
+    r2 = run_round("BTC/USDT", {"1h": extended}, later, broker, RiskLimits(), specs=specs)
+    assert any(c.reason == "TIMEOUT" for c in r2.closed), "超时必须被执行"
+    assert all(c.exit_price > 0 for c in r2.closed)
+
+
+def test_submit_never_accepts_shadow_intent(tmp_path: Path) -> None:
+    """即使编排层出错，broker 自己也必须拒绝影子意图。"""
+    from research.strategy.contracts import TradeIntent as TI
+
+    broker = _broker(tmp_path)
+    shadow = TI("s1", BASE, "BTC/USDT", "LONG", "trend_follow", "v1",
+                D("100"), D("95"), D("110"), 3_600_000, D("0.7"), "shadow",
+                shadow=True)
+    assert broker.submit(shadow, D("100")) is None
     assert broker.open_positions() == []
