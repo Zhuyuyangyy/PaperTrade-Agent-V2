@@ -13,7 +13,7 @@
 | 新闻 RSS | cointelegraph / decrypt / theblock | 可用 | 一次采集 27 条（去重后），首次可见时间=采集时刻 |
 | Polymarket 市场 | Gamma `/markets` | 可用 | 9 个 BTC 短周期市场，ABOVE/BELOW 方向映射正确 |
 | Polymarket 盘口 | CLOB `/book` | 可用但慢 | 部分市场点差 800–8000bps → `WIDE_SPREAD`，不研究 |
-| DeepSeek | `/chat/completions` | **无 key** | 回退规则抽取，warnings 写 `LLM_UNAVAILABLE` |
+| DeepSeek | `/chat/completions` | **可用（本机实测）** | 55 条新闻全部 LLM 抽取，约 2.3s/条；无 key 时回退规则 |
 | 聪明钱 | 历史钱包 trades | **源未接** | warnings 写 `WALLET_SOURCE_UNAVAILABLE`，契约与可复制性已就绪 |
 
 所有外部调用都可注入（`fetch` / `gamma_fetch` / `book_fetch` / `llm_fetch`），
@@ -81,12 +81,33 @@ selection: LONG breakout_confirm (shadow)
 - 9 个市场方向映射正确，但盘口宽点差 → 当前没有可研究的 P 特征；
 - 决策与无情报时完全一致（有测试保证）；实验盘影子成交 1 笔。
 
+### 2026-11-21 22:32 CST：DeepSeek 接通后的全量采集
+
+```
+elapsed=128.4s  news=55  markets=9
+methods: {'llm': 55}
+directions: {'bearish': 20, 'neutral': 31, 'bullish': 4}
+avg_conf: 0.513
+```
+
+抽样（LLM 给出的证据与原标题一致）：
+
+| 标题 | 方向 | 置信度 | 类型 |
+|---|---|---|---|
+| Bitcoin Miners Are Selling Their Stacks to Fund the AI Boom | bearish | 0.62 | crypto |
+| Bitcoin Struggles to Hold $64,000 as ETF Outflows Hit $2.9B | bearish | 0.82 | etf |
+| CFTC Chair Selig outlines how Hyperliquid and other onchain… | bullish | 0.55 | regulation |
+
+成本/延迟：串行约 2.3s/条；`max_news`（默认 40）限制每轮送 LLM 的条数，
+避免预算和延迟失控。key 只从环境变量读取，不写入仓库或日志。
+
 ---
 
 ## 6. 必须说清的限制
 
-1. **没有 DeepSeek key**：LLM 抽取未真实验证；规则回退只按关键词，置信度低。
-   配好 key 后先跑 `extract` 的单元测试与 20 条抽样人工核对。
+1. **LLM 已实测但样本有限**：55 条全部 llm 抽取，抽样与原标题一致；仍需在
+   Spark 上跑一轮 20 条人工核对，确认方向/期限没有系统性偏差。
+   配置方式：只设环境变量 `DEEPSEEK_API_KEY`，不要写进任何文件。
 2. **聪明钱源未接**：`data-api.polymarket.com/trades` 返回 410；需要新的历史 trades
    端点或链上索引。契约与可复制性逻辑已就绪。
 3. **P 特征当前为空**：短期 BTC 市场深度价外、点差极宽；需要筛更活跃/平值的市场。
