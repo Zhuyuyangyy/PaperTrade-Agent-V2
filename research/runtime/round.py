@@ -59,11 +59,13 @@ def run_round(symbol: str, candles_by_tf: Mapping[str, list[Candle]], as_of_ms: 
               settle_ms: int = 30_000,
               intel=None,
               allow_new_entries: bool = True,
-              halt_reason: str = "") -> RoundResult:
+              halt_reason: str = "",
+              shadow_broker: PaperBroker | None = None) -> RoundResult:
     state = analyze(symbol, candles_by_tf, as_of_ms, settle_ms=settle_ms)
 
     mark = _mark_price(state)
     closed: list[ClosedPosition] = []
+    shadow_closed: list[ClosedPosition] = []
     if mark is not None:
         # 用 1h 最后一根已收盘 K 线做保守 mark（跳空按开盘价），再处理超时
         h1 = closed_only(sorted(candles_by_tf.get("1h") or [], key=lambda c: c.open_ms),
@@ -71,7 +73,12 @@ def run_round(symbol: str, candles_by_tf: Mapping[str, list[Candle]], as_of_ms: 
         if h1:
             bar = h1[-1]
             closed += broker.mark_bar(symbol, bar.open, bar.high, bar.low, as_of_ms)
+            if shadow_broker is not None:
+                shadow_closed += shadow_broker.mark_bar(symbol, bar.open, bar.high,
+                                                        bar.low, as_of_ms)
         closed += broker.expire(as_of_ms, {symbol: mark})
+        if shadow_broker is not None:
+            shadow_closed += shadow_broker.expire(as_of_ms, {symbol: mark})
 
     selection = select(state, specs)
     if not allow_new_entries:
@@ -79,16 +86,29 @@ def run_round(symbol: str, candles_by_tf: Mapping[str, list[Candle]], as_of_ms: 
                               f"HALTED: {halt_reason or 'circuit open'}")
     risk: RiskDecision | None = None
     fill: Fill | None = None
+    shadow_fill: Fill | None = None
     if selection.intent is not None:
-        account: AccountSnapshot = broker.account(day_start_ms)
-        risk = evaluate(selection.intent, state, account, limits, spread_bps)
-        if risk.decision == "ALLOW" and not selection.intent.shadow:
-            fill = broker.submit(selection.intent, risk.notional)
+        # 影子意图进独立的实验盘；只有验证盘（broker）接受非影子意图
+        target = shadow_broker if selection.intent.shadow else broker
+        if target is not None:
+            account: AccountSnapshot = target.account(day_start_ms)
+            risk = evaluate(selection.intent, state, account, limits, spread_bps)
+            if risk.decision == "ALLOW":
+                submitted = target.submit(selection.intent, risk.notional)
+                if selection.intent.shadow:
+                    shadow_fill = submitted
+                else:
+                    fill = submitted
+        else:
+            account = broker.account(day_start_ms)
+            risk = evaluate(selection.intent, state, account, limits, spread_bps)
     else:
         # 没有意图时也要执行市场级门禁：数据陈旧/缺口必须在风控层留痕
         risk = evaluate_market_gate(state, limits)
 
     equity = broker.equity(as_of_ms, {symbol: mark} if mark is not None else {})
+    shadow_equity = (shadow_broker.equity(as_of_ms, {symbol: mark})
+                     if shadow_broker is not None and mark is not None else None)
     log = {
         "schema_version": 1,
         "round_ts_ms": as_of_ms,
@@ -109,8 +129,11 @@ def run_round(symbol: str, candles_by_tf: Mapping[str, list[Candle]], as_of_ms: 
         "selection": selection.to_dict(),
         "risk": risk.to_dict() if risk else None,
         "fill": fill.to_dict() if fill else None,
+        "shadow_fill": shadow_fill.to_dict() if shadow_fill else None,
         "closed": [c.to_dict() for c in closed],
+        "shadow_closed": [c.to_dict() for c in shadow_closed],
         "equity": str(equity),
+        "shadow_equity": str(shadow_equity) if shadow_equity is not None else None,
         "hold_reason": selection.hold_reason,
         "intel": intel.to_dict() if intel is not None else None,
     }
