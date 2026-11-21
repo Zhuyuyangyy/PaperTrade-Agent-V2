@@ -32,7 +32,9 @@ class NewsStore:
     def add(self, *, headline: str, raw_text: str, occurred_at_ms: int,
             first_seen_ms: int, sources: tuple[SourceRef, ...],
             credibility: Decimal | None = None, horizon_ms: int = 24 * 3_600_000,
-            tags: tuple[str, ...] = ()) -> NewsEvent | None:
+            tags: tuple[str, ...] = (), direction: str = "neutral",
+            confidence: Decimal = Decimal("0"), event_type: str = "other",
+            extraction_method: str = "rules") -> NewsEvent | None:
         clean = sanitize_text(headline)
         norm = _WS.sub(" ", clean).strip().lower()
         if not norm:
@@ -57,6 +59,10 @@ class NewsStore:
             tags=tags,
             injection_suspected=injected,
             advisory_only=True,
+            direction=direction,
+            confidence=confidence,
+            event_type=event_type,
+            extraction_method=extraction_method,
         )
         self._by_key[key] = event
         return event
