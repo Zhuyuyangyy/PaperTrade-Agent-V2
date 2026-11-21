@@ -27,6 +27,7 @@ from .heartbeat import read as read_heartbeat
 from .live import BinanceKlineSource
 from .loop import LoopConfig, RunLoop
 from .sources import CandlesSource
+from .shadow import load_shadow_signals, report as shadow_report
 from .round import run_round
 
 D = Decimal
@@ -103,35 +104,68 @@ def _run_loop(args) -> int:
 
 
 def _run_live(args) -> int:
-    """真实数据跑一轮（或 N 轮）：只读公开 K 线，模拟下单，默认影子。"""
+    """真实数据 → RunLoop：心跳、熔断、STOP、幂等、日志全部走同一条路径。
+
+    正式入口没有提权参数：`VERIFIED` 只能由独立验证报告授予（构造时
+    ``verified_by`` 必填），命令行无法把策略标成已验证。
+    """
     root = Path(args.root) if args.root else Path("data/openalpha_live")
     root.mkdir(parents=True, exist_ok=True)
     source = BinanceKlineSource(symbol=args.symbol, limit=args.limit,
                                 timeout_s=args.timeout_s, retries=1)
     broker = PaperBroker(root / "ledger.sqlite", starting_cash=D("1000"))
-    specs = _specs(args.verified)
-    limits = RiskLimits()
+    loop = RunLoop(
+        root, broker, RiskLimits(), source,
+        log_path=root / "data" / "decisions.jsonl",
+        config=LoopConfig(interval_ms=args.interval_ms,
+                          decision_period_ms=args.interval_ms,
+                          max_rounds=args.rounds),
+    )
+    sleep_s = args.sleep_s if args.sleep_s is not None else max(1.0, args.interval_ms / 1000)
     for i in range(args.rounds):
         as_of = int(time.time() * 1000)
-        views = source.candles(as_of)
-        res = run_round("BTC/USDT", views, as_of, broker, limits,
-                        log_path=root / "data" / "decisions.jsonl", specs=specs)
-        intent = res.selection.intent
-        print(f"[{as_of}] state={res.state.trend}/{res.state.volatility}/"
-              f"{res.state.momentum}/{res.state.risk} conf={res.state.confidence}")
-        print(f"  decision={res.selection.decision}"
-              + (f" {intent.strategy_id} shadow={intent.shadow}" if intent else ""))
-        if res.risk:
-            print(f"  risk={res.risk.decision} {res.risk.codes} — {res.risk.reason}")
-        if res.fill:
-            print(f"  fill={res.fill.to_dict()}")
-        if res.selection.hold_reason:
-            print(f"  hold={res.selection.hold_reason}")
-        print(f"  equity={res.equity}  source.stats={source.stats()}")
+        res = loop.step(as_of)
+        if res is None:
+            print(f"[{as_of}] skipped: 同一根 K 线已决策过（key={loop._round_key(as_of)}）")
+        else:
+            intent = res.selection.intent
+            print(f"[{as_of}] state={res.state.trend}/{res.state.volatility}/"
+                  f"{res.state.momentum}/{res.state.risk} conf={res.state.confidence}")
+            print(f"  decision={res.selection.decision}"
+                  + (f" {intent.strategy_id} shadow={intent.shadow}" if intent else ""))
+            if res.risk:
+                print(f"  risk={res.risk.decision} {res.risk.codes} — {res.risk.reason}")
+            if res.fill:
+                print(f"  fill={res.fill.to_dict()}")
+            if res.selection.hold_reason:
+                print(f"  hold={res.selection.hold_reason}")
+            print(f"  equity={res.equity}")
+        print(f"  source.stats={source.stats()} circuit={loop.circuit.to_dict()}")
         if i + 1 < args.rounds:
-            time.sleep(args.sleep_s)
-    broker.close()
+            time.sleep(sleep_s)
+    hb = read_heartbeat(loop.heartbeat_path)
+    print(f"\nheartbeat: {hb.to_dict() if hb else None}")
     print(f"root={root}  ledger={root / 'ledger.sqlite'}")
+    broker.close()
+    return 0
+
+
+def _run_shadow(args) -> int:
+    """评估影子信号在 +1h/+4h/+24h 的结果（保守：止损优先）。"""
+    root = Path(args.root)
+    signals = load_shadow_signals(root / "data" / "decisions.jsonl")
+    if not signals:
+        print("没有影子信号（先跑 live）")
+        return 0
+    source = BinanceKlineSource(symbol=args.symbol, limit=args.limit,
+                                timeout_s=args.timeout_s, retries=1)
+    try:
+        candles = source.candles(int(time.time() * 1000)).get("1h", [])
+    except Exception as exc:  # noqa: BLE001 - 影子评估失败只需如实报告
+        print(f"拉取 K 线失败，无法评估影子信号: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 1
+    rep = shadow_report(signals, candles, tuple(args.horizons))
+    print(json.dumps(rep, ensure_ascii=False, indent=2))
     return 0
 
 
@@ -165,14 +199,23 @@ def main(argv: list[str] | None = None) -> int:
     p_run.add_argument("--max-rounds", type=int, default=None)
     p_run.add_argument("--verified", nargs="*", default=[])
 
-    p_live = sub.add_parser("live", help="真实 Binance K 线跑一轮/N 轮（模拟，默认影子）")
+    p_live = sub.add_parser("live", help="真实 Binance K 线 → RunLoop（心跳/熔断/幂等/日志）")
     p_live.add_argument("--root", default=None)
     p_live.add_argument("--symbol", default="BTCUSDT")
     p_live.add_argument("--rounds", type=int, default=1)
-    p_live.add_argument("--sleep-s", type=float, default=300.0)
+    p_live.add_argument("--interval-ms", type=int, default=TF_1H_MS,
+                        help="决策周期（幂等键按这个周期对齐）")
+    p_live.add_argument("--sleep-s", type=float, default=None,
+                        help="轮间等待；缺省 = interval-ms/1000（1h 周期默认等 3600s）")
     p_live.add_argument("--limit", type=int, default=300)
     p_live.add_argument("--timeout-s", type=float, default=15.0)
-    p_live.add_argument("--verified", nargs="*", default=[])
+
+    p_shadow = sub.add_parser("shadow", help="影子信号之后的 +1h/4h/24h 表现（保守止损优先）")
+    p_shadow.add_argument("--root", required=True)
+    p_shadow.add_argument("--symbol", default="BTCUSDT")
+    p_shadow.add_argument("--limit", type=int, default=500)
+    p_shadow.add_argument("--timeout-s", type=float, default=15.0)
+    p_shadow.add_argument("--horizons", nargs="*", type=int, default=[1, 4, 24])
 
     p_dash = sub.add_parser("dashboard", help="只读看板（JSON 或 HTML）")
     p_dash.add_argument("--root", required=True)
@@ -186,6 +229,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_loop(args)
     if args.cmd == "live":
         return _run_live(args)
+    if args.cmd == "shadow":
+        return _run_shadow(args)
     return _run_dashboard(args)
 
 

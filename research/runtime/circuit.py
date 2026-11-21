@@ -49,6 +49,23 @@ class CircuitBreaker:
         self.halted = False
         self.reason = ""
 
+    @classmethod
+    def from_dict(cls, data: dict | None) -> "CircuitBreaker":
+        """从心跳恢复熔断状态：重启不能把"已经熔断"变成"从未发生"。"""
+        cfg = CircuitConfig(
+            fail_threshold=int((data or {}).get("fail_threshold", 3)),
+            recover_threshold=int((data or {}).get("recover_threshold", 2)),
+        )
+        cb = cls(cfg)
+        if not data:
+            return cb
+        cb.failures = int(data.get("failures", 0))
+        cb.successes = int(data.get("successes", 0))
+        cb.halted = bool(data.get("halted", False))
+        cb.reason = str(data.get("reason", ""))
+        cb.trips = int(data.get("trips", 0))
+        return cb
+
     def to_dict(self) -> dict:
         return {
             "halted": self.halted,

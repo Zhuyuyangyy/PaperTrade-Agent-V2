@@ -156,3 +156,41 @@ python -m research.runtime live --rounds 1
 首次运行还确认了两件事：真实端点在本机可拉通（4 请求 0 错误），以及
 `BinanceKlineSource` 的未收盘过滤在真实数据上生效（最新一根 5m 的 `close_ms`
 必须早于 `as_of`，否则会被丢弃）。
+
+---
+
+## 11. Sprint 4.1：真实运行加固
+
+复审发现 `live` 路径绕过了 `RunLoop`，心跳/熔断/STOP 都不生效；还留了 `--verified`
+提权口子。四项修复：
+
+| 问题 | 修法 |
+|---|---|
+| `live` 直接 `run_round`，不写心跳、不熔断、不认 STOP | `live` 改为构造 `BinanceKlineSource` + `RunLoop`，所有轮次走 `step()`：心跳、熔断、STOP、日志、幂等一条路径 |
+| 幂等键是运行时毫秒，同一根 K 线内重复轮询会产生新的交易机会 | 幂等键改为**已收盘 K 线周期**：`key = as_of // decision_period_ms * decision_period_ms`；同一根 K 线只决策一次 |
+| 熔断状态只在内存，重启即清零 | 熔断状态写入心跳 `circuit` 字段；`RunLoop` 启动时 `CircuitBreaker.from_dict()` 恢复，重启不会把"已熔断"变成"从未发生" |
+| `live` 暴露 `--verified`，可用 `DEMO-ONLY` 把策略提升并成交 | 正式入口删除该参数；`VERIFIED` 仍必须带 `verified_by`（独立报告 id）。`--verified` 只存在于 `demo` |
+
+另外修正 `--sleep-s` 语义：缺省 = `interval-ms / 1000`，1h 周期就是每小时一轮；
+旧文档写的"12 轮 × 300s ≈ 一小时"是 5 分钟一轮，已改。
+
+### 影子信号追踪
+
+`python -m research.runtime shadow --root data/openalpha_live`：
+
+- 从决策日志提取 `shadow=true` 的意图；
+- 用后续 1h K 线评估 +1h/+4h/+24h：止损/止盈优先（同根双触发按止损），
+  否则用 horizon 收盘价；
+- 收益按方向计，缺数据返回 `null`，不猜；
+- 输出每条信号的 exit/return_bps/reason 与汇总胜率、均值。
+
+这是研究记录，不是交易指令；它的用途是回答"第一次 SHORT 之后市场到底怎么走"。
+
+### 真实 72h 的前置
+
+1. 在部署节点用 `live --interval-ms 3600000 --rounds 72`（或进程守护）跑满 72 小时；
+2. 每轮看心跳 `rounds/last_ok/circuit` 与 `data/decisions.jsonl` 行数是否对得上；
+3. 用 `shadow` 报告统计影子信号表现；
+4. 期间任何一次熔断都要有 `halt_reason`，恢复要有连续成功记录。
+
+本机可以验证逻辑，但"真实时钟 72h 进程稳定性"只能在部署节点验收。

@@ -311,6 +311,8 @@ python -m research.verify --list-market                   # 本地行情缓存�
 python -m research.market demo                # 三种 regime 的状态与证据
 python -m research.runtime demo               # 完整决策链（默认全影子，不进账本）
 python -m research.runtime run --hours 24     # 按小时推进的运行循环（合成数据）
+python -m research.runtime live --rounds 1    # 真实 Binance K 线 → RunLoop（心跳/熔断/幂等）
+python -m research.runtime shadow --root data/openalpha_live   # 影子信号 +1h/4h/24h 表现
 python -m research.runtime dashboard --root <run_dir> --html board.html
 ```
 
