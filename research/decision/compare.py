@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 from .contracts import Decision, MarketSnapshot, Provider
@@ -22,6 +23,8 @@ def run(snapshot: MarketSnapshot, providers: list[Provider],
         entry = {
             "as_of_ms": snapshot.as_of_ms,
             "symbol": snapshot.symbol,
+            "completed_at_ms": int(time.time() * 1000),
+            "snapshot": snapshot.summary(),
             "state": {"trend": snapshot.state.trend,
                       "volatility": snapshot.state.volatility,
                       "momentum": snapshot.state.momentum,

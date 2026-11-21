@@ -3,12 +3,22 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import tempfile
 import time
 from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
+
+from research.decision import (
+    DeepSeekProvider,
+    JevProvider,
+    LinearProvider,
+    LogisticModel,
+    RulesProvider,
+)
+from research.intel.news_llm import LLMConfig
 
 from research.intel.pipeline import IntelPipelineConfig, collect as collect_intel
 from research.market.contracts import TF_15M_MS, TF_1H_MS, TF_4H_MS, TF_5M_MS
@@ -29,6 +39,24 @@ from .round import run_round
 
 D = Decimal
 WARMUP_HOURS = 210
+
+
+def _build_providers(args):
+    """按环境变量构造 provider：rules 常开，deepseek/jev/linear 有配置才启用。"""
+    if getattr(args, "no_providers", False):
+        return []
+    provs = [RulesProvider()]
+    key = os.environ.get("DEEPSEEK_API_KEY", "")
+    if key:
+        provs.append(DeepSeekProvider(LLMConfig(api_key=key)))
+    endpoint = os.environ.get("JEV_ENDPOINT", "")
+    jev_key = os.environ.get("JEV_API_KEY", "")
+    if endpoint and jev_key:
+        provs.append(JevProvider(endpoint, jev_key, os.environ.get("JEV_MODEL", "jev")))
+    model_path = getattr(args, "model", None)
+    if model_path and Path(model_path).is_file():
+        provs.append(LinearProvider(LogisticModel.load(model_path)))
+    return provs
 
 
 def _views(base) -> dict:
@@ -119,6 +147,8 @@ def _run_live(args) -> int:
         root, verified, RiskLimits(), source, shadow_broker=shadow,
         log_path=root / "data" / "decisions.jsonl",
         intel_fn=intel_fn,
+        providers=_build_providers(args),
+        providers_log_path=root / "data" / "providers.jsonl",
         config=LoopConfig(interval_ms=args.interval_ms,
                           decision_period_ms=args.interval_ms,
                           max_rounds=args.rounds),
@@ -176,6 +206,8 @@ def _run_replay(args) -> int:
     verified, shadow = _books(root, D(str(args.funding_bps)))
     loop = RunLoop(root, verified, RiskLimits(), source, shadow_broker=shadow,
                    log_path=root / "data" / "decisions.jsonl",
+                   providers=_build_providers(args),
+                   providers_log_path=root / "data" / "providers.jsonl",
                    config=LoopConfig(interval_ms=TF_1H_MS,
                                      decision_period_ms=TF_1H_MS,
                                      max_rounds=args.rounds))
@@ -254,6 +286,10 @@ def main(argv: list[str] | None = None) -> int:
                         help="关闭每轮新闻/Polymarket 采集（默认开启，只写日志不改决策）")
     p_live.add_argument("--intel-books", action="store_true",
                         help="是否额外拉 Polymarket 盘口（更慢，默认关）")
+    p_live.add_argument("--no-providers", action="store_true",
+                        help="关闭 rules/DeepSeek/Jev/linear 对照记录")
+    p_live.add_argument("--model", default=None,
+                        help="线性模型 JSON 路径（训练后导出，跨机器可迁移）")
 
     p_replay = sub.add_parser("replay", help="真实历史 1h K 线 → 双账本跑 N 轮（72h 回放）")
     p_replay.add_argument("--root", default=None)
@@ -262,6 +298,8 @@ def main(argv: list[str] | None = None) -> int:
     p_replay.add_argument("--limit", type=int, default=500)
     p_replay.add_argument("--timeout-s", type=float, default=20.0)
     p_replay.add_argument("--funding-bps", type=float, default=1.0)
+    p_replay.add_argument("--no-providers", action="store_true")
+    p_replay.add_argument("--model", default=None)
 
     p_report = sub.add_parser("report", help="双账本统计（现金/成交/胜率/回撤）")
     p_report.add_argument("--root", required=True)
