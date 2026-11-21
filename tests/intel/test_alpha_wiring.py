@@ -139,6 +139,18 @@ def test_pipeline_collects_offline() -> None:
     assert any("WALLET_SOURCE_UNAVAILABLE" in w for w in digest.warnings)
 
 
+def test_pipeline_max_news_caps_llm_work() -> None:
+    def many(url: str) -> str:
+        rows = [(f"headline {i}", f"https://x/{i}",
+                 f"Fri, 21 Nov 2026 1{i % 10}:00:00 GMT", "text") for i in range(6)]
+        return fake_rss(rows)
+
+    cfg = IntelPipelineConfig(feeds=(("https://feed", "t"),), fetch=many,
+                              gamma_fetch=lambda url: [], with_books=False, max_news=2)
+    digest = collect(NOW, cfg)
+    assert len(digest.news) == 2
+
+
 def test_pipeline_survives_bad_gamma() -> None:
     cfg = IntelPipelineConfig(
         feeds=(),

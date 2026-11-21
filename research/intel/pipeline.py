@@ -28,6 +28,7 @@ class IntelPipelineConfig:
     feeds: tuple[tuple[str, str], ...] = DEFAULT_FEEDS
     max_days: float = 7.0
     min_volume: float = 0.0
+    max_news: int = 40          # 每轮最多送 LLM 的条数（成本/延迟上限）
     llm: LLMConfig = field(default_factory=LLMConfig)
     fetch: object = None            # 新闻 HTTP fetch（注入）
     gamma_fetch: object = None      # Gamma fetch（注入）
@@ -44,6 +45,8 @@ def collect(now_ms: int, cfg: IntelPipelineConfig | None = None,
 
     items, feed_warnings = fetch_feeds(cfg.feeds, fetch=cfg.fetch)
     warnings.extend(feed_warnings)
+    # 按发布时间倒序，只送最新 N 条给 LLM（成本与延迟上限）
+    items = sorted(items, key=lambda i: i.published_ms or 0, reverse=True)[:cfg.max_news]
     if not cfg.llm.available:
         warnings.append("LLM_UNAVAILABLE: no DEEPSEEK_API_KEY; falling back to rules")
 
