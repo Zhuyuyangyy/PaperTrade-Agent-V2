@@ -296,14 +296,18 @@ python -m research.verify --list-market                   # 本地行情缓存�
 
 ---
 
-## OpenAlpha V1.0：从"证伪仪器"到"自主模拟交易员"（Sprint 0）
+## OpenAlpha V1.0：从"证伪仪器"到"自主模拟交易员"
 
 2026-11-21 起，仓库进入 OpenAlpha V1.0 改造：目标是一个能 24h 自己获取行情、
 理解市场状态、选择并验证策略、在风控允许时做**模拟**交易的闭环。
 
-- 设计文档：[`docs/design/openalpha-v1-architecture.md`](docs/design/openalpha-v1-architecture.md)（五层架构、数据契约、风控、14 天路线、验收硬条件）
-- Sprint 0 审计报告：[`docs/audit/sprint-0-audit-report.md`](docs/audit/sprint-0-audit-report.md)（13 项数据正确性缺陷、修复记录、回归测试证据）
-- 跨市场 P1.1 口径变更：[`docs/cross-market-v2.2.md`](docs/cross-market-v2.2.md#p11-数据正确性修复sprint-02026-11-21)
+- **Sprint 0（已合并）**：审计 + 数据正确性修复。设计：[`docs/design/openalpha-v1-architecture.md`](docs/design/openalpha-v1-architecture.md)；审计：[`docs/audit/sprint-0-audit-report.md`](docs/audit/sprint-0-audit-report.md)
+- **Sprint 1（本分支）**：L2 市场理解层——多周期已收盘 K 线、指标、状态机、证据/冲突/失效条件、市场准入。设计与口径：[`docs/design/sprint-1-market-understanding.md`](docs/design/sprint-1-market-understanding.md)
+
+```bash
+python -m research.market demo        # 三种 regime 的状态与证据
+python -m research.market analyze --csv klines_1m.csv --json
+```
 
 边界没有变：**只读采集 · 策略研究 · 模拟执行**；不接实盘、不接私钥、不自动跟单。
 V1 只做 BTC/USDT 单标的，SOL 数据保留在研究库。
