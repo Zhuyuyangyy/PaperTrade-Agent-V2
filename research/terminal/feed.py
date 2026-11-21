@@ -231,6 +231,11 @@ class BinanceFeed:
         base = [b for b in self._base.get(tf, []) if not agg or b["time"] < agg[0]["time"]]
         return (base + agg)[-limit:]
 
+    def base_series(self, tf: str) -> list[dict]:
+        """纯 REST 历史（不混入 1m 聚合），用于 1h/4h 趋势判断。"""
+        with self._lock:
+            return list(self._base.get(tf, []))
+
     def latest(self, tf: str = "1m") -> dict | None:
         s = self.series(tf, 2)
         return s[-1] if s else None

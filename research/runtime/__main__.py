@@ -32,6 +32,8 @@ from research.strategy.registry import DEFAULT_SPECS
 from .dashboard import build_state, render_html
 from .heartbeat import read as read_heartbeat
 from .live import BinanceKlineSource
+from .v2_engine import V2Engine
+from research.terminal.feed import BinanceFeed
 from .loop import LoopConfig, RunLoop
 from .metrics import summarize_books
 from .sources import CandlesSource
@@ -258,6 +260,28 @@ def _run_shadow(args) -> int:
     return 0
 
 
+def _run_v2(args) -> int:
+    feed = BinanceFeed(symbol="btcusdt")
+    feed.start()
+    key = os.environ.get("DEEPSEEK_API_KEY", "")
+    ds = DeepSeekProvider(LLMConfig(api_key=key)) if key else None
+    second = None
+    if not args.no_second:
+        endpoint = os.environ.get("JEV_ENDPOINT", "")
+        jk = os.environ.get("JEV_API_KEY", "")
+        if endpoint and jk:
+            second = JevProvider(endpoint, jk, os.environ.get("JEV_MODEL", "jev"))
+    intel_cfg = IntelPipelineConfig(max_news=10, with_books=False)
+    engine = V2Engine(Path(args.root), feed, RiskLimits(), deepseek=ds, second=second,
+                      intel_fn=lambda ts: collect_intel(ts, intel_cfg))
+    engine.load_history()
+    print(f"v2 engine: root={args.root} minutes={args.minutes} "
+          f"deepseek={'on' if ds else 'off'} second={'on' if second else 'off'}")
+    engine.run(args.minutes)
+    print("done; errors:", engine.errors[-5:])
+    return 0
+
+
 def _run_dashboard(args) -> int:
     state = build_state(Path(args.root), args.now_ms)
     if args.html:
@@ -329,6 +353,11 @@ def main(argv: list[str] | None = None) -> int:
     p_shadow.add_argument("--timeout-s", type=float, default=15.0)
     p_shadow.add_argument("--horizons", nargs="*", type=int, default=[1, 4, 24])
 
+    p_v2 = sub.add_parser("v2", help="5m 三账本引擎（规则/DeepSeek/双模型）")
+    p_v2.add_argument("--root", default="data/openalpha_v2")
+    p_v2.add_argument("--minutes", type=float, default=30.0)
+    p_v2.add_argument("--no-second", action="store_true")
+
     p_dash = sub.add_parser("dashboard", help="只读看板（JSON 或 HTML）")
     p_dash.add_argument("--root", required=True)
     p_dash.add_argument("--now-ms", type=int, default=0)
@@ -345,6 +374,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_replay(args)
     if args.cmd == "report":
         return _run_report(args)
+    if args.cmd == "v2":
+        return _run_v2(args)
     if args.cmd == "shadow":
         return _run_shadow(args)
     return _run_dashboard(args)

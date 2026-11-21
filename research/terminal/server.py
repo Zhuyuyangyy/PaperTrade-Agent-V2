@@ -418,7 +418,7 @@ const TF=['1m','5m','15m','1h','4h'];const TF_SEC={'1m':60,'5m':300,'15m':900,'1
 const fmt=(x)=>x==null?'—':Number(x).toLocaleString(undefined,{maximumFractionDigits:2});
 const pct=(x)=>x==null?'—':(Number(x)*100).toFixed(2)+'%';
 function drawBooks(b){
-  const rows=[['rules','shadow'],['deepseek','deepseek'],['verified','verified']];
+  const rows=[['rules','shadow'],['deepseek','deepseek_shadow'],['verified','verified']];
   document.getElementById('books').innerHTML=rows.map(([label,key])=>{
     const x=b[key];if(!x)return `<div class="row"><span class="k">${label}</span><span class="v">—</span></div>`;
     const eq=Number(x.equity), cash=Number(x.cash), margin=Number(x.margin_used||0);

@@ -70,8 +70,8 @@ def test_state_reads_real_books(tmp_path: Path) -> None:
     cfg = TerminalConfig(root)
     st = read_state(cfg)
     assert st["books"]["shadow"]["orders"] == 1
-    assert st["books"]["deepseek"]["orders"] == 1
-    assert st["books"]["verified"] is None  # 账本不存在 -> None，不伪造
+    assert st["books"]["deepseek_shadow"]["orders"] == 1
+    assert "verified" not in st["books"]  # 账本不存在则不列出
     assert st["heartbeat"]["pid"] == 4242
     assert st["deepseek_last"]["choice"] == "LONG"
     assert st["rules_last"]["decision"] == "LONG"
