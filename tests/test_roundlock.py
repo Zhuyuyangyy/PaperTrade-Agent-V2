@@ -12,7 +12,15 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from research.pipeline.roundlock import STALE_S, acquire, release  # noqa: E402
+from research.pipeline.roundlock import STALE_S, _alive, acquire, release  # noqa: E402
+
+
+def test_alive_detects_our_own_process():
+    """`os.kill(pid, 0)` on Windows is TerminateProcess, so the old liveness
+    probe killed the very process it was asked about. This test used to die
+    without a traceback along with the whole pytest run."""
+    assert _alive(os.getpid()) is True
+    assert _alive(0) is False
 
 
 @pytest.fixture()

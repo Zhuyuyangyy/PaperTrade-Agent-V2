@@ -1,4 +1,4 @@
-6a820ae386ef01b45e962cd93ccc64228d3d06fc0d875e37ac0386afba0dbed7  papertrade-falsifier-pro-v1.0.0.zip
+79796d77feee2abd5ce09e0ad8b23dccefa255779aad9b8e2659bbbb279a994d  papertrade-falsifier-pro-v1.0.0.zip
 5c62b17d66325488b58db84239eadbcf5d18992a00567df51068a5cc5cd9e187  SKILL.md
 5df13112b60fa273efa656914533d745896c8f2fde702649da9d604203b87ccf  install_skill.py
 77c748ec480fd92fd93ae5e34a20425ddff3bf20470acac47b60fd48ddce594d  README.md

@@ -27,8 +27,36 @@ def _lock_path(root: Path) -> Path:
 
 
 def _alive(pid: int) -> bool:
+    """进程是否存活。
+
+    铁律：**不能**用 `os.kill(pid, 0)` 探测 Windows 进程——CPython 在 Windows
+    上把 `os.kill` 实现为 `TerminateProcess(handle, sig)`，sig=0 就是"立刻杀掉
+    目标进程"。旧实现在读到自己的 pid 时会把流水线自己杀死（Sprint 0 实测：
+    `pytest tests/test_roundlock.py` 无 traceback 直接退出）。Linux CI 看不到
+    这个问题，因为 POSIX 的 sig=0 才是"只探测"。
+    """
     if pid <= 0:
         return False
+    if os.name == "nt":
+        import ctypes
+        from ctypes import wintypes
+
+        PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        STILL_ACTIVE = 259
+        ERROR_ACCESS_DENIED = 5
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+        if not handle:
+            # 进程存在但我们无权查询：不能判死，否则会把活锁当成过期锁接管
+            return ctypes.get_last_error() == ERROR_ACCESS_DENIED
+        try:
+            code = wintypes.DWORD()
+            if not kernel32.GetExitCodeProcess(handle, ctypes.byref(code)):
+                return False
+            return code.value == STILL_ACTIVE
+        finally:
+            kernel32.CloseHandle(handle)
     try:
         os.kill(pid, 0)
     except ProcessLookupError:

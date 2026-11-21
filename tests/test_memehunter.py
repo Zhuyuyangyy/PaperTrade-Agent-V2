@@ -62,6 +62,28 @@ def desk(tmp_path) -> Desk:
     return Desk(tmp_path)
 
 
+def test_health_halt_blocks_new_positions(desk: Desk) -> None:
+    """The rolling-expectancy stop line (-0.5%/trade over 30 closes) used to be
+    computed and printed but never consulted by can_open -- a halt rule the desk
+    did not enforce. It must veto the next entry."""
+    at = 1_800_000_000_000
+    for i in range(30):
+        desk.conn.execute(
+            "INSERT INTO positions (opened_at_ms, mint, symbol, score, notional_usd,"
+            " entry_ref_price, entry_fill_price, qty, entry_slippage_bps, entry_cost_usd,"
+            " entry_reason, status, mark_price, mark_at_ms, peak_price, exit_at_ms,"
+            " exit_reason, pnl_usd, pnl_pct)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,'closed',?,?,?,?,?,?,?)",
+            (at - i * 60_000, f"mint{i}", f"SYM{i}", 50, 100, 1.0, 1.0, 100, 0, 1.2,
+             "test", 1.0, at, 1.0, at, "TIMEOUT", -1.0, -1.0),
+        )
+    desk.conn.commit()
+    health = desk.health()
+    assert health["ready"] is True and health["halt"] is True
+    ok, reason = desk.can_open(make_token(), at)
+    assert ok is False and reason == "HEALTH_HALT"
+
+
 # ---------- survival vetoes ----------
 
 def test_clean_token_survives_every_veto():

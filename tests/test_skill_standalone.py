@@ -30,7 +30,8 @@ PY = sys.executable
 def _run(cmd: list[str], cwd: Path, env_extra: dict | None = None) -> subprocess.CompletedProcess:
     env = dict(os.environ)
     env.update(env_extra or {})
-    return subprocess.run(cmd, cwd=str(cwd), env=env, capture_output=True, text=True, timeout=300)
+    return subprocess.run(cmd, cwd=str(cwd), env=env, capture_output=True, timeout=300,
+                          encoding="utf-8", errors="replace")
 
 
 def test_vendored_copy_exists_and_is_import_clean():
@@ -80,7 +81,7 @@ def test_wrapper_prefers_vendored_engine(tmp_path: Path):
     r = _run([PY, str(SKILL / "scripts" / "verify.py"), "--demo",
               "--out", str(bare / "r.md")], cwd=bare)
     assert r.returncode == 0, r.stderr
-    assert "独立引擎" in r.stderr
+    assert "engine_mode=vendored" in r.stderr
     assert (bare / "r.md").is_file()
     text = (bare / "r.md").read_text(encoding="utf-8")
     assert "裁决" in text and "python -m engine" in text  # repro line names the module
@@ -91,7 +92,7 @@ def test_repo_mode_env_still_works():
     r = _run([PY, str(SKILL / "scripts" / "verify.py"), "--demo"],
              cwd=ROOT, env_extra={"STRATEGY_FALSIFIER_USE_REPO": "1"})
     assert r.returncode == 0, r.stderr
-    assert "仓库引擎" in r.stderr
+    assert "engine_mode=repo" in r.stderr
 
 
 # --------------------------------------------------------------------------

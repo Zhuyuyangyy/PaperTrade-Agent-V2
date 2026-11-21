@@ -80,12 +80,14 @@ def _config_cost(root: Path) -> float:
 
 
 def _load(root: Path, db_name: str = "memehunter.sqlite") -> tuple[sqlite3.Connection, Path]:
-    """Copy the live ledger first: a replay must not race the desk, and WAL
-    databases refuse a read-only URI open anyway."""
+    """Take a SQLite backup of the live ledger first: a replay must not race the
+    desk, and a plain file copy would miss uncheckpointed WAL frames."""
+    from ..ledger import snapshot
+
     src = root / "runtime" / "memehunter" / db_name
     tmp_dir = Path(tempfile.mkdtemp(prefix="selectivity_"))
     tmp_db = tmp_dir / db_name
-    shutil.copy(src, tmp_db)
+    snapshot(src, tmp_db)
     conn = sqlite3.connect(str(tmp_db))
     conn.row_factory = sqlite3.Row
     return conn, tmp_dir

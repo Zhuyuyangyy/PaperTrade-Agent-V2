@@ -121,3 +121,17 @@ def test_demo_never_writes_tradeable_signal(tmp_path):
     assert all(x["source"] != "ccxt-public:kraken" for x in demos)
     d = demos[0]
     assert approved_from_file(tmp_path / "synthetic", d["pair"], d["candle_open_ms"], d["observed_at_ms"])[0] is False
+
+
+@pytest.mark.parametrize("minute_offset_ms", [0, 25_000, 59_000, 85_000, 89_000])
+def test_demo_survives_the_hour_boundary(tmp_path, monkeypatch, minute_offset_ms):
+    """The demo used to crash whenever the real clock sat in [0, 90s) after an
+    hour: no candle was both settled (30s rule) and inside the 1h staleness
+    window. Pin the clock instead of waiting for the bug to reappear."""
+    from research import worker
+
+    hour = 1_795_000_000_000 // worker.HOUR_MS * worker.HOUR_MS
+    fixed = hour + minute_offset_ms
+    monkeypatch.setattr(worker, "utc_ms", lambda: fixed)
+    demos = worker.run_demo(tmp_path / "synthetic")
+    assert demos and all(d["source"] == "SYNTHETIC-DEMO-NOT-TRADEABLE" for d in demos)
