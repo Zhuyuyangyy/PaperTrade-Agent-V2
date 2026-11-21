@@ -72,10 +72,12 @@ def run_round(symbol: str, candles_by_tf: Mapping[str, list[Candle]], as_of_ms: 
                          as_of_ms, settle_ms)
         if h1:
             bar = h1[-1]
-            closed += broker.mark_bar(symbol, bar.open, bar.high, bar.low, as_of_ms)
+            closed += broker.mark_bar(symbol, bar.open, bar.high, bar.low, as_of_ms,
+                                       bar_open_ms=bar.open_ms)
             if shadow_broker is not None:
                 shadow_closed += shadow_broker.mark_bar(symbol, bar.open, bar.high,
-                                                        bar.low, as_of_ms)
+                                                        bar.low, as_of_ms,
+                                                        bar_open_ms=bar.open_ms)
         closed += broker.expire(as_of_ms, {symbol: mark})
         if shadow_broker is not None:
             shadow_closed += shadow_broker.expire(as_of_ms, {symbol: mark})

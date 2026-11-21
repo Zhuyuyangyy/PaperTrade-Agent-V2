@@ -70,6 +70,8 @@ def summarize(broker: PaperBroker, label: str = "book") -> dict:
         "realized_pnl": str(realized),
         "unrealized_pnl": str(unrealized),
         "funding_paid": str(funding),
+        # 资金费目前按固定费率估算（--funding-bps），不是历史真实费率
+        "funding_source": "estimated",
         "win_rate": f"{wins / closed:.3f}" if closed else None,
         "max_drawdown": str(max_drawdown(equity).quantize(D("0.0001"))),
         "equity_points": len(equity),

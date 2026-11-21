@@ -4,7 +4,7 @@ from .dashboard import build_state as build_dashboard_state, render_html as rend
 from .heartbeat import Heartbeat, read as read_heartbeat, staleness_ms, write as write_heartbeat
 from .log import append_jsonl, read_jsonl
 from .live import BinanceKlineSource
-from .loop import LoopConfig, LoopStopped, RunLoop
+from .loop import LoopConfig, LoopStopped, RunLoop, utc_day_start
 from .round import RoundResult, run_round
 from .sources import CandlesSource, DemoSource, FlakySource, Source, SourceError
 
@@ -14,7 +14,7 @@ __all__ = [
     "Heartbeat", "read_heartbeat", "staleness_ms", "write_heartbeat",
     "append_jsonl", "read_jsonl",
     "BinanceKlineSource",
-    "LoopConfig", "LoopStopped", "RunLoop",
+    "LoopConfig", "LoopStopped", "RunLoop", "utc_day_start",
     "RoundResult", "run_round",
     "CandlesSource", "DemoSource", "FlakySource", "Source", "SourceError",
 ]
