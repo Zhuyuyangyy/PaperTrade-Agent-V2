@@ -6,14 +6,29 @@
 ## 运行
 
 ```bash
-python -m research.terminal --root data/openalpha_forward_v1 --port 8787
+python -m research.terminal --root data/openalpha_live_v1 --port 8787
 # 浏览器打开 http://127.0.0.1:8787
 ```
 
 - 默认只监听 `127.0.0.1`；
 - 需要远程访问时：`--host 0.0.0.0 --token <随机串>`，浏览器用 `?token=` 或 `Authorization: Bearer`；
-- `--root` 指向包含 `shadow.sqlite` / `deepseek_shadow.sqlite` / `verified.sqlite`、
-  `data/*.jsonl`、`state/heartbeat.json` 的运行目录。
+- `--root` 指向实时账户目录；历史回放目录（`*forward*` / `*replay*`）会在页面顶部标 **REPLAY**，不会冒充实时成绩。
+
+## 实时行情
+
+- 主通道：Binance Futures WebSocket `fstream.binance.com`，订阅 `btcusdt@kline_1m`；
+- 降级：网络抖动导致 WS 断开时，每 3 秒 REST 拉最近 2 根 1m，仍驱动价格与估值；
+- 页面状态条显示 `feed: ws|rest`、`latency_ms`（WS 真实延迟）或 `poll_ago_ms`（REST 轮询间隔）；
+- 所有周期（1m/5m/15m/1h/4h）由同一份 1m 数据聚合，每次推送增量更新当前周期。
+
+## 权益口径（已修正）
+
+```
+equity = 可用现金 cash + 持仓本金 margin_used + 未实现盈亏 unrealized
+```
+
+此前页面用 `cash + unrealized`，少算持仓本金（每笔约 100 USDT），会把浮亏看成大亏。
+现在 `summarize()` 与 `PaperBroker.equity()` 口径一致：`cash + Σ qty×entry + Σ(mark−entry)×qty×dir`。
 
 ## 数据来源（全部只读）
 
