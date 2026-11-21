@@ -57,7 +57,9 @@ def run_round(symbol: str, candles_by_tf: Mapping[str, list[Candle]], as_of_ms: 
               spread_bps: Decimal = Decimal("5"),
               day_start_ms: int = 0,
               settle_ms: int = 30_000,
-              intel=None) -> RoundResult:
+              intel=None,
+              allow_new_entries: bool = True,
+              halt_reason: str = "") -> RoundResult:
     state = analyze(symbol, candles_by_tf, as_of_ms, settle_ms=settle_ms)
 
     mark = _mark_price(state)
@@ -72,6 +74,9 @@ def run_round(symbol: str, candles_by_tf: Mapping[str, list[Candle]], as_of_ms: 
         closed += broker.expire(as_of_ms, {symbol: mark})
 
     selection = select(state, specs)
+    if not allow_new_entries:
+        selection = Selection("HOLD", None, selection.candidates,
+                              f"HALTED: {halt_reason or 'circuit open'}")
     risk: RiskDecision | None = None
     fill: Fill | None = None
     if selection.intent is not None:

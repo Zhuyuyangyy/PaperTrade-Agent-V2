@@ -304,12 +304,14 @@ python -m research.verify --list-market                   # 本地行情缓存�
 - **Sprint 0（已合并）**：审计 + 数据正确性修复。设计：[`docs/design/openalpha-v1-architecture.md`](docs/design/openalpha-v1-architecture.md)；审计：[`docs/audit/sprint-0-audit-report.md`](docs/audit/sprint-0-audit-report.md)
 - **Sprint 1（已合并）**：L2 市场理解层——多周期已收盘 K 线、指标、状态机、证据/冲突/失效条件、市场准入。设计与口径：[`docs/design/sprint-1-market-understanding.md`](docs/design/sprint-1-market-understanding.md)
 - **Sprint 2（已合并）**：自主决策闭环——逐周期数据门、策略注册（三策略、影子模式）、确定性风控、模拟撮合（幂等/费用/滑点/恢复）、决策日志；**2.1 修正**了超时结算、双边费、影子硬门、跳空止损与验证权限。设计与口径：[`docs/design/sprint-2-autonomous-loop.md`](docs/design/sprint-2-autonomous-loop.md)
-- **Sprint 3（本分支）**：情报层——新闻 / Polymarket / 聪明钱三条研究线，默认 `advisory_only`；不可信文本隔离；增量价值评估框架。设计与口径：[`docs/design/sprint-3-intel.md`](docs/design/sprint-3-intel.md)
+- **Sprint 3（已合并）**：情报层——新闻 / Polymarket / 聪明钱三条研究线，默认 `advisory_only`；不可信文本隔离；增量价值评估框架。设计与口径：[`docs/design/sprint-3-intel.md`](docs/design/sprint-3-intel.md)
+- **Sprint 4（本分支）**：24h 运行基座——调度循环、心跳、断流熔断、幂等/重启恢复、只读看板；72h 离线加速验收。设计与口径：[`docs/design/sprint-4-runtime.md`](docs/design/sprint-4-runtime.md)
 
 ```bash
 python -m research.market demo                # 三种 regime 的状态与证据
 python -m research.runtime demo               # 完整决策链（默认全影子，不进账本）
-python -m research.runtime demo --verified range_revert   # 演示成交路径（DEMO-ONLY）
+python -m research.runtime run --hours 24     # 按小时推进的运行循环（合成数据）
+python -m research.runtime dashboard --root <run_dir> --html board.html
 ```
 
 边界没有变：**只读采集 · 策略研究 · 模拟执行**；不接实盘、不接私钥、不自动跟单。
