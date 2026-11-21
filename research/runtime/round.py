@@ -56,7 +56,8 @@ def run_round(symbol: str, candles_by_tf: Mapping[str, list[Candle]], as_of_ms: 
               specs: tuple[StrategySpec, ...] = DEFAULT_SPECS,
               spread_bps: Decimal = Decimal("5"),
               day_start_ms: int = 0,
-              settle_ms: int = 30_000) -> RoundResult:
+              settle_ms: int = 30_000,
+              intel=None) -> RoundResult:
     state = analyze(symbol, candles_by_tf, as_of_ms, settle_ms=settle_ms)
 
     mark = _mark_price(state)
@@ -106,6 +107,7 @@ def run_round(symbol: str, candles_by_tf: Mapping[str, list[Candle]], as_of_ms: 
         "closed": [c.to_dict() for c in closed],
         "equity": str(equity),
         "hold_reason": selection.hold_reason,
+        "intel": intel.to_dict() if intel is not None else None,
     }
     if log_path is not None:
         append_jsonl(log_path, log)
