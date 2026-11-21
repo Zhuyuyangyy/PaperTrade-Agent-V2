@@ -58,6 +58,10 @@ class NewsEvent:
     tags: tuple[str, ...] = ()
     injection_suspected: bool = False
     advisory_only: bool = ADVISORY_ONLY
+    direction: str = "neutral"          # bullish / bearish / neutral（LLM 或规则抽取）
+    confidence: Decimal = Decimal("0")  # 0..1
+    event_type: str = "other"
+    extraction_method: str = "rules"    # llm / rules
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -72,6 +76,10 @@ class NewsEvent:
             "tags": list(self.tags),
             "injection_suspected": self.injection_suspected,
             "advisory_only": self.advisory_only,
+            "direction": self.direction,
+            "confidence": _num(self.confidence),
+            "event_type": self.event_type,
+            "extraction_method": self.extraction_method,
         }
 
 
@@ -91,6 +99,7 @@ class PredictionMarketEvent:
     reasons: tuple[str, ...] = ()
     data_quality: str = "OK"          # OK / STALE / WIDE_SPREAD / LOW_LIQUIDITY / UNKNOWN
     advisory_only: bool = ADVISORY_ONLY
+    comparator: str = "UNKNOWN"       # ABOVE / BELOW（YES 的方向映射）
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -108,6 +117,7 @@ class PredictionMarketEvent:
             "reasons": list(self.reasons),
             "data_quality": self.data_quality,
             "advisory_only": self.advisory_only,
+            "comparator": self.comparator,
         }
 
 

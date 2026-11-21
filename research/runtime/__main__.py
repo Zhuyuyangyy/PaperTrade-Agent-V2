@@ -10,6 +10,7 @@ from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 
+from research.intel.pipeline import IntelPipelineConfig, collect as collect_intel
 from research.market.contracts import TF_15M_MS, TF_1H_MS, TF_4H_MS, TF_5M_MS
 from research.market.demo import REGIMES, demo_as_of_ms, synthetic_1m
 from research.market.klines import resample
@@ -110,9 +111,14 @@ def _run_live(args) -> int:
     source = BinanceKlineSource(symbol=args.symbol, limit=args.limit,
                                 timeout_s=args.timeout_s, retries=1)
     verified, shadow = _books(root, D(str(args.funding_bps)))
+    intel_fn = None
+    if not args.no_intel:
+        intel_cfg = IntelPipelineConfig(with_books=args.intel_books)
+        intel_fn = lambda as_of: collect_intel(as_of, intel_cfg)  # noqa: E731 - 每轮采集，失败由 RunLoop 兜底
     loop = RunLoop(
         root, verified, RiskLimits(), source, shadow_broker=shadow,
         log_path=root / "data" / "decisions.jsonl",
+        intel_fn=intel_fn,
         config=LoopConfig(interval_ms=args.interval_ms,
                           decision_period_ms=args.interval_ms,
                           max_rounds=args.rounds),
@@ -244,6 +250,10 @@ def main(argv: list[str] | None = None) -> int:
     p_live.add_argument("--timeout-s", type=float, default=15.0)
     p_live.add_argument("--funding-bps", type=float, default=1.0,
                         help="资金费（bps / 8h，默认 1bp = 0.01%%）；正数多头支付")
+    p_live.add_argument("--no-intel", action="store_true",
+                        help="关闭每轮新闻/Polymarket 采集（默认开启，只写日志不改决策）")
+    p_live.add_argument("--intel-books", action="store_true",
+                        help="是否额外拉 Polymarket 盘口（更慢，默认关）")
 
     p_replay = sub.add_parser("replay", help="真实历史 1h K 线 → 双账本跑 N 轮（72h 回放）")
     p_replay.add_argument("--root", default=None)
