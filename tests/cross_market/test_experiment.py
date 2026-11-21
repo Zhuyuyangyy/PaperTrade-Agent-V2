@@ -162,9 +162,10 @@ def test_abc_supported_when_c_beats_a() -> None:
     h = _h()
     # A 永远看涨；真值交替；B 只在看涨点同向 → C 在跌点弃权。
     # 正确实现：C 的 payoff 明显高于 A（躲开了 A 在跌点的全部亏损）。
+    # 300 个 1 分钟点、5 分钟视界 → 块长 5，有效独立共同点 150/5 = 30，刚好过门槛。
     points = []
     labels: list[Decimal | None] = []
-    for i in range(60):
+    for i in range(300):
         up = i % 2 == 0
         points.append({
             "decision_ts_ms": 1_795_000_000_000 + i * 60_000,
@@ -176,11 +177,15 @@ def test_abc_supported_when_c_beats_a() -> None:
     v = run_abc(points, labels, h)
     assert v.verdict == "SUPPORTED", v.reason
     assert v.increment_ci is not None and v.increment_ci[1] > 0
-    assert v.aligned_n == 30
+    assert v.block == 5
+    assert v.aligned_n == 150
+    assert v.effective_aligned_n == 30
+    assert v.non_overlap_increment_ci is not None
     ev = FalsificationAdapter.to_evidence(v)
     assert ev["kind"] == "cross_market_abc"
     assert "A" in ev["arms"] and "C" in ev["arms"]
-    assert ev["aligned_n"] == 30
+    assert ev["aligned_n"] == 150
+    assert ev["block"] == 5
 
 
 def test_abc_inconclusive_without_samples() -> None:

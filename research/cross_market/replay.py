@@ -35,6 +35,8 @@ class ReplayState:
     now_ms: int = 0                    # 当前可用时间游标
     poly_last: dict = field(default_factory=dict)     # token_id -> 最近 book 状态
     binance_last: dict = field(default_factory=dict)  # symbol -> 最近快照
+    poly_event_ts: dict = field(default_factory=dict)     # token_id -> 状态的事件时间
+    binance_event_ts: dict = field(default_factory=dict)  # symbol -> 状态的事件时间
     seen_events: int = 0
     skipped_not_yet_available: int = 0  # 因可用性门禁被挡的事件数（诊断）
 
@@ -51,10 +53,16 @@ class ReplayEngine:
 
         decision_now_ms：若给出，则只允许"在 decision_now_ms 时刻已可用"的事件
         （可用性门禁的决策时刻形态）；ingest 晚于决策时刻的事件被挡下并计数。
+
+        未给出时，回放的截止时刻是 **end_ms**：窗口结束之后才到达的事件不得
+        出现在窗口内的状态里（R2-02）。窗口按 event_ts 界定，所以"窗口内发生、
+        窗口后才到"的事件会进入查询、被门禁计数并挡下——这样它至少是可见的，
+        而不是从窗口里凭空消失。
         """
+        as_of = decision_now_ms if decision_now_ms is not None else end_ms
         for ev in self.store.query_available(None, start_ms, end_ms):
             avail = availability_ms(ev)
-            if decision_now_ms is not None and avail > decision_now_ms:
+            if avail > as_of:
                 self.state.skipped_not_yet_available += 1
                 continue
             self._apply(ev, avail)
@@ -67,9 +75,16 @@ class ReplayEngine:
         self.state.now_ms = avail_ms
         self.state.seen_events += 1
         if ev["source"] == "polymarket":
-            self.state.poly_last[ev["key"]] = ev["payload"]
+            key, ts = ev["key"], ev["event_ts_ms"]
+            # 迟到旧行情不得覆盖更新行情（R2-03）：状态按事件时间取最新。
+            if ts >= self.state.poly_event_ts.get(key, -(1 << 62)):
+                self.state.poly_last[key] = ev["payload"]
+                self.state.poly_event_ts[key] = ts
         elif ev["source"] == "binance":
-            self.state.binance_last[ev["key"]] = ev["payload"]
+            key, ts = ev["key"], ev["event_ts_ms"]
+            if ts >= self.state.binance_event_ts.get(key, -(1 << 62)):
+                self.state.binance_last[key] = ev["payload"]
+                self.state.binance_event_ts[key] = ts
 
     def feature_at(self, token_id: str, symbol: str) -> dict:
         """当前游标处的 point-in-time 特征（只用已可用事件；禁含 ingest 时间）。"""

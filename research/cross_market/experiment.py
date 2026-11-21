@@ -19,6 +19,7 @@ Sprint 0 修掉的两处（审计 S0-03/S0-04/S0-05）：
 """
 from __future__ import annotations
 
+import math
 import random
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -172,16 +173,42 @@ class AbcVerdict:
     aligned_n: int = 0                                # 所有臂都出手的共同决策点数
     common_hit_ci: tuple[float, float, float] | None = None  # 共同点命中率差（诊断）
     n_decision_points: int = 0
+    step_ms: int = 0                                  # 采样间隔（从 decision_ts 推断）
+    block: int = 1                                    # 覆盖一个预测视界所需的采样点数
+    effective_aligned_n: int = 0                      # 折算成独立窗口的共同点数
+    non_overlap_increment_ci: tuple[float, float, float] | None = None
+    non_overlap_aligned_n: int = 0
+
+
+def _infer_step_ms(points: list[dict], h: Hypothesis) -> int:
+    """从决策时刻推断采样间隔；推断不出来就退回视界（等价于 k=1）。"""
+    ts = sorted({p["decision_ts_ms"] for p in points
+                 if isinstance(p.get("decision_ts_ms"), int)})
+    if len(ts) >= 2:
+        diffs = sorted(b - a for a, b in zip(ts, ts[1:]) if b > a)
+        if diffs:
+            return max(1, int(diffs[len(diffs) // 2]))
+    return max(1, int(h.primary_horizon_ms))
 
 
 def run_abc(points: list[dict], labels: list[Decimal | None], h: Hypothesis,
-            block: int = 20, iters: int = 1000) -> AbcVerdict:
+            block: int | None = None, iters: int = 1000) -> AbcVerdict:
     """points: [{"decision_ts_ms": int, "binance": {...}, "polymarket": {...}}]；
     labels: 与 points **逐点对齐**的未来收益（同一 length、同一 index 同一时刻）。
+
+    重叠采样（R2-05）：若每 5 秒采样、视界 5 分钟，相邻 60 个点的标签高度重叠。
+    因此：
+      - block 默认 = ceil(视界 / 采样间隔)，bootstrap 按这个块长重采样；
+      - 有效样本量按 aligned_n / block 折算，门槛用**有效**共同点数；
+      - 另报非重叠子样本（每 block 个点取一个）的增量 CI，作为稳健性检验：
+        全样本显著、非重叠样本不显著 → 降级 INCONCLUSIVE。
     """
     if len(points) != len(labels):
         raise ValueError(f"points({len(points)}) 与 labels({len(labels)}) 必须逐点对齐")
     n_points = len(points)
+    step_ms = _infer_step_ms(points, h)
+    k = int(block) if block is not None else max(1, math.ceil(h.primary_horizon_ms / step_ms))
+
     sig: dict[str, list[Decimal | None]] = {
         arm: [arm_signal(arm, p, h) for p in points] for arm in h.arms
     }
@@ -214,38 +241,63 @@ def run_abc(points: list[dict], labels: list[Decimal | None], h: Hypothesis,
             f"A/C 无共同决策点（A 出手 {arms.get('A').n if 'A' in arms else 0} / "
             f"C 出手 {arms.get('C').n if 'C' in arms else 0}）",
             aligned_n=len(common), n_decision_points=n_points,
+            step_ms=step_ms, block=k, effective_aligned_n=len(common) // k,
         )
 
-    # 1) 主指标：全样本逐点 payoff 差（同长、同点、配对）
+    # 1) 主指标：全样本逐点 payoff 差（同长、同点、配对，块长 = 视界/采样）
     c_pay = [payoff_bps(sig["C"][i], labels[i]) for i in range(n_points)]
     a_pay = [payoff_bps(sig["A"][i], labels[i]) for i in range(n_points)]
-    inc_ci = block_bootstrap_ci(c_pay, a_pay, block=block, iters=iters)
+    inc_ci = block_bootstrap_ci(c_pay, a_pay, block=k, iters=iters)
 
-    # 2) 诊断指标：共同点命中率差（C⊆A 的构造下数学上恒为 0；显式报出来防误读）
+    # 2) 非重叠子样本（每 k 个点取一个）：独立窗口上的稳健性检验
+    non_idx = list(range(0, n_points, k))
+    non_ci = block_bootstrap_ci(
+        [c_pay[i] for i in non_idx], [a_pay[i] for i in non_idx], block=1, iters=iters,
+    )
+    non_common = sum(1 for i in common if i % k == 0)
+
+    # 3) 诊断指标：共同点命中率差（C⊆A 的构造下数学上恒为 0；显式报出来防误读）
     c_hit_common = [1.0 if (sig["C"][i] > 0) == (labels[i] > 0) else 0.0 for i in common]
     a_hit_common = [1.0 if (sig["A"][i] > 0) == (labels[i] > 0) else 0.0 for i in common]
-    common_ci = block_bootstrap_ci(c_hit_common, a_hit_common, block=block, iters=iters)
+    common_ci = block_bootstrap_ci(c_hit_common, a_hit_common, block=k, iters=iters)
 
     aligned_n = len(common)
-    if aligned_n < h.min_aligned:
+    effective = aligned_n // k
+    required = h.min_aligned * k
+    if aligned_n < required:
         verdict = "INCONCLUSIVE"
-        reason = (f"共同决策点 {aligned_n} < 门槛 {h.min_aligned}；"
-                  f"payoff 差 {inc_ci[0]:.1f}bps CI=({inc_ci[1]:.1f},{inc_ci[2]:.1f})")
+        reason = (f"有效独立共同点 {effective}（{aligned_n} 个重叠点 / 块长 {k}）"
+                  f"< 门槛 {h.min_aligned}；payoff 差 {inc_ci[0]:.1f}bps "
+                  f"CI=({inc_ci[1]:.1f},{inc_ci[2]:.1f})")
     elif inc_ci[1] > 0:
-        verdict = "SUPPORTED"
-        reason = (f"C−A payoff 增量 {inc_ci[0]:.1f}bps，CI=({inc_ci[1]:.1f},{inc_ci[2]:.1f}) 不含 0；"
-                  f"共同决策点 {aligned_n}")
+        if non_common >= h.min_aligned and non_ci[1] <= 0:
+            verdict = "INCONCLUSIVE"
+            reason = (f"全样本 payoff 增量 {inc_ci[0]:.1f}bps 显著，但非重叠子样本"
+                      f"（n={non_common}）CI=({non_ci[1]:.1f},{non_ci[2]:.1f}) 含 0，"
+                      f"显著性不复现")
+        else:
+            verdict = "SUPPORTED"
+            reason = (f"C−A payoff 增量 {inc_ci[0]:.1f}bps，CI=({inc_ci[1]:.1f},{inc_ci[2]:.1f})"
+                      f" 不含 0；有效独立共同点 {effective}；非重叠 CI=({non_ci[1]:.1f},{non_ci[2]:.1f})")
     elif inc_ci[2] < 0:
-        verdict = "FALSIFIED"
-        reason = (f"C−A payoff 增量 {inc_ci[0]:.1f}bps，CI=({inc_ci[1]:.1f},{inc_ci[2]:.1f}) 显著为负；"
-                  f"共同决策点 {aligned_n}")
+        if non_common >= h.min_aligned and non_ci[2] >= 0:
+            verdict = "INCONCLUSIVE"
+            reason = (f"全样本 payoff 增量 {inc_ci[0]:.1f}bps 显著为负，但非重叠子样本"
+                      f"（n={non_common}）CI=({non_ci[1]:.1f},{non_ci[2]:.1f}) 含 0")
+        else:
+            verdict = "FALSIFIED"
+            reason = (f"C−A payoff 增量 {inc_ci[0]:.1f}bps，CI=({inc_ci[1]:.1f},{inc_ci[2]:.1f})"
+                      f" 显著为负；有效独立共同点 {effective}")
     else:
         verdict = "INCONCLUSIVE"
         reason = (f"C−A payoff 增量 {inc_ci[0]:.1f}bps，CI=({inc_ci[1]:.1f},{inc_ci[2]:.1f}) 含 0；"
-                  f"共同决策点 {aligned_n}（共同点命中率差恒为 0 是 C⊆A 的定义后果，不作为证据）")
+                  f"共同决策点 {aligned_n}（块长 {k}，有效独立 {effective}）；"
+                  f"共同点命中率差恒为 0 是 C⊆A 的定义后果，不作为证据")
     return AbcVerdict(
         h.hypothesis_id, arms, inc_ci, verdict, reason,
         aligned_n=aligned_n, common_hit_ci=common_ci, n_decision_points=n_points,
+        step_ms=step_ms, block=k, effective_aligned_n=effective,
+        non_overlap_increment_ci=non_ci, non_overlap_aligned_n=non_common,
     )
 
 
@@ -263,6 +315,11 @@ class FalsificationAdapter:
             "reason": verdict.reason,
             "n_decision_points": verdict.n_decision_points,
             "aligned_n": verdict.aligned_n,
+            "step_ms": verdict.step_ms,
+            "block": verdict.block,
+            "effective_aligned_n": verdict.effective_aligned_n,
+            "non_overlap_increment_ci": verdict.non_overlap_increment_ci,
+            "non_overlap_aligned_n": verdict.non_overlap_aligned_n,
             "arms": {
                 k: {"hit": v.hit, "n": v.n, "coverage": v.coverage,
                     "mean_payoff_bps": v.mean_payoff_bps}

@@ -4,21 +4,33 @@
 
 | 口径 | 结果 |
 |---|---|
-| 全量 `python -m pytest tests -q` | **481 passed, 1 skipped, 0 failed**（35.5s，一次跑完） |
+| 全量 `python -m pytest tests -q` | **492 passed, 1 skipped, 0 failed**（62s，一次跑完） |
 | 跳过 | 1（`test_migrate_ledgers.py`，环境缺 symlink 权限，与本次改动无关） |
-| 本次新增回归 | `tests/cross_market/test_data_correctness.py` 19 项（修复前 17 failed / 1 passed）+ `tests/test_ledger_snapshot.py` 3 项 + 4 项既有测试新增用例 |
-| 核心改动面 | `tests/cross_market` 51 → **71 passed**；`tests/test_verify.py` 116 → **118 passed** |
+| 本次新增回归 | `test_data_correctness.py` 19 项 + `test_time_semantics.py` 11 项 + `test_ledger_snapshot.py` 3 项 + 5 项既有测试新增用例 |
+| 核心改动面 | `tests/cross_market` 51 → **82 passed**；`tests/test_verify.py` 116 → **118 passed** |
 | 修复前无法得到的数字 | 全量测试在 `test_roundlock.py` 处进程自杀（Windows `os.kill(pid,0)` = `TerminateProcess`），从来没有 summary |
 
 ### 修复前后对照
 
 | 项 | 修复前 | 修复后 |
 |---|---|---|
-| 全量 `pytest tests` | 跑到第 31 个文件进程自杀，无 summary | 481 passed, 1 skipped |
-| `tests/cross_market` | 51 passed（其中多个断言把 bug 当契约） | 71 passed |
+| 全量 `pytest tests` | 跑到第 31 个文件进程自杀，无 summary | 492 passed, 1 skipped |
+| `tests/cross_market` | 51 passed（其中多个断言把 bug 当契约） | 82 passed |
 | `tests/test_roundlock.py` | 4 项未完成，进程被杀 | **5 passed**（含新增 `_alive` 用例） |
 | `tests/test_skill_standalone.py` | 5 passed / 1 failed（GBK U+2212） | **6 passed** |
 | `tests/test_pro_package.py` / `test_agensi_single_file.py` | 通过但子进程解码告警 | 通过，告警消除 |
+
+### Round 2（合并前复审）
+
+| 项 | 修复前 | 修复后 |
+|---|---|---|
+| `test_time_semantics.py` | **8 failed / 3 passed** | 11 passed |
+| 全量 | 481 passed | 492 passed |
+| 标签 | 迟到旧价可当未来收益 | 事件时间与可用时间都须晚于 horizon |
+| 回放 | 窗口结束后到达的数据进入窗口状态 | 以 `end` 为可用性截止并计数 |
+| PIT 状态 | 到达顺序覆盖（旧价覆盖新价） | 事件时间取最新 |
+| 市场可研究性 | 过期市场仍可研究；坏到期时间 fail-open | 两者都 fail-closed |
+| A/B/C 门槛 | 按重叠点数 | 按 `block = ceil(horizon/step)` 折算 + 非重叠稳健性 |
 
 ## 1. 本次新增/修改的用例
 
@@ -43,6 +55,11 @@
 | `test_ledger_snapshot.py`（3 项） | C-10 WAL 账本复制丢末端 |
 | `test_memehunter.py::test_health_halt_blocks_new_positions` | C-14 停手线未接线 |
 | `test_skill_standalone.py` 断言改为 `engine_mode=vendored/repo` | C-18 编码相关断言脆性 |
+| `test_time_semantics.py::test_late_old_snapshot_is_not_a_future_label` / `test_future_label_requires_both_event_and_availability_after_horizon` | R2-01 标签事件时间 |
+| `test_replay_does_not_apply_events_available_after_window_end` / `test_replay_window_end_is_inclusive_for_availability` | R2-02 回放可用性截止 |
+| `test_pit_state_prefers_newer_event_over_late_arrival` / `test_replay_state_keeps_the_newer_event` | R2-03 迟到旧数据覆盖 |
+| `test_expired_market_is_not_researchable` / `test_unparseable_expiry_is_fail_closed` / `test_unregistered_market_stays_unresearchable` | R2-04 市场 fail-closed |
+| `test_abc_block_scales_with_horizon_over_step` / `test_abc_disjoint_windows_still_supported` | R2-05 重叠采样与块长 |
 
 ## 2. 同步修改的旧测试（它们把 bug 固化成契约）
 

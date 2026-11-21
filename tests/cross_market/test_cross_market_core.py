@@ -182,7 +182,7 @@ def _write_yaml(tmp_path: Path) -> Path:
         "  underlying_asset: ETH\n"
         "  event_threshold: 2000\n"
         "  event_comparator: ABOVE\n"
-        "  event_expiry: '2026-11-20T00:00:00Z'\n"
+        "  event_expiry: '2099-01-01T00:00:00Z'\n"
         "  resolution_source: binance\n"
         "  target_horizons: [30s, 1m, 5m, 15m, 1h]\n"
         "  primary_horizon: 5m\n",

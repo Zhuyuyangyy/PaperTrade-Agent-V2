@@ -150,18 +150,27 @@ class EventStore:
 
     def first_available_after(self, source: str, key: str, from_ms: int,
                               event_type: str | None = None,
-                              until_ms: int | None = None) -> dict | None:
-        """可用时间 >= from_ms 的第一条事件（标签窗口用，只会取到未来数据）。"""
+                              until_ms: int | None = None,
+                              event_min_ms: int | None = None) -> dict | None:
+        """可用时间 >= from_ms 的第一条事件（标签窗口用，只会取到未来数据）。
+
+        event_min_ms：额外要求**事件发生时间**也 >= 该值。迟到到达的旧行情
+        （event 早、ingest 晚）会满足"可用时间 >= from_ms"，但它发生在过去，
+        绝不能当未来价格——R2-01。
+        """
         sql = (f"SELECT {_COLS} FROM raw_events WHERE source = ? AND key = ? "
                f"AND {AVAIL_SQL} >= ?")
         args: list = [source, key, from_ms]
         if event_type is not None:
             sql += " AND event_type = ?"
             args.append(event_type)
+        if event_min_ms is not None:
+            sql += " AND event_ts_ms >= ?"
+            args.append(event_min_ms)
         if until_ms is not None:
             sql += f" AND {AVAIL_SQL} <= ?"
             args.append(until_ms)
-        sql += f" ORDER BY {AVAIL_SQL} ASC, id ASC LIMIT 1"
+        sql += f" ORDER BY {AVAIL_SQL} ASC, event_ts_ms ASC, id ASC LIMIT 1"
         r = self._db.execute(sql, args).fetchone()
         return _row(r) if r else None
 

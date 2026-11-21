@@ -52,7 +52,9 @@ def label_from_store(store, symbol: str, origin_ts_ms: int, horizon_ms: int,
         return None
     target = origin_ts_ms + horizon_ms
     future_ev = store.first_available_after(
-        "binance", sym, target, event_type="snapshot", until_ms=target + band_ms,
+        "binance", sym, target, event_type="snapshot",
+        until_ms=target + band_ms,
+        event_min_ms=target,   # 事件本身必须发生在 origin+H 之后（R2-01）
     )
     if future_ev is None:
         return None

@@ -36,7 +36,11 @@ class AlignedPoint:
 
 
 class _PointInTime:
-    """已按可用时间排序的事件流上的 point-in-time 游标。"""
+    """已按可用时间排序的事件流上的 point-in-time 游标。
+
+    状态按**事件时间**取最新，而不是按到达顺序（R2-03）：一条 12:01 的报价
+    在 12:06 才到达，不能覆盖 12:05 的报价——它在 12:06 时已经是旧闻。
+    """
 
     def __init__(self, rows: list[dict]):
         self._rows = rows
@@ -48,7 +52,10 @@ class _PointInTime:
             ev = self._rows[self._i]
             if usable_at(ev["event_ts_ms"], ev["ingest_ts_ms"]) > ts_ms:
                 break
-            self._last[ev["key"]] = ev
+            key = ev["key"]
+            prev = self._last.get(key)
+            if prev is None or ev["event_ts_ms"] >= prev["event_ts_ms"]:
+                self._last[key] = ev
             self._i += 1
 
     def get(self, key: str) -> dict | None:

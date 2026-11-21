@@ -149,6 +149,25 @@
 修完后 **C-01 的直接后果消失**：本机全量 `pytest tests -q` 可以一次跑完并产出 summary
 （此前会在第 31 个文件处进程自杀）。这是"全量测试通过"第一次成为可验证的陈述。
 
+### 3.6 Round 2 复审（合并前最后一轮正确性审查）
+
+复审提出 5 项，全部成立；先写反例（`tests/cross_market/test_time_semantics.py`，11 项，
+修复前 8 failed / 3 passed），再修。
+
+| ID | 问题 | 反例 | 修复 |
+|---|---|---|---|
+| R2-01 | 未来标签按 `available >= origin+H` 取价格：一条**发生在 origin 之前、但 horizon 之后才到达**的旧行情会被当成未来价格 | 事件 `origin−10s`、到达 `origin+H+30s`，旧实现算出 −10% 的"未来收益" | `first_available_after(..., event_min_ms=target)`：**事件时间与可用时间都必须晚于 origin+H** |
+| R2-02 | `ReplayEngine.run(start,end)` 只按事件发生时间限定窗口，未限定可用时间：`end` 之后才到达的数据会进入窗口内状态 | 事件 1000、到达 5000，回放 [0,2000) 旧实现应用了它 | 未给 `decision_now_ms` 时以 `end_ms` 为可用性截止；被挡事件计入 `skipped_not_yet_available`（可见，而不是消失） |
+| R2-03 | `_PointInTime` / `ReplayState` 按**到达顺序**覆盖状态：迟到旧行情覆盖更新行情 | 事件 0s/30s(迟到)/60s，在 120s 时刻旧实现取到 30s 的 150 而非 60s 的 200 | 状态按**事件时间**取最新（同 event_ts 才允许后到覆盖）；`ReplayState` 增加 `*_event_ts` |
+| R2-04 | `is_researchable()` 只查映射表是否存在；`load_mapping` 到期时间解析失败 fail-open | 过期市场仍可研究；`event_expiry: '不是日期'` 被当作永不过期 | `is_researchable` 要求 `not expired and not expiry_unknown`；解析失败置 `expiry_unknown=True`；`researchable_markets` 同步 |
+| R2-05 | 5 秒采样 / 5 分钟视界时样本高度重叠，固定 20 点块不够；点数会虚高显著性 | 300 个 5s 点（150 个共同点）旧实现判 SUPPORTED，实际只有 2 个独立窗口 | `block = ceil(horizon/step)`；门槛用**有效独立共同点** `aligned_n/block`；另报非重叠子样本 CI，全样本显著但非重叠不显著 → 降级 INCONCLUSIVE |
+
+R2-05 的边界说明：这一版做的是**块长与有效样本量**的修正，不是完整的时间序列推断
+（没有 HAC/Newey-West，也没有对多假设做校正）。它解决的是"用重叠点冒充独立证据"，
+不解决"多次实验后的选择性偏差"——后者在 Sprint 2 与 FDR 一起做。
+
+修复后：`tests/cross_market` **82 passed**；全量 **492 passed, 1 skipped**。
+
 ---
 
 ## 4. 研究设计问题（代码修不好，必须改设计）
@@ -285,8 +304,10 @@ python -m pytest -q tests
 - [x] 标签是相对收益，未来价格严格晚于 horizon；
 - [x] A/C 比较有共同决策点、有样本量、有配对 payoff 口径；
 - [x] 设计文档给出五层架构、数据契约、风控与 14 天路线（`docs/design/openalpha-v1-architecture.md`）；
-- [x] 全量 `pytest tests` 一次跑完：**481 passed, 1 skipped, 0 failed**（本机 35s；
+- [x] 全量 `pytest tests` 一次跑完：**492 passed, 1 skipped, 0 failed**（本机 62s；
       `roundlock` 修复前会进程自杀，`test_skill_standalone` 因 GBK 必失败）。
+- [x] Round 2 复审的 5 项（R2-01..R2-05）全部有先失败后通过的反例测试；
+      时间语义（事件时间 / 可用时间 / 未来标签）三处定义已用测试钉死。
 
 ---
 

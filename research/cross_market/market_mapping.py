@@ -25,6 +25,7 @@ class MarketMapping:
     gamma_id: str = ""
     clob_token_ids: tuple[str, ...] = ()
     expired: bool = False  # 加载时按 event_expiry 计算；过期市场禁入研究
+    expiry_unknown: bool = False  # 到期时间解析失败：规则不明，同样禁入（fail-closed）
 
 
 VALID_COMPARATORS = ("ABOVE", "BELOW")
@@ -42,13 +43,15 @@ def load_mapping(path: Path) -> dict[str, MarketMapping]:
         primary = str(m.get("primary_horizon") or horizons[0])
         if primary not in horizons:
             raise ValueError(f"{mid}: primary_horizon {primary} 不在 target_horizons")
-        # 过期判定（禁把过期市场当研究标的）
+        # 过期判定（禁把过期市场当研究标的）。解析失败 = 规则不明 → fail-closed。
         expiry_str = str(m["event_expiry"])
+        expiry_unknown = False
         try:
             exp = datetime.fromisoformat(expiry_str.replace("Z", "+00:00"))
             expired = exp <= now
         except ValueError:
-            expired = False  # 解析不了不猜，由调用方决定
+            expired = False
+            expiry_unknown = True
         out[mid] = MarketMapping(
             market_id=mid,
             underlying_asset=str(m["underlying_asset"]),
@@ -61,15 +64,22 @@ def load_mapping(path: Path) -> dict[str, MarketMapping]:
             gamma_id=str(m.get("gamma_id", "")),
             clob_token_ids=tuple(str(t) for t in (m.get("clob_token_ids") or [])),
             expired=expired,
+            expiry_unknown=expiry_unknown,
         )
     return out
 
 
+def is_market_tradeable(m: MarketMapping) -> bool:
+    """市场是否可以进入研究/实验：未过期、到期规则明确。"""
+    return not m.expired and not m.expiry_unknown
+
+
 def researchable_markets(mapping: dict[str, MarketMapping]) -> dict[str, MarketMapping]:
-    """只返回未过期的已登记市场（过期禁入）。"""
-    return {k: v for k, v in mapping.items() if not v.expired}
+    """只返回未过期、规则明确的已登记市场。"""
+    return {k: v for k, v in mapping.items() if is_market_tradeable(v)}
 
 
 def is_researchable(market_id: str, mapping: dict[str, MarketMapping]) -> bool:
-    """未登记 = 不可研究（fail-closed，规格 §6）。"""
-    return market_id in mapping
+    """未登记 / 已过期 / 到期规则不明 = 不可研究（fail-closed，规格 §6）。"""
+    m = mapping.get(market_id)
+    return m is not None and is_market_tradeable(m)
