@@ -53,6 +53,8 @@ CREATE TABLE IF NOT EXISTS positions (
     status TEXT NOT NULL,
     entry_fee TEXT NOT NULL DEFAULT '0',
     max_holding_ms INTEGER NOT NULL DEFAULT 0,
+    strategy_id TEXT NOT NULL DEFAULT '',
+    funding_paid TEXT NOT NULL DEFAULT '0',
     exit_ts INTEGER,
     exit_price TEXT,
     exit_reason TEXT,
@@ -113,11 +115,22 @@ class ClosedPosition:
 
 class PaperBroker:
     def __init__(self, path: Path | str, starting_cash: Decimal = Decimal("1000"),
-                 fee_bps: Decimal = Decimal("5"), slippage_bps: Decimal = Decimal("5")):
+                 fee_bps: Decimal = Decimal("5"), slippage_bps: Decimal = Decimal("5"),
+                 funding_bps_per_8h: Decimal = Decimal("0"),
+                 shadow_mode: str = "reject"):
+        """shadow_mode:
+        - ``reject``（默认，验证盘）：拒绝 shadow 意图；
+        - ``shadow_only``（实验盘）：只接受 shadow 意图；
+        - ``allow``：都接受（测试/特殊用途）。
+        """
+        if shadow_mode not in ("reject", "shadow_only", "allow"):
+            raise ValueError(f"shadow_mode 非法: {shadow_mode}")
+        self.shadow_mode = shadow_mode
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.fee_bps = fee_bps
         self.slippage_bps = slippage_bps
+        self.funding_bps_per_8h = funding_bps_per_8h
         self.expire_skipped = 0
         self._db = sqlite3.connect(str(self.path))
         self._db.row_factory = sqlite3.Row
@@ -135,6 +148,10 @@ class PaperBroker:
             self._db.execute("ALTER TABLE positions ADD COLUMN entry_fee TEXT NOT NULL DEFAULT '0'")
         if "max_holding_ms" not in cols:
             self._db.execute("ALTER TABLE positions ADD COLUMN max_holding_ms INTEGER NOT NULL DEFAULT 0")
+        if "strategy_id" not in cols:
+            self._db.execute("ALTER TABLE positions ADD COLUMN strategy_id TEXT NOT NULL DEFAULT ''")
+        if "funding_paid" not in cols:
+            self._db.execute("ALTER TABLE positions ADD COLUMN funding_paid TEXT NOT NULL DEFAULT '0'")
         self._db.commit()
 
     # ---------- 查询 ----------
@@ -169,8 +186,10 @@ class PaperBroker:
     # ---------- 开仓 ----------
 
     def submit(self, intent: TradeIntent, notional: Decimal) -> Fill | None:
-        """幂等开仓。影子意图在这里就被拒绝——不依赖上层编排。"""
-        if intent.shadow:
+        """幂等开仓。账本类型决定是否接受影子意图（验证盘拒绝，实验盘只收影子）。"""
+        if self.shadow_mode == "reject" and intent.shadow:
+            return None
+        if self.shadow_mode == "shadow_only" and not intent.shadow:
             return None
         fee = notional * self.fee_bps / BPS
         slip = self.slippage_bps / BPS
@@ -193,11 +212,11 @@ class PaperBroker:
         self._db.execute("UPDATE account SET cash = ? WHERE id = 1", (str(cash - notional - fee),))
         self._db.execute(
             "INSERT INTO positions (intent_id, symbol, side, qty, entry_price, entry_ts,"
-            " stop_price, tp_price, status, entry_fee, max_holding_ms)"
-            " VALUES (?,?,?,?,?,?,?,?,'open',?,?)",
+            " stop_price, tp_price, status, entry_fee, max_holding_ms, strategy_id)"
+            " VALUES (?,?,?,?,?,?,?,?,'open',?,?,?)",
             (intent.intent_id, intent.symbol, intent.side, str(qty), str(price),
              intent.decision_ts_ms, str(intent.stop_price), str(intent.take_profit_price),
-             str(fee), int(intent.expected_holding_ms)),
+             str(fee), int(intent.expected_holding_ms), intent.strategy_id),
         )
         self._db.commit()
         return Fill(intent.intent_id, intent.decision_ts_ms, intent.symbol, intent.side,
@@ -215,13 +234,17 @@ class PaperBroker:
         direction = Decimal("1") if pos["side"] == "LONG" else Decimal("-1")
         gross = (fill - entry) * qty * direction
         exit_fee = qty * fill * self.fee_bps / BPS
-        net_pnl = gross - exit_fee - entry_fee          # 净额：含双边手续费
-        cash = self.cash() + notional + gross - exit_fee  # 开仓费已扣，不再重复
+        # 资金费：按持有小时数折算（多头支付正费率，空头收取）
+        hours = Decimal(max(0, ts_ms - int(pos["entry_ts"]))) / Decimal(3_600_000)
+        funding = notional * (self.funding_bps_per_8h / BPS) * (hours / Decimal("8"))
+        funding_cost = funding if pos["side"] == "LONG" else -funding
+        net_pnl = gross - exit_fee - entry_fee - funding_cost
+        cash = self.cash() + notional + gross - exit_fee - funding_cost
         self._db.execute("UPDATE account SET cash = ? WHERE id = 1", (str(cash),))
         self._db.execute(
-            "UPDATE positions SET status='closed', exit_ts=?, exit_price=?, exit_reason=?, pnl=?"
-            " WHERE id=?",
-            (ts_ms, str(fill), reason, str(net_pnl), pos["id"]),
+            "UPDATE positions SET status='closed', exit_ts=?, exit_price=?, exit_reason=?, pnl=?,"
+            " funding_paid=? WHERE id=?",
+            (ts_ms, str(fill), reason, str(net_pnl), str(funding_cost), pos["id"]),
         )
         self._db.commit()
         return ClosedPosition(pos["id"], pos["symbol"], pos["side"], entry, fill, qty,

@@ -46,6 +46,7 @@ class RunLoop:
                  specs: tuple[StrategySpec, ...] = DEFAULT_SPECS,
                  log_path: Path | str | None = None,
                  heartbeat_path: Path | str | None = None,
+                 shadow_broker: PaperBroker | None = None,
                  circuit: CircuitBreaker | None = None,
                  circuit_config: CircuitConfig | None = None,
                  config: LoopConfig | None = None,
@@ -53,6 +54,7 @@ class RunLoop:
                  day_start_ms: int = 0):
         self.root = Path(root)
         self.broker = broker
+        self.shadow_broker = shadow_broker
         self.limits = limits
         self.source = source
         self.specs = specs
@@ -121,6 +123,7 @@ class RunLoop:
                 settle_ms=self.config.settle_ms, intel=intel,
                 allow_new_entries=not self.circuit.halted,
                 halt_reason=self.circuit.reason,
+                shadow_broker=self.shadow_broker,
             )
             hb.last_ok_ms = as_of_ms
             hb.consecutive_failures = 0
