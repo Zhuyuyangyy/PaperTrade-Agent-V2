@@ -1,0 +1,22 @@
+{
+  "hypothesis_id": "TA-TREND-002",
+  "title": "趋势跟随的亏损主要来自状态切换期入场，而不是趋势本身",
+  "status": "RESEARCH_ONLY",
+  "symbol": "BTCUSDT",
+  "venue": "binance_perp_paper",
+  "decision_horizon": "4h",
+  "source_urls": [
+    "https://suoha888.github.io/Trader-Archives/thankucrypto/"
+  ],
+  "source_claim": "整理库强调先判断大周期、走势不对立即认错；作者经验，非收益证明",
+  "testable_hypothesis": "把 trend_follow 限制在 ADX >= 25 且 4h 同向的决策点后，其净收益与胜率显著高于当前无过滤版本",
+  "required_features": ["adx", "ema20", "ema60", "ema200", "state_trend_4h", "trend_change_age_bars", "atr_pct", "spread_bps"],
+  "entry_rule": "1h 趋势与新入场方向一致；ADX >= 25；4h EMA20/60 与 1h 同向；距最近一次状态切换 >= 3 根 1h",
+  "exit_rule": "1.5xATR 止损、3xATR 止盈；ADX 跌破 20 或 EMA20 下穿 EMA60 立即离场",
+  "invalidation_rule": "过滤后样本外净收益不高于未过滤版本，或胜率提升但净收益下降（说明只是减少交易次数）",
+  "risk_gate": "状态切换后的前 3 根 1h 不交易；数据陈旧时 HOLD",
+  "cost_model": "双边手续费 + 点差 + 滑点 + 资金费 + 未成交",
+  "baseline": "当前无过滤 trend_follow（Baseline V1 中 17 笔、17.6% 胜率、-7.72 USDT）",
+  "test_design": "同一决策点配对；按 ADX 与状态年龄分层；block bootstrap；样本外另取时间段",
+  "known_limitations": ["Baseline V1 样本很小（17 笔）", "ADX 阈值本身可能过拟合", "4h 数据在回放中可能不足"]
+}

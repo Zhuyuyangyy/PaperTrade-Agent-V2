@@ -322,6 +322,9 @@ python scripts/verify_forward_run.py --root data/openalpha_forward_v1 --rounds 7
 Forward Test V1 启动脚本：[`scripts/forward_test_v1.sh`](scripts/forward_test_v1.sh)（73 轮 × 1h ≈ 72h；
 验收不只看 `rounds`，要 `successful_rounds == 日志行数`、验证盘 0 单、订单可追溯）。
 
+多模型对照：[`docs/design/decision-providers.md`](docs/design/decision-providers.md)（rules / DeepSeek / Jev / 线性模型，
+只记录不交易）；研究假设卡：[`docs/research/hypotheses/`](docs/research/hypotheses/)。
+
 边界没有变：**只读采集 · 策略研究 · 模拟执行**；不接实盘、不接私钥、不自动跟单。
 V1 只做 BTC/USDT 单标的，SOL 数据保留在研究库。
 
