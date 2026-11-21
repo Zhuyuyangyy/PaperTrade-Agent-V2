@@ -122,11 +122,13 @@ def compare(root, lookback_hours: int = 24) -> dict:
     e_conn.row_factory = sqlite3.Row
     ensure_schema(e_conn)
 
-    # D's ledger is WAL-mode; copy before reading.
+    # D's ledger is WAL-mode; take a consistent snapshot before reading.
+    from ..ledger import snapshot
+
     tmp_dir = tempfile.mkdtemp()
     try:
         d_copy = Path(tmp_dir) / d_db.name
-        shutil.copy(d_db, d_copy)
+        snapshot(d_db, d_copy)
         d_conn = sqlite3.connect(str(d_copy))
         d_conn.row_factory = sqlite3.Row
         try:
@@ -240,6 +242,7 @@ def collect_d_marks(root, lookback_hours: int = 24) -> dict:
     import shutil
     import tempfile
 
+    from ..ledger import snapshot
     from ..memehunter import Token, _get, ensure_candidate_columns  # noqa: F401
 
     now = _now_ms()
@@ -252,7 +255,7 @@ def collect_d_marks(root, lookback_hours: int = 24) -> dict:
     tmp_dir = tempfile.mkdtemp()
     try:
         d_copy = Path(tmp_dir) / d_db.name
-        shutil.copy(d_db, d_copy)
+        snapshot(d_db, d_copy)
         d_conn = sqlite3.connect(str(d_copy))
         d_conn.row_factory = sqlite3.Row
         try:

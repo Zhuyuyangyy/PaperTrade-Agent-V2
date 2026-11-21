@@ -51,6 +51,7 @@ def random_control(candles: list[dict], rule: Exit, spec_obj, entries: dict[int,
     nets = sim.net_pct_series()
     lo, hi = bar_bounds(candles, bar_range=bar_range)
     return {
+        "n_random_requested": int(n_random),
         "n_random": len(rand_entries),
         "seed": seed,
         "side": side,

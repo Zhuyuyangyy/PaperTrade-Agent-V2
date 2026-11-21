@@ -59,6 +59,23 @@ def test_a_risk_exit_keeps_its_outcome_at_every_deadline(desk) -> None:
         assert report[key]["net_usd"] == pytest.approx(-11.3), key
 
 
+def test_a_stop_after_the_deadline_is_priced_at_the_deadline(desk) -> None:
+    """A stop that fired at 200m must not donate its outcome to the 45m/90m/180m
+    deadlines: that imports a later bar into an earlier horizon. Price the
+    window at the deadline instead and count the trade as censored."""
+    conn, _ = desk
+    conn.execute(
+        "INSERT INTO positions VALUES ('LATE',?,1.0,100.0,1.3,?, 'STOP_LOSS', -11.3, 'closed')",
+        (T0, T0 + 200 * MIN),
+    )
+    _candidate(conn, 1, "LATE", [(T0, 1.0), (T0 + 46 * MIN, 0.95), (T0 + 200 * MIN, 0.89)])
+    report = counterfactual(desk[1].parents[2])
+    expected_45 = 100 * (0.95 * (1 - 0.006) - 1.0) - 1.3 - 100 * 0.95 * 0.006
+    assert report["45m"]["net_usd"] == pytest.approx(expected_45, abs=0.01)
+    assert report["45m"]["net_usd"] != pytest.approx(-11.3)
+    assert report["censored_risk_exits"] >= 1
+
+
 def test_the_deadline_exit_uses_the_first_price_after_it(desk) -> None:
     conn, _ = desk
     # A timeout trade: the desk sells at the first visible price past the deadline.

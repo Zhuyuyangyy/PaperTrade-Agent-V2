@@ -131,6 +131,24 @@
 - `scripts/p1_integration_smoke.py`：去掉 `decision=now+10s` 的前视用法；
   点位按 5s 采样；标签来自 `label_from_store`；输出采集诊断与 `aligned_n`。
 
+### 3.5 顺带修掉的既有 P0/P1（不在 cross_market 内，但阻断验收）
+
+这些是审计既有资产时发现的、会让"全量测试通过"或"研究结论成立"变成假象的问题。
+它们不进 cross_market，但进本分支，因为 Sprint 0 的验收本身就依赖它们。
+
+| ID | 位置 | 问题 | 修复 |
+|---|---|---|---|
+| C-01 | `research/pipeline/roundlock.py:29-40` | `os.kill(pid, 0)` 在 Windows 上是 `TerminateProcess`，不是探测——读到自己的 pid 就把流水线自己杀掉。本机全量 `pytest` 跑到 `test_roundlock.py` 无 traceback 退出，就是这个 | 改用 `OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION)` + `GetExitCodeProcess`；`ACCESS_DENIED` 视为存活。新增 `test_alive_detects_our_own_process` |
+| C-02 | `research/verify/signals.py:94-104` + `control.py:44` | 随机入场**有放回**抽样写进 `{bar: side}` 字典，重复 bar 被静默合并：400 根窗口抽 200 次只剩 153 个（−23.5%）。对照组样本被缩小，而报告仍按请求数统计 | 改为**无放回** `rng.sample`；`random_control` 同时输出 `n_random_requested` 与 `n_random`（实际） |
+| C-04 | `research/replay/timeout_replay.py:101-106` | 两个分支代码完全相同：200 分钟才触发的止损，被直接抄进 45/90/180 分钟的反事实结果——用未来结果回填短期期限 | 止损发生在期限之后时，按期限价格重算并计入 `censored_risk_exits`；报告说明口径 |
+| C-10 | `selectivity.py:88`、`signals.py:129/257`、`timeout_replay.py:68`、`evaluators.py:130` | 用 `shutil.copy` 复制 WAL 模式的账本，只拷主文件，未 checkpoint 的最新事务全部丢失——审计窗口末端正好是最新结论依赖的部分 | 新增 `research/ledger.snapshot()`（`sqlite3.Connection.backup`），5 处全部替换；新增 `tests/test_ledger_snapshot.py` |
+| C-14 | `research/memehunter.py:668-678` | `health()` 算出 `halt`（最近 30 笔期望 < −0.5%/笔 停手），但 `can_open` 从不消费它——自述风控从未生效 | `can_open` 第一步检查 `health().halt`，返回 `HEALTH_HALT`；新增测试证明 halt 后开仓被拒 |
+| C-15 | `research/pipeline/orchestrator.py:192` | `summary["proposals"]` 里 `summary` 在该作用域不存在 → `NameError` 被下面的 `except` 吞掉，evaluator 提案永远不显示 | 写入 `self.evaluator_proposals`，并在 `__init__` 初始化 `evaluator_error` |
+| C-18 | `research/verify/__main__.py:416` | 报告含 U+2212，Windows GBK 控制台 `UnicodeEncodeError`，CLI 在 Windows 上直接崩（`test_skill_standalone` 唯一失败项） | `main()` 开头 `sys.stdout.reconfigure(encoding="utf-8", errors="replace")`；测试子进程捕获改为 UTF-8 解码；重建 vendored `engine/`、agensi 单文件、Pro zip |
+
+修完后 **C-01 的直接后果消失**：本机全量 `pytest tests -q` 可以一次跑完并产出 summary
+（此前会在第 31 个文件处进程自杀）。这是"全量测试通过"第一次成为可验证的陈述。
+
 ---
 
 ## 4. 研究设计问题（代码修不好，必须改设计）
@@ -236,31 +254,93 @@ python -m pytest -q tests
 | P2 | `align_features` 增加市场级过滤（多市场共用 store 时） | Sprint 2 |
 | P2 | 旧测试中仍有"测试跟随实现"的痕迹，加断言前先问"这个值在现实里应该是什么" | 持续 |
 
+### 6.1 既有资产中已识别、但本 Sprint 不修的缺陷（按 Sprint 分配）
+
+| 编号 | 位置 | 问题摘要 | 归属 |
+|---|---|---|---|
+| C-03 | `orchestrator.py:87-88` vs `counterpart.py:32-34` | E 与 C 的止损/止盈参数不同，却被当成"六 agent 增量"的比较；E vs C 的差值包含退出参数差异 | Sprint 2（先统一 exit policy，再重跑历史结论） |
+| C-05 | `replay/engine.py:314`、`judge.py:213` | 按 mint 反查"最新 candidate"，影子价/LLM 分挂到另一轮 | Sprint 2（持仓行写入 candidate_id） |
+| C-06 | `replay/engine.py:222-227` | 冷却闸门查活账本，回放结果随时间漂移、不可复现 | Sprint 2 |
+| C-07 | `replay/engine.py:255,260-271` | 退出只在 10 分钟窗口内评估；`TRAILING_STOP` 分支不可达 | Sprint 2 |
+| C-08 | `verify/__init__.py:236-298` | 名为 walk-forward，实为 holdout split；不重拟合、按 bar 等分 | Sprint 1（改名或真滚动） |
+| C-09 | `audit/binance.py:133`、`verify/data.py:113` | K 线缓存只看首尾，内部缺口检测不到 | Sprint 1 |
+| C-11 | `replay/signals.py:59-72` | 三个独立 `MAX()` 拼出一行，价格与时间戳不同源 | Sprint 1 |
+| C-12/13 | `replay/signals.py:280`、`memehunter.py:714` | Jupiter 端点字段/包裹层未统一，异常被吞 | Sprint 1 |
+| C-16 | `verify/metrics.py:43-55` | `sum_pct` 线性、`max_dd` 复利；`nets` 被排序后当原始序列；重叠仓位 | Sprint 1 |
+| C-17 | `replay/calibration.py:68` | 同一 candidate 多轮研判重复计入 | Sprint 2 |
+| C-19 | `verify/__init__.py:315` 等 | `fromtimestamp` 无 tz，报告时间整体偏移 | Sprint 1 |
+| C-22 | 全仓库 | 无多重检验校正（网格 ≤64 格、selectivity 42 对比） | Sprint 2（FDR 列进 verdict） |
+| C-28 | `scripts/dashboard.py:48` | 60 秒采样配小时级年化因子，Sharpe 差 √60 | Sprint 4（看板重做时一起） |
+
+这些没有被忘掉：它们被明确排除在 Sprint 0 之外，原因是**修复它们需要改实验口径或数据模型，
+会把"数据正确性"这一个交付变成三个**。Sprint 0 的边界是：让现有结论不再是被 bug 造出来的。
+
 ---
 
 ## 7. 验收口径（Sprint 0 部分）
 
 - [x] 数据正确性缺陷全部有回归用例，且用例在修复前失败、修复后通过；
-- [x] `tests/cross_market` 全绿（69 passed）；
+- [x] `tests/cross_market` 全绿（71 passed）；
 - [x] 采集器不再用本地时间冒充事件时间；重复盘口不重复入库；
 - [x] 标签是相对收益，未来价格严格晚于 horizon；
 - [x] A/C 比较有共同决策点、有样本量、有配对 payoff 口径；
 - [x] 设计文档给出五层架构、数据契约、风控与 14 天路线（`docs/design/openalpha-v1-architecture.md`）；
-- [ ] 全量 `pytest -q tests` 在本机需要分段执行（见 §8），CI 上应保持绿。
+- [x] 全量 `pytest tests` 一次跑完：**481 passed, 1 skipped, 0 failed**（本机 35s；
+      `roundlock` 修复前会进程自杀，`test_skill_standalone` 因 GBK 必失败）。
 
 ---
 
 ## 8. 本机测试执行备注
 
-本机（Windows / Python 3.12）全量 `pytest -q tests` 在约 61% 处进程退出，
-日志无 FAILED 摘要，属于既有环境问题（`docs/cross-market-v2.2.md` 已记载
-`test_roundlock.py` 偶发挂起、`test_skill_standalone.py` 在 GBK 控制台打印 U+2212 崩溃）。
-本次采用逐文件 `Start-Process` + 180s 超时的分段执行方式定位，结果见
-`docs/audit/sprint-0-test-matrix.md`。CI（Ubuntu / Python 3.11）不受此影响。
+修复 `roundlock` 之前，本机（Windows / Python 3.12）全量 `pytest -q tests` 会在
+`test_roundlock.py` 处**进程自杀**（无 traceback、无 summary）——那不是"环境玄学"，
+是 `os.kill(pid, 0)` 在 Windows 上的语义（见 §3.5 C-01）。修完后一次跑完：
+
+```
+481 passed, 1 skipped in 35.41s
+```
+
+1 个 skip 是 `test_migrate_ledgers.py` 的环境相关跳过（缺 symlink 权限），
+与本次改动无关。CI（Ubuntu / Python 3.11）不受 Windows 特有缺陷影响，
+但也因此**永远发现不了 C-01**——这是建议给 CI 加 Windows runner 的直接理由。
 
 ---
 
-## 9. 给下一个 Sprint 的一句话
+## 9. 附录：既有资产复用清单（Sprint 1 起按此接线）
+
+| 模块 | 文件 | 能力 | 处置 |
+|---|---|---|---|
+| 证伪引擎门面 | `research/verify/__init__.py` | `verify(spec, candles, entries, funding, exit_signals)` → 回放/成本/障碍/对照/裁决/诊断 | 改造复用：V1 的策略验证入口 |
+| Spec 契约 | `research/verify/spec.py` | 声明式 `falsify_if`、walk-forward、参数网格校验 | 直接复用：假设契约载体 |
+| 随机对照 | `research/verify/control.py` | bootstrap CI + selectivity | 已修 C-02 后复用 |
+| 诊断 | `research/verify/diagnosis.py` | 七类诊断 + 可验收的下一步实验 | 直接复用（最干净的一块） |
+| 报告 | `report.py` / `html_report.py` | Markdown / 自包含 HTML（曲线、成本柱、热图） | 直接复用：看板雏形 |
+| 契约锁 | `research/verify/contract_lock.py` | `falsify_if` 的 sha256 锁，改规则即失败 | 直接复用 |
+| 路径回放 | `research/audit/pathsim.py` | bar 内 TP/SL 冲突按最坏解、maker 需穿越、funding 折算 | **V1 回放内核** |
+| 影子标签 | `research/replay/labels.py` | 5/15/30/60m 前向曲线，无回填 | 直接复用（口径最严） |
+| 成本 | `research/replay/costs.py` | AMM 冲击 + LP 费 + 链上费 | 复用公式，并入统一成本模型 |
+| 选择性审计 | `research/replay/selectivity.py` | 14 队列 lift + CI + 尾部占比 | 复用范式 |
+| 决策链 | `research/pipeline/agents.py` | SEARCH→RISK→GMGN→JUDGE→FOMO→EXIT | 骨架复用为 L3 |
+| LLM 研判 | `research/pipeline/judge.py` | 只重排不放行 + prompt hash + 原始响应留痕 | 直接复用（合规形态正确） |
+| 提案器 | `research/pipeline/evaluators.py` | 只提案不落地 | 直接复用（反自动过拟合） |
+| 晋级阶梯 | `research/live/ladder.py` | replay→dryrun→probe→pilot→scale，降级自动、升级需人 | 直接复用为准入闸门 |
+| 风控闸门 | `research/copywatch/risk.py` | 11 项确定性检查 + 稳定机器码 | **L4 蓝本** |
+| 去重范式 | `research/copywatch/store.py` | `event_id` 主键 + `INSERT OR IGNORE` | 直接复用 |
+| 仓位缩放 | `research/copywatch/sizing.py` | 按目标钱包规模缩放 + floor/cap | 直接复用 |
+| 数据纪律 | `research/core.py` | 已收盘 K 线校验、原子写、幂等落盘 | 纪律范本 |
+| 纸面执行 | `research/memehunter.py`（`Desk`） | 滑点/双边费/peak/权益/健康度 | 改造为统一 PaperBroker |
+| 信号信任边界 | `user_data/strategies/signal_gate.py` | 外部信号 schema/来源/时效白名单 | 直接复用 |
+| 安全基线 | `scripts/safety_check.py` | 启动前 20+ 断言（dry_run/无凭证/只读挂载） | 直接复用，扩展风控断言 |
+| 快照导出 | `scripts/export_experiment.py` | SQLite backup + 凭证脱敏 + git rev | 直接复用（本次的 `ledger.snapshot` 同源） |
+| 旧账本 | `legacy_v1/paper_agent.py` | 极简纸面账本（成交价/费/滑点/权益） | 候选 PaperBroker 记账层 |
+
+**重复实现要收敛**（同一能力多份，详见审计过程记录）：成本模型 5 份、前向收益 5 份、
+绩效统计 6 份、纸面账本 4 份、风控闸门 3 份。V1 的规则：一个能力只留一份实现，
+其余改为调用；留哪份在上表"处置"列已标明。
+
+---
+
+## 10. 给下一个 Sprint 的一句话
 
 先把"每个决策点上，我到底知道什么"钉死（数据契约），再谈策略。
 这一层只要漏一个前视，后面所有漂亮的曲线都是假的。

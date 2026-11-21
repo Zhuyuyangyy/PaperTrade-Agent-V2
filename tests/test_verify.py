@@ -22,7 +22,7 @@ from research.verify import Spec, SpecError, verify  # noqa: E402
 from research.verify import control, data, metrics, report  # noqa: E402
 from research.verify import _evaluate_criteria  # noqa: E402
 from research.audit.pathsim import Exit, simulate  # noqa: E402
-from research.verify.signals import random_signals, rsi, rule_signals  # noqa: E402
+from research.verify.signals import bar_bounds, random_signals, rsi, rule_signals  # noqa: E402
 from research.verify.__main__ import main  # noqa: E402
 
 
@@ -838,6 +838,30 @@ class TestControl:
         )
         assert ctrl["side"] == "short"
 
+    def test_random_control_samples_without_replacement(self):
+        """Drawing the same bar twice collapses in a {bar: side} mapping, so the
+        control's real sample was smaller than the number it reported (200 draws
+        over 400 bars -> 153 distinct). Sample without replacement instead, and
+        report both the requested and the effective size."""
+        candles = make_candles(400)
+        entries = random_signals(candles, 200, seed=42)
+        assert len(entries) == 200, "请求 200 个有效 bar 时不应静默缩水"
+        lo, hi = bar_bounds(candles)
+        assert len(entries) == min(200, hi - lo + 1)
+        # 请求数超过可用 bar 数：用尽全部 bar，并如实返回实际数量
+        everything = random_signals(candles, 10_000, seed=42)
+        assert len(everything) == hi - lo + 1
+
+    def test_control_reports_requested_and_effective_size(self):
+        candles = make_candles(400)
+        spec = Spec.from_dict(BASE_SPEC)
+        ctrl = control.random_control(
+            candles, _exit_rule(), spec, {0: "long"}, n_random=20, seed=1,
+        )
+        assert ctrl["n_random_requested"] == 20
+        assert ctrl["n_random"] == 20
+        assert ctrl["fills"] + ctrl["unfilled"] + ctrl["open_signals"] == ctrl["n_random"]
+
     def test_identical_books_compare_as_unproven(self):
         nets = [0.01, -0.02, 0.03, 0.0, -0.01, 0.02, -0.03, 0.01]
         st = metrics.equity_stats(nets)
@@ -856,9 +880,16 @@ class TestControl:
         entries = rule_signals(candles, rule="rsi_below", period=14, threshold=35)
         r = verify(spec, candles, entries)
         ctrl = r["control"]
-        # seeded repro: 88 distinct random entries, 87 closed, 1 never resolved
-        assert ctrl["open_signals"] >= 1
         assert ctrl["fills"] + ctrl["unfilled"] + ctrl["open_signals"] == ctrl["n_random"]
+        # 窗口最后一根 bar 的入场无法在窗口内退出：它必须留在账上（open），
+        # 而不是被静默丢弃、把 control 的成交率算高。
+        hi = bar_bounds(candles)[1]
+        edge = control.random_control(
+            candles, _exit_rule(), spec, entries, n_random=1, seed=1, bar_range=(hi, hi),
+        )
+        assert edge["open_signals"] == 1
+        assert edge["n_random"] == 1
+        assert edge["fills"] + edge["unfilled"] + edge["open_signals"] == 1
 
     def test_control_side_tie_is_deterministic_across_hash_seeds(self):
         """A 50/50 long/short book has no dominant side, so the mirrored side

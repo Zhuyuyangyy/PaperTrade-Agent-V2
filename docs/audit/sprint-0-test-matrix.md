@@ -1,105 +1,70 @@
-# Sprint 0 测试矩阵（本机分段执行）
+# Sprint 0 测试矩阵
 
-> 目的：本机 Windows 上 `pytest -q tests` 在约 61% 处进程退出（既有环境问题），
-> 无法一次拿到汇总。这里按文件隔离执行，记录每一项的真实结果，避免"全绿"是靠
-> 一次没跑完的测试得来的假象。
->
-> 命令模板：`python -m pytest tests/<file> -q -p no:cacheprovider`
-> 每文件 180–300s 超时；失败/超时都保留日志尾部。
-
-## 汇总
+## 汇总（最终）
 
 | 口径 | 结果 |
 |---|---|
-| 逐文件通过 | **468 passed** |
-| 失败 | 1（`test_skill_standalone.py::test_repo_mode_env_still_works`，既有 GBK 控制台 U+2212 问题） |
-| 跳过 | 1（`test_migrate_ledgers.py`，缺 symlink 权限） |
-| 未执行 | `test_roundlock.py`（4 项，既有偶发挂起，见 §3） |
-| 本次改动核心 | `tests/cross_market` **71 passed**（修复前 51 passed，新增 19 项回归 + 更新 5 项旧断言） |
+| 全量 `python -m pytest tests -q` | **481 passed, 1 skipped, 0 failed**（35.5s，一次跑完） |
+| 跳过 | 1（`test_migrate_ledgers.py`，环境缺 symlink 权限，与本次改动无关） |
+| 本次新增回归 | `tests/cross_market/test_data_correctness.py` 19 项（修复前 17 failed / 1 passed）+ `tests/test_ledger_snapshot.py` 3 项 + 4 项既有测试新增用例 |
+| 核心改动面 | `tests/cross_market` 51 → **71 passed**；`tests/test_verify.py` 116 → **118 passed** |
+| 修复前无法得到的数字 | 全量测试在 `test_roundlock.py` 处进程自杀（Windows `os.kill(pid,0)` = `TerminateProcess`），从来没有 summary |
 
-## 1. 逐文件结果
+### 修复前后对照
 
-| 文件 | 结果 |
+| 项 | 修复前 | 修复后 |
+|---|---|---|
+| 全量 `pytest tests` | 跑到第 31 个文件进程自杀，无 summary | 481 passed, 1 skipped |
+| `tests/cross_market` | 51 passed（其中多个断言把 bug 当契约） | 71 passed |
+| `tests/test_roundlock.py` | 4 项未完成，进程被杀 | **5 passed**（含新增 `_alive` 用例） |
+| `tests/test_skill_standalone.py` | 5 passed / 1 failed（GBK U+2212） | **6 passed** |
+| `tests/test_pro_package.py` / `test_agensi_single_file.py` | 通过但子进程解码告警 | 通过，告警消除 |
+
+## 1. 本次新增/修改的用例
+
+| 用例 | 覆盖缺陷 |
 |---|---|
-| `tests/cross_market/` | 71 passed |
-| `test_agensi_single_file.py` | 6 passed |
-| `test_agent_failures.py` | 6 passed |
-| `test_arms.py` | 10 passed |
-| `test_arms_report.py` | 3 passed |
-| `test_audit.py` | 12 passed |
-| `test_bridge_safety.py` | 4 passed |
-| `test_calibration.py` | 7 passed |
-| `test_contract_lock.py` | 4 passed |
-| `test_convertible.py` | 7 passed |
-| `test_copywatch.py` | 17 passed |
-| `test_core.py` | 19 passed |
-| `test_costs.py` | 4 passed |
-| `test_csv_auditor.py` | 7 passed |
-| `test_dashboard.py` | 8 passed |
-| `test_dashboard_server.py` | 1 passed |
-| `test_demote.py` | 7 passed |
-| `test_equity_sampler.py` | 2 passed |
-| `test_exit_loop.py` | 8 passed |
-| `test_export_experiment.py` | 1 passed |
-| `test_guards.py` | 6 passed |
-| `test_judge.py` | 7 passed |
-| `test_ladder.py` | 12 passed |
-| `test_memehunter.py` | 27 passed |
-| `test_migrate_ledgers.py` | 4 passed, 1 skipped |
-| `test_moneyflow.py` | 3 passed |
-| `test_pipeline.py` | 15 passed |
-| `test_pro_package.py` | 3 passed |
-| `test_replay.py` | 7 passed |
-| `test_report_history.py` | 9 passed |
-| `test_room.py` | 8 passed |
-| `test_selectivity.py` | 7 passed |
-| `test_skill_standalone.py` | 5 passed, **1 failed**（既有） |
-| `test_source_retry.py` | 3 passed |
-| `test_state.py` | 7 passed |
-| `test_strategies.py` | 16 passed |
-| `test_timeout_replay.py` | 4 passed |
-| `test_verify.py` | 116 passed |
-| `test_worker_integration.py` | 5 passed |
-| `test_roundlock.py` | 未执行（挂起） |
+| `test_data_correctness.py::test_label_is_relative_return_not_price` 等 2 项 | S0-01 标签写成价格 |
+| `test_label_requires_future_beyond_horizon` | S0-02 标签窗口 |
+| `test_abc_compares_only_common_decision_points` | S0-03 A/C 索引截断 |
+| `test_arm_a_uses_price_change_not_level` / `..._abstains_inside_deadband` | S0-04 A 臂恒做多 |
+| `test_arm_b_maps_probability_change_to_underlying_direction` / `..._abstains_when_books_inconsistent` | S0-05 / S0-07 方向映射 |
+| `test_align_each_point_uses_data_available_then` / `test_align_stops_at_realtime_ceiling` | S0-06 实时模式回填历史 |
+| `test_poly_yes_no_tokens_are_normalized` / `test_poly_inconsistent_books_are_flagged` | S0-07 YES/NO 归一化 |
+| `test_best_bid_ask_not_level_zero` | S0-08 盘口排序 |
+| `test_missing_server_timestamp_is_rejected` | S0-09 recv 冒充事件时间 |
+| `test_duplicate_book_hash_not_stored_twice` | S0-10 重复采集 |
+| `test_replay_orders_by_availability_not_event_ts` / `test_store_query_by_availability` / `test_query_available_keeps_late_events_before_window` | S0-11 可用性排序 |
+| `test_cvd_uses_closed_kline_only` | S0-12 CVD 用了未收盘 K 线 |
+| `test_cost_model_includes_funding` | S0-13 资金费未计入 |
+| `test_roundlock.py::test_alive_detects_our_own_process` | C-01 Windows liveness 探测杀进程 |
+| `test_verify.py::TestControl::test_random_control_samples_without_replacement` / `..._reports_requested_and_effective_size` | C-02 对照组有放回抽样缩水 |
+| `test_timeout_replay.py::test_a_stop_after_the_deadline_is_priced_at_the_deadline` | C-04 未来止损回填短期期限 |
+| `test_ledger_snapshot.py`（3 项） | C-10 WAL 账本复制丢末端 |
+| `test_memehunter.py::test_health_halt_blocks_new_positions` | C-14 停手线未接线 |
+| `test_skill_standalone.py` 断言改为 `engine_mode=vendored/repo` | C-18 编码相关断言脆性 |
 
-## 2. 唯一失败项的证据
+## 2. 同步修改的旧测试（它们把 bug 固化成契约）
 
-```
-FAILED tests/test_skill_standalone.py::test_repo_mode_env_still_works
-```
+| 旧测试 | 旧断言 | 新断言 |
+|---|---|---|
+| `test_experiment.py::test_label_from_store_future_only` | `future_return == 67500`（价格） | 相对收益 |
+| `test_experiment.py::test_align_after_ingest_includes_poly` | `polymarket["bid"]` | `polymarket["yes_bid"]` |
+| `test_experiment.py::test_align_clock_skew_is_conservative` | 时钟超前时用 `now` 回填 | 按 t 逐点取数：`t=base` 无数据，`t=base+4s` 可用 |
+| `test_experiment.py::test_abc_supported_when_c_beats_a` | 无 delta 的伪信号 | A 恒看涨、B 区分方向，断言 payoff 增量 CI > 0 |
+| `test_collectors.py::test_recorder_captures_missing_server_timestamp` | 退化为 recv | 丢弃 + 计数 |
+| `test_verify.py::TestControl::test_control_book_keeps_the_accounting_identity` | 依赖"必然有 1 笔未解决" | 恒等式 + 用尾部窗口构造未解决入场 |
+| `test_skill_standalone.py` 两处 | 断言中文"独立引擎/仓库引擎" | 断言 ASCII `engine_mode=*` |
 
-原因（既有，`docs/cross-market-v2.2.md` 已记载）：`research.verify --demo` 在
-Windows GBK 控制台无法打印 U+2212（−），抛 `UnicodeEncodeError`。
-本次改动**没有触碰** `research/verify/` 与 `skill/`（见 `git diff --stat`），
-CI（Ubuntu / UTF-8）不受影响。
+## 3. 逐文件结果（最终口径，由全量一次跑完得出）
 
-## 3. `test_roundlock.py` 的处理
+全量汇总已替代分段执行；分段方式保留在 git 历史里（第一版 matrix）。CI 口径为
+`python -m pytest -q tests`，新增文件会被自动收集，workflow 无需改动。
 
-该文件在隔离执行时会让父守护进程一起退出（`research.pipeline.roundlock.acquire`
-会用 `os.kill(pid, 0)` 探测 pid；本机表现为不可控挂起/退出）。它与本次改动无关：
-`git diff` 不含 `research/pipeline/roundlock.py` 与 `tests/test_roundlock.py`。
-不在本分支修，避免把 Sprint 0 变成"顺手修一切"。
+## 4. CI 建议
 
-## 4. 回归用例先证伪的证据
-
-修复前（旧实现）：
-
-```
-$ python -m pytest tests/cross_market/test_data_correctness.py -q
-17 failed, 1 passed
-```
-
-修复后：
-
-```
-$ python -m pytest tests/cross_market -q
-71 passed
-```
-
-这一对数字是本次 Sprint 0 的核心证据：测试不是跟着实现写的，
-而是先写出"现实应该是什么"，再让旧实现失败。
-
-## 5. CI 口径
-
-CI 只跑 `tests/`（Ubuntu 3.11），不跑本机分段逻辑。新增文件会被自动收集，
-不需要改 workflow。若 CI 出现与本机不同的结果，以 CI 为准，并把差异贴进 PR。
+- 当前 CI 只跑 Ubuntu（`tests.yml`），因此 **C-01 这类 Windows 专有缺陷永远不可见**。
+  建议加 `windows-latest` matrix，至少跑 `tests/test_roundlock.py`、
+  `tests/test_skill_standalone.py`、`tests/cross_market`。
+- 加一条 `python -m research.verify --demo > /dev/null` 的烟雾步骤，
+  防止 CLI 编码类回归再次只在用户机器上爆。

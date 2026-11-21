@@ -120,6 +120,8 @@ def evaluate_drift(conn: sqlite3.Connection) -> list[dict]:
     import tempfile
     from pathlib import Path
 
+    from ..ledger import snapshot
+
     # decisions lives in the CopyWatch ledger, not this one.
     d_db = Path(__file__).resolve().parents[2] / "runtime" / "copywatch" / "copywatch.sqlite"
     if not d_db.is_file():
@@ -127,7 +129,7 @@ def evaluate_drift(conn: sqlite3.Connection) -> list[dict]:
     tmp_dir = tempfile.mkdtemp()
     try:
         copy = Path(tmp_dir) / d_db.name
-        shutil.copy(d_db, copy)
+        snapshot(d_db, copy)
         ro = sqlite3.connect(str(copy))
         try:
             rows = ro.execute(

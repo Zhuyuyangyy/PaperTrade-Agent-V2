@@ -36,7 +36,8 @@ PY = sys.executable
 
 
 def _run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True, timeout=600)
+    return subprocess.run(cmd, cwd=str(cwd), capture_output=True, timeout=600,
+                          encoding="utf-8", errors="replace")
 
 
 @pytest.fixture(scope="module")

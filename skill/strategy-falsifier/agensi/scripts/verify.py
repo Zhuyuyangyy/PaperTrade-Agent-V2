@@ -508,15 +508,22 @@ def bar_bounds(candles: list[dict], warmup: int = CONTROL_WARMUP,
 
 def random_signals(candles: list[dict], n: int, seed: int, side: str = "long",
                    warmup: int = CONTROL_WARMUP, bar_range: tuple[int, int] | None = None) -> dict[int, str]:
-    """Uniform random entry bars in [warmup, len-2], with replacement allowed.
+    """Uniform random entry bars in [warmup, len-2], **without replacement**.
 
-    With replacement: the control is about entry *timing* distribution, not
-    about cardinality. Two random signals may share a bar; that is fine and it
-    is disclosed in the report.
+    Sampling without replacement is a correctness requirement, not a style
+    choice: entries are a `{bar: side}` mapping, so drawing the same bar twice
+    silently collapses into one entry. The old version drew with replacement
+    and then reported `len(entries)` as the control's sample size -- 200 draws
+    over 400 bars produced 153 distinct entries (-23.5%), and every downstream
+    selectivity verdict was computed on the shrunken book. If `n` exceeds the
+    number of eligible bars, every eligible bar is used and the caller is told
+    the effective size.
     """
     lo, hi = bar_bounds(candles, warmup=warmup, bar_range=bar_range)
+    universe = list(range(lo, hi + 1))
     rng = random.Random(seed)
-    return {rng.randint(lo, hi): side for _ in range(n)}
+    k = min(int(n), len(universe))
+    return {i: side for i in rng.sample(universe, k)}
 
 
 def signal_stats(entries: dict[int, str], candles: list[dict]) -> dict:
@@ -1001,6 +1008,7 @@ def random_control(candles: list[dict], rule: Exit, spec_obj, entries: dict[int,
     nets = sim.net_pct_series()
     lo, hi = bar_bounds(candles, bar_range=bar_range)
     return {
+        "n_random_requested": int(n_random),
         "n_random": len(rand_entries),
         "seed": seed,
         "side": side,
@@ -4202,6 +4210,12 @@ def _run_one(args, spec_path: str | None, raw_argv: list[str]) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Reports contain U+2212 and other non-ASCII glyphs; Windows consoles default
+    # to GBK and raise UnicodeEncodeError mid-print (seen on the bundled skill).
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
     ap = argparse.ArgumentParser(prog="research.verify", description="策略证伪引擎：path-aware 回放 + 成本敏感性 + 障碍可达性 + 随机对照组")
     ap.add_argument("--spec", help="策略 spec JSON 路径")
     ap.add_argument("--demo", action="store_true", help="运行内置演示（BTC 1h RSI 规则，数据取自本地行情缓存）")
