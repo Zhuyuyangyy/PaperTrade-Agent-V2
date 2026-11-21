@@ -145,6 +145,7 @@
 | C-14 | `research/memehunter.py:668-678` | `health()` 算出 `halt`（最近 30 笔期望 < −0.5%/笔 停手），但 `can_open` 从不消费它——自述风控从未生效 | `can_open` 第一步检查 `health().halt`，返回 `HEALTH_HALT`；新增测试证明 halt 后开仓被拒 |
 | C-15 | `research/pipeline/orchestrator.py:192` | `summary["proposals"]` 里 `summary` 在该作用域不存在 → `NameError` 被下面的 `except` 吞掉，evaluator 提案永远不显示 | 写入 `self.evaluator_proposals`，并在 `__init__` 初始化 `evaluator_error` |
 | C-18 | `research/verify/__main__.py:416` | 报告含 U+2212，Windows GBK 控制台 `UnicodeEncodeError`，CLI 在 Windows 上直接崩（`test_skill_standalone` 唯一失败项） | `main()` 开头 `sys.stdout.reconfigure(encoding="utf-8", errors="replace")`；测试子进程捕获改为 UTF-8 解码；重建 vendored `engine/`、agensi 单文件、Pro zip |
+| C-20 | `research/worker.py:111-117` | demo 锚定 `now−60s`，但喂给 `checked_closed_candles` 的最后一根在"整点后 [0,90s)"窗口内既不满足 30s 收盘宽限、也不在 1h 陈旧窗口内 → `test_core` 在真实时钟落在这段时随机失败（实测 10:01:25 复现） | 死区内回退到上一小时末尾；新增 5 个固定时钟的参数化用例（0s/25s/59s/85s/89s） |
 
 修完后 **C-01 的直接后果消失**：本机全量 `pytest tests -q` 可以一次跑完并产出 summary
 （此前会在第 31 个文件处进程自杀）。这是"全量测试通过"第一次成为可验证的陈述。
@@ -166,7 +167,7 @@ R2-05 的边界说明：这一版做的是**块长与有效样本量**的修正�
 （没有 HAC/Newey-West，也没有对多假设做校正）。它解决的是"用重叠点冒充独立证据"，
 不解决"多次实验后的选择性偏差"——后者在 Sprint 2 与 FDR 一起做。
 
-修复后：`tests/cross_market` **82 passed**；全量 **492 passed, 1 skipped**。
+修复后：`tests/cross_market` **82 passed**；全量 **510 passed, 1 skipped**。
 
 ---
 
@@ -304,8 +305,9 @@ python -m pytest -q tests
 - [x] 标签是相对收益，未来价格严格晚于 horizon；
 - [x] A/C 比较有共同决策点、有样本量、有配对 payoff 口径；
 - [x] 设计文档给出五层架构、数据契约、风控与 14 天路线（`docs/design/openalpha-v1-architecture.md`）；
-- [x] 全量 `pytest tests` 一次跑完：**492 passed, 1 skipped, 0 failed**（本机 62s；
-      `roundlock` 修复前会进程自杀，`test_skill_standalone` 因 GBK 必失败）。
+- [x] 全量 `pytest tests` 一次跑完：**510 passed, 1 skipped, 0 failed**（本机 51s；
+      `roundlock` 修复前会进程自杀，`test_skill_standalone` 因 GBK 必失败，
+      `test_core` 在整点后 90 秒内随机失败）。
 - [x] Round 2 复审的 5 项（R2-01..R2-05）全部有先失败后通过的反例测试；
       时间语义（事件时间 / 可用时间 / 未来标签）三处定义已用测试钉死。
 
