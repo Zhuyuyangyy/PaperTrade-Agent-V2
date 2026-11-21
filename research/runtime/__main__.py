@@ -33,8 +33,16 @@ def _views(base) -> dict:
 
 
 def _specs(verified: list[str]):
-    return tuple(replace(s, verification="VERIFIED") if s.strategy_id in verified else s
-                 for s in DEFAULT_SPECS)
+    """演示专用：把指定策略标成 VERIFIED。
+
+    正式运行入口不允许这样做——``VERIFIED`` 只能由独立验证报告授予
+    （``StrategySpec.verified_by`` 必填，且构造时校验）。
+    """
+    return tuple(
+        replace(s, verification="VERIFIED", verified_by="DEMO-ONLY")
+        if s.strategy_id in verified else s
+        for s in DEFAULT_SPECS
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -52,6 +60,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     specs = _specs(args.verified)
+    if args.verified:
+        print(f"WARNING: --verified={args.verified} 仅用于演示（verified_by=DEMO-ONLY）；"
+              f"正式运行不得通过命令行提升策略权限。", file=sys.stderr)
     limits = RiskLimits()
     as_of = demo_as_of_ms()
     with tempfile.TemporaryDirectory() as td:

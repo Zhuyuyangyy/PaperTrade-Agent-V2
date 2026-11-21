@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Mapping
 
 from research.market.contracts import Candle, MarketState
+from research.market.klines import closed_only
 from research.market.state import analyze
 from research.paper.broker import ClosedPosition, Fill, PaperBroker
 from research.risk.engine import (
@@ -61,7 +62,13 @@ def run_round(symbol: str, candles_by_tf: Mapping[str, list[Candle]], as_of_ms: 
     mark = _mark_price(state)
     closed: list[ClosedPosition] = []
     if mark is not None:
-        closed = broker.mark(symbol, mark, as_of_ms)
+        # 用 1h 最后一根已收盘 K 线做保守 mark（跳空按开盘价），再处理超时
+        h1 = closed_only(sorted(candles_by_tf.get("1h") or [], key=lambda c: c.open_ms),
+                         as_of_ms, settle_ms)
+        if h1:
+            bar = h1[-1]
+            closed += broker.mark_bar(symbol, bar.open, bar.high, bar.low, as_of_ms)
+        closed += broker.expire(as_of_ms, {symbol: mark})
 
     selection = select(state, specs)
     risk: RiskDecision | None = None

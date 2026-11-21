@@ -1,14 +1,14 @@
-"""模拟撮合与账本（Sprint 2）。
+"""模拟撮合与账本（Sprint 2.1）。
 
-铁律：
-  - **幂等**：``orders.intent_id`` 是主键。同一意图重复提交不会产生第二笔成交，
-    重启后依然如此（账本在 sqlite 里，不在内存里）。
-  - **费用与滑点**：开仓按 ``entry_ref * (1 ± slippage)`` 成交，双边 taker 费；
-    平仓同样计滑点与费用。所有金额用 Decimal 字符串存库，避免 float 误差。
-  - **方向对称**：LONG 与 SHORT 都占用 notional 作为保证金，结算时返还并计入 pnl。
-    这是简化模型（不是真实保证金/借币），文档与日志里明确标注。
-  - **可恢复**：``restore()`` 从账本读回现金与持仓；``account()`` 提供风控所需的
-    快照（现金/敞口/持仓数/当日已实现盈亏）。
+Sprint 2.1 修掉：
+  1. ``expire()`` 用当前可用价结算（旧实现用开仓价），无价格时**跳过**而不是猜；
+  2. ``realized_pnl_since()`` 使用已扣**双边**手续费的净 pnl；
+  3. ``submit()`` 自身拒绝 ``shadow=True``（不依赖编排层）；
+  4. 新增 ``mark_bar()``：跳空按开盘价成交（更差），同 bar 止损/止盈同触发按止损；
+     止盈跳空不按比止盈价更优的价格成交；
+  5. 持仓行记录 ``entry_fee`` 与 ``max_holding_ms``，超时按持仓自己的持有期判断。
+
+铁律不变：订单幂等（intent_id 主键）、Decimal 存库、双向名义记账（不是真实保证金）。
 """
 from __future__ import annotations
 
@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS positions (
     stop_price TEXT NOT NULL,
     tp_price TEXT NOT NULL,
     status TEXT NOT NULL,
+    entry_fee TEXT NOT NULL DEFAULT '0',
+    max_holding_ms INTEGER NOT NULL DEFAULT 0,
     exit_ts INTEGER,
     exit_price TEXT,
     exit_reason TEXT,
@@ -81,16 +83,10 @@ class Fill:
 
     def to_dict(self) -> dict:
         return {
-            "intent_id": self.intent_id,
-            "ts_ms": self.ts_ms,
-            "symbol": self.symbol,
-            "side": self.side,
-            "qty": str(self.qty),
-            "price": str(self.price),
-            "fee": str(self.fee),
-            "notional": str(self.notional),
-            "strategy_id": self.strategy_id,
-            "strategy_version": self.strategy_version,
+            "intent_id": self.intent_id, "ts_ms": self.ts_ms, "symbol": self.symbol,
+            "side": self.side, "qty": str(self.qty), "price": str(self.price),
+            "fee": str(self.fee), "notional": str(self.notional),
+            "strategy_id": self.strategy_id, "strategy_version": self.strategy_version,
         }
 
 
@@ -108,14 +104,9 @@ class ClosedPosition:
 
     def to_dict(self) -> dict:
         return {
-            "position_id": self.position_id,
-            "symbol": self.symbol,
-            "side": self.side,
-            "entry_price": str(self.entry_price),
-            "exit_price": str(self.exit_price),
-            "qty": str(self.qty),
-            "pnl": str(self.pnl),
-            "reason": self.reason,
+            "position_id": self.position_id, "symbol": self.symbol, "side": self.side,
+            "entry_price": str(self.entry_price), "exit_price": str(self.exit_price),
+            "qty": str(self.qty), "pnl": str(self.pnl), "reason": self.reason,
             "exit_ts": self.exit_ts,
         }
 
@@ -127,13 +118,23 @@ class PaperBroker:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.fee_bps = fee_bps
         self.slippage_bps = slippage_bps
+        self.expire_skipped = 0
         self._db = sqlite3.connect(str(self.path))
         self._db.row_factory = sqlite3.Row
         self._db.executescript(SCHEMA)
+        self._migrate()
         self._db.execute(
             "INSERT OR IGNORE INTO account (id, cash, starting_cash) VALUES (1, ?, ?)",
             (str(starting_cash), str(starting_cash)),
         )
+        self._db.commit()
+
+    def _migrate(self) -> None:
+        cols = {r[1] for r in self._db.execute("PRAGMA table_info(positions)")}
+        if "entry_fee" not in cols:
+            self._db.execute("ALTER TABLE positions ADD COLUMN entry_fee TEXT NOT NULL DEFAULT '0'")
+        if "max_holding_ms" not in cols:
+            self._db.execute("ALTER TABLE positions ADD COLUMN max_holding_ms INTEGER NOT NULL DEFAULT 0")
         self._db.commit()
 
     # ---------- 查询 ----------
@@ -160,8 +161,7 @@ class PaperBroker:
         from research.risk.engine import AccountSnapshot
 
         return AccountSnapshot(
-            cash=self.cash(),
-            gross_exposure=self.gross_exposure(),
+            cash=self.cash(), gross_exposure=self.gross_exposure(),
             open_positions=len(self.open_positions()),
             realized_pnl_today=self.realized_pnl_since(day_start_ms),
         )
@@ -169,7 +169,9 @@ class PaperBroker:
     # ---------- 开仓 ----------
 
     def submit(self, intent: TradeIntent, notional: Decimal) -> Fill | None:
-        """幂等开仓：同一 intent_id 只会成交一次。"""
+        """幂等开仓。影子意图在这里就被拒绝——不依赖上层编排。"""
+        if intent.shadow:
+            return None
         fee = notional * self.fee_bps / BPS
         slip = self.slippage_bps / BPS
         price = intent.entry_ref_price * (Decimal("1") + slip if intent.side == "LONG"
@@ -188,13 +190,14 @@ class PaperBroker:
         if cash < notional + fee:
             self._db.rollback()
             return None
-        self._db.execute("UPDATE account SET cash = ? WHERE id = 1",
-                         (str(cash - notional - fee),))
+        self._db.execute("UPDATE account SET cash = ? WHERE id = 1", (str(cash - notional - fee),))
         self._db.execute(
             "INSERT INTO positions (intent_id, symbol, side, qty, entry_price, entry_ts,"
-            " stop_price, tp_price, status) VALUES (?,?,?,?,?,?,?,?,'open')",
+            " stop_price, tp_price, status, entry_fee, max_holding_ms)"
+            " VALUES (?,?,?,?,?,?,?,?,'open',?,?)",
             (intent.intent_id, intent.symbol, intent.side, str(qty), str(price),
-             intent.decision_ts_ms, str(intent.stop_price), str(intent.take_profit_price)),
+             intent.decision_ts_ms, str(intent.stop_price), str(intent.take_profit_price),
+             str(fee), int(intent.expected_holding_ms)),
         )
         self._db.commit()
         return Fill(intent.intent_id, intent.decision_ts_ms, intent.symbol, intent.side,
@@ -205,53 +208,72 @@ class PaperBroker:
     def _close(self, pos: sqlite3.Row, price: Decimal, ts_ms: int, reason: str) -> ClosedPosition:
         qty = Decimal(pos["qty"])
         entry = Decimal(pos["entry_price"])
+        entry_fee = Decimal(pos["entry_fee"] or "0")
         notional = qty * entry
         slip = self.slippage_bps / BPS
         fill = price * (Decimal("1") - slip if pos["side"] == "LONG" else Decimal("1") + slip)
         direction = Decimal("1") if pos["side"] == "LONG" else Decimal("-1")
         gross = (fill - entry) * qty * direction
         exit_fee = qty * fill * self.fee_bps / BPS
-        pnl = gross - exit_fee
-        cash = self.cash() + notional + pnl
+        net_pnl = gross - exit_fee - entry_fee          # 净额：含双边手续费
+        cash = self.cash() + notional + gross - exit_fee  # 开仓费已扣，不再重复
         self._db.execute("UPDATE account SET cash = ? WHERE id = 1", (str(cash),))
         self._db.execute(
             "UPDATE positions SET status='closed', exit_ts=?, exit_price=?, exit_reason=?, pnl=?"
             " WHERE id=?",
-            (ts_ms, str(fill), reason, str(pnl), pos["id"]),
+            (ts_ms, str(fill), reason, str(net_pnl), pos["id"]),
         )
         self._db.commit()
-        return ClosedPosition(pos["id"], pos["symbol"], pos["side"], entry, fill, qty, pnl,
-                              reason, ts_ms)
+        return ClosedPosition(pos["id"], pos["symbol"], pos["side"], entry, fill, qty,
+                              net_pnl, reason, ts_ms)
 
-    def mark(self, symbol: str, price: Decimal, ts_ms: int) -> list[ClosedPosition]:
-        """按止损/止盈触发平仓；顺带把所有 open 持仓的最新价记入持仓表供看板用。"""
+    def mark_bar(self, symbol: str, bar_open: Decimal, bar_high: Decimal, bar_low: Decimal,
+                 ts_ms: int) -> list[ClosedPosition]:
+        """按一根 K 线的 OHLC 检查止损/止盈（保守成交假设）。
+
+        - 跳空：开盘已越过止损 → 按开盘价成交（更差），不假装在止损价成交；
+        - 同 bar 止损与止盈都触发 → 按止损（最坏情形）；
+        - 止盈跳空 → 最多按止盈价成交（不取更优价）。
+        """
         closed: list[ClosedPosition] = []
         for pos in self.open_positions():
             if pos["symbol"] != symbol:
                 continue
             stop, tp = Decimal(pos["stop_price"]), Decimal(pos["tp_price"])
             if pos["side"] == "LONG":
-                if price <= stop:
+                if bar_open <= stop:
+                    closed.append(self._close(pos, bar_open, ts_ms, "STOP_LOSS"))
+                elif bar_low <= stop:
                     closed.append(self._close(pos, stop, ts_ms, "STOP_LOSS"))
-                elif price >= tp:
+                elif bar_open >= tp or bar_high >= tp:
                     closed.append(self._close(pos, tp, ts_ms, "TAKE_PROFIT"))
             else:
-                if price >= stop:
+                if bar_open >= stop:
+                    closed.append(self._close(pos, bar_open, ts_ms, "STOP_LOSS"))
+                elif bar_high >= stop:
                     closed.append(self._close(pos, stop, ts_ms, "STOP_LOSS"))
-                elif price <= tp:
+                elif bar_open <= tp or bar_low <= tp:
                     closed.append(self._close(pos, tp, ts_ms, "TAKE_PROFIT"))
         return closed
 
-    def expire(self, ts_ms: int, max_holding_ms: int) -> list[ClosedPosition]:
-        """持有超时的持仓按当前记账价平仓（调用方负责传入最新价）。"""
+    def mark(self, symbol: str, price: Decimal, ts_ms: int) -> list[ClosedPosition]:
+        """只有收盘价时的兼容入口（信息更少，跳空判断退化）。"""
+        return self.mark_bar(symbol, price, price, price, ts_ms)
+
+    def expire(self, ts_ms: int, price_map: dict[str, Decimal]) -> list[ClosedPosition]:
+        """持有超时的持仓按**当前可用价**（price_map）平仓；无价格则跳过并计数。"""
         closed: list[ClosedPosition] = []
         for pos in self.open_positions():
-            if ts_ms - int(pos["entry_ts"]) >= max_holding_ms:
-                prices = self._db.execute(
-                    "SELECT price FROM orders WHERE intent_id=?", (pos["intent_id"],)
-                ).fetchone()
-                price = Decimal(prices["price"]) if prices else Decimal(pos["entry_price"])
-                closed.append(self._close(pos, price, ts_ms, "TIMEOUT"))
+            holding = int(pos["max_holding_ms"] or 0)
+            if holding <= 0:
+                continue
+            if ts_ms - int(pos["entry_ts"]) < holding:
+                continue
+            price = price_map.get(pos["symbol"])
+            if price is None:
+                self.expire_skipped += 1
+                continue
+            closed.append(self._close(pos, price, ts_ms, "TIMEOUT"))
         return closed
 
     # ---------- 权益 ----------
@@ -273,7 +295,6 @@ class PaperBroker:
         return equity
 
     def restore(self) -> dict:
-        """重启后的恢复检查：返回现金与未平仓数量（不做任何重放）。"""
         return {"cash": str(self.cash()), "open_positions": len(self.open_positions()),
                 "orders": int(self._db.execute("SELECT COUNT(*) FROM orders").fetchone()[0])}
 

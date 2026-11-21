@@ -26,12 +26,16 @@ class StrategySpec:
     applicable_vol: tuple[str, ...]
     sides: tuple[str, ...]
     verification: str = "UNTESTED"
+    verified_by: str = ""          # 独立验证报告 id；VERIFIED 必填
     priority: int = 100
     max_holding_ms: int = 4 * 3_600_000
 
     def __post_init__(self) -> None:
         if self.verification not in VERIFICATION_STATES:
             raise ValueError(f"verification 非法: {self.verification}")
+        if self.verification == "VERIFIED" and not self.verified_by.strip():
+            raise ValueError("VERIFIED 必须提供 verified_by（独立验证报告 id），"
+                             "运行参数不能凭一个字符串提升权限")
         for s in self.sides:
             if s not in SIDES:
                 raise ValueError(f"side 非法: {s}")
