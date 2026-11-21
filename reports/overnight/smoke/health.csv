@@ -1,0 +1,2 @@
+ts_ms,heartbeat_age_ms,feed_mode,books_json
+1795279496480,549,rest,"{""rules_5m"": {""orders"": 0, ""open"": 0, ""cash"": ""1000""}, ""deepseek_5m"": {""orders"": 0, ""open"": 0, ""cash"": ""1000""}, ""dual_5m"": {""orders"": 0, ""open"": 0, ""cash"": ""1000""}}"

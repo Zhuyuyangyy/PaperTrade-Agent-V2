@@ -1,0 +1,4 @@
+book,equity,cash,margin,unrealized,realized,win_rate,max_drawdown,orders,closed,open
+deepseek_5m,1000,1000,0,0,0,,0.0000,0,0,0
+dual_5m,1000,1000,0,0,0,,0.0000,0,0,0
+rules_5m,1000,1000,0,0,0,,0.0000,0,0,0
