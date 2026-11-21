@@ -307,6 +307,13 @@ class PaperBroker:
 
     # ---------- 权益 ----------
 
+    def close_position(self, pos_id: int, price: Decimal, ts_ms: int, reason: str) -> ClosedPosition | None:
+        """按指定价格平掉一个持仓（供 5m 认错/实时 guard 使用）。"""
+        for pos in self.open_positions():
+            if int(pos["id"]) == int(pos_id):
+                return self._close(pos, price, ts_ms, reason)
+        return None
+
     def equity(self, ts_ms: int, price_map: dict[str, Decimal]) -> Decimal:
         cash = self.cash()
         value = Decimal("0")

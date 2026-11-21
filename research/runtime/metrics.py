@@ -88,19 +88,13 @@ def summarize(broker: PaperBroker, label: str = "book",
     }
 
 
-def summarize_books(root: Path | str, *, shadow_db: str = "shadow.sqlite",
-                    verified_db: str = "verified.sqlite",
-                    deepseek_db: str = "deepseek_shadow.sqlite",
-                    prices: dict[str, Decimal] | None = None) -> dict:
+def summarize_books(root: Path | str, *, prices: dict[str, Decimal] | None = None) -> dict:
+    """扫描 root 下所有 *.sqlite 账本（shadow/deepseek/5m 三本等），label=文件名。"""
     root = Path(root)
     out: dict = {"root": str(root)}
-    for label, name in (("shadow", shadow_db), ("verified", verified_db),
-                        ("deepseek", deepseek_db)):
-        path = root / name
-        if path.is_file():
-            b = PaperBroker(path, starting_cash=D("1000"))
-            out[label] = summarize(b, label, prices=prices)
-            b.close()
-        else:
-            out[label] = None
+    for path in sorted(root.glob("*.sqlite")):
+        label = path.stem
+        b = PaperBroker(path, starting_cash=D("1000"))
+        out[label] = summarize(b, label, prices=prices)
+        b.close()
     return out

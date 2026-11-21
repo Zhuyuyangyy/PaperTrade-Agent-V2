@@ -83,10 +83,27 @@ def _jsonl_last(path: Path, n: int = 1) -> list[dict]:
 def read_state(cfg: TerminalConfig, prices=None) -> dict:
     root = cfg.root
     hb = read_heartbeat(root / "state" / "heartbeat.json")
+    if hb is None:
+        v2 = root / "state" / "heartbeat_v2.json"
+        if v2.is_file():
+            try:
+                from research.runtime.heartbeat import Heartbeat
+
+                data = json.loads(v2.read_text(encoding="utf-8"))
+                ts = int(data.get("updated_at_ms") or 0)
+                hb = Heartbeat(updated_at_ms=ts, last_ok_ms=ts, rounds=0, pid=0)
+            except (ValueError, OSError):
+                hb = None
     books = summarize_books(root, prices=prices)
     decisions = _jsonl_last(root / "data" / "decisions.jsonl")
     ds = _jsonl_last(root / "data" / "deepseek_decisions.jsonl")
     rules_last = None
+    v2_rules = _jsonl_last(root / "rules_5m_decisions.jsonl")
+    if not decisions and v2_rules:
+        d = v2_rules[-1].get("decision") or {}
+        rules_last = {"as_of_ms": v2_rules[-1].get("as_of_ms"),
+                      "decision": d.get("choice"), "strategy": d.get("provider"),
+                      "reason": d.get("rationale"), "shadow": True}
     if decisions:
         sel = decisions[-1].get("selection") or {}
         intent = sel.get("intent") or {}
@@ -95,6 +112,12 @@ def read_state(cfg: TerminalConfig, prices=None) -> dict:
                       "strategy": intent.get("strategy_id"),
                       "reason": sel.get("hold_reason") or intent.get("reason") or "",
                       "shadow": intent.get("shadow")}
+    v2_ds = _jsonl_last(root / "deepseek_5m_decisions.jsonl")
+    if not ds and v2_ds:
+        d = v2_ds[-1].get("decision") or {}
+        ds = [{"as_of_ms": v2_ds[-1].get("as_of_ms"), "choice": d.get("choice"),
+               "status": d.get("status"), "confidence": d.get("confidence"),
+               "rationale": d.get("rationale"), "version": d.get("version")}]
     deepseek_last = None
     if ds:
         d = ds[-1]
@@ -418,7 +441,7 @@ const TF=['1m','5m','15m','1h','4h'];const TF_SEC={'1m':60,'5m':300,'15m':900,'1
 const fmt=(x)=>x==null?'—':Number(x).toLocaleString(undefined,{maximumFractionDigits:2});
 const pct=(x)=>x==null?'—':(Number(x)*100).toFixed(2)+'%';
 function drawBooks(b){
-  const rows=[['rules','shadow'],['deepseek','deepseek'],['verified','verified']];
+  const rows=Object.keys(b||{}).filter(k=>k!=='root').map(k=>[k,k]);
   document.getElementById('books').innerHTML=rows.map(([label,key])=>{
     const x=b[key];if(!x)return `<div class="row"><span class="k">${label}</span><span class="v">—</span></div>`;
     const eq=Number(x.equity), cash=Number(x.cash), margin=Number(x.margin_used||0);

@@ -1,0 +1,78 @@
+{
+  "hours_planned": 8.0,
+  "elapsed_hours": 0.01,
+  "books": {
+    "deepseek_5m": {
+      "equity": "1000",
+      "cash": "1000",
+      "realized_pnl": "0",
+      "orders": 0,
+      "closed": 0,
+      "open_positions": 0,
+      "win_rate": null
+    },
+    "dual_5m": {
+      "equity": "1000",
+      "cash": "1000",
+      "realized_pnl": "0",
+      "orders": 0,
+      "closed": 0,
+      "open_positions": 0,
+      "win_rate": null
+    },
+    "rules_5m": {
+      "equity": "1000",
+      "cash": "1000",
+      "realized_pnl": "0",
+      "orders": 0,
+      "closed": 0,
+      "open_positions": 0,
+      "win_rate": null
+    }
+  },
+  "research_loops": 1,
+  "last_loop": "00:48:24",
+  "backtest": {
+    "A_no_adx": {
+      "n": 33,
+      "net_bps": 36.61,
+      "pf": 1.59,
+      "win": 0.515,
+      "dd_bps": 570.55,
+      "reasons": {
+        "STOP": 16,
+        "TP": 16,
+        "EARLY": 0,
+        "TIMEOUT": 1
+      }
+    },
+    "B_adx25": {
+      "n": 20,
+      "net_bps": 35.94,
+      "pf": 1.48,
+      "win": 0.5,
+      "dd_bps": 571.48,
+      "reasons": {
+        "STOP": 10,
+        "TP": 9,
+        "EARLY": 0,
+        "TIMEOUT": 1
+      }
+    },
+    "C_adx25_early": {
+      "n": 43,
+      "net_bps": 21.31,
+      "pf": 1.52,
+      "win": 0.279,
+      "dd_bps": 565.21,
+      "reasons": {
+        "STOP": 2,
+        "TP": 11,
+        "EARLY": 29,
+        "TIMEOUT": 1
+      }
+    }
+  },
+  "best_variant": "A_no_adx",
+  "max_heartbeat_gap_ms": 10300
+}
