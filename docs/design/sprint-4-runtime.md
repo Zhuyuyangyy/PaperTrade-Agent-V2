@@ -108,3 +108,23 @@ cash / open positions / realized、最近 5 轮决策（state/decision/risk/equi
 - 进程守护与告警；
 - 真实 72h 运行，再用看板逐项核对心跳与订单；
 - 情报增量评估按周滚动，`SUPPORTED` 之前一律 advisory。
+
+---
+
+## 9. 真实数据源适配（已就位）
+
+`research/runtime/live.py::BinanceKlineSource`：
+
+- 拉 `fapi/v1/klines` 的 5m/15m/1h/4h（limit 500），只保留 `close_ms <= as_of`；
+- 只读公开端点、无 key；超时/重试/断流统一抛 `SourceError`，由 `RunLoop` 计失败并熔断；
+- `fetch` 可注入 → 4 项离线测试（映射、未收盘过滤、缺 1h、网络异常计数）。
+
+替换方式：
+
+```python
+source = BinanceKlineSource(symbol="BTCUSDT")
+loop = RunLoop(root, broker, limits, source, ...)
+```
+
+**尚未在部署节点验证**：网络链路仍是 fake-ip + MITM 代理，第一次真实运行时先看
+`stats()["errors"]` 与心跳的 `last_error`，再谈 72h。
