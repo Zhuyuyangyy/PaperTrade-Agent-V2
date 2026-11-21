@@ -1,0 +1,22 @@
+{
+  "hypothesis_id": "TA-HOLD-003",
+  "title": "低 ADX 震荡期强制 HOLD 能减少亏损交易且不牺牲趋势收益",
+  "status": "RESEARCH_ONLY",
+  "symbol": "BTCUSDT",
+  "venue": "binance_perp_paper",
+  "decision_horizon": "4h",
+  "source_urls": [
+    "https://suoha888.github.io/Trader-Archives/thankucrypto/"
+  ],
+  "source_claim": "整理库记录：不适合的震荡行情宁可空仓；作者经验，非收益证明",
+  "testable_hypothesis": "在 ADX < 20 的决策点禁止开新仓，组合净收益高于允许交易版本，且趋势期交易数不变",
+  "required_features": ["adx", "atr_pct", "range_width_bps", "spread_bps"],
+  "entry_rule": "仅当 ADX >= 20 且状态为 TREND_UP/TREND_DOWN/RANGE 明确时允许开仓",
+  "exit_rule": "沿用各策略预注册的止损/止盈/持有期",
+  "invalidation_rule": "禁止后趋势期交易数下降（误伤）或净收益未改善",
+  "risk_gate": "ADX < 20 时 HOLD；数据陈旧或缺口时 HOLD",
+  "cost_model": "双边手续费 + 点差 + 滑点 + 资金费 + 未成交",
+  "baseline": "允许在低 ADX 期交易的当前版本",
+  "test_design": "同一决策点配对；按 ADX 分桶报告交易数、胜率、净收益；block bootstrap",
+  "known_limitations": ["ADX 滞后，可能错过转折", "样本内分桶容易过拟合阈值", "需要未见时间段复核"]
+}

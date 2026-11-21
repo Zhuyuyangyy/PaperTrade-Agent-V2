@@ -1,0 +1,23 @@
+{
+  "hypothesis_id": "TA-EVENT-001",
+  "title": "事件方向与价格确认一致时，突破跟随的净收益优于纯 K 线突破",
+  "status": "RESEARCH_ONLY",
+  "symbol": "BTCUSDT",
+  "venue": "binance_perp_paper",
+  "decision_horizon": "4h",
+  "source_urls": [
+    "https://suoha888.github.io/Trader-Archives/thankucrypto/",
+    "https://github.com/suoha888/Trader-Archives/tree/main/thankucrypto"
+  ],
+  "source_claim": "整理库记录的 event-first 做法：先识别可能影响市场的事件，再看价格是否已反映；整理者摘录，非独立收益证明",
+  "testable_hypothesis": "在新闻方向与突破方向一致的决策点上，T+N 组合的扣费净收益显著优于纯技术 T 基线",
+  "required_features": ["news_bias", "news_confidence", "news_first_seen_ms", "breakout_ref_high", "breakout_ref_low", "atr_pct", "spread_bps", "fee_bps", "slippage_bps"],
+  "entry_rule": "NewsEvent.first_seen_ms <= as_of，方向为 bullish/bearish 且置信度 >= 0.5；同时价格收盘突破前高/前低 >= 5bps，量能 z >= 1",
+  "exit_rule": "预注册止损 1.5xATR、止盈 3xATR，或持有超过 4h 按收盘价离场",
+  "invalidation_rule": "在未见样本上 T+N 相对 T 的配对付费净收益 CI 下界 <= 0，或样本量不足 30",
+  "risk_gate": "数据陈旧、点差 > 20bps、或新闻 first_seen 晚于决策时刻时 HOLD",
+  "cost_model": "双边手续费 + 点差 + 滑点 + 资金费 + 未成交",
+  "baseline": "冻结的技术策略 T 与 HOLD",
+  "test_design": "同一决策点配对；purged walk-forward + embargo；block bootstrap；按新闻类别分层报告",
+  "known_limitations": ["新闻方向依赖 LLM 抽取，存在误差", "事件影响期限与 4h 视界可能错配", "整理库经历未经独立审计"]
+}
