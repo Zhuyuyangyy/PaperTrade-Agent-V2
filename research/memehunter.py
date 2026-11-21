@@ -666,6 +666,11 @@ class Desk:
         return result
 
     def can_open(self, token: Token, at_ms: int) -> tuple[bool, str]:
+        # The rolling-expectancy stop line was computed but never consumed; a
+        # desk cannot claim a halt rule it does not enforce. Check it first.
+        health = self.health()
+        if health.get("halt"):
+            return False, "HEALTH_HALT"
         if len(self.open_positions()) >= int(self.cfg["max_open_positions"]):
             return False, "MAX_POSITIONS"
         if any(p["mint"] == token.mint for p in self.open_positions()):

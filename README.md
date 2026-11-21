@@ -1,7 +1,7 @@
 # PaperTrade-Agent-V2-Fast
 
 [![CI](https://img.shields.io/github/actions/workflow/status/Zhuyuyangyy/PaperTrade-Agent-V2/Offline%20safety%20and%20strategy%20tests?style=flat-square&label=CI)](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/actions/workflows/tests.yml)
-[![tests](https://img.shields.io/badge/tests-301%20passed%2C%202%20skipped-brightgreen?style=flat-square)](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2)
+[![tests](https://img.shields.io/badge/tests-409%20passed%2C%201%20skipped-brightgreen?style=flat-square)](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2)
 [![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)](https://www.python.org/downloads/)
 
@@ -273,7 +273,7 @@ python -m research.verify --list-market                   # 本地行情缓存�
 
 **方法论文章**（对外内容资产）：`docs/article-falsification.md`。**分发作战包**（Reddit/X/闲鱼/Toku 文案 + gate 规则 + 本人操作清单）：`docs/dist/`。**落地页**（pitch + demo + 案例矩阵 + 价格）：`docs/index.html`。
 
-**测试**：`tests/test_verify.py` 覆盖 spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/walk-forward/参数网格/HTML 渲染/多策略对比/spec 自带数据/CLI 端到端，全套测试 **337 passed, 2 skipped**（akshare 未装、Windows 缺 symlink 权限各跳 1 个）。
+**测试**：`tests/test_verify.py` 覆盖 spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/walk-forward/参数网格/HTML 渲染/多策略对比/spec 自带数据/CLI 端到端，全套测试 **409 passed, 1 skipped**（CI 实测口径）（akshare 未装、Windows 缺 symlink 权限各跳 1 个）。
 
 ## 运维：这个系统活着的时候经历过什么
 
@@ -292,7 +292,21 @@ python -m research.verify --list-market                   # 本地行情缓存�
 | 停止后循环反复复活 | `loop.sh` while true 守护 + 排队后台任务到点自启 | STOP 文件 kill switch（幂等） |
 | 后台任务约 3 小时被系统回收 | 环境事实 | 主+副班双看门狗，故障窗口 30 分钟 |
 
-**CI：396 passed，1 skipped**（`pytest -q tests`；本地 Windows 与全仓库口径不同，详见 `docs/dist/submissions.md`）。
+**CI：409 passed，1 skipped**（`pytest -q tests`；本地 Windows 与全仓库口径不同，详见 `docs/dist/submissions.md`）。
+
+---
+
+## OpenAlpha V1.0：从"证伪仪器"到"自主模拟交易员"（Sprint 0）
+
+2026-11-21 起，仓库进入 OpenAlpha V1.0 改造：目标是一个能 24h 自己获取行情、
+理解市场状态、选择并验证策略、在风控允许时做**模拟**交易的闭环。
+
+- 设计文档：[`docs/design/openalpha-v1-architecture.md`](docs/design/openalpha-v1-architecture.md)（五层架构、数据契约、风控、14 天路线、验收硬条件）
+- Sprint 0 审计报告：[`docs/audit/sprint-0-audit-report.md`](docs/audit/sprint-0-audit-report.md)（13 项数据正确性缺陷、修复记录、回归测试证据）
+- 跨市场 P1.1 口径变更：[`docs/cross-market-v2.2.md`](docs/cross-market-v2.2.md#p11-数据正确性修复sprint-02026-11-21)
+
+边界没有变：**只读采集 · 策略研究 · 模拟执行**；不接实盘、不接私钥、不自动跟单。
+V1 只做 BTC/USDT 单标的，SOL 数据保留在研究库。
 
 ---
 

@@ -21,6 +21,12 @@ def _pf(v: float | None) -> str:
     return f"{v:.2f}" if v is not None else "—"
 
 
+def _fmt_utc(ms: int) -> str:
+    """Data timestamps are UTC by the engine's own rule (data.py); render
+    them the same way regardless of the machine's local zone."""
+    return _dt.datetime.fromtimestamp(ms / 1000, _dt.timezone.utc).strftime("%Y-%m-%d %H:%M")
+
+
 def _pct(v: float | None, digits: int = 2) -> str:
     return f"{v:+.{digits}f}%" if v is not None else "—"
 
@@ -282,6 +288,13 @@ def render(result: dict) -> str:
       + (f" · 含资金费" if result.get("funding_applied") else (" · spec 声明含资金费但数据缺失，按 0 处理" if spec.get("funding") else " · 不含资金费"))
       + f" · bar 内先到止损判止损（最坏优先）")
     a(f"- 信号数：{_n(result['n_signals'])}")
+    # --- data hygiene: facts about the candles, never about the edge -------
+    dh = result.get("data_hygiene") or {}
+    for note in dh.get("notes") or []:
+        a(f"- ⚠ 数据卫生：{note}")
+    for g in (dh.get("gaps") or [])[:3]:
+        a(f"  - 间隔 {_fmt_utc(g['after_t'])} → {_fmt_utc(g['before_t'])} UTC"
+          f"（{g['gap_ms'] / 3_600_000:.1f}h，中位×{g['multiple']}）")
     # --- section 0: port notes (strategies ported from somewhere else) -----
     if spec.get("port_notes"):
         a("")

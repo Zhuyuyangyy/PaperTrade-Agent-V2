@@ -59,13 +59,17 @@ def _exit_value(path: list[tuple[int, float]], at_ms: int) -> tuple[float, bool]
 def counterfactual(root: Path, db_name: str = "memehunter.sqlite") -> dict:
     # The live ledger is WAL mode; a read-only URI open refuses it, and copying
     # is also the honest thing to do -- a replay must not race the desk.
+    # Use the SQLite backup API (research.ledger.snapshot): a plain file copy
+    # misses uncheckpointed WAL frames, i.e. exactly the newest transactions.
     import shutil
     import tempfile
+
+    from ..ledger import snapshot
 
     src = root / "runtime" / "memehunter" / db_name
     tmp_dir = Path(tempfile.mkdtemp(prefix="timeout_replay_"))
     tmp_db = tmp_dir / db_name
-    shutil.copy(src, tmp_db)
+    snapshot(src, tmp_db)
     conn = sqlite3.connect(str(tmp_db))
     conn.row_factory = sqlite3.Row
     try:
@@ -89,6 +93,7 @@ def counterfactual(root: Path, db_name: str = "memehunter.sqlite") -> dict:
     per_timeout: dict[int, list[float]] = {t: [] for t in TIMEOUTS}
     skipped = 0
     vanished_count = 0
+    censored_risk_exits = 0
     for row in rows:
         path = _price_path(conn, row["symbol"], int(row["opened_at_ms"]), float(row["entry_fill_price"] or 0))
         opened = int(row["opened_at_ms"])
@@ -100,11 +105,13 @@ def counterfactual(root: Path, db_name: str = "memehunter.sqlite") -> dict:
             # outcome: the counterfactual only moves the deadline, not the stop.
             if real_reason in ("STOP_LOSS", "TAKE_PROFIT") and real_exit <= limit:
                 pnl = float(row["pnl_usd"] or 0.0)
-            elif real_reason in ("STOP_LOSS", "TAKE_PROFIT"):
-                # The stop would have fired before this deadline anyway; the
-                # recorded pnl is the outcome, the timeout never applied.
-                pnl = float(row["pnl_usd"] or 0.0)
             else:
+                # Either a plain timeout, or a risk exit that happened AFTER
+                # this deadline. The latter must NOT inherit its recorded pnl:
+                # that would import the outcome of a later bar into an earlier
+                # deadline (look-ahead). Price the window at the deadline
+                # instead, and count the trade as censored so the report can
+                # disclose it.
                 found = _exit_value(path, limit)
                 if found is None:
                     skipped += 1
@@ -118,6 +125,8 @@ def counterfactual(root: Path, db_name: str = "memehunter.sqlite") -> dict:
                 pnl = qty * (fill - entry) - float(row["entry_cost_usd"] or 0.0) - qty * price * half_bps
                 if vanished:
                     vanished_count += 1
+                if real_reason in ("STOP_LOSS", "TAKE_PROFIT") and real_exit > limit:
+                    censored_risk_exits += 1
             per_timeout[minutes].append(pnl)
 
     conn.close()
@@ -141,8 +150,11 @@ def counterfactual(root: Path, db_name: str = "memehunter.sqlite") -> dict:
         }
     out["skipped_no_price"] = skipped
     out["vanished_priced_at_last"] = vanished_count
+    out["censored_risk_exits"] = censored_risk_exits
     out["note"] = (
-        "STOP_LOSS/TAKE_PROFIT keep their recorded outcome; only the deadline moves. "
+        "STOP_LOSS/TAKE_PROFIT keep their recorded outcome only when the stop fired "
+        "BEFORE the counterfactual deadline; a stop that fired later is priced at the "
+        "deadline and counted in censored_risk_exits (its real pnl is not imported). "
         "Sample is NOT unbiased: only trades whose candidate has shadow marks (recorded "
         "since 08:53) can be replayed, and those skew toward tokens that stayed in the "
         "universe. Directional only."

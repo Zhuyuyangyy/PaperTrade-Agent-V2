@@ -94,9 +94,15 @@ def verify(spec: Spec, candles: list[dict], entries: dict[int, str],
     )
 
     full = _battery(spec, candles, entries, exit_rule, funding)
+    from . import data_hygiene
+
     result = {
         "spec": spec.to_dict(),
         "window": _window(candles),
+        # Facts about the DATA, disclosed before any verdict: holiday-glued
+        # bars / halts / export holes show up as anomalous timestamp gaps.
+        # Never feeds the falsification rules -- see data_hygiene.py.
+        "data_hygiene": data_hygiene.check(candles, spec.interval),
         "n_signals": len(entries),
         "funding_applied": bool(spec.funding and funding),
         "runs": full["runs"],

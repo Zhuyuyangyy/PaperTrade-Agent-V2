@@ -1,0 +1,39 @@
+# Cross-Market v2.2 市场映射（2026-11-19 从 Gamma 实拉生成）。
+# 规则：只有登记在此且未过期的市场可研究；primary_horizon 预注册唯一主视界；
+# 未登记/已过期市场不可研究（fail-closed）。
+
+will-bitcoin-dip-to-60k-by-december-31-2026-from-july-21:
+  gamma_id: "3013350"
+  underlying_asset: BTC
+  event_threshold: 60000
+  event_comparator: BELOW
+  event_expiry: '2027-01-01T05:00:00.000Z'
+  resolution_source: https://www.binance.com/en/trade/BTC_USDT
+  target_horizons: [30s, 1m, 5m, 15m, 1h]
+  primary_horizon: 5m
+  clob_token_ids: ["104279604547231872129402198190232956636095665469278761891693384128061158683041", "71378443524585182161509165206687359935571329472000076556085474136388673584216"]
+  # Will Bitcoin dip to $60,000 by December 31, 2026? | 24h量 $146,642.726
+
+will-bitcoin-reach-1000000-by-december-31-2026-946:
+  gamma_id: "1393070"
+  underlying_asset: BTC
+  event_threshold: 1000000
+  event_comparator: ABOVE
+  event_expiry: '2027-01-01T05:00:00.000Z'
+  resolution_source: https://www.binance.com/en/trade/BTC_USDT
+  target_horizons: [30s, 1m, 5m, 15m, 1h]
+  primary_horizon: 5m
+  clob_token_ids: ["18571303954259773157233385333455041418270179723020753158306812650937565180666", "7142024470612936735428754056387382685168052776672130900761925227324373567635"]
+  # Will Bitcoin reach $1,000,000 by December 31, 2026? | 24h量 $134,014.408
+
+will-bitcoin-dip-to-50000-by-december-31-2026-454-325-222-878-949-487-451-853-523-111:
+  gamma_id: "1339767"
+  underlying_asset: BTC
+  event_threshold: 50000
+  event_comparator: BELOW
+  event_expiry: '2027-01-01T05:00:00.000Z'
+  resolution_source: https://www.binance.com/en/trade/BTC_USDT
+  target_horizons: [30s, 1m, 5m, 15m, 1h]
+  primary_horizon: 5m
+  clob_token_ids: ["13887983551129862992605123088744175927084435631400400451585519366058907542147", "41832664285845832459030640969891483663884721696292020563915305291791682631668"]
+  # Will Bitcoin dip to $50,000 by December 31, 2026? | 24h量 $116,856.212

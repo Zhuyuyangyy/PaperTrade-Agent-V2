@@ -162,7 +162,11 @@ def main(argv: list[str]) -> int:
         return 2
 
     cmd = [_interpreter(), "-m", pkg, *args]
-    print(f"[包装] {' '.join(cmd)}（cwd={cwd}，{'独立引擎' if pkg == 'engine' else '仓库引擎'}）",
+    # ASCII machine-readable tag: the human sentence is locale-encoded, so tests
+    # and automation must not depend on Chinese glyphs surviving the console.
+    mode = "vendored" if pkg == "engine" else "repo"
+    print(f"[包装] {' '.join(cmd)}（cwd={cwd}，{'独立引擎' if mode == 'vendored' else '仓库引擎'}）"
+          f" engine_mode={mode}",
           file=sys.stderr)
     return subprocess.run(cmd, cwd=cwd).returncode
 

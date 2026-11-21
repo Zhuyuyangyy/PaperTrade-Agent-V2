@@ -289,6 +289,12 @@ def _run_one(args, spec_path: str | None, raw_argv: list[str]) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Reports contain U+2212 and other non-ASCII glyphs; Windows consoles default
+    # to GBK and raise UnicodeEncodeError mid-print (seen on the bundled skill).
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
     ap = argparse.ArgumentParser(prog="research.verify", description="策略证伪引擎：path-aware 回放 + 成本敏感性 + 障碍可达性 + 随机对照组")
     ap.add_argument("--spec", help="策略 spec JSON 路径")
     ap.add_argument("--demo", action="store_true", help="运行内置演示（BTC 1h RSI 规则，数据取自本地行情缓存）")

@@ -89,6 +89,8 @@ class Pipeline:
         self.desk = Desk(root, self.desk_cfg, db_name=db_name)
         self.counterpart_result: dict | None = None
         self._counterpart_error: str | None = None
+        self.evaluator_error: str | None = None
+        self.evaluator_proposals: list[str] = []
         self._ensure_schema()
         self._ensure_arm_column()
 
@@ -189,7 +191,10 @@ class Pipeline:
                         from .evaluators import run_evaluators
                         filed = run_evaluators(self.desk.conn)
                         if filed:
-                            summary["proposals"] = [f["title"] for f in filed]
+                            # `summary` is local to run_once's caller, not here;
+                            # the old line raised NameError and the except below
+                            # swallowed it, so proposals never surfaced.
+                            self.evaluator_proposals = [f["title"] for f in filed]
                     except Exception as exc:  # noqa: BLE001 - evaluators never stop the desk
                         self.evaluator_error = f"{type(exc).__name__}: {exc}"
             if agent.name == "RISK":

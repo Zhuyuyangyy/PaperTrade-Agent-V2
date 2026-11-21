@@ -97,11 +97,14 @@ def run_once(outdir: Path, logpath: Path, ta_policy: str, ta_root: Path,
 
 
 def fake_closed_rows(now_ms: int, factor: float = 1.0, n: int = 120) -> list[list[float]]:
-    """Deterministic FAKE feed for software tests, never used as genuine market data."""
+    """Deterministic FAKE feed for software tests, never used as genuine market data.
+
+    Hour-aligned rows ending at the last full hour before ``now_ms``: the newest
+    row closes at ``floor(now_ms, 1h)``, i.e. between 1h and 2h old.
+    """
     current_hour = now_ms // HOUR_MS * HOUR_MS
     rows = []
     for i in range(n):
-        # 120 completely closed candles ending one minute before now.
         t = current_hour - (n - i) * HOUR_MS
         p = factor * (50.0 + i * 0.4)
         rows.append([t, p - 0.2 * factor, p + factor, p - factor, p, 100.0])
@@ -109,12 +112,15 @@ def fake_closed_rows(now_ms: int, factor: float = 1.0, n: int = 120) -> list[lis
 
 
 def run_demo(outdir: Path) -> list[dict]:
-    # Anchor one minute back. The synthetic feed is hour-aligned, and inside
-    # the first 30s after an hour boundary no candle is both settled (30s
-    # rule) and fresh (1h staleness window) -- the demo would crash exactly
-    # there. One minute back is also what this feed's docstring already
-    # claims: "120 completely closed candles ending one minute before now".
+    # The synthetic feed is hour-aligned and `checked_closed_candles` only
+    # accepts a candle 30s after it closes. A ``now`` whose minute-of-hour is
+    # inside [0, 30s) therefore has no candle that is both settled and fresh,
+    # and the demo used to crash there (observed on a real 10:01:25 run).
+    # Step back to the end of the previous hour in that window; the newest row
+    # then closes 1h+ before ``now`` and is still inside the 1h staleness check.
     now = utc_ms() - 60_000
+    if now % HOUR_MS < 31_000:
+        now = now // HOUR_MS * HOUR_MS - 1_000
     # DEMO outputs to a distinct directory; does not write to trade consumption path.
     decisions = [
         build_decision(pair, checked_closed_candles(fake_closed_rows(now, factor=1.0 + i), now), now)

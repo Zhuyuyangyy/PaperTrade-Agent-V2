@@ -26,13 +26,13 @@ def test_pro_engine_matches_inrepo_engine(tmp_path: Path):
     repo_out = tmp_path / "repo.json"
     r = subprocess.run([PY, "-m", "research.verify", "--spec", str(spec),
                         "--candles", str(candles), "--out", str(tmp_path / "repo.md"),
-                        "--json"], capture_output=True, text=True, cwd=str(ROOT))
+                        "--json"], capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(ROOT))
     assert r.returncode == 0, r.stderr
 
     pro_out = tmp_path / "pro.json"
     r = subprocess.run([PY, "-m", "engine", "--spec", str(spec),
                         "--candles", str(candles), "--out", str(tmp_path / "pro.md"),
-                        "--json"], capture_output=True, text=True, cwd=str(PRO))
+                        "--json"], capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(PRO))
     assert r.returncode == 0, r.stderr
 
     a = json.loads((tmp_path / "repo.json").read_text(encoding="utf-8"))
@@ -51,7 +51,7 @@ def test_pro_zip_round_trips_and_installs(tmp_path: Path):
     project = tmp_path / "project"
     project.mkdir()
     r = subprocess.run([PY, "install_skill.py", str(project)],
-                       capture_output=True, text=True, cwd=str(tmp_path / "pkg"))
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(tmp_path / "pkg"))
     assert r.returncode == 0, r.stderr
     installed = project / ".claude" / "skills" / "papertrade-falsifier-pro"
     assert (installed / "SKILL.md").is_file()
@@ -59,7 +59,7 @@ def test_pro_zip_round_trips_and_installs(tmp_path: Path):
 
     # the installed skill's first promised command must work, bare
     r = subprocess.run([PY, "-m", "engine", "--demo", "--out", "demo.md"],
-                       capture_output=True, text=True, cwd=str(installed))
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(installed))
     assert r.returncode == 0, r.stderr
     assert "裁决" in (installed / "demo.md").read_text(encoding="utf-8")
 
@@ -72,12 +72,12 @@ def test_pro_contract_lock_end_to_end(tmp_path: Path):
     project = tmp_path / "project"
     project.mkdir()
     subprocess.run([PY, "install_skill.py", str(project)],
-                   capture_output=True, text=True, cwd=str(tmp_path / "pkg"))
+                   capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(tmp_path / "pkg"))
     skill = project / ".claude" / "skills" / "papertrade-falsifier-pro"
     spec = skill / "engine" / "samples" / "demo_spec_csv.json"
 
     r = subprocess.run([PY, "-m", "engine", "--lock-contract", "--spec", str(spec)],
-                       capture_output=True, text=True, cwd=str(skill))
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(skill))
     assert r.returncode == 0, r.stderr
     lock = spec.with_suffix(".verdict_lock.json")
     assert lock.is_file()
@@ -88,6 +88,6 @@ def test_pro_contract_lock_end_to_end(tmp_path: Path):
     spec.write_text(json.dumps(doc, ensure_ascii=False), encoding="utf-8")
     r = subprocess.run([PY, "-m", "engine", "--spec", str(spec), "--lock", str(lock),
                         "--candles", str(skill / "engine" / "samples" / "demo_candles.csv")],
-                       capture_output=True, text=True, cwd=str(skill))
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(skill))
     assert r.returncode == 99
     assert "CONTRACT_TAMPERING_DETECTED" in r.stderr
