@@ -291,13 +291,33 @@ def _run_v2(args) -> int:
                      partial_fraction=D(str(args.partial_fraction)),
                      trail_r=D(str(args.trail_r)))
     position_ai = None
-    if args.position_manager == "ai" and key:
+    if (args.position_manager == "ai" or args.experiment) and key:
         from research.decision.providers.position_ai import DeepSeekPositionManager
         position_ai = DeepSeekPositionManager(LLMConfig(api_key=key))
+
+    # 对照实验：四本隔离账，共用一次行情刷新 / 一次情报采集 / 一次入场决策。
+    # 不做这件事就得开四个进程 → 四个进程各自拉 REST → 418/429。
+    book_configs: dict = {}
+    if args.experiment:
+        from dataclasses import replace as _replace
+        book_configs = {
+            # A：固定 ATR + 旧的两根 K 线认错
+            "rules_5m": _replace(v2cfg, position_manager="off",
+                                 exit_min_loss_bps=D("0"), cooldown_bars=0),
+            # B：成本感知提前退出 + 冷却
+            "deepseek_5m": _replace(v2cfg, position_manager="off",
+                                    exit_min_loss_bps=D("15"), cooldown_bars=2),
+            # D：AI Position Manager（第一轮不允许加仓）
+            "dual_5m": _replace(v2cfg, position_manager="ai", cooldown_bars=2),
+            # C：确定性动态移动止损 + 分批止盈
+            "deepseek_5m_manager": _replace(v2cfg, position_manager="rules",
+                                            cooldown_bars=2),
+        }
     engine = V2Engine(Path(args.root), feed, RiskLimits(), deepseek=ds, second=second,
                       intel_fn=lambda ts: collect_intel(ts, intel_cfg),
                       executor=executor, demo_book=demo_book, config=v2cfg,
-                      position_ai=position_ai)
+                      position_ai=position_ai, experiment=args.experiment,
+                      book_configs=book_configs)
     engine.load_history()
     print(f"v2 engine: root={args.root} minutes={args.minutes} "
           f"deepseek={'on' if ds else 'off'} second={'on' if second else 'off'} "
@@ -525,6 +545,8 @@ def main(argv: list[str] | None = None) -> int:
                       help="分批止盈比例（默认 0.5）")
     p_v2.add_argument("--trail-r", type=float, default=1.0,
                       help="移动止损距离（以 R 为单位，默认 1.0）")
+    p_v2.add_argument("--experiment", action="store_true",
+                      help="A/B/C/D 单进程对照：一份行情、同一个入场信号，只改退出/管理规则")
 
     p_de = sub.add_parser("demo-exec", help="Binance Demo 联调：只读体检 / 受控小额测试单 / 对账")
     p_de.add_argument("--root", default="data/openalpha_demo")

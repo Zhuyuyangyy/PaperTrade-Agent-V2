@@ -2,7 +2,7 @@
 
 日期：2026-11-22 17:00–17:30
 提交：`efd41d5`（P0/P1/P2 基础）+ 本轮后续提交
-测试：**872 passed, 1 skipped**
+测试：**874 passed, 1 skipped**
 
 ---
 
@@ -52,7 +52,7 @@ CLI 新增：`--position-manager off|rules|ai`、`--partial-fraction`、`--trail
 
 | 项 | 状态 | 为什么先不做 |
 |---|---|---|
-| **P3 共享行情流 + A/B/C/D 四本隔离账** | 未开始 | 用户明确要求"不要让多个进程各自请求 Binance REST"。当前引擎每本账一套 config，做不到单进程多策略；需要先改成 per-book config，再共用一份 feed。**直接开四个进程会再次触发 418/429** |
+| **P3 共享行情流 + A/B/C/D 四本隔离账** | **单进程框架已完成**；对照数据尚未收集 | 已实现 per-book config、第四本账 `deepseek_5m_manager`、一份行情/一次情报/一次入场决策；`--experiment` 一键映射 A/B/C/D。**还没跑够样本**（6 分钟冒烟两次，样本为 0–3 笔，不能下结论） |
 | **复利仓位（按净权益调整风险预算）** | 未实现 | 用户要求与动态退出分开实验；当前 notional 仍固定 100 |
 | **顺势加仓** | 契约支持，执行层禁用 | 第一轮明确禁止混入对照 |
 | **P4 事件序列回放** | 未做 | 需要覆盖持仓保持、阶段止盈、移动止损、趋势反转、新闻失效、断网、模型超时等固定事件流 |
@@ -63,13 +63,35 @@ CLI 新增：`--position-manager off|rules|ai`、`--partial-fraction`、`--trail
 
 ## 下一步的正确顺序
 
-1. **单进程多策略**：把 `V2Config` 从"整台引擎一份"改成 per-book override，
-   一份 feed 同时喂 A/B/C/D，避免 REST 限流并保证入场信号完全相同。
+1. ~~**单进程多策略**：per-book override + 一份 feed 同时喂 A/B/C/D。~~ **已完成**（提交见下）。
 2. **固定事件序列回放**：验证 HOLD / MOVE_STOP / CLOSE_PARTIAL / CLOSE_ALL
    确实更新了本地持仓与保护单，且日志可逐条回放。
 3. **A/B/C/D 本地虚拟盘对照**：≥100 笔平仓或 ≥24h，比较扣费净收益、
    每笔平均 bps、MFE/MAE、利润捕获率、最大回撤、换手成本、AI 推理费用、退出原因。
+   运行：`python -m research.runtime v2 --root data/v3_experiment --minutes 1440 --experiment`；
+   汇总：`python -m scripts.experiment_report --root data/v3_experiment`。
 4. **达样本门槛且独立验证通过**后，才选择一个冻结版本镜像 Demo。
 
 **验收标准不变**：AI 为什么继续持有、为什么移动止损、为什么部分止盈、为什么平仓，
 这些动作是否真的执行、能否追溯、扣费后是否优于固定规则。
+
+
+---
+
+## 追加：单进程四本账对照框架（本轮）
+
+- `V2Engine.book_configs`：每本账可覆盖 `V2Config`；`_cfg(name)` 取有效配置，
+  入场、冷却、提前退出、持仓管理都按本账配置执行。
+- 新增第四本账 `deepseek_5m_manager`；四账映射：
+  **A** `rules_5m` = 固定 ATR + 旧认错；**B** `deepseek_5m` = 成本感知 + 冷却；
+  **C** `deepseek_5m_manager` = 确定性移动止损/分批；**D** `dual_5m` = AI 持仓管理。
+- `experiment=True` 时**四本账共用同一个入场信号**（同一份快照、一次 DeepSeek 调用），
+  差异只来自退出/管理规则——避免把"入场不同"混进对照结论。
+  为此修掉了 `rules_5m` 在实验模式下仍走自己 rules 决策的漏洞。
+- `scripts/experiment_report.py`：按账汇总净收益、每笔平均 bps、交易次数、
+  冷却拦截次数、最大回撤、管理动作分布、退出原因。
+- CLI：`--experiment`。冒烟跑通（6 分钟 ×2，一份行情、一次决策/根 K 线），
+  **样本太少，不构成任何策略结论**；Binance REST 仍偶发 418，被旧账本提示记录，
+  不影响本地虚拟盘运行。
+
+测试 872 → **874 passed, 1 skipped**。

@@ -29,7 +29,7 @@ from research.strategy.registry import DEFAULT_SPECS, select
 
 D = Decimal
 SYMBOL = "BTC/USDT"
-BOOKS = ("rules_5m", "deepseek_5m", "dual_5m")
+BOOKS = ("rules_5m", "deepseek_5m", "dual_5m", "deepseek_5m_manager")
 TFS = (("1m", 60_000), ("5m", TF_5M_MS), ("15m", TF_15M_MS),
        ("1h", TF_1H_MS), ("4h", TF_4H_MS))
 
@@ -104,6 +104,15 @@ class V2Engine:
     last_inputs: dict = field(default_factory=dict)
     #: 持仓管理模型（有 decide(snapshot) 即可）；None 且 position_manager=ai 时退化为 rules
     position_ai: object = None
+    #: 每本账的配置覆盖（实验组）。空 = 所有账用 self.config。
+    #: 单进程 + 一份行情 + 一次历史刷新/情报采集，避免多进程打爆 Binance REST。
+    book_configs: dict = field(default_factory=dict)
+    #: 对照实验模式：所有账本共用**同一个入场信号**（一次 DeepSeek 调用），
+    #: 只在退出/持仓管理规则上分化。避免"入场不同"污染对照结论。
+    experiment: bool = False
+    #: 对照实验模式：所有账本共用**同一个入场信号**（一次 DeepSeek 调用），
+    #: 只在退出/持仓管理规则上分化。避免"入场不同"污染对照结论。
+    experiment: bool = False
 
     def __post_init__(self) -> None:
         self.root = Path(self.root)
@@ -123,6 +132,10 @@ class V2Engine:
                         self._last_close_ts[(name, str(r["side"]))] = int(r["ts"])
             except Exception as exc:                 # noqa: BLE001 - 旧账本没有列时跳过
                 self.errors.append(f"{name}: 冷却恢复失败 {type(exc).__name__}: {exc}")
+
+    def _cfg(self, name: str) -> "V2Config":
+        """这本账的有效配置。没有覆盖就用引擎默认配置。"""
+        return self.book_configs.get(name, self.config)
 
     # ---------- 行情 ----------
     def load_history(self, as_of_ms: int | None = None) -> bool:
@@ -234,7 +247,9 @@ class V2Engine:
 
         ``memo`` 由 ``on_5m_close`` 每轮新建，生命周期就是一根 5m K 线。
         """
-        if name == "rules_5m":
+        # 对照实验里四本账必须共用同一个入场信号；
+        # 否则 A 用 rules、B/C/D 用 DeepSeek，差异来源混在一起就说不清了。
+        if not self.experiment and name == "rules_5m":
             return self._rules_decision(state)
         memo = memo if memo is not None else {}
         ts = int(as_of_ms if as_of_ms is not None else time.time() * 1000)
@@ -245,7 +260,10 @@ class V2Engine:
         ds = memo.get("deepseek")
         if ds is None:
             ds = memo["deepseek"] = self._model_decision("deepseek_5m", self.deepseek, snap, calls)
-        if name == "deepseek_5m":
+        if self.experiment:
+            # 所有账本同一个入场信号：差异只来自 book_configs 的退出/管理规则
+            return ds
+        if name in ("deepseek_5m", "deepseek_5m_manager"):
             return ds
         # 第二模型未配置：Dual 盘暂停开仓，不复制 DeepSeek 的决策，也不重复调用
         if self.second is None or not self.second.available():
@@ -266,8 +284,10 @@ class V2Engine:
                         f"disagree: ds={ds.choice} second={second.choice}", ())
 
     # ---------- 成交 ----------
-    def _intent(self, name: str, decision: Decision, state, as_of_ms: int) -> TradeIntent | None:
-        close, atr = self._exec_refs(state)
+    def _intent(self, name: str, decision: Decision, state, as_of_ms: int,
+                cfg: "V2Config | None" = None) -> TradeIntent | None:
+        cfg = cfg or self.config
+        close, atr = self._exec_refs(state, cfg)
         if close is None or atr is None or atr <= 0:
             return None
         side = "LONG" if decision.choice == "LONG" else "SHORT"
@@ -275,35 +295,37 @@ class V2Engine:
         iid = hashlib.sha256(f"{name}|{as_of_ms}|{side}".encode()).hexdigest()[:16]
         return TradeIntent(
             iid, as_of_ms, SYMBOL, side, name, decision.version, close,
-            close - sign * self.config.stop_atr * atr,
-            close + sign * self.config.tp_atr * atr,
-            self.config.max_holding_ms,
+            close - sign * cfg.stop_atr * atr,
+            close + sign * cfg.tp_atr * atr,
+            cfg.max_holding_ms,
             decision.confidence, decision.rationale or name, shadow=True)
 
-    def _enter(self, name: str, decision: Decision, state, as_of_ms: int) -> dict | None:
+    def _enter(self, name: str, decision: Decision, state, as_of_ms: int,
+               cfg: "V2Config | None" = None) -> dict | None:
+        cfg = cfg or self.config
         broker = self.books[name]
-        if len(broker.open_positions()) >= self.config.max_positions:
+        if len(broker.open_positions()) >= cfg.max_positions:
             return None
         # 冷却：刚平掉的方向不要下一根就照抄。
         # 用户实测那笔就是 15:31 平空、15:36 又开空，多付一次 8bps。
         side = "LONG" if decision.choice == "LONG" else "SHORT"
         last = self._last_close_ts.get((name, side))
-        if last is not None and self.config.cooldown_bars > 0:
-            need = self.config.cooldown_bars * self.config.decision_ms
+        if last is not None and cfg.cooldown_bars > 0:
+            need = cfg.cooldown_bars * cfg.decision_ms
             if as_of_ms - last < need:
                 left = need - (as_of_ms - last)
                 return {"blocked": "COOLDOWN",
                         "reason": f"{side} 于 {last} 平仓，冷却剩余 {left // 1000}s"
-                                  f"（{self.config.cooldown_bars} 根 5m）",
+                                  f"（{cfg.cooldown_bars} 根 5m）",
                         "cooldown_left_ms": left}
-        intent = self._intent(name, decision, state, as_of_ms)
+        intent = self._intent(name, decision, state, as_of_ms, cfg)
         if intent is None:
             return None
         risk = evaluate(intent, state, broker.account(as_of_ms // 86_400_000 * 86_400_000),
-                        self.limits, self.config.spread_bps)
+                        self.limits, cfg.spread_bps)
         if risk.decision != "ALLOW":
             return {"risk": risk.to_dict()}
-        notional = min(risk.notional, self.config.notional)
+        notional = min(risk.notional, cfg.notional)
         fill = broker.submit(intent, notional)
         out = {"risk": risk.to_dict(), "fill": fill.to_dict() if fill else None}
         if fill is not None and name == self.demo_book and self.executor is not None:
@@ -416,7 +438,9 @@ class V2Engine:
                            D("0.5"), "restored from ledger", shadow=True)
 
     # ---------- 持仓管理 ----------
-    def _manage_position(self, name: str, state, as_of_ms: int) -> dict | None:
+    def _manage_position(self, name: str, state, as_of_ms: int,
+                         cfg: "V2Config | None" = None) -> dict | None:
+        cfg = cfg or self.config
         """把当前仓位的"处境"交给规则或模型，拿回一个有界动作并执行。"""
         from research.decision.position import (
             PositionDecisionError, rules_position_action, snapshot_from_row,
@@ -435,17 +459,17 @@ class V2Engine:
             trends={k: (getattr(state, "trend", "") if k == "1h" else "") for k in ("5m", "15m", "1h")} or trends,
             data_as_of_ms=as_of_ms,
         )
-        mode = self.config.position_manager
+        mode = cfg.position_manager
         if mode == "ai" and self.position_ai is not None:
             try:
                 dec = self.position_ai.decide(snap)
             except Exception as exc:                     # noqa: BLE001 - 模型挂了退回规则
                 self.errors.append(f"position_ai: {type(exc).__name__}: {exc}")
-                dec = rules_position_action(snap, trail_atr=self.config.trail_r,
-                                            partial_fraction=self.config.partial_fraction)
+                dec = rules_position_action(snap, trail_atr=cfg.trail_r,
+                                            partial_fraction=cfg.partial_fraction)
         else:
-            dec = rules_position_action(snap, trail_atr=self.config.trail_r,
-                                        partial_fraction=self.config.partial_fraction)
+            dec = rules_position_action(snap, trail_atr=cfg.trail_r,
+                                        partial_fraction=cfg.partial_fraction)
         try:
             validate_against_position(dec, snap)
         except PositionDecisionError as exc:
@@ -487,12 +511,14 @@ class V2Engine:
         return out
 
     # ---------- 退出 ----------
-    def _early_exit(self, name: str, state, as_of_ms: int) -> list:
+    def _early_exit(self, name: str, state, as_of_ms: int,
+                    cfg: "V2Config | None" = None) -> list:
+        cfg = cfg or self.config
         broker = self.books[name]
         closed = []
         for pos in broker.open_positions():
             age = as_of_ms - int(pos["entry_ts"])
-            if age < self.config.exit_bars * self.config.decision_ms:
+            if age < cfg.exit_bars * cfg.decision_ms:
                 continue
             mark = self._mark_price(state)
             if mark is None:
@@ -502,7 +528,7 @@ class V2Engine:
             pnl = (mark - entry) * D(pos["qty"]) * direction
             # 只有"亏得比手续费明显更多"才认错。否则等于花 8bps 去躲 1bps 的波动。
             gross_bps = abs(mark - entry) / entry * D("10000") if entry > 0 else D("0")
-            if pnl < 0 and gross_bps >= self.config.exit_min_loss_bps:
+            if pnl < 0 and gross_bps >= cfg.exit_min_loss_bps:
                 c = broker.close_position(int(pos["id"]), mark, as_of_ms, "EARLY_EXIT")
                 if c:
                     self._last_close_ts[(name, str(pos["side"]))] = as_of_ms
@@ -554,13 +580,14 @@ class V2Engine:
                 "fingerprint": dict(self._history_fp),
                 "errors": self.errors[-2:] if not ok else []}
 
-    def _exec_refs(self, state) -> tuple:
+    def _exec_refs(self, state, cfg: "V2Config | None" = None) -> tuple:
         """执行口径的 (close, atr_abs)。
 
         默认取 ``exec_tf``（5m）的收盘与 ATR；缺失时退回 ``state.features``。
         必须和执行频率一致：5m 开仓却用 1h 收盘当入场价，等于每小时只更新一次参考价。
         """
-        tf = (getattr(state, "timeframes", None) or {}).get(self.config.exec_tf)
+        cfg = cfg or self.config
+        tf = (getattr(state, "timeframes", None) or {}).get(cfg.exec_tf)
         if tf is not None and getattr(tf, "close", None):
             close = D(str(tf.close))
             pct = getattr(tf, "atr_pct", None)
@@ -569,37 +596,13 @@ class V2Engine:
                 return close, atr
         return state.features.get("close"), state.features.get("atr_abs")
 
-    def _mark_price(self, state) -> Decimal | None:
+    def _mark_price(self, state, cfg: "V2Config | None" = None) -> Decimal | None:
         """平仓判定用的现价：优先实时价，其次执行周期收盘，最后 features。"""
+        cfg = cfg or self.config
         px = self.price()
         if px:
             return D(str(px))
-        tf = (getattr(state, "timeframes", None) or {}).get(self.config.exec_tf)
-        if tf is not None and getattr(tf, "close", None):
-            return D(str(tf.close))
-        return state.features.get("close")
-
-    def _exec_refs(self, state) -> tuple:
-        """执行口径的 (close, atr_abs)。
-
-        默认取 ``exec_tf``（5m）的收盘与 ATR；缺失时退回 ``state.features``。
-        必须和执行频率一致：5m 开仓却用 1h 收盘当入场价，等于每小时只更新一次参考价。
-        """
-        tf = (getattr(state, "timeframes", None) or {}).get(self.config.exec_tf)
-        if tf is not None and getattr(tf, "close", None):
-            close = D(str(tf.close))
-            pct = getattr(tf, "atr_pct", None)
-            atr = close * D(str(pct)) / D("100") if pct is not None else None
-            if atr is not None and atr > 0:
-                return close, atr
-        return state.features.get("close"), state.features.get("atr_abs")
-
-    def _mark_price(self, state) -> Decimal | None:
-        """平仓判定用的现价：优先实时价，其次执行周期收盘，最后 features。"""
-        px = self.price()
-        if px:
-            return D(str(px))
-        tf = (getattr(state, "timeframes", None) or {}).get(self.config.exec_tf)
+        tf = (getattr(state, "timeframes", None) or {}).get(cfg.exec_tf)
         if tf is not None and getattr(tf, "close", None):
             return D(str(tf.close))
         return state.features.get("close")
@@ -663,17 +666,18 @@ class V2Engine:
         memo: dict = {}
         out = {}
         for name in BOOKS:
+            cfg = self._cfg(name)
             decision = self._decide(name, state, digest, memo=memo, as_of_ms=as_of_ms)
             managed = None
             has_pos = bool(self.books[name].open_positions())
-            if self.config.position_manager != "off" and has_pos:
+            if cfg.position_manager != "off" and has_pos:
                 # 有仓位时由持仓管理决策；旧的"两根 K 线认错"同时停用，
                 # 否则两个出口会互相打架（一个要拿住、一个要平掉）。
-                managed = self._manage_position(name, state, as_of_ms)
+                managed = self._manage_position(name, state, as_of_ms, cfg)
                 entry, closed = None, []
             else:
-                entry = self._enter(name, decision, state, as_of_ms) if decision.actionable else None
-                closed = self._early_exit(name, state, as_of_ms)
+                entry = self._enter(name, decision, state, as_of_ms, cfg) if decision.actionable else None
+                closed = self._early_exit(name, state, as_of_ms, cfg)
             entry = dict(entry or {})
             entry.update({"closed": [c.to_dict() for c in closed]})
             if managed is not None:

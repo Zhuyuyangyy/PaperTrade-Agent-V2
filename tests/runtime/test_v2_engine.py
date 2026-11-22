@@ -710,3 +710,85 @@ def test_cooldown_survives_restart(tmp_path: Path) -> None:
     out = e2.on_5m_close(NOW + 2 * 300_000 + 60_000)
     blocked = (out.get("deepseek_5m") or {}).get("entry") or {}
     assert blocked.get("blocked") == "COOLDOWN", blocked
+
+
+# ---------- 单进程多策略对照 ----------
+def test_experiment_shares_one_signal_but_applies_book_configs(tmp_path: Path) -> None:
+    from dataclasses import replace as _replace
+
+    base = V2Config()
+    e = _engine(tmp_path, deepseek=CountingProvider(choice="SHORT"))
+    e.experiment = True
+    e.book_configs = {
+        "rules_5m": _replace(base, exit_min_loss_bps=D("0"), cooldown_bars=0),
+        "deepseek_5m": _replace(base, exit_min_loss_bps=D("15"), cooldown_bars=2),
+        "deepseek_5m_manager": _replace(base, position_manager="rules"),
+        "dual_5m": _replace(base, position_manager="ai"),
+    }
+    out = e.on_5m_close(NOW)
+    # 四本账、同一个入场决策：模型只被调用一次
+    assert len(e.deepseek.calls) == 1
+    assert set(out) == set(BOOKS) and len(out) == 4
+    for name in BOOKS:
+        assert out[name]["decision"]["choice"] == "SHORT", name
+    assert e._cfg("rules_5m").exit_min_loss_bps == D("0")
+    assert e._cfg("deepseek_5m").exit_min_loss_bps == D("15")
+    assert e._cfg("deepseek_5m_manager").position_manager == "rules"
+    assert e._cfg("dual_5m").position_manager == "ai"
+    assert e._cfg("not_in_map") is e.config
+
+
+def test_history_and_intel_sampled_once_for_all_books(tmp_path: Path) -> None:
+    """一份行情、一次情报采集：对照实验不能靠多个进程重复拉 REST。"""
+    calls = []
+
+    def intel(ts):
+        calls.append(ts)
+        return None
+
+    e = _engine(tmp_path, deepseek=CountingProvider(), intel_fn=intel)
+    e.experiment = True
+    e.on_5m_close(NOW)
+    assert len(calls) == 1
+    assert len(e.deepseek.calls) == 1
+
+
+# ---------- 单进程多策略对照 ----------
+def test_experiment_shares_one_signal_but_applies_book_configs(tmp_path: Path) -> None:
+    from dataclasses import replace as _replace
+
+    base = V2Config()
+    e = _engine(tmp_path, deepseek=CountingProvider(choice="SHORT"))
+    e.experiment = True
+    e.book_configs = {
+        "rules_5m": _replace(base, exit_min_loss_bps=D("0"), cooldown_bars=0),
+        "deepseek_5m": _replace(base, exit_min_loss_bps=D("15"), cooldown_bars=2),
+        "deepseek_5m_manager": _replace(base, position_manager="rules"),
+        "dual_5m": _replace(base, position_manager="ai"),
+    }
+    out = e.on_5m_close(NOW)
+    # 四本账、同一个入场决策：模型只被调用一次
+    assert len(e.deepseek.calls) == 1
+    assert set(out) == set(BOOKS) and len(out) == 4
+    for name in BOOKS:
+        assert out[name]["decision"]["choice"] == "SHORT", name
+    assert e._cfg("rules_5m").exit_min_loss_bps == D("0")
+    assert e._cfg("deepseek_5m").exit_min_loss_bps == D("15")
+    assert e._cfg("deepseek_5m_manager").position_manager == "rules"
+    assert e._cfg("dual_5m").position_manager == "ai"
+    assert e._cfg("not_in_map") is e.config
+
+
+def test_history_and_intel_sampled_once_for_all_books(tmp_path: Path) -> None:
+    """一份行情、一次情报采集：对照实验不能靠多个进程重复拉 REST。"""
+    calls = []
+
+    def intel(ts):
+        calls.append(ts)
+        return None
+
+    e = _engine(tmp_path, deepseek=CountingProvider(), intel_fn=intel)
+    e.experiment = True
+    e.on_5m_close(NOW)
+    assert len(calls) == 1
+    assert len(e.deepseek.calls) == 1
