@@ -271,7 +271,10 @@ def _run_v2(args) -> int:
         jk = os.environ.get("JEV_API_KEY", "")
         if endpoint and jk:
             second = JevProvider(endpoint, jk, os.environ.get("JEV_MODEL", "jev"))
-    intel_cfg = IntelPipelineConfig(max_news=10, with_books=False)
+    from research.intel.news_llm import LLMConfig as _IntelLLM
+    # 情报抽取也要用 LLM：不传 key 会一直走规则回退（日志里表现为 LLM_UNAVAILABLE）
+    intel_cfg = IntelPipelineConfig(max_news=10, with_books=False,
+                                    llm=_IntelLLM(api_key=key) if key else _IntelLLM())
     executor, demo_book = _build_executor(args)
     engine = V2Engine(Path(args.root), feed, RiskLimits(), deepseek=ds, second=second,
                       intel_fn=lambda ts: collect_intel(ts, intel_cfg),

@@ -63,8 +63,10 @@ class DeepSeekProvider:
             rationale = str(data.get("rationale", ""))[:160]
             evidence = tuple(str(x)[:60] for x in (data.get("evidence") or [])[:4])
         except Exception as exc:  # noqa: BLE001 - 解析/网络失败都降级为 HOLD
+            # 只写类名等于没写：401/402/超时/JSON 解析全都长一样，联调时查不出来。
+            detail = str(exc).replace("\n", " ")[:120] or type(exc).__name__
             return Decision(self.name, self.version, "ERROR", "HOLD",
-                            rationale=f"deepseek_error: {type(exc).__name__}",
+                            rationale=f"deepseek_error: {type(exc).__name__}: {detail}",
                             latency_ms=int((time.time() - t0) * 1000))
         return Decision(self.name, self.version, "OK", choice, score, conf, rationale,
                         evidence, int((time.time() - t0) * 1000))
