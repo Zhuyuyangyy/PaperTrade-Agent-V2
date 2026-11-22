@@ -103,11 +103,11 @@ def audit(root: Path) -> dict:
 
         snap_fields = []
         if snapshots:
-            empty = {"news_delta", "trend_5m", "trend_15m", "trend_1h",
-                     "entry_reason", "invalid_if"}
+            wanted = {"news_delta", "trend", "entry_reason", "invalid_if",
+                      "mfe", "mae", "risk_budget_left"}
             snap_fields = sorted({
                 k for s in snapshots for k, v in s.items()
-                if k in empty and v not in (None, "", [], "0")
+                if k in wanted and v not in (None, "", [], {}, "0", "0E-8")
             })
             zeros = {k: sum(1 for s in snapshots if str(s.get(k)) in ("0", "0.0", "0E-8"))
                      for k in ("mfe", "mae", "risk_budget_left")}
@@ -170,7 +170,8 @@ def audit(root: Path) -> dict:
             "evidence": {"nonempty_fields": d.get("snap_nonempty_fields", []),
                          "zero_counts": d.get("snap_zero_counts", {}),
                          "snapshots": d.get("snapshots", 0)},
-            "verdict": "NEED_FIX" if d.get("snapshots", 0) > 0 else "NO_SNAPSHOT_YET",
+            "verdict": "OK" if len(d.get("snap_nonempty_fields", [])) >= 6
+                       else ("NEED_FIX" if d.get("snapshots", 0) > 0 else "NO_SNAPSHOT_YET"),
         },
         {
             "id": "P1-5", "title": "D 组是否真的调用了模型",

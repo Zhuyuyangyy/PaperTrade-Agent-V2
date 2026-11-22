@@ -192,7 +192,8 @@ def validate_against_position(d: PositionDecision, snap: PositionSnapshot) -> No
 def rules_position_action(snap: PositionSnapshot,
                           *, trail_atr: D = D("1.0"),
                           partial_at_r: D = D("1.0"),
-                          partial_fraction: D = D("0.5")) -> PositionDecision:
+                          partial_fraction: D = D("0.5"),
+                          stage: str = "") -> PositionDecision:
     """确定性持仓管理（对照组 C，不依赖任何模型）。
 
     规则（刻意保守、可解释）：
@@ -206,8 +207,10 @@ def rules_position_action(snap: PositionSnapshot,
     r_multiple = (move / risk) if risk > 0 else D("0")
     trail = risk * trail_atr if risk > 0 else D("0")
 
-    if snap.stop_price is not None and r_multiple >= partial_at_r:
-        # 先减仓，再在下一轮把止损推到成本（一轮只做一个动作，便于回放）
+    already_partial = "partial_done" in str(stage or "")
+    if snap.stop_price is not None and r_multiple >= partial_at_r and not already_partial:
+        # 只在**首次**达到 1R 时减仓一次；阶段状态持久化在账本里，
+        # 否则下一根 K 线仍满足条件，会把剩余仓位一路减到零，永远走不到移动止损。
         return PositionDecision(
             "rules_position", "v1", "CLOSE_PARTIAL",
             f"浮盈 {r_multiple:.2f}R 达到 {partial_at_r}R，先减 {partial_fraction:.0%} 落袋",
@@ -252,8 +255,14 @@ def snapshot_from_row(*, row: dict, mark: D, as_of_ms: int, fee_bps: D,
     gross = (mark - entry) * qty * direction
     fees = notional * fee_bps / D("10000") * D("2")
     realized = D(str(row.get("realized_net") or "0"))
-    empty = {}
-    trends = trends or empty
+    invalid = row.get("invalid_if") or ()
+    if isinstance(invalid, str):
+        try:
+            import json
+            invalid = tuple(json.loads(invalid))
+        except Exception:  # noqa: BLE001 - 老账本里不是 JSON 就当一段文字
+            invalid = (invalid,)
+    trends = trends or {}
     return PositionSnapshot(
         as_of_ms=as_of_ms, symbol=str(row["symbol"]), side=side, qty=qty,
         entry_price=entry, mark_price=mark, notional=notional,
@@ -263,7 +272,7 @@ def snapshot_from_row(*, row: dict, mark: D, as_of_ms: int, fee_bps: D,
         stop_price=D(str(row["stop_price"])) if row.get("stop_price") else None,
         tp_price=D(str(row["tp_price"])) if row.get("tp_price") else None,
         entry_reason=str(row.get("reason") or ""),
-        invalid_if=tuple(row.get("invalid_if") or ()),
+        invalid_if=tuple(invalid),
         news_delta=tuple(news_delta),
         trend_5m=trends.get("5m", ""), trend_15m=trends.get("15m", ""),
         trend_1h=trends.get("1h", ""),

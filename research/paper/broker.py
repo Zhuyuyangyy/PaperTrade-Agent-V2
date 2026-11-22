@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS positions (
     reason TEXT NOT NULL DEFAULT '',
     invalid_if TEXT NOT NULL DEFAULT '[]',
     realized_net TEXT NOT NULL DEFAULT '0',
+    mgmt_stage TEXT NOT NULL DEFAULT '',
     exit_ts INTEGER,
     exit_price TEXT,
     exit_reason TEXT,
@@ -173,6 +174,8 @@ class PaperBroker:
             self._db.execute("ALTER TABLE positions ADD COLUMN invalid_if TEXT NOT NULL DEFAULT '[]'")
         if "realized_net" not in cols:
             self._db.execute("ALTER TABLE positions ADD COLUMN realized_net TEXT NOT NULL DEFAULT '0'")
+        if "mgmt_stage" not in cols:
+            self._db.execute("ALTER TABLE positions ADD COLUMN mgmt_stage TEXT NOT NULL DEFAULT ''")
         self._db.commit()
 
     # ---------- 查询 ----------
@@ -371,6 +374,14 @@ class PaperBroker:
         self._db.commit()
         return {"pos_id": pos_id, "qty": str(qty), "price": str(fill),
                 "pnl": str(net), "remaining": str(held - qty), "reason": reason}
+
+    def set_mgmt_stage(self, pos_id: int, stage: str) -> bool:
+        """记录持仓管理阶段（例如已完成首次分批止盈）。重启后从库里恢复。"""
+        cur = self._db.execute(
+            "UPDATE positions SET mgmt_stage = ? WHERE id = ? AND status = 'open'",
+            (str(stage), pos_id))
+        self._db.commit()
+        return cur.rowcount > 0
 
     def move_stop(self, pos_id: int, new_stop: Decimal) -> bool:
         """只改止损价。收紧检查在调用方（风控/契约）做，这里只落库。"""

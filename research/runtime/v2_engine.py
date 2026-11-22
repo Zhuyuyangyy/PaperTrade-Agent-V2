@@ -68,6 +68,8 @@ class V2Config:
     #: 最新已收盘 5m K 线最多能比 as_of 旧多久；超过就不许开新仓
     #: （Binance REST 会 418/429 限流，刷新连续失败时会触发）
     max_stale_ms: int = 3 * 300_000
+    #: 遇到 418/429 后的 REST 冷却窗口；遵守限流，不再反复敲门
+    rest_cooldown_ms: int = 600_000
     #: 最长持有期（超时平仓）
     max_holding_ms: int = 4 * TF_1H_MS
 
@@ -104,6 +106,16 @@ class V2Engine:
     last_inputs: dict = field(default_factory=dict)
     #: 持仓管理模型（有 decide(snapshot) 即可）；None 且 position_manager=ai 时退化为 rules
     position_ai: object = None
+    #: 每本账上次看到新闻的时间，用于算 news_delta（不做假观测）
+    _last_news_ms: dict = field(default_factory=dict)
+    #: 持仓管理模型调用统计：区分真 AI 与回退
+    position_ai_stats: dict = field(default_factory=lambda: {
+        "calls": 0, "ok": 0, "error": 0, "fallback": 0})
+    #: 行情数据质量计数：K 线覆盖、刷新成功率、限流、陈旧跳过
+    data_stats: dict = field(default_factory=lambda: {
+        "refresh_attempts": 0, "refresh_ok": 0, "rate_limited": 0,
+        "rest_skipped": 0, "stale_skips": 0, "closed_bars_seen": 0})
+    _rest_cooldown_until: int = 0
     #: 每本账的配置覆盖（实验组）。空 = 所有账用 self.config。
     #: 单进程 + 一份行情 + 一次历史刷新/情报采集，避免多进程打爆 Binance REST。
     book_configs: dict = field(default_factory=dict)
@@ -438,10 +450,58 @@ class V2Engine:
                            D("0.5"), "restored from ledger", shadow=True)
 
     # ---------- 持仓管理 ----------
+    @staticmethod
+    def _tf_trend(view) -> str:
+        """从已收盘指标推导趋势，不填假值、不用领域外推。"""
+        if view is None:
+            return ""
+        e20, e60 = getattr(view, "ema20", None), getattr(view, "ema60", None)
+        if e20 is None or e60 is None:
+            return "UNKNOWN"
+        if e20 > e60:
+            return "TREND_UP"
+        if e20 < e60:
+            return "TREND_DOWN"
+        return "FLAT"
+
+    def _excursion(self, pos: dict, as_of_ms: int) -> tuple[D, D]:
+        """从 5m 已收盘 K 线算这笔仓位的 MFE/MAE（USDT，按当前数量）。"""
+        qty = D(str(pos["qty"]))
+        entry = D(str(pos["entry_price"]))
+        direction = D("1") if str(pos["side"]) == "LONG" else D("-1")
+        mfe = mae = D("0")
+        for b in self.feed.series("5m", 200):
+            try:
+                t = int(b["time"]) * 1000
+            except (KeyError, TypeError, ValueError):
+                continue
+            if t < int(pos["entry_ts"]) or t > as_of_ms:
+                continue
+            hi, lo = D(str(b["high"])), D(str(b["low"]))
+            if direction > 0:
+                fav, adv = (hi - entry) * qty, (entry - lo) * qty
+            else:
+                fav, adv = (entry - lo) * qty, (hi - entry) * qty
+            mfe, mae = max(mfe, fav), max(mae, adv)
+        return mfe, mae
+
+    def _news_delta(self, digest, as_of_ms: int, since_ms: int) -> tuple[str, ...]:
+        """自上次评估以来的新标题；没有情报就返回空元组，不编造。"""
+        if digest is None:
+            return ()
+        out = []
+        for n in (getattr(digest, "news", ()) or ()):
+            # NewsEvent 的真实字段是 headline / occurred_at_ms（不是 title / published_ms）
+            t = int(getattr(n, "occurred_at_ms", 0) or 0)
+            title = str(getattr(n, "headline", "") or "")
+            if since_ms < t <= as_of_ms and title:
+                out.append(title[:120])
+        return tuple(out[:5])
+
     def _manage_position(self, name: str, state, as_of_ms: int,
-                         cfg: "V2Config | None" = None) -> dict | None:
-        cfg = cfg or self.config
+                         cfg: "V2Config | None" = None, digest=None) -> dict | None:
         """把当前仓位的"处境"交给规则或模型，拿回一个有界动作并执行。"""
+        cfg = cfg or self.config
         from research.decision.position import (
             PositionDecisionError, rules_position_action, snapshot_from_row,
             validate_against_position,
@@ -449,37 +509,68 @@ class V2Engine:
 
         broker = self.books[name]
         pos = broker.open_positions()[0]
-        mark = self._mark_price(state)
+        mark = self._mark_price(state, cfg)
         if mark is None:
             return {"action": "SKIP", "reason": "没有可用价格"}
-        trends = {tf: getattr(v, "trend", "") or "" for tf, v in
-                  (getattr(state, "timeframes", None) or {}).items()}
+        tfs = getattr(state, "timeframes", None) or {}
+        trends = {tf: self._tf_trend(tfs.get(tf)) for tf in ("5m", "15m", "1h")}
+        mfe, mae = self._excursion(pos, as_of_ms)
+        since = int(self._last_news_ms.get(name, 0))
+        news = self._news_delta(digest, as_of_ms, since)
+        if news or since == 0:
+            self._last_news_ms[name] = as_of_ms
+        day_start = as_of_ms // 86_400_000 * 86_400_000
+        realized_today = broker.realized_pnl_since(day_start)
+        risk_budget = max(D("0"), self.limits.daily_loss_limit - abs(realized_today))
         snap = snapshot_from_row(
             row=pos, mark=mark, as_of_ms=as_of_ms, fee_bps=broker.fee_bps,
-            trends={k: (getattr(state, "trend", "") if k == "1h" else "") for k in ("5m", "15m", "1h")} or trends,
-            data_as_of_ms=as_of_ms,
+            trends=trends, news_delta=news, risk_budget_left=risk_budget,
+            mfe=mfe, mae=mae, data_as_of_ms=as_of_ms,
         )
+
         mode = cfg.position_manager
+        stage = str(pos.get("mgmt_stage") or "")
+        meta = {"ai_provider": None, "ai_status": "NOT_CALLED", "ai_used": False,
+                "ai_fallback": False}
+        def rule_dec():
+            return rules_position_action(snap, trail_atr=cfg.trail_r,
+                                         partial_fraction=cfg.partial_fraction,
+                                         stage=stage)
+
         if mode == "ai" and self.position_ai is not None:
             try:
                 dec = self.position_ai.decide(snap)
-            except Exception as exc:                     # noqa: BLE001 - 模型挂了退回规则
+                self.position_ai_stats["calls"] += 1
+                st = getattr(dec, "status", "OK")
+                if st == "OK":
+                    self.position_ai_stats["ok"] += 1
+                else:
+                    self.position_ai_stats["error"] += 1
+                meta.update(ai_provider=getattr(dec, "provider", None),
+                            ai_status=st, ai_used=True, ai_fallback=st != "OK")
+            except Exception as exc:                     # noqa: BLE001
                 self.errors.append(f"position_ai: {type(exc).__name__}: {exc}")
-                dec = rules_position_action(snap, trail_atr=cfg.trail_r,
-                                            partial_fraction=cfg.partial_fraction)
+                for k in ("calls", "error", "fallback"):
+                    self.position_ai_stats[k] += 1
+                meta.update(ai_provider=getattr(self.position_ai, "name", "?"),
+                            ai_status="EXCEPTION", ai_used=True, ai_fallback=True)
+                dec = rule_dec()
+        elif mode == "ai":
+            # 声明 AI 但没有 provider：绝不能标成 AI 实验
+            self.position_ai_stats["fallback"] += 1
+            meta.update(ai_provider=None, ai_status="NO_PROVIDER", ai_fallback=True)
+            dec = rule_dec()
         else:
-            dec = rules_position_action(snap, trail_atr=cfg.trail_r,
-                                        partial_fraction=cfg.partial_fraction)
+            dec = rule_dec()
         try:
             validate_against_position(dec, snap)
         except PositionDecisionError as exc:
-            # 越界的动作一律不执行，退回 HOLD，并留痕
             self.errors.append(f"position_decision 拒绝 {dec.action}: {exc}")
             return {"action": "REJECTED", "requested": dec.action, "error": str(exc),
-                    "decision": dec.to_dict(), "snapshot": snap.summary()}
+                    "decision": dec.to_dict(), "snapshot": snap.summary(), **meta}
 
         out = {"action": dec.action, "decision": dec.to_dict(), "snapshot": snap.summary(),
-               "executed": False}
+               "executed": False, "mgmt_stage": stage, **meta}
         if dec.action == "HOLD":
             out["executed"] = True
         elif dec.action == "CLOSE_PARTIAL":
@@ -487,8 +578,9 @@ class V2Engine:
             res = broker.close_partial(int(pos["id"]), qty, mark, as_of_ms, "MGR_PARTIAL")
             out["executed"] = bool(res)
             out["fill"] = res
-            if res and name == self.demo_book and self.executor is not None:
-                out["demo"] = self._mirror_reduce(name, pos, qty)
+            if res and "partial_done" not in stage:
+                # 阶段状态写进账本：重启后仍在，第一次分批只做一次
+                out["stage_set"] = broker.set_mgmt_stage(int(pos["id"]), "partial_done")
         elif dec.action == "CLOSE_ALL":
             c = broker.close_position(int(pos["id"]), mark, as_of_ms, "MGR_CLOSE")
             out["executed"] = bool(c)
@@ -505,7 +597,6 @@ class V2Engine:
             if out["executed"] and name == self.demo_book and self.executor is not None:
                 out["demo"] = self._mirror_tp(name, pos, D(dec.new_tp))
         elif dec.action == "ADD_TO_WINNER":
-            # P3 第一轮明确禁止：加仓是独立实验，不能混进动态退出对照
             out["executed"] = False
             out["refused"] = "ADD_TO_WINNER 在 V3 第一轮被禁用（需单独实验）"
         return out
@@ -567,18 +658,29 @@ class V2Engine:
     # ---------- 5m 决策 ----------
     def _refresh_history(self, as_of_ms: int) -> dict:
         """按 5 分钟节流刷新历史；**失败不推进 _history_ts**，按 30s 退避重试。"""
+        if as_of_ms < self._rest_cooldown_until:
+            self.data_stats["rest_skipped"] += 1
+            return {"attempted": False, "ok": None,
+                    "rest_cooldown_left_ms": self._rest_cooldown_until - as_of_ms}
         due = as_of_ms - self._history_ts
         if due < self.config.history_refresh_ms:
             return {"attempted": False, "ok": None, "due_in_ms": self.config.history_refresh_ms - due}
+        self.data_stats["refresh_attempts"] += 1
         ok = self.load_history(as_of_ms)
+        errs = self.errors[-2:] if not ok else []
+        limited = any(("418" in str(e) or "429" in str(e)) for e in errs)
         if ok:
+            self.data_stats["refresh_ok"] += 1
             self._history_ts = as_of_ms
         else:
+            if limited:
+                self.data_stats["rate_limited"] += 1
+                self._rest_cooldown_until = as_of_ms + self.config.rest_cooldown_ms
             # 只把节流点推进一个退避间隔，下一次 5m 决策会重试，而不是等满 5 分钟
             self._history_ts = as_of_ms - self.config.history_refresh_ms + 30_000
         return {"attempted": True, "ok": ok,
                 "fingerprint": dict(self._history_fp),
-                "errors": self.errors[-2:] if not ok else []}
+                "errors": errs, "rate_limited": limited}
 
     def _exec_refs(self, state, cfg: "V2Config | None" = None) -> tuple:
         """执行口径的 (close, atr_abs)。
@@ -655,11 +757,17 @@ class V2Engine:
         # 此时 history 还是上一次的快照，继续交易等于拿旧行情下新单。
         stale_ms = self._stale_ms(views, as_of_ms)
         if stale_ms > self.config.max_stale_ms:
+            self.data_stats["stale_skips"] += 1
             self.errors.append(
                 f"stale: 最新 5m 收盘已是 {stale_ms // 1000}s 前"
                 f"（阈值 {self.config.max_stale_ms // 1000}s），本轮跳过开仓；"
                 f"history_refresh={refresh.get('ok')}")
+            # 必须推进 _last_bar：否则 step_once 下一秒会对**同一根 K 线**
+            # 反复进入这个分支，误导"有效市场数据"统计。
+            self._last_bar = int(bar_open_ms if bar_open_ms is not None
+                                 else views["5m"][-1].open_ms)
             return {}
+        self.data_stats["closed_bars_seen"] += len(views.get("5m") or [])
         state = analyze(SYMBOL, views, as_of_ms, settle_ms=self.config.settle_ms)
         digest, intel_info = self._collect_intel(as_of_ms)
         # 同一根收盘 K 线：一个快照、一次 DeepSeek、一次第二模型
@@ -673,7 +781,7 @@ class V2Engine:
             if cfg.position_manager != "off" and has_pos:
                 # 有仓位时由持仓管理决策；旧的"两根 K 线认错"同时停用，
                 # 否则两个出口会互相打架（一个要拿住、一个要平掉）。
-                managed = self._manage_position(name, state, as_of_ms, cfg)
+                managed = self._manage_position(name, state, as_of_ms, cfg, digest)
                 entry, closed = None, []
             else:
                 entry = self._enter(name, decision, state, as_of_ms, cfg) if decision.actionable else None
@@ -688,6 +796,8 @@ class V2Engine:
                    "trigger_bar_ms": int(bar_open_ms if bar_open_ms is not None
                                          else views["5m"][-1].open_ms),
                    "history_refresh": refresh,
+                   "data_stats": dict(self.data_stats),
+                   "position_ai_stats": dict(self.position_ai_stats),
                    "intel": intel_info,
                    "equity": str(self.books[name].equity(as_of_ms,
                                                          {SYMBOL: D(str(state.features.get("close") or 0))}))}
