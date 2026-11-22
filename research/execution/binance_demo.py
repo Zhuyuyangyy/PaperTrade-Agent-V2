@@ -1,6 +1,8 @@
 """Binance Futures Demo Trading 客户端（只允许 demo 主机，永不触碰正式交易端点）。
 
-凭据只从环境变量读取：``BINANCE_DEMO_API_KEY`` / ``BINANCE_DEMO_API_SECRET``。
+凭据读取顺序：``BINANCE_DEMO_API_KEY`` / ``BINANCE_DEMO_API_SECRET`` 环境变量优先；
+缺失时由 CLI 调用 ``load_demo_env()`` 从 ``<root>/.env`` → ``./.env`` → ``<repo>/.env``
+补充（只补缺失项，只认这两个键，永不打印值）。
 缺凭据 → ``available() == False``，调用方显示 UNAVAILABLE，不伪造订单。
 ``fetch`` 可注入，测试零网络。
 
@@ -23,6 +25,7 @@ import hashlib
 import hmac
 import json
 import os
+import pathlib
 import time
 import urllib.parse
 import urllib.request
@@ -40,6 +43,68 @@ CONDITIONAL_TYPES = frozenset({
 PLAIN_TYPES = frozenset({"MARKET", "LIMIT"})
 #: Binance 成功响应里可能出现的 code（撤销条件单返回 {"code":"200","msg":"success"}）
 _OK_CODES = frozenset({None, 0, "0", 200, "200"})
+
+
+#: 允许从 .env 文件补充的键（白名单）。.env 里写别的键一律忽略，
+#: 避免把 .env 当成任意环境变量注入。
+ENV_KEYS = ("BINANCE_DEMO_API_KEY", "BINANCE_DEMO_API_SECRET")
+
+
+def load_env_file(path) -> list:
+    """从单个 .env 文件补变量，**只补当前进程缺失的**，返回实际补上的键名。
+
+    只认 ``ENV_KEYS`` 白名单；任何值都不会被打印或写日志。
+    """
+    try:
+        text = pathlib.Path(path).read_text(encoding="utf-8-sig", errors="replace")
+    except (OSError, ValueError):
+        return []
+    filled = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        if line.lower().startswith("export "):
+            line = line[7:].strip()
+        key, _, val = line.partition("=")
+        key = key.strip()
+        if key not in ENV_KEYS:
+            continue
+        val = val.strip().strip('"').strip("'")
+        if not val or os.environ.get(key):
+            continue  # 已有值就不覆盖：环境变量优先级高于文件
+        os.environ[key] = val
+        filled.append(key)
+    return filled
+
+
+def env_candidates(root=None) -> list:
+    """按优先级返回 .env 候选路径（账本目录 → 当前目录 → 仓库根）。"""
+    here = pathlib.Path(__file__).resolve().parents[2]
+    out = []
+    if root:
+        out.append(pathlib.Path(root) / ".env")
+    out.append(pathlib.Path.cwd() / ".env")
+    out.append(here / ".env")
+    seen, uniq = set(), []
+    for p in out:
+        key = str(p.resolve()).lower()
+        if key not in seen:
+            seen.add(key)
+            uniq.append(p)
+    return uniq
+
+
+def load_demo_env(root=None) -> dict:
+    """尝试所有候选 .env；返回 {"checked": [...], "filled": [...], "sources": [...]}。"""
+    checked, filled, sources = [], [], []
+    for p in env_candidates(root):
+        checked.append(str(p))
+        got = load_env_file(p)
+        if got:
+            filled.extend(got)
+            sources.append(str(p))
+    return {"checked": checked, "filled": sorted(set(filled)), "sources": sources}
 
 
 def validate_base_url(url: str) -> str:

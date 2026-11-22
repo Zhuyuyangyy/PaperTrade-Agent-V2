@@ -189,3 +189,51 @@ def test_positions_filters_zero() -> None:
 
     c = _client(fake)
     assert len(c.positions()) == 1
+
+# ---------- .env 补凭据 ----------
+def test_env_file_only_fills_missing_and_whitelisted(tmp_path, monkeypatch) -> None:
+    from research.execution.binance_demo import load_env_file
+
+    p = tmp_path / ".env"
+    p.write_text(
+        "# 注释行\n"
+        "BINANCE_DEMO_API_KEY=from_file\n"
+        "BINANCE_DEMO_API_SECRET='secret_from_file'\n"
+        "PATH=/evil\n"           # 白名单外，必须被忽略
+        "export BINANCE_DEMO_API_SECRET=NO_OVERRIDE\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("BINANCE_DEMO_API_KEY", raising=False)
+    monkeypatch.delenv("BINANCE_DEMO_API_SECRET", raising=False)
+    filled = load_env_file(p)
+    import os
+    assert filled == ["BINANCE_DEMO_API_KEY", "BINANCE_DEMO_API_SECRET"]
+    assert os.environ["BINANCE_DEMO_API_KEY"] == "from_file"
+    # 引号被剥掉；第二次出现因为是 setdefault 语义不会覆盖
+    assert os.environ["BINANCE_DEMO_API_SECRET"] == "secret_from_file"
+    assert os.environ["PATH"] != "/evil"
+
+
+def test_env_var_wins_over_file(tmp_path, monkeypatch) -> None:
+    from research.execution.binance_demo import load_env_file
+
+    p = tmp_path / ".env"
+    p.write_text("BINANCE_DEMO_API_KEY=from_file\n", encoding="utf-8")
+    monkeypatch.setenv("BINANCE_DEMO_API_KEY", "from_env")
+    assert load_env_file(p) == []
+    import os
+    assert os.environ["BINANCE_DEMO_API_KEY"] == "from_env"
+
+
+def test_missing_env_file_is_silent(tmp_path) -> None:
+    from research.execution.binance_demo import load_env_file
+
+    assert load_env_file(tmp_path / "nope.env") == []
+
+
+def test_env_candidates_prioritise_root(tmp_path) -> None:
+    from research.execution.binance_demo import env_candidates
+
+    cands = [str(p) for p in env_candidates(tmp_path)]
+    assert cands[0] == str(tmp_path / ".env")
+    assert len(cands) == len(set(c.lower() for c in cands))

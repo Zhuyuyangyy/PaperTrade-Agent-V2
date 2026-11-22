@@ -287,18 +287,30 @@ def _run_v2(args) -> int:
     return 0
 
 
+def _demo_credentials(root) -> "tuple":
+    """先读环境变量，缺失项再从 .env 候选路径补；返回 (cfg, env_info)。"""
+    from research.execution.binance_demo import DemoConfig, load_demo_env
+
+    env_info = load_demo_env(root)
+    return DemoConfig.from_env(), env_info
+
+
 def _build_executor(args):
     """只有显式 --demo-exec 且凭据齐全时才构造适配器；否则纯虚拟盘。"""
     if not getattr(args, "demo_exec", False):
         return None, None
     from research.execution.adapter import DemoExecutionAdapter
-    from research.execution.binance_demo import DemoClient, DemoConfig
+    from research.execution.binance_demo import DemoClient
 
-    cfg = DemoConfig.from_env()
+    cfg, env_info = _demo_credentials(getattr(args, "root", None))
     if not cfg.available:
         print("WARNING: --demo-exec 需要 BINANCE_DEMO_API_KEY / BINANCE_DEMO_API_SECRET；"
-              "当前缺失，退回纯虚拟盘，一个订单都不会发。", file=sys.stderr)
+              "当前缺失，退回纯虚拟盘，一个订单都不会发。\n"
+              f"  已尝试的 .env：{env_info['checked']}", file=sys.stderr)
         return None, None
+    if env_info["sources"]:
+        print(f"credentials: 从 .env 补入 {env_info['filled']}（来源 {env_info['sources']}）",
+              file=sys.stderr)
     adapter = DemoExecutionAdapter(DemoClient(cfg), symbol="BTCUSDT",
                                    root=Path(args.root))
     return adapter, args.demo_book
@@ -310,17 +322,22 @@ def _run_demo_exec(args) -> int:
     默认只做 preflight。下单必须显式加 --place-test-order，且名义金额受 --test-notional 限制。
     """
     from research.execution.adapter import DemoExecutionAdapter
-    from research.execution.binance_demo import DemoClient, DemoConfig
+    from research.execution.binance_demo import DemoClient
     from research.strategy.contracts import TradeIntent
 
-    cfg = DemoConfig.from_env()
+    cfg, env_info = _demo_credentials(args.root)
     client = DemoClient(cfg)
     if not cfg.available:
         print(json.dumps({"ok": False, "reason": "DEMO_UNAVAILABLE: 未设置 "
                            "BINANCE_DEMO_API_KEY / BINANCE_DEMO_API_SECRET",
-                          "note": "没有凭据时只允许离线验证；本地虚拟盘不用凭据也能继续跑。"},
+                          "env_files_checked": env_info["checked"],
+                          "note": "把两个变量写进上面任一路径的 .env（或设成系统环境变量）后重跑；"
+                                  "没有凭据时只允许离线验证，本地虚拟盘不用凭据也能继续跑。"},
                          ensure_ascii=False, indent=2))
         return 2
+    if env_info["sources"]:
+        print(f"credentials: 从 .env 补入 {env_info['filled']}（来源 {env_info['sources']}）",
+              file=sys.stderr)
     root = Path(args.root)
     root.mkdir(parents=True, exist_ok=True)
     adapter = DemoExecutionAdapter(client, symbol=args.symbol, root=root,
