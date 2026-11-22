@@ -358,3 +358,62 @@ python -m research.runtime v2 --root data/openalpha_v2_demo --minutes 30 \
 
 执行链路（引擎 → 适配器 → 交易所）已经端到端跑通，**唯一缺的是一把有效的 LLM key**。
 拿到有效 key 后，直接重跑同一条命令即可，无需改代码。
+
+
+## 十二、第三阶段实测（30 分钟，7 轮，2 次真实开仓）
+
+15:18–15:48，`--root data/openalpha_v2_run --minutes 30 --demo-exec --demo-book deepseek_5m`，
+DeepSeek key 有效后重跑（`env -u DEEPSEEK_API_KEY` 让 `.env` 生效，避免被系统里的旧 key 盖掉）。
+
+### 12.1 决策：AI 真的在判断
+
+7 轮全部 `SHORT / OK / conf 0.6`，rationale 每轮都带技术面 + 新闻面理由，
+`last_inputs.intel_features` 显示 digest 已进模型（technical.bias、news.bias、ADX、RSI、ATR 均在）。
+
+样例（15:18）：
+
+> Downtrend with aligned negative momentum and technical bias; ADX moderate,
+> RSI neutral-low. News mildly bearish. Microstructure slightly positive but weak.
+
+### 12.2 真实订单（交易所回执）
+
+| 时间 | 动作 | 交易所 ID | 价格 | 数量 | 状态 |
+|---|---|---|---|---|---|
+| 15:19 | 开仓 SELL MARKET | **28690740782** | 59108.20 | 0.0016 | FILLED |
+| 15:19 | 止损 STOP_MARKET | **1000000297552353** | trigger 60009.10 | 0.0016 | CANCELED（平仓时撤销） |
+| 15:19 | 止盈 TAKE_PROFIT_MARKET | **1000000297552397** | trigger 57369.10 | 0.0016 | CANCELED |
+| 15:31 | 平仓 BUY MARKET reduceOnly | **28690751351** | 59107.20 | 0.0016 | FILLED |
+| 15:36 | 再开仓 SELL MARKET | **28690754999** | 59143.70 | 0.0016 | FILLED |
+| 15:36 | 止损 | **1000000297568607** | trigger 60009.10 | 0.0016 | **NEW（仍在挂）** |
+| 15:36 | 止盈 | **1000000297568653** | trigger 57369.10 | 0.0016 | **NEW（仍在挂）** |
+
+平仓那笔已实现盈亏 **+0.00159999 USDT**，手续费 0.03782924 + 0.03782860 = 0.07565784 USDT。
+
+### 12.3 账户当前状态（15:48 结束后）
+
+| 项 | 值 |
+|---|---|
+| 持仓 | **-0.0016 BTC**，开仓价 59143.70，标记价 59109.78 |
+| 未实现盈亏 | **+0.05427484 USDT** |
+| 保护单 | 止损 60009.10 / 止盈 57369.10，均 `NEW`、`reduceOnly` |
+| 普通挂单 | 无 |
+| USDT 余额 | **4999.79293036**（起始 5000） |
+
+进程退出后仓位与两张条件单仍留在交易所，**打开 Binance Demo Trading 的 BTCUSDT 合约页即可看到**。
+
+### 12.4 本轮暴露的两个问题
+
+| 问题 | 现象 | 处理 |
+|---|---|---|
+| **镜像失败仍被登记为已持仓** | 第二跑（15:11）首次开仓镜像超时，本地却记成"交易所有仓"，平仓时会去平不存在的仓 | 改成成功才登记；无法确认时 `mirror_halted` 停止镜像并立刻 `reconcile` |
+| **下单超时直接判失败** | 订单可能已在交易所成交，本地记 FAILED | 先 `_probe_existing`，有成交就按回执继续挂保护单 |
+| **行情陈旧仍在下单** | REST 出现 `HTTP 418/429`，`load_history` 连续失败，引擎仍按旧快照开仓 | 新增 `max_stale_ms`（3 根 5m），超时跳过本轮 |
+
+`418 I'm a teapot` 是 Binance 对超额请求的封禁响应，通常跟在 429 之后。
+本轮同时有旧验收进程和多次手工联调在打同一个 IP，属可预期的限流；
+24 小时跑之前建议把 `history_refresh_ms` 放宽到 10 分钟，并给 418 加冷却。
+
+### 12.5 结论
+
+**「AI 判断 → 下单 → 挂保护单 → 平仓 → 再开仓」在真实 Binance Demo 上完整跑通，全程虚拟资金。**
+剩余风险集中在数据源限流与长时间运行的对账漂移，属于运维层面，不影响链路正确性。
