@@ -377,3 +377,27 @@ def test_preflight_reports_each_step_and_survives_partial_failure() -> None:
     assert r["steps"]["exchange_info"] == "OK"        # 其余步骤仍然跑完
     assert r["steps"]["account"].startswith("FAIL")
     assert any("-2015" in e for e in r["errors"])
+
+
+def test_env_file_can_fill_deepseek_key(tmp_path, monkeypatch) -> None:
+    """决策模型的 key 也允许放在同一个 .env 里（白名单第三项）。"""
+    from research.execution.binance_demo import load_env_file
+
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    p = tmp_path / ".env"
+    p.write_text("DEEPSEEK_API_KEY=sk-test-only\n", encoding="utf-8")
+    assert load_env_file(p) == ["DEEPSEEK_API_KEY"]
+    import os
+    assert os.environ["DEEPSEEK_API_KEY"] == "sk-test-only"
+
+
+def test_env_file_can_fill_deepseek_key(tmp_path, monkeypatch) -> None:
+    """决策模型的 key 也允许放在同一个 .env 里（白名单第三项）。"""
+    from research.execution.binance_demo import load_env_file
+
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    p = tmp_path / ".env"
+    p.write_text("DEEPSEEK_API_KEY=sk-test-only\n", encoding="utf-8")
+    assert load_env_file(p) == ["DEEPSEEK_API_KEY"]
+    import os
+    assert os.environ["DEEPSEEK_API_KEY"] == "sk-test-only"

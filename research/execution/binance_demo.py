@@ -48,7 +48,8 @@ _OK_CODES = frozenset({None, 0, "0", 200, "200"})
 
 #: 允许从 .env 文件补充的键（白名单）。.env 里写别的键一律忽略，
 #: 避免把 .env 当成任意环境变量注入。
-ENV_KEYS = ("BINANCE_DEMO_API_KEY", "BINANCE_DEMO_API_SECRET")
+#: DEEPSEEK_API_KEY 也放进来：决策模型和 Demo 凭据经常一起放在同一个 .env 里。
+ENV_KEYS = ("BINANCE_DEMO_API_KEY", "BINANCE_DEMO_API_SECRET", "DEEPSEEK_API_KEY")
 
 
 def load_env_file(path) -> list:

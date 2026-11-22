@@ -261,6 +261,13 @@ def _run_shadow(args) -> int:
 
 
 def _run_v2(args) -> int:
+    # 先补 .env：否则 .env 里的 DEEPSEEK_API_KEY 要等到 _build_executor 才被读到，
+    # 而 provider 在上一步就已经用（可能不存在的）环境变量构造完了。
+    from research.execution.binance_demo import load_demo_env
+    env_info = load_demo_env(args.root)
+    if env_info["filled"]:
+        print(f"env: 从 .env 补入 {env_info['filled']}（来源 {env_info['sources']}）",
+              file=sys.stderr)
     feed = BinanceFeed(symbol="btcusdt")
     feed.start()
     key = os.environ.get("DEEPSEEK_API_KEY", "")
