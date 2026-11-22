@@ -1,6 +1,6 @@
 {
   "hours_planned": 8.0,
-  "elapsed_hours": 0.01,
+  "elapsed_hours": 8.01,
   "books": {
     "deepseek_5m": {
       "equity": "1000",
@@ -30,49 +30,49 @@
       "win_rate": null
     }
   },
-  "research_loops": 1,
-  "last_loop": "00:48:24",
+  "research_loops": 479,
+  "last_loop": "08:19:54",
   "backtest": {
     "A_no_adx": {
-      "n": 33,
-      "net_bps": 36.61,
-      "pf": 1.59,
-      "win": 0.515,
-      "dd_bps": 570.55,
+      "n": 32,
+      "net_bps": 39.85,
+      "pf": 1.66,
+      "win": 0.531,
+      "dd_bps": 457.1,
       "reasons": {
-        "STOP": 16,
+        "STOP": 15,
         "TP": 16,
         "EARLY": 0,
         "TIMEOUT": 1
       }
     },
     "B_adx25": {
-      "n": 20,
-      "net_bps": 35.94,
-      "pf": 1.48,
-      "win": 0.5,
-      "dd_bps": 571.48,
+      "n": 19,
+      "net_bps": 41.35,
+      "pf": 1.57,
+      "win": 0.526,
+      "dd_bps": 458.03,
       "reasons": {
-        "STOP": 10,
+        "STOP": 9,
         "TP": 9,
         "EARLY": 0,
         "TIMEOUT": 1
       }
     },
     "C_adx25_early": {
-      "n": 43,
-      "net_bps": 21.31,
-      "pf": 1.52,
-      "win": 0.279,
-      "dd_bps": 565.21,
+      "n": 42,
+      "net_bps": 22.17,
+      "pf": 1.54,
+      "win": 0.286,
+      "dd_bps": 504.11,
       "reasons": {
         "STOP": 2,
         "TP": 11,
-        "EARLY": 29,
+        "EARLY": 28,
         "TIMEOUT": 1
       }
     }
   },
-  "best_variant": "A_no_adx",
+  "best_variant": "B_adx25",
   "max_heartbeat_gap_ms": 10300
 }
