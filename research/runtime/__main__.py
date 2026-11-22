@@ -283,9 +283,13 @@ def _run_v2(args) -> int:
     intel_cfg = IntelPipelineConfig(max_news=10, with_books=False,
                                     llm=_IntelLLM(api_key=key) if key else _IntelLLM())
     executor, demo_book = _build_executor(args)
+    from research.runtime.v2_engine import V2Config
+    v2cfg = V2Config(exit_bars=args.exit_bars,
+                     exit_min_loss_bps=D(str(args.exit_min_loss_bps)),
+                     cooldown_bars=args.cooldown_bars)
     engine = V2Engine(Path(args.root), feed, RiskLimits(), deepseek=ds, second=second,
                       intel_fn=lambda ts: collect_intel(ts, intel_cfg),
-                      executor=executor, demo_book=demo_book)
+                      executor=executor, demo_book=demo_book, config=v2cfg)
     engine.load_history()
     print(f"v2 engine: root={args.root} minutes={args.minutes} "
           f"deepseek={'on' if ds else 'off'} second={'on' if second else 'off'} "
@@ -499,6 +503,13 @@ def main(argv: list[str] | None = None) -> int:
                       help="把指定账本镜像到 Binance Demo（需 Demo 凭据；默认关）")
     p_v2.add_argument("--demo-book", default="deepseek_5m", choices=list(BOOKS),
                       help="镜像哪本账到交易所（默认 deepseek_5m）")
+    # ---- 策略对照用的旋钮：同一份行情、同一套成本，只改退出规则 ----
+    p_v2.add_argument("--exit-bars", type=int, default=2,
+                      help="持仓满 N 根 5m 后若浮亏则认错（默认 2；设很大=只靠 ATR 止损）")
+    p_v2.add_argument("--exit-min-loss-bps", type=float, default=15.0,
+                      help="认错所需的最小毛亏 bps（默认 15，覆盖双边手续费+缓冲；0=旧行为）")
+    p_v2.add_argument("--cooldown-bars", type=int, default=2,
+                      help="平仓后同方向冷却 N 根 5m（默认 2；0=不冷却）")
 
     p_de = sub.add_parser("demo-exec", help="Binance Demo 联调：只读体检 / 受控小额测试单 / 对账")
     p_de.add_argument("--root", default="data/openalpha_demo")

@@ -8,7 +8,7 @@ from pathlib import Path
 from research.decision import Decision, MarketSnapshot
 from research.intel.contracts import IntelDigest, NewsEvent, SourceRef
 from research.market.contracts import TF_5M_MS
-from research.runtime.v2_engine import BOOKS, V2Engine
+from research.runtime.v2_engine import BOOKS, V2Config, V2Engine
 from research.risk.engine import RiskLimits
 
 D = Decimal
@@ -69,11 +69,12 @@ class CountingProvider:
         return Decision(self.name, "t", "OK", self.choice, 0.8, D("0.7"), "fake", ("e",))
 
 
-def _engine(tmp_path: Path, deepseek=None, second=None, intel_fn=None) -> V2Engine:
+def _engine(tmp_path: Path, deepseek=None, second=None, intel_fn=None, config=None) -> V2Engine:
     eng = V2Engine(tmp_path / "v2", FakeFeed(),
                    RiskLimits(min_volatility_budget_bps=D("0"), fee_bps=D("0"),
                               slippage_bps=D("0")),
-                   deepseek=deepseek, second=second, intel_fn=intel_fn)
+                   deepseek=deepseek, second=second, intel_fn=intel_fn,
+                   config=config or V2Config())
     eng.load_history = lambda as_of_ms=None: (setattr(eng, "_history_ts", as_of_ms or 0), True)[1]
     return eng
 
@@ -118,15 +119,45 @@ def test_tick_stop_closes_position(tmp_path: Path) -> None:
 
 
 def test_early_exit_after_two_bars(tmp_path: Path) -> None:
+    # 这里验证的是"到点认错"这个机制本身，所以把成本门槛关掉
+    e = _engine(tmp_path, deepseek=CountingProvider(),
+                config=V2Config(exit_min_loss_bps=D("0")))
+    e.on_5m_close(NOW)
+    pos = e.books["deepseek_5m"].open_positions()[0]
+    entry = Decimal(pos["entry_price"])
+    # 亏损必须超过 exit_min_loss_bps（默认 15bps），否则只是噪声、不值得付手续费
+    e.feed.price_value = float(entry * Decimal("0.99"))
+    e.on_5m_close(NOW + 2 * 300_000)
+    closed = e.books["deepseek_5m"]._db.execute(
+        "SELECT exit_reason FROM positions WHERE status='closed'").fetchall()
+    assert any(r["exit_reason"] == "EARLY_EXIT" for r in closed)
+
+
+def test_early_exit_skips_move_smaller_than_cost(tmp_path: Path) -> None:
+    """亏 1bp 就退 = 花 8bps 躲 1bp。这种噪声不该触发提前退出。"""
     e = _engine(tmp_path, deepseek=CountingProvider())
     e.on_5m_close(NOW)
     pos = e.books["deepseek_5m"].open_positions()[0]
     entry = Decimal(pos["entry_price"])
     e.feed.price_value = float(entry) - 0.01
     e.on_5m_close(NOW + 2 * 300_000)
-    closed = e.books["deepseek_5m"]._db.execute(
-        "SELECT exit_reason FROM positions WHERE status='closed'").fetchall()
-    assert any(r["exit_reason"] == "EARLY_EXIT" for r in closed)
+    assert e.books["deepseek_5m"].open_positions(), "噪声级别的浮亏不该平仓"
+
+
+def test_cooldown_blocks_same_side_reentry(tmp_path: Path) -> None:
+    """平仓后 2 根 5m 内不许同方向再开。"""
+    e = _engine(tmp_path, deepseek=CountingProvider(),
+                config=V2Config(exit_min_loss_bps=D("0")))
+    e.on_5m_close(NOW)
+    pos = e.books["deepseek_5m"].open_positions()[0]
+    entry = Decimal(pos["entry_price"])
+    e.feed.price_value = float(entry * Decimal("0.99"))
+    e.on_5m_close(NOW + 2 * 300_000)          # 触发 EARLY_EXIT
+    assert not e.books["deepseek_5m"].open_positions()
+    out = e.on_5m_close(NOW + 3 * 300_000)    # 下一根就想再开
+    blocked = (out.get("deepseek_5m") or {}).get("entry") or {}
+    assert blocked.get("blocked") == "COOLDOWN", blocked
+    assert not e.books["deepseek_5m"].open_positions()
 
 
 # ---------- Dual 语义 ----------
@@ -523,3 +554,79 @@ def test_stale_history_blocks_new_entries(tmp_path: Path) -> None:
     log = tmp_path / "v2" / "deepseek_5m_decisions.jsonl"
     assert not log.exists() or not log.read_text(encoding="utf-8").strip()
     assert not e.books["deepseek_5m"].open_positions()
+
+
+# ---------- 执行口径必须跟着执行频率走 ----------
+class _StubState:
+    def __init__(self, tf_map, features):
+        self.timeframes = tf_map
+        self.features = features
+
+
+def _view(tf: str, close: str, atr_pct: str | None = "1"):
+    from research.market.contracts import TimeframeView
+    return TimeframeView(timeframe=tf, last_closed_ms=0, close=D(close),
+                         atr_pct=D(atr_pct) if atr_pct is not None else None)
+
+
+def test_entry_reference_uses_exec_tf_not_1h(tmp_path: Path) -> None:
+    """5m 开仓却拿 1h 收盘当入场价 = 同一个小时内所有单子参考价完全相同。"""
+    e = _engine(tmp_path, deepseek=CountingProvider())
+    state = _StubState({"5m": _view("5m", "100"), "1h": _view("1h", "200")},
+                       {"close": D("200"), "atr_abs": D("2")})
+    close, atr = e._exec_refs(state)
+    assert close == D("100"), "必须用 5m 收盘"
+    assert atr == D("1"), "ATR 也必须用 5m 口径（100 × 1%）"
+
+
+def test_entry_reference_falls_back_when_exec_tf_missing(tmp_path: Path) -> None:
+    e = _engine(tmp_path, deepseek=CountingProvider())
+    state = _StubState({"1h": _view("1h", "200")}, {"close": D("200"), "atr_abs": D("2")})
+    close, atr = e._exec_refs(state)
+    assert (close, atr) == (D("200"), D("2"))
+
+
+def test_mark_price_prefers_live_price(tmp_path: Path) -> None:
+    """提前退出必须按现价判，而不是按 1h 收盘（那会拿一小时前的价格认错）。"""
+    e = _engine(tmp_path, deepseek=CountingProvider())
+    e.feed.price_value = 123.45
+    state = _StubState({"5m": _view("5m", "100")}, {"close": D("200")})
+    assert e._mark_price(state) == D("123.45")
+
+
+# ---------- 执行口径必须跟着执行频率走 ----------
+class _StubState:
+    def __init__(self, tf_map, features):
+        self.timeframes = tf_map
+        self.features = features
+
+
+def _view(tf: str, close: str, atr_pct: str | None = "1"):
+    from research.market.contracts import TimeframeView
+    return TimeframeView(timeframe=tf, last_closed_ms=0, close=D(close),
+                         atr_pct=D(atr_pct) if atr_pct is not None else None)
+
+
+def test_entry_reference_uses_exec_tf_not_1h(tmp_path: Path) -> None:
+    """5m 开仓却拿 1h 收盘当入场价 = 同一个小时内所有单子参考价完全相同。"""
+    e = _engine(tmp_path, deepseek=CountingProvider())
+    state = _StubState({"5m": _view("5m", "100"), "1h": _view("1h", "200")},
+                       {"close": D("200"), "atr_abs": D("2")})
+    close, atr = e._exec_refs(state)
+    assert close == D("100"), "必须用 5m 收盘"
+    assert atr == D("1"), "ATR 也必须用 5m 口径（100 × 1%）"
+
+
+def test_entry_reference_falls_back_when_exec_tf_missing(tmp_path: Path) -> None:
+    e = _engine(tmp_path, deepseek=CountingProvider())
+    state = _StubState({"1h": _view("1h", "200")}, {"close": D("200"), "atr_abs": D("2")})
+    close, atr = e._exec_refs(state)
+    assert (close, atr) == (D("200"), D("2"))
+
+
+def test_mark_price_prefers_live_price(tmp_path: Path) -> None:
+    """提前退出必须按现价判，而不是按 1h 收盘（那会拿一小时前的价格认错）。"""
+    e = _engine(tmp_path, deepseek=CountingProvider())
+    e.feed.price_value = 123.45
+    state = _StubState({"5m": _view("5m", "100")}, {"close": D("200")})
+    assert e._mark_price(state) == D("123.45")

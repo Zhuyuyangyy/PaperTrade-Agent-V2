@@ -41,6 +41,19 @@ class V2Config:
     stop_atr: Decimal = D("1.5")
     tp_atr: Decimal = D("3")
     exit_bars: int = 2
+    #: 「认错」所需的最小**毛亏**（bps，按开仓价计）。低于此值说明只是噪声，
+    #: 退出的手续费比躲掉的下跌还贵——宁可不退。
+    exit_min_loss_bps: Decimal = D("15")
+    #: 平仓后同方向冷却的 K 线数：避免"平了立刻再开"刷手续费
+    cooldown_bars: int = 2
+    #: 执行口径用的周期：入场价/止损止盈/提前退出的基准都取这个周期的收盘。
+    #: 旧行为隐式用了 1h（state.features 来自 1h），导致同一小时内每笔的
+    #: 入场价与保护价完全相同，而真实成交价差出几十美元。
+    exec_tf: str = "5m"
+    #: 执行口径用的周期：入场价/止损止盈/提前退出的基准都取这个周期的收盘。
+    #: 旧行为隐式用了 1h（state.features 来自 1h），导致同一小时内每笔的
+    #: 入场价与保护价完全相同，而真实成交价差出几十美元。
+    exec_tf: str = "5m"
     max_positions: int = 1
     spread_bps: Decimal = D("5")
     #: 收盘宽限：K 线 close_ms 必须 <= as_of - settle_ms 才算已收盘
@@ -78,8 +91,8 @@ class V2Engine:
     _mirrored: dict = field(default_factory=dict)
     #: 镜像出现「无法确认」的失败后置 True：停止镜像直到重启，避免在状态不清时继续发单
     mirror_halted: bool = False
-    #: 镜像出现「无法确认」的失败后置 True：停止镜像直到重启，避免在状态不清时继续发单
-    mirror_halted: bool = False
+    #: (book, side) → 最近一次平仓时间；用于冷却，重启后清空（保守：重新开始计时）
+    _last_close_ts: dict = field(default_factory=dict)
     _stop: threading.Event = field(default_factory=threading.Event)
     errors: list = field(default_factory=list)
     #: 最近一轮的实际模型输入（供审计：证明 digest 真的进了模型）
@@ -236,7 +249,7 @@ class V2Engine:
 
     # ---------- 成交 ----------
     def _intent(self, name: str, decision: Decision, state, as_of_ms: int) -> TradeIntent | None:
-        close, atr = state.features.get("close"), state.features.get("atr_abs")
+        close, atr = self._exec_refs(state)
         if close is None or atr is None or atr <= 0:
             return None
         side = "LONG" if decision.choice == "LONG" else "SHORT"
@@ -253,6 +266,18 @@ class V2Engine:
         broker = self.books[name]
         if len(broker.open_positions()) >= self.config.max_positions:
             return None
+        # 冷却：刚平掉的方向不要下一根就照抄。
+        # 用户实测那笔就是 15:31 平空、15:36 又开空，多付一次 8bps。
+        side = "LONG" if decision.choice == "LONG" else "SHORT"
+        last = self._last_close_ts.get((name, side))
+        if last is not None and self.config.cooldown_bars > 0:
+            need = self.config.cooldown_bars * self.config.decision_ms
+            if as_of_ms - last < need:
+                left = need - (as_of_ms - last)
+                return {"blocked": "COOLDOWN",
+                        "reason": f"{side} 于 {last} 平仓，冷却剩余 {left // 1000}s"
+                                  f"（{self.config.cooldown_bars} 根 5m）",
+                        "cooldown_left_ms": left}
         intent = self._intent(name, decision, state, as_of_ms)
         if intent is None:
             return None
@@ -315,9 +340,6 @@ class V2Engine:
         if self.mirror_halted and str(pos.get("intent_id") or "") not in self._mirrored:
             # 从来没在交易所挂上过，别去平一个不存在的仓
             return {"ok": False, "error": "MIRROR_HALTED: 该仓未在交易所建立，跳过镜像平仓"}
-        if self.mirror_halted and str(pos.get("intent_id") or "") not in self._mirrored:
-            # 从来没在交易所挂上过，别去平一个不存在的仓
-            return {"ok": False, "error": "MIRROR_HALTED: 该仓未在交易所建立，跳过镜像平仓"}
         intent = self._mirrored.get(str(pos.get("intent_id") or ""))
         if intent is None:
             # 重启后本地有持仓但内存丢了：用持仓行重建一个只用于平仓的意图
@@ -348,14 +370,18 @@ class V2Engine:
             age = as_of_ms - int(pos["entry_ts"])
             if age < self.config.exit_bars * self.config.decision_ms:
                 continue
-            mark = state.features.get("close")
+            mark = self._mark_price(state)
             if mark is None:
                 continue
             direction = D("1") if pos["side"] == "LONG" else D("-1")
-            pnl = (mark - D(pos["entry_price"])) * D(pos["qty"]) * direction
-            if pnl < 0:
+            entry = D(pos["entry_price"])
+            pnl = (mark - entry) * D(pos["qty"]) * direction
+            # 只有"亏得比手续费明显更多"才认错。否则等于花 8bps 去躲 1bps 的波动。
+            gross_bps = abs(mark - entry) / entry * D("10000") if entry > 0 else D("0")
+            if pnl < 0 and gross_bps >= self.config.exit_min_loss_bps:
                 c = broker.close_position(int(pos["id"]), mark, as_of_ms, "EARLY_EXIT")
                 if c:
+                    self._last_close_ts[(name, str(pos["side"]))] = as_of_ms
                     self._mirror_close(name, pos, "EARLY_EXIT")
                     closed.append(c)
         return [c for c in closed if c]
@@ -382,6 +408,7 @@ class V2Engine:
                 if reason:
                     c = broker.close_position(int(pos["id"]), px, ts_ms, reason)
                     if c:
+                        self._last_close_ts[(name, str(pos["side"]))] = ts_ms
                         self._mirror_close(name, pos, reason)
                         closed.append(c)
         self._write_heartbeat(ts_ms)
@@ -402,6 +429,56 @@ class V2Engine:
         return {"attempted": True, "ok": ok,
                 "fingerprint": dict(self._history_fp),
                 "errors": self.errors[-2:] if not ok else []}
+
+    def _exec_refs(self, state) -> tuple:
+        """执行口径的 (close, atr_abs)。
+
+        默认取 ``exec_tf``（5m）的收盘与 ATR；缺失时退回 ``state.features``。
+        必须和执行频率一致：5m 开仓却用 1h 收盘当入场价，等于每小时只更新一次参考价。
+        """
+        tf = (getattr(state, "timeframes", None) or {}).get(self.config.exec_tf)
+        if tf is not None and getattr(tf, "close", None):
+            close = D(str(tf.close))
+            pct = getattr(tf, "atr_pct", None)
+            atr = close * D(str(pct)) / D("100") if pct is not None else None
+            if atr is not None and atr > 0:
+                return close, atr
+        return state.features.get("close"), state.features.get("atr_abs")
+
+    def _mark_price(self, state) -> Decimal | None:
+        """平仓判定用的现价：优先实时价，其次执行周期收盘，最后 features。"""
+        px = self.price()
+        if px:
+            return D(str(px))
+        tf = (getattr(state, "timeframes", None) or {}).get(self.config.exec_tf)
+        if tf is not None and getattr(tf, "close", None):
+            return D(str(tf.close))
+        return state.features.get("close")
+
+    def _exec_refs(self, state) -> tuple:
+        """执行口径的 (close, atr_abs)。
+
+        默认取 ``exec_tf``（5m）的收盘与 ATR；缺失时退回 ``state.features``。
+        必须和执行频率一致：5m 开仓却用 1h 收盘当入场价，等于每小时只更新一次参考价。
+        """
+        tf = (getattr(state, "timeframes", None) or {}).get(self.config.exec_tf)
+        if tf is not None and getattr(tf, "close", None):
+            close = D(str(tf.close))
+            pct = getattr(tf, "atr_pct", None)
+            atr = close * D(str(pct)) / D("100") if pct is not None else None
+            if atr is not None and atr > 0:
+                return close, atr
+        return state.features.get("close"), state.features.get("atr_abs")
+
+    def _mark_price(self, state) -> Decimal | None:
+        """平仓判定用的现价：优先实时价，其次执行周期收盘，最后 features。"""
+        px = self.price()
+        if px:
+            return D(str(px))
+        tf = (getattr(state, "timeframes", None) or {}).get(self.config.exec_tf)
+        if tf is not None and getattr(tf, "close", None):
+            return D(str(tf.close))
+        return state.features.get("close")
 
     @staticmethod
     def _stale_ms(views: dict, as_of_ms: int) -> int:
@@ -472,8 +549,6 @@ class V2Engine:
                    "closed_bar_ms": int(views["5m"][-1].close_ms),
                    "trigger_bar_ms": int(bar_open_ms if bar_open_ms is not None
                                          else views["5m"][-1].open_ms),
-                   "trigger_bar_ms": int(bar_open_ms if bar_open_ms is not None
-                                         else views["5m"][-1].open_ms),
                    "history_refresh": refresh,
                    "intel": intel_info,
                    "equity": str(self.books[name].equity(as_of_ms,
@@ -487,8 +562,6 @@ class V2Engine:
         self.last_inputs = {
             "as_of_ms": as_of_ms,
             "closed_bar_ms": int(views["5m"][-1].close_ms),
-            "trigger_bar_ms": int(bar_open_ms if bar_open_ms is not None
-                                  else views["5m"][-1].open_ms),
             "trigger_bar_ms": int(bar_open_ms if bar_open_ms is not None
                                   else views["5m"][-1].open_ms),
             "intel": intel_info,
