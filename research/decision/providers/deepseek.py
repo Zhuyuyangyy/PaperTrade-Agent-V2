@@ -32,6 +32,8 @@ class DeepSeekProvider:
     def __init__(self, cfg: LLMConfig, fetch=None):
         self.cfg = cfg
         self.fetch = fetch or _http_post
+        self.last_tokens_in = 0
+        self.last_tokens_out = 0
 
     def available(self) -> bool:
         return self.cfg.available
@@ -52,6 +54,9 @@ class DeepSeekProvider:
         try:
             payload = self.fetch(self.cfg.base_url.rstrip("/") + "/chat/completions",
                                  self.cfg.api_key, body, self.cfg.timeout_s)
+            usage = payload.get("usage") or {}
+            self.last_tokens_in = int(usage.get("prompt_tokens") or 0)
+            self.last_tokens_out = int(usage.get("completion_tokens") or 0)
             content = payload["choices"][0]["message"]["content"]
             data = json.loads(content[content.find("{"):content.rfind("}") + 1])
             choice = str(data.get("choice", "")).upper()
