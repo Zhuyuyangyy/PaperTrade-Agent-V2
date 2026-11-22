@@ -692,3 +692,21 @@ def test_add_to_winner_is_refused_in_round_one(tmp_path: Path) -> None:
     managed = (out.get("deepseek_5m") or {}).get("entry", {}).get("managed") or {}
     assert managed.get("action") == "ADD_TO_WINNER", managed
     assert managed.get("executed") is False and "禁用" in managed.get("refused", "")
+
+
+def test_cooldown_survives_restart(tmp_path: Path) -> None:
+    """重启后从账本重建冷却，不能靠进程内存。"""
+    e = _engine(tmp_path, deepseek=CountingProvider(),
+                config=V2Config(exit_min_loss_bps=D("0")))
+    e.on_5m_close(NOW)
+    pos = e.books["deepseek_5m"].open_positions()[0]
+    e.feed.price_value = float(D(pos["entry_price"]) * (D("0.99") if pos["side"] == "LONG"
+                                                        else D("1.01")))
+    e.on_5m_close(NOW + 2 * 300_000)
+    assert not e.books["deepseek_5m"].open_positions()
+
+    e2 = _engine(tmp_path, deepseek=CountingProvider())
+    assert ("deepseek_5m", str(pos["side"])) in e2._last_close_ts
+    out = e2.on_5m_close(NOW + 2 * 300_000 + 60_000)
+    blocked = (out.get("deepseek_5m") or {}).get("entry") or {}
+    assert blocked.get("blocked") == "COOLDOWN", blocked

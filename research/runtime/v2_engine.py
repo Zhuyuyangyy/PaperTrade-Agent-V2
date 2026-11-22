@@ -112,6 +112,17 @@ class V2Engine:
             self.books[name] = PaperBroker(
                 self.root / f"{name}.sqlite", starting_cash=D("1000"),
                 funding_bps_per_8h=D("1"), shadow_mode="shadow_only")
+            # 重启后重建冷却：从账本读每个方向最后一次平仓时间。
+            # 没有这一步，进程一重启就能立刻反手，等于绕过冷却。
+            try:
+                rows = self.books[name]._db.execute(
+                    "SELECT side, MAX(exit_ts) AS ts FROM positions"
+                    " WHERE status='closed' AND exit_ts IS NOT NULL GROUP BY side").fetchall()
+                for r in rows:
+                    if r["ts"]:
+                        self._last_close_ts[(name, str(r["side"]))] = int(r["ts"])
+            except Exception as exc:                 # noqa: BLE001 - 旧账本没有列时跳过
+                self.errors.append(f"{name}: 冷却恢复失败 {type(exc).__name__}: {exc}")
 
     # ---------- 行情 ----------
     def load_history(self, as_of_ms: int | None = None) -> bool:
