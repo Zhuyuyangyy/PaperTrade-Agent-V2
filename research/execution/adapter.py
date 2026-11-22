@@ -322,10 +322,21 @@ class DemoExecutionAdapter:
             order = self._await_fill(order, cid)
         except Exception as exc:  # noqa: BLE001
             self.errors.append(f"entry {cid}: {type(exc).__name__}: {exc}")
-            self._record(cid, intent.intent_id, "entry", status="FAILED",
-                         qty=qty, payload={"error": str(exc)})
-            return ExecutionResult(False, "entry", intent.intent_id, qty=qty,
-                                   error=f"{type(exc).__name__}: {exc}")
+            # 超时/断连时订单**可能已经落地**：必须查一次再判失败，
+            # 否则本地记 FAILED、交易所却真有仓（或反之），对账永远对不上。
+            landed = self._probe_existing(cid)
+            filled_q = D(str(landed.get("executedQty") or "0")) if isinstance(landed, dict) else D("0")
+            if filled_q > 0:
+                order = landed
+                self.errors.append(f"entry {cid}: 请求异常但交易所已成交 "
+                                   f"{filled_q}，按回执继续挂保护单")
+            else:
+                self._record(cid, intent.intent_id, "entry", status="FAILED",
+                             qty=qty, payload={"error": str(exc)})
+                err = f"{type(exc).__name__}: {exc}"
+                if landed == "UNREACHABLE":
+                    err += "；且无法确认订单是否已落地，需人工核对"
+                return ExecutionResult(False, "entry", intent.intent_id, qty=qty, error=err)
         status = str(order.get("status") or "")
         if status not in ("FILLED", "PARTIALLY_FILLED"):
             self._record(cid, intent.intent_id, "entry", exchange_id=str(order.get("orderId", "")),

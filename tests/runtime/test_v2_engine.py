@@ -460,3 +460,56 @@ def test_executor_failure_does_not_lose_local_fill(tmp_path: Path) -> None:
     e.on_5m_close(NOW)
     assert e.books["deepseek_5m"].open_positions(), "交易所失败不能丢掉本地成交"
     assert any("adapter blew up" in x for x in e.errors)
+
+
+# ---------- 镜像失败不得登记为已有仓位 ----------
+def test_mirror_failure_does_not_register_position(tmp_path: Path) -> None:
+    from research.execution.adapter import ExecutionResult
+
+    class FailingExecutor:
+        def open(self, intent, notional):
+            return ExecutionResult(False, "entry", intent.intent_id,
+                                   error="TimeoutError: The read operation timed out")
+
+        def close(self, intent, qty, reason):  # pragma: no cover - 不该被调用
+            raise AssertionError("镜像没建立，不该平仓")
+
+        def reconcile(self):
+            return {"ok": True, "diffs": []}
+
+    ex = FailingExecutor()
+    e = _engine(tmp_path, deepseek=CountingProvider())
+    e.executor, e.demo_book = ex, "deepseek_5m"
+    e.on_5m_close(NOW)
+    assert e._mirrored == {}, "镜像失败绝不能登记成已有仓位"
+    log = json.loads((tmp_path / "v2" / "deepseek_5m_decisions.jsonl")
+                     .read_text(encoding="utf-8").splitlines()[-1])
+    assert log["entry"]["demo"]["ok"] is False
+    assert e.books["deepseek_5m"].open_positions(), "本地成交必须保留"
+
+
+def test_mirror_halts_after_uncertain_failure(tmp_path: Path) -> None:
+    from research.execution.adapter import ExecutionResult
+
+    class Exec:
+        def __init__(self):
+            self.calls = 0
+
+        def open(self, intent, notional):
+            self.calls += 1
+            return ExecutionResult(False, "probe", intent.intent_id,
+                                   error="无法确认订单是否已存在（查询失败），拒绝下单以免重复")
+
+        def close(self, intent, qty, reason):  # pragma: no cover
+            raise AssertionError("不该平仓")
+
+        def reconcile(self):
+            return {"ok": True, "diffs": []}
+
+    ex = Exec()
+    e = _engine(tmp_path, deepseek=CountingProvider())
+    e.executor, e.demo_book = ex, "deepseek_5m"
+    e.on_5m_close(NOW)
+    assert e.mirror_halted is True
+    e.on_5m_close(NOW + 300_000)
+    assert ex.calls == 1, "已经 halt 就不该再向交易所发单"

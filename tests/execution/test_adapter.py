@@ -462,3 +462,40 @@ def test_probe_zero_filled_existing_order_refuses(tmp_path: Path) -> None:
     assert res.ok is False and res.stage == "probe"
     assert res.order_id == "555"
     assert not c.plain, "已存在未成交订单时不得再发新单"
+
+
+# ---------- 下单超时但交易所已成交 ----------
+class TimeoutButFilled(FakeClient):
+    """POST 读超时，但订单其实已经成交（真实联调里就发生过这种）。"""
+
+    def new_order(self, **kw):
+        cid = kw.get("client_id", "")
+        if kw.get("order_type") in ("MARKET",) and not kw.get("reduce_only"):
+            rec = {"orderId": 777777, "status": "FILLED", "executedQty": "0.0017",
+                   "avgPrice": "60000", "side": kw.get("side", "BUY"),
+                   "clientOrderId": cid, "reduceOnly": False}
+            self._orders[cid] = rec
+            raise TimeoutError("The read operation timed out")
+        return super().new_order(**kw)
+
+
+def test_open_recovers_when_post_times_out_but_exchange_filled(tmp_path: Path) -> None:
+    c = TimeoutButFilled()
+    a = _adapter(tmp_path, c)
+    res = a.open(_intent(), D("100"))
+    assert res.ok and res.stage == "protected", res.to_dict()
+    assert res.order_id == "777777"
+    assert [x["type"] for x in c.algo] == ["STOP_MARKET", "TAKE_PROFIT_MARKET"]
+
+
+def test_open_reports_unreachable_when_probe_also_fails(tmp_path: Path) -> None:
+    class TimeoutAndUnreachable(FakeClient):
+        def new_order(self, **kw):
+            raise TimeoutError("The read operation timed out")
+
+        def order_status(self, symbol=SYMBOL, order_id=None, client_id=""):
+            raise RuntimeError("HTTP 500 Internal Server Error")
+
+    a = _adapter(tmp_path, TimeoutAndUnreachable())
+    res = a.open(_intent(), D("100"))
+    assert res.ok is False and "无法确认" in res.error

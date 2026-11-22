@@ -73,6 +73,10 @@ class V2Engine:
     _history_fp: dict = field(default_factory=dict)
     #: 已镜像到交易所的 intent_id → TradeIntent（用于平仓时撤条件单）
     _mirrored: dict = field(default_factory=dict)
+    #: 镜像出现「无法确认」的失败后置 True：停止镜像直到重启，避免在状态不清时继续发单
+    mirror_halted: bool = False
+    #: 镜像出现「无法确认」的失败后置 True：停止镜像直到重启，避免在状态不清时继续发单
+    mirror_halted: bool = False
     _stop: threading.Event = field(default_factory=threading.Event)
     errors: list = field(default_factory=list)
     #: 最近一轮的实际模型输入（供审计：证明 digest 真的进了模型）
@@ -262,20 +266,55 @@ class V2Engine:
 
     # ---------- 交易所镜像 ----------
     def _mirror_open(self, intent: TradeIntent, notional) -> dict:
-        """本地成交后镜像到 Demo 交易所。失败只记录，不吞掉本地记录。"""
+        """本地成交后镜像到 Demo 交易所。失败只记录，不吞掉本地记录。
+
+        关键：**只有真的在交易所挂上了才登记到 `_mirrored`**。
+        原实现先登记再判断 ok，导致镜像失败后仍被当成"有仓"，
+        平仓时去平一个不存在的仓，本地与交易所从此对不上。
+        镜像一旦出现无法确认的失败 → `mirror_halted`，停止镜像直到重启，
+        避免在状态不清的情况下继续发单。
+        """
+        if self.mirror_halted:
+            return {"ok": False, "error": "MIRROR_HALTED: 上一次镜像失败，已停止镜像"}
         try:
             res = self.executor.open(intent, notional)
         except Exception as exc:                     # noqa: BLE001 - 平不掉是致命，由适配器抛
             self.errors.append(f"demo_open {intent.intent_id}: {type(exc).__name__}: {exc}")
-            return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
-        self._mirrored[intent.intent_id] = intent
+            self.mirror_halted = True
+            return {"ok": False, "error": f"{type(exc).__name__}: {exc}", "halted": True}
         if not res.ok:
             self.errors.append(f"demo_open {intent.intent_id}: {res.stage}: {res.error}")
+            # 只有"确定没下出去"才允许继续镜像；无法确认就必须停
+            uncertain = "无法确认" in (res.error or "") or res.stage in ("probe", "protect")
+            if uncertain:
+                self.mirror_halted = True
+            self._reconcile_note(f"mirror_open_failed {intent.intent_id}")
+            return {**res.to_dict(), "halted": self.mirror_halted}
+        self._mirrored[intent.intent_id] = intent
         return res.to_dict()
+
+    def _reconcile_note(self, tag: str) -> None:
+        """镜像出问题后立刻核对一次交易所真实状态，结果写进 errors，不静默。"""
+        if self.executor is None:
+            return
+        try:
+            rec = self.executor.reconcile()
+        except Exception as exc:                     # noqa: BLE001
+            self.errors.append(f"{tag}: reconcile 失败 {type(exc).__name__}: {exc}")
+            return
+        if rec.get("diffs"):
+            self.errors.append(f"{tag}: reconcile diffs={rec['diffs']}")
+            self.mirror_halted = True
 
     def _mirror_close(self, name: str, pos: dict, reason: str) -> dict | None:
         if name != self.demo_book or self.executor is None:
             return None
+        if self.mirror_halted and str(pos.get("intent_id") or "") not in self._mirrored:
+            # 从来没在交易所挂上过，别去平一个不存在的仓
+            return {"ok": False, "error": "MIRROR_HALTED: 该仓未在交易所建立，跳过镜像平仓"}
+        if self.mirror_halted and str(pos.get("intent_id") or "") not in self._mirrored:
+            # 从来没在交易所挂上过，别去平一个不存在的仓
+            return {"ok": False, "error": "MIRROR_HALTED: 该仓未在交易所建立，跳过镜像平仓"}
         intent = self._mirrored.get(str(pos.get("intent_id") or ""))
         if intent is None:
             # 重启后本地有持仓但内存丢了：用持仓行重建一个只用于平仓的意图

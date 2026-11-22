@@ -135,7 +135,8 @@ class DemoConfig:
     base_url: str = DEMO_BASE
     #: Binance 上限 60000；本机到 Demo 的 RTT 有 4s 级抖动，5000 会被 -1021 打回
     recv_window: int = 60000
-    timeout_s: float = 10.0
+    #: 本机到 Demo 的 RTT 抖动实测 0.9–4.2s，10s 会被多跳叠加打穿
+    timeout_s: float = 30.0
 
     def __post_init__(self) -> None:
         self.base_url = validate_base_url(self.base_url)
@@ -224,6 +225,10 @@ class DemoClient:
                 payload = fn(method, url, headers, body, self.config.timeout_s)
             except Exception as exc:  # noqa: BLE001
                 last = exc
+                timed_out = isinstance(exc, TimeoutError) or "timed out" in str(exc).lower()
+                if method == "GET" and attempt == 0 and timed_out:
+                    self.errors.append(f"{path}: 读超时，重试一次（GET 无副作用）")
+                    continue
                 if signed and attempt == 0 and "-1021" in str(exc):
                     self.errors.append(f"{path}: -1021 时间戳越界，校准后重试一次")
                     self._safe_sync_time()
