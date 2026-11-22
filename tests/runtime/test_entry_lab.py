@@ -154,3 +154,18 @@ def test_all_groups_share_cost_and_exit_params():
     assert cfg.fee_bps == cfg.slippage_bps * 0 + D("4")
     assert cfg.stop_atr == D("1.5") and cfg.tp_atr == D("3")
     # 三组使用同一个 cfg（引擎内没有 per-group 参数），由 run_experiment 保证
+
+
+def test_single_position_no_overlapping_trades():
+    """同一组不允许串仓：前一笔未平，后一笔信号必须被跳过。"""
+    from research.experiment.entry_exp import ExpConfig, run_experiment, _rules_multitf
+
+    bars = _bars(400)
+    cfg = ExpConfig(warmup_bars=20, max_hold_bars=40)
+    res = run_experiment(bars, cfg=cfg, providers={"C": _rules_multitf},
+                         research_end_ms=bars[200].close_ms, decision_every=1)
+    trades = sorted(res["trades"], key=lambda t: t["signal_bar"])
+    last_end = -1
+    for t in trades:
+        assert t["signal_bar"] > last_end, f"串仓: bar {t['signal_bar']} <= 上一笔结束 {last_end}"
+        last_end = t["signal_bar"] + t["holding_ms"] // 300_000

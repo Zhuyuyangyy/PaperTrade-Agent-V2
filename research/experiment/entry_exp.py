@@ -217,6 +217,9 @@ def run_experiment(bars: list[Candle], *, cfg: ExpConfig, providers: dict[str, o
     """逐 bar 驱动三组，返回全部决策、成交与成本。research/样本外按时间切。"""
     decisions: list[EntryDecisionLog] = []
     trades: list[dict] = []
+    #: 每组「当前仓位占用到哪根 bar 为止」——同一时间只允许一仓（与实盘 max_positions=1 一致）。
+    #: 否则连续同向信号会叠加成多仓，收益、手续费和回撤全部失真。
+    busy_until: dict[str, int] = {}
     # 多周期视图用 full_bars（完整历史，保证 1h/4h 有足够已收盘 K 线）；
     # 决策点 i 只在 bars（本次实验窗口）内；成交用 full_bars[i+1]（同一条时间线）。
     hist = full_bars if full_bars is not None else bars
@@ -252,8 +255,15 @@ def run_experiment(bars: list[Candle], *, cfg: ExpConfig, providers: dict[str, o
                                        provider=dec.provider, input_hash=i_hash)
             else:
                 log = _call_model(provider, snap, cfg, group, i, i_hash)
-            trade = _trade_for(dec, state, i, hist, cfg) if group == "C" else _trade_for(
-                _dec_from_log(log), state, i, hist, cfg)
+            occupied = i < busy_until.get(group, -1)
+            if occupied and (dec if group == "C" else _dec_from_log(log)).actionable:
+                log.rationale = (log.rationale + " | SKIPPED_POSITION_OPEN")[:240]
+                log.choice = "HOLD"
+            trade = None if occupied else (
+                _trade_for(dec, state, i, hist, cfg) if group == "C" else _trade_for(
+                    _dec_from_log(log), state, i, hist, cfg))
+            if trade:
+                busy_until[group] = int(trade["signal_bar"]) + int(trade["holding_ms"] // 300_000) + 1
             log.trade = trade
             split = "research" if state.market.as_of_ms <= research_end_ms else "oos"
             rec = log.to_dict()
@@ -279,10 +289,17 @@ def run_experiment(bars: list[Candle], *, cfg: ExpConfig, providers: dict[str, o
                                     confidence=D("0"), rationale=f.get("reason", ""),
                                     provider=f.get("provider", "filter"), input_hash=i_hash,
                                     tokens_in=tin, tokens_out=tout, cost_usd=str(cost))
-            if accept:
+            d_occupied = i < busy_until.get("D", -1)
+            if accept and d_occupied:
+                dlog.rationale = (dlog.rationale + " | SKIPPED_POSITION_OPEN")[:240]
+                dlog.choice = "HOLD"
+                dtrade = None
+            elif accept:
                 c_dec_log = Decision("rules_multitf", "v1", "OK", c_dec,
                                      0.0, D("1"), "filtered-candidate")
                 dtrade = _trade_for(c_dec_log, state, i, hist, cfg)
+                if dtrade:
+                    busy_until["D"] = int(dtrade["signal_bar"]) + int(dtrade["holding_ms"] // 300_000) + 1
             else:
                 dtrade = None
             dlog.trade = dtrade

@@ -33,8 +33,17 @@ def _stats(decisions: list[dict], trades: list[dict]) -> dict:
         equity += _d(t.get("net_pnl"))
         peak = max(peak, equity)
         dd = max(dd, (peak - equity) / peak if peak > 0 else D("0"))
+    holds_ms = [int(t.get("holding_ms") or 0) for t in trades]
+    lats = [int(d.get("latency_ms") or 0) for d in decisions if d.get("latency_ms")]
+    skipped = sum(1 for d in decisions if "SKIPPED_POSITION_OPEN" in str(d.get("rationale", "")))
     return {
         "label": LABELS.get(decisions[0].get("group", "") if decisions else "", ""),
+        "skipped_position_open": skipped,
+        "avg_holding_h": str((D(sum(holds_ms)) / len(holds_ms) / 3_600_000
+                              ).quantize(D("0.01"))) if holds_ms else "0",
+        "avg_latency_ms": str((D(sum(lats)) / len(lats)).quantize(D("1"))) if lats else "0",
+        "error_pct": str((D(n_err) / len(decisions) * 100).quantize(D("0.01")))
+                     if decisions else "0",
         "decisions": len(decisions), "long": n_long, "short": n_short, "hold": n_hold,
         "errors": n_err, "trades": len(trades), "win_rate_pct": str(
             (D(wins) / len(trades) * 100).quantize(D("0.01"))) if trades else "0",

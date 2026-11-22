@@ -1,0 +1,344 @@
+{
+  "run": "data\\v3_entryE\\e_main",
+  "meta": {
+    "run_id": "e_main",
+    "ai": "both",
+    "api_key_present": true,
+    "bar_quality": {
+      "requested_days": 60,
+      "bars": 17282,
+      "gaps": 0,
+      "max_gap_ms": 0,
+      "first_open_ms": 1790171400000,
+      "last_open_ms": 1795355700000,
+      "duplicate_open_ms": 0,
+      "cache_hit": true,
+      "requests": 0
+    },
+    "bars_total": 17282,
+    "bars_used": 5000,
+    "elapsed_s": 1090.6,
+    "bars_sha256": "934cdc1042f351e4",
+    "note": "收盘信号按下一根开盘价成交（无前视）；三组同费用/风险/撮合/退出。"
+  },
+  "config": {
+    "fee_bps": "4",
+    "slippage_bps": "5",
+    "notional": "100",
+    "stop_atr": "1.5",
+    "tp_atr": "3",
+    "max_hold_bars": 72,
+    "min_net_bps": "10",
+    "settle_ms": 30000,
+    "warmup_bars": 2500,
+    "usd_per_1k_tokens": "0.001",
+    "usd_per_call_est": "0.0003"
+  },
+  "groups": {
+    "A": {
+      "label": "旧版DeepSeek(1h)",
+      "skipped_position_open": 39,
+      "avg_holding_h": "1.27",
+      "avg_latency_ms": "1107",
+      "error_pct": "0.00",
+      "decisions": 417,
+      "long": 21,
+      "short": 9,
+      "hold": 387,
+      "errors": 0,
+      "trades": 30,
+      "win_rate_pct": "36.67",
+      "net_pnl_usdt": "-4.86714582",
+      "avg_per_trade": "-0.16223819",
+      "fees_usdt": "2.39956236",
+      "inference_cost_usd": "0.16239200",
+      "max_drawdown_pct": "0.6111",
+      "exit_reasons": {
+        "TAKE_PROFIT": 13,
+        "STOP": 17
+      }
+    },
+    "B": {
+      "label": "DeepSeek多周期",
+      "skipped_position_open": 15,
+      "avg_holding_h": "0.80",
+      "avg_latency_ms": "1326",
+      "error_pct": "0.00",
+      "decisions": 417,
+      "long": 23,
+      "short": 18,
+      "hold": 376,
+      "errors": 0,
+      "trades": 41,
+      "win_rate_pct": "24.39",
+      "net_pnl_usdt": "-8.77300516",
+      "avg_per_trade": "-0.21397574",
+      "fees_usdt": "3.27874939",
+      "inference_cost_usd": "0.52445500",
+      "max_drawdown_pct": "0.8773",
+      "exit_reasons": {
+        "STOP": 29,
+        "TAKE_PROFIT": 12
+      }
+    },
+    "C": {
+      "label": "确定性多周期规则",
+      "skipped_position_open": 20,
+      "avg_holding_h": "1.65",
+      "avg_latency_ms": "0",
+      "error_pct": "0.00",
+      "decisions": 417,
+      "long": 6,
+      "short": 13,
+      "hold": 398,
+      "errors": 0,
+      "trades": 19,
+      "win_rate_pct": "26.32",
+      "net_pnl_usdt": "-4.72434213",
+      "avg_per_trade": "-0.24864959",
+      "fees_usdt": "1.52006594",
+      "inference_cost_usd": "0E-8",
+      "max_drawdown_pct": "0.5117",
+      "exit_reasons": {
+        "STOP": 14,
+        "TAKE_PROFIT": 4,
+        "TIME_EXIT": 1
+      }
+    },
+    "D": {
+      "label": "规则+AI过滤",
+      "skipped_position_open": 0,
+      "avg_holding_h": "1.00",
+      "avg_latency_ms": "0",
+      "error_pct": "0.00",
+      "decisions": 19,
+      "long": 5,
+      "short": 1,
+      "hold": 13,
+      "errors": 0,
+      "trades": 6,
+      "win_rate_pct": "16.67",
+      "net_pnl_usdt": "-2.04831174",
+      "avg_per_trade": "-0.34138529",
+      "fees_usdt": "0.47972584",
+      "inference_cost_usd": "0.02121300",
+      "max_drawdown_pct": "0.2048",
+      "exit_reasons": {
+        "STOP": 5,
+        "TAKE_PROFIT": 1
+      }
+    }
+  },
+  "by_split": {
+    "research": {
+      "A": {
+        "label": "旧版DeepSeek(1h)",
+        "skipped_position_open": 22,
+        "avg_holding_h": "1.04",
+        "avg_latency_ms": "1086",
+        "error_pct": "0.00",
+        "decisions": 167,
+        "long": 21,
+        "short": 0,
+        "hold": 146,
+        "errors": 0,
+        "trades": 21,
+        "win_rate_pct": "33.33",
+        "net_pnl_usdt": "-3.48388127",
+        "avg_per_trade": "-0.16589911",
+        "fees_usdt": "1.67928912",
+        "inference_cost_usd": "0.06529900",
+        "max_drawdown_pct": "0.4729",
+        "exit_reasons": {
+          "TAKE_PROFIT": 9,
+          "STOP": 12
+        }
+      },
+      "B": {
+        "label": "DeepSeek多周期",
+        "skipped_position_open": 7,
+        "avg_holding_h": "1.19",
+        "avg_latency_ms": "1319",
+        "error_pct": "0.00",
+        "decisions": 167,
+        "long": 11,
+        "short": 4,
+        "hold": 152,
+        "errors": 0,
+        "trades": 15,
+        "win_rate_pct": "20.00",
+        "net_pnl_usdt": "-3.43852231",
+        "avg_per_trade": "-0.22923482",
+        "fees_usdt": "1.19962014",
+        "inference_cost_usd": "0.20930900",
+        "max_drawdown_pct": "0.3439",
+        "exit_reasons": {
+          "STOP": 10,
+          "TAKE_PROFIT": 5
+        }
+      },
+      "C": {
+        "label": "确定性多周期规则",
+        "skipped_position_open": 10,
+        "avg_holding_h": "1.76",
+        "avg_latency_ms": "0",
+        "error_pct": "0.00",
+        "decisions": 167,
+        "long": 4,
+        "short": 4,
+        "hold": 159,
+        "errors": 0,
+        "trades": 8,
+        "win_rate_pct": "25.00",
+        "net_pnl_usdt": "-1.92335172",
+        "avg_per_trade": "-0.24041897",
+        "fees_usdt": "0.63992812",
+        "inference_cost_usd": "0E-8",
+        "max_drawdown_pct": "0.2171",
+        "exit_reasons": {
+          "STOP": 6,
+          "TAKE_PROFIT": 2
+        }
+      },
+      "D": {
+        "label": "规则+AI过滤",
+        "skipped_position_open": 0,
+        "avg_holding_h": "1.15",
+        "avg_latency_ms": "0",
+        "error_pct": "0.00",
+        "decisions": 8,
+        "long": 4,
+        "short": 0,
+        "hold": 4,
+        "errors": 0,
+        "trades": 4,
+        "win_rate_pct": "25.00",
+        "net_pnl_usdt": "-1.06006870",
+        "avg_per_trade": "-0.26501717",
+        "fees_usdt": "0.31970615",
+        "inference_cost_usd": "0.00889200",
+        "max_drawdown_pct": "0.1060",
+        "exit_reasons": {
+          "STOP": 3,
+          "TAKE_PROFIT": 1
+        }
+      }
+    },
+    "oos": {
+      "A": {
+        "label": "旧版DeepSeek(1h)",
+        "skipped_position_open": 17,
+        "avg_holding_h": "1.79",
+        "avg_latency_ms": "1121",
+        "error_pct": "0.00",
+        "decisions": 250,
+        "long": 0,
+        "short": 9,
+        "hold": 241,
+        "errors": 0,
+        "trades": 9,
+        "win_rate_pct": "44.44",
+        "net_pnl_usdt": "-1.38326455",
+        "avg_per_trade": "-0.15369606",
+        "fees_usdt": "0.72027324",
+        "inference_cost_usd": "0.09709300",
+        "max_drawdown_pct": "0.1739",
+        "exit_reasons": {
+          "TAKE_PROFIT": 4,
+          "STOP": 5
+        }
+      },
+      "B": {
+        "label": "DeepSeek多周期",
+        "skipped_position_open": 8,
+        "avg_holding_h": "0.57",
+        "avg_latency_ms": "1331",
+        "error_pct": "0.00",
+        "decisions": 250,
+        "long": 12,
+        "short": 14,
+        "hold": 224,
+        "errors": 0,
+        "trades": 26,
+        "win_rate_pct": "26.92",
+        "net_pnl_usdt": "-5.33448285",
+        "avg_per_trade": "-0.20517242",
+        "fees_usdt": "2.07912925",
+        "inference_cost_usd": "0.31514600",
+        "max_drawdown_pct": "0.5334",
+        "exit_reasons": {
+          "STOP": 19,
+          "TAKE_PROFIT": 7
+        }
+      },
+      "C": {
+        "label": "确定性多周期规则",
+        "skipped_position_open": 10,
+        "avg_holding_h": "1.58",
+        "avg_latency_ms": "0",
+        "error_pct": "0.00",
+        "decisions": 250,
+        "long": 2,
+        "short": 9,
+        "hold": 239,
+        "errors": 0,
+        "trades": 11,
+        "win_rate_pct": "27.27",
+        "net_pnl_usdt": "-2.80099041",
+        "avg_per_trade": "-0.25463549",
+        "fees_usdt": "0.88013782",
+        "inference_cost_usd": "0E-8",
+        "max_drawdown_pct": "0.2946",
+        "exit_reasons": {
+          "STOP": 8,
+          "TIME_EXIT": 1,
+          "TAKE_PROFIT": 2
+        }
+      },
+      "D": {
+        "label": "规则+AI过滤",
+        "skipped_position_open": 0,
+        "avg_holding_h": "0.71",
+        "avg_latency_ms": "0",
+        "error_pct": "0.00",
+        "decisions": 11,
+        "long": 1,
+        "short": 1,
+        "hold": 9,
+        "errors": 0,
+        "trades": 2,
+        "win_rate_pct": "0.00",
+        "net_pnl_usdt": "-0.98824304",
+        "avg_per_trade": "-0.49412152",
+        "fees_usdt": "0.16001970",
+        "inference_cost_usd": "0.01232100",
+        "max_drawdown_pct": "0.0988",
+        "exit_reasons": {
+          "STOP": 2
+        }
+      }
+    }
+  },
+  "entry_filter": {
+    "calls": 19,
+    "accepted": 6,
+    "rejected": 13,
+    "accept_rate_pct": "31.58",
+    "rejected_signals_net_pnl_if_taken": "-2.67603039",
+    "accepted_net_pnl_usdt": "-2.04831174",
+    "filtered_baseline_net_pnl_usdt": "-4.72434213",
+    "filter_cost_usd": "0.021213"
+  },
+  "signal_coverage": {
+    "decision_bars": 417,
+    "all_hold_bars": 340,
+    "any_signal_bars": 77,
+    "pct": "18.47"
+  },
+  "notes": [
+    "收益已扣双边手续费/滑点/资金费；成交按信号下一根开盘价（无前视）。",
+    "推理成本按 API 真实 usage 估算；无 usage 时用保守 $/call 估算。",
+    "research/oos 严格按时间切分；样本外只评估一次，未调参。",
+    "HOLD 机会成本仅为参照，不能当作可实现收益。"
+  ]
+}
