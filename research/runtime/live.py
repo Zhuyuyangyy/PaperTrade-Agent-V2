@@ -66,8 +66,11 @@ class BinanceKlineSource:
             raise SourceError(f"{self.symbol}: 拉取失败 {type(exc).__name__}: {exc}") from exc
 
     def _default_fetch(self, url: str) -> object:
+        from research.market.budget import GLOBAL_BUDGET
+
         last: Exception | None = None
         for attempt in range(self.retries + 1):
+            GLOBAL_BUDGET.acquire()          # 全局共享限流；418/429 后统一冷却
             try:
                 req = urllib.request.Request(url, headers=UA)
                 opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -75,8 +78,9 @@ class BinanceKlineSource:
                     return json.load(resp)
             except urllib.error.HTTPError as exc:
                 last = exc
-                if exc.code == 429 and attempt < self.retries:
-                    time.sleep(1.5 * (attempt + 1))
+                if exc.code in (418, 429):
+                    GLOBAL_BUDGET.note_rate_limited()
+                if exc.code in (418, 429) and attempt < self.retries:
                     continue
                 break
             except (urllib.error.URLError, TimeoutError, json.JSONDecodeError,

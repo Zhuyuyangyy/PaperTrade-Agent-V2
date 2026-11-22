@@ -55,10 +55,6 @@ class V2Config:
     #: 旧行为隐式用了 1h（state.features 来自 1h），导致同一小时内每笔的
     #: 入场价与保护价完全相同，而真实成交价差出几十美元。
     exec_tf: str = "5m"
-    #: 执行口径用的周期：入场价/止损止盈/提前退出的基准都取这个周期的收盘。
-    #: 旧行为隐式用了 1h（state.features 来自 1h），导致同一小时内每笔的
-    #: 入场价与保护价完全相同，而真实成交价差出几十美元。
-    exec_tf: str = "5m"
     max_positions: int = 1
     spread_bps: Decimal = D("5")
     #: 收盘宽限：K 线 close_ms 必须 <= as_of - settle_ms 才算已收盘
@@ -72,6 +68,8 @@ class V2Config:
     rest_cooldown_ms: int = 600_000
     #: 最长持有期（超时平仓）
     max_holding_ms: int = 4 * TF_1H_MS
+    #: 入场模型：legacy=冻结的 1h 特征基线；multitf=多周期 EntrySnapshot 候选
+    entry_mode: str = "legacy"
 
 
 @dataclass
@@ -106,6 +104,8 @@ class V2Engine:
     last_inputs: dict = field(default_factory=dict)
     #: 持仓管理模型（有 decide(snapshot) 即可）；None 且 position_manager=ai 时退化为 rules
     position_ai: object = None
+    #: 实验 E 的多周期入场 provider（有 decide(EntrySnapshot) 即可）
+    entry_provider: object = None
     #: 每本账上次看到新闻的时间，用于算 news_delta（不做假观测）
     _last_news_ms: dict = field(default_factory=dict)
     #: 持仓管理模型调用统计：区分真 AI 与回退
@@ -114,15 +114,13 @@ class V2Engine:
     #: 行情数据质量计数：K 线覆盖、刷新成功率、限流、陈旧跳过
     data_stats: dict = field(default_factory=lambda: {
         "refresh_attempts": 0, "refresh_ok": 0, "rate_limited": 0,
-        "rest_skipped": 0, "stale_skips": 0, "closed_bars_seen": 0})
+        "rest_skipped": 0, "stale_skips": 0, "duplicate_bar_skips": 0,
+        "closed_bars_seen": 0})
     _rest_cooldown_until: int = 0
     #: 每本账的配置覆盖（实验组）。空 = 所有账用 self.config。
     #: 单进程 + 一份行情 + 一次历史刷新/情报采集，避免多进程打爆 Binance REST。
     book_configs: dict = field(default_factory=dict)
-    #: 对照实验模式：所有账本共用**同一个入场信号**（一次 DeepSeek 调用），
-    #: 只在退出/持仓管理规则上分化。避免"入场不同"污染对照结论。
-    experiment: bool = False
-    #: 对照实验模式：所有账本共用**同一个入场信号**（一次 DeepSeek 调用），
+    #: 对照实验模式：所有账本共用**同一个入场信号**（一次模型调用），
     #: 只在退出/持仓管理规则上分化。避免"入场不同"污染对照结论。
     experiment: bool = False
 
@@ -254,7 +252,7 @@ class V2Engine:
         return provider.decide(snap)
 
     def _decide(self, name: str, state, digest=None, memo: dict | None = None,
-                as_of_ms: int | None = None) -> Decision:
+                as_of_ms: int | None = None, shared: Decision | None = None) -> Decision:
         """三个账本的决策。同一快照内 DeepSeek 只调用一次，Dual 复用结果。
 
         ``memo`` 由 ``on_5m_close`` 每轮新建，生命周期就是一根 5m K 线。
@@ -272,6 +270,9 @@ class V2Engine:
         ds = memo.get("deepseek")
         if ds is None:
             ds = memo["deepseek"] = self._model_decision("deepseek_5m", self.deepseek, snap, calls)
+        if shared is not None:
+            # 实验 E：所有账本共用多周期候选入场信号
+            return shared
         if self.experiment:
             # 所有账本同一个入场信号：差异只来自 book_configs 的退出/管理规则
             return ds
@@ -755,6 +756,24 @@ class V2Engine:
             return {}
         # 数据陈旧时**不许开新仓**：REST 被 418/429 限流时 refresh 会失败，
         # 此时 history 还是上一次的快照，继续交易等于拿旧行情下新单。
+        # 第 0 道门：历史数据里的"最新收盘"没动，就绝不能再用同一根 K 线做决策。
+        # 24h 实验里有 10 轮决策只对应 4 根不同的已收盘 K 线——模型输入完全没变，
+        # 连续 HOLD 是必然结果，不是策略结论。
+        newest_open = int(views["5m"][-1].open_ms)
+        newest_close = int(views["5m"][-1].close_ms)
+        if (newest_open <= int(self._last_bar)
+                and as_of_ms - newest_close > self.config.decision_ms):
+            self.data_stats["duplicate_bar_skips"] += 1
+            return {}
+        # 第 0 道门：历史数据里的"最新收盘"没动，就绝不能再用同一根 K 线做决策。
+        # 24h 实验里有 10 轮决策只对应 4 根不同的已收盘 K 线——模型输入完全没变，
+        # 连续 HOLD 是必然结果，不是策略结论。
+        newest_open = int(views["5m"][-1].open_ms)
+        newest_close = int(views["5m"][-1].close_ms)
+        if (newest_open <= int(self._last_bar)
+                and as_of_ms - newest_close > self.config.decision_ms):
+            self.data_stats["duplicate_bar_skips"] += 1
+            return {}
         stale_ms = self._stale_ms(views, as_of_ms)
         if stale_ms > self.config.max_stale_ms:
             self.data_stats["stale_skips"] += 1
@@ -770,12 +789,33 @@ class V2Engine:
         self.data_stats["closed_bars_seen"] += len(views.get("5m") or [])
         state = analyze(SYMBOL, views, as_of_ms, settle_ms=self.config.settle_ms)
         digest, intel_info = self._collect_intel(as_of_ms)
+        shared_entry = None
+        entry_input = None
+        if self.config.entry_mode == "multitf" and self.entry_provider is not None:
+            from research.decision.entry import build_entry_snapshot
+
+            entry_input = build_entry_snapshot(
+                state=state, as_of_ms=as_of_ms, digest=digest,
+                fee_bps=self.limits.fee_bps,
+                slippage_bps=self.limits.slippage_bps,
+                spread_bps=D(str(self.config.spread_bps)),
+                data_quality=self.data_stats,
+                last_news_ms=int(self._last_news_ms.get("__entry__", 0)),
+                baseline={"legacy": str(self._rules_decision(state).choice)},
+            )
+            self._last_news_ms["__entry__"] = as_of_ms
+            try:
+                shared_entry = self.entry_provider.decide(entry_input)
+            except Exception as exc:                 # noqa: BLE001 - 候选失败退回冻结基线
+                self.errors.append(f"entry_provider: {type(exc).__name__}: {exc}")
+                shared_entry = None
         # 同一根收盘 K 线：一个快照、一次 DeepSeek、一次第二模型
         memo: dict = {}
         out = {}
         for name in BOOKS:
             cfg = self._cfg(name)
-            decision = self._decide(name, state, digest, memo=memo, as_of_ms=as_of_ms)
+            decision = self._decide(name, state, digest, memo=memo, as_of_ms=as_of_ms,
+                                    shared=shared_entry)
             managed = None
             has_pos = bool(self.books[name].open_positions())
             if cfg.position_manager != "off" and has_pos:
@@ -795,8 +835,15 @@ class V2Engine:
                    "closed_bar_ms": int(views["5m"][-1].close_ms),
                    "trigger_bar_ms": int(bar_open_ms if bar_open_ms is not None
                                          else views["5m"][-1].open_ms),
+                   "entry_model": decision.provider,
+                   "entry_input_hash": (hashlib.sha256(json.dumps(
+                       entry_input.summary(), ensure_ascii=False, sort_keys=True).encode()
+                   ).hexdigest()[:16] if entry_input is not None else None),
                    "history_refresh": refresh,
-                   "data_stats": dict(self.data_stats),
+                   "data_stats": {**dict(self.data_stats),
+                                  "rest_budget": __import__(
+                                      "research.market.budget", fromlist=["GLOBAL_BUDGET"]
+                                  ).GLOBAL_BUDGET.snapshot()},
                    "position_ai_stats": dict(self.position_ai_stats),
                    "intel": intel_info,
                    "equity": str(self.books[name].equity(as_of_ms,
@@ -804,6 +851,11 @@ class V2Engine:
             p = self.root / f"{name}_decisions.jsonl"
             with p.open("a", encoding="utf-8") as fh:
                 fh.write(json.dumps(log, ensure_ascii=False, sort_keys=True) + "\n")
+            if entry_input is not None and name == BOOKS[0]:
+                ip = self.root / "entry_inputs.jsonl"
+                with ip.open("a", encoding="utf-8") as fh:
+                    fh.write(json.dumps(entry_input.summary(), ensure_ascii=False,
+                                        sort_keys=True) + "\n")
             out[name] = log
         # 审计：模型实际收到了什么（证明 digest 真的进了 snapshot，不是只存在于参数里）
         snap = memo.get("snap")

@@ -79,10 +79,13 @@ def test_fixed_event_sequence_updates_ledger_and_log(tmp_path: Path) -> None:
 
     # 一次一个事件，推进一根 5m
     e.feed.price_value = float(entry + sign * D("0.05") * r)   # 小噪声
+    e.feed.seeded_until_ms = NOW + 1 * 300_000
     e.on_5m_close(NOW + 1 * 300_000)
     assert len(e.books["deepseek_5m"].open_positions()) == 1
 
     e.feed.price_value = float(entry + sign * D("0.5") * r)    # 0.5R
+
+    e.feed.seeded_until_ms = NOW + 2 * 300_000
     e.on_5m_close(NOW + 2 * 300_000)
     moved = e.books["deepseek_5m"].open_positions()[0]
     # 多头止损上移 / 空头止损下移
@@ -92,11 +95,15 @@ def test_fixed_event_sequence_updates_ledger_and_log(tmp_path: Path) -> None:
         assert D(moved["stop_price"]) < stop
 
     e.feed.price_value = float(entry + sign * D("1.5") * r)    # 1.5R
+
+    e.feed.seeded_until_ms = NOW + 3 * 300_000
     e.on_5m_close(NOW + 3 * 300_000)
     partial = e.books["deepseek_5m"].open_positions()
     assert len(partial) == 1 and D(partial[0]["qty"]) < D(pos["qty"])
 
     e.feed.price_value = float(entry + sign * D("2.0") * r)    # 反转化
+
+    e.feed.seeded_until_ms = NOW + 4 * 300_000
     e.on_5m_close(NOW + 4 * 300_000)
     assert not e.books["deepseek_5m"].open_positions()
 
@@ -127,6 +134,7 @@ def test_add_to_winner_is_refused_even_when_profitable(tmp_path: Path) -> None:
     sign = D("1") if pos["side"] == "LONG" else D("-1")
     e.position_ai = AddOnly()
     e.feed.price_value = float(D(pos["entry_price"]) + sign * r * 5)
+    e.feed.seeded_until_ms = NOW + 300_000
     e.on_5m_close(NOW + 300_000)
     actions = _managed(tmp_path)
     assert actions[-1]["action"] == "ADD_TO_WINNER"

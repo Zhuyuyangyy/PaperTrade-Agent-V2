@@ -127,6 +127,7 @@ def test_early_exit_after_two_bars(tmp_path: Path) -> None:
     entry = Decimal(pos["entry_price"])
     # 亏损必须超过 exit_min_loss_bps（默认 15bps），否则只是噪声、不值得付手续费
     e.feed.price_value = float(entry * Decimal("0.99"))
+    e.feed.seeded_until_ms = NOW + 2 * 300_000
     e.on_5m_close(NOW + 2 * 300_000)
     closed = e.books["deepseek_5m"]._db.execute(
         "SELECT exit_reason FROM positions WHERE status='closed'").fetchall()
@@ -140,6 +141,7 @@ def test_early_exit_skips_move_smaller_than_cost(tmp_path: Path) -> None:
     pos = e.books["deepseek_5m"].open_positions()[0]
     entry = Decimal(pos["entry_price"])
     e.feed.price_value = float(entry) - 0.01
+    e.feed.seeded_until_ms = NOW + 2 * 300_000
     e.on_5m_close(NOW + 2 * 300_000)
     assert e.books["deepseek_5m"].open_positions(), "噪声级别的浮亏不该平仓"
 
@@ -152,6 +154,7 @@ def test_cooldown_blocks_same_side_reentry(tmp_path: Path) -> None:
     pos = e.books["deepseek_5m"].open_positions()[0]
     entry = Decimal(pos["entry_price"])
     e.feed.price_value = float(entry * Decimal("0.99"))
+    e.feed.seeded_until_ms = NOW + 2 * 300_000
     e.on_5m_close(NOW + 2 * 300_000)          # 触发 EARLY_EXIT
     assert not e.books["deepseek_5m"].open_positions()
     out = e.on_5m_close(NOW + 3 * 300_000)    # 下一根就想再开

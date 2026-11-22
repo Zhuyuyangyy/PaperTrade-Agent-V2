@@ -289,11 +289,17 @@ def _run_v2(args) -> int:
                      cooldown_bars=args.cooldown_bars,
                      position_manager=args.position_manager,
                      partial_fraction=D(str(args.partial_fraction)),
-                     trail_r=D(str(args.trail_r)))
+                     trail_r=D(str(args.trail_r)),
+                     entry_mode=args.entry_provider)
     position_ai = None
     if (args.position_manager == "ai" or args.experiment) and key:
         from research.decision.providers.position_ai import DeepSeekPositionManager
         position_ai = DeepSeekPositionManager(LLMConfig(api_key=key))
+
+    entry_provider = None
+    if args.entry_provider == "multitf" and key:
+        from research.decision.providers.entry_multitf import DeepSeekMultiTFEntry
+        entry_provider = DeepSeekMultiTFEntry(LLMConfig(api_key=key))
 
     # 对照实验：四本隔离账，共用一次行情刷新 / 一次情报采集 / 一次入场决策。
     # 不做这件事就得开四个进程 → 四个进程各自拉 REST → 418/429。
@@ -316,7 +322,8 @@ def _run_v2(args) -> int:
     engine = V2Engine(Path(args.root), feed, RiskLimits(), deepseek=ds, second=second,
                       intel_fn=lambda ts: collect_intel(ts, intel_cfg),
                       executor=executor, demo_book=demo_book, config=v2cfg,
-                      position_ai=position_ai, experiment=args.experiment,
+                      position_ai=position_ai, entry_provider=entry_provider,
+                      experiment=args.experiment,
                       book_configs=book_configs)
     engine.load_history()
     print(f"v2 engine: root={args.root} minutes={args.minutes} "
@@ -547,6 +554,9 @@ def main(argv: list[str] | None = None) -> int:
                       help="移动止损距离（以 R 为单位，默认 1.0）")
     p_v2.add_argument("--experiment", action="store_true",
                       help="A/B/C/D 单进程对照：一份行情、同一个入场信号，只改退出/管理规则")
+    p_v2.add_argument("--entry-provider", default="legacy",
+                      choices=("legacy", "multitf"),
+                      help="legacy=冻结的 1h 基线；multitf=5m/15m/1h/4h + 新闻 + 成本门槛")
 
     p_de = sub.add_parser("demo-exec", help="Binance Demo 联调：只读体检 / 受控小额测试单 / 对账")
     p_de.add_argument("--root", default="data/openalpha_demo")

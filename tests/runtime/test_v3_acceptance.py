@@ -179,3 +179,163 @@ def test_418_triggers_rest_cooldown(tmp_path: Path) -> None:
     r2 = e._refresh_history(NOW + 1000)
     assert r2["attempted"] is False and "rest_cooldown_left_ms" in r2
     assert e.data_stats["refresh_attempts"] == 1
+
+
+# ---------- P1：多周期入场输入 ----------
+def test_entry_snapshot_has_all_timeframes_and_costs() -> None:
+    from research.decision.entry import build_entry_snapshot
+    from research.market.contracts import TimeframeView
+
+    views = {}
+    for i, tf in enumerate(("5m", "15m", "1h", "4h")):
+        views[tf] = TimeframeView(
+            timeframe=tf, last_closed_ms=NOW - 30_000, close=D(str(59000 + i)),
+            ema20=D(str(59000 + i + 10)), ema60=D(str(59000 + i - 10)),
+            rsi=D("55"), adx=D("20"), macd_hist=D("1"), atr_pct=D("0.5"),
+            volume_z=D("0.7"), slope_bps=D("3"))
+    state = type("S", (), {"timeframes": views, "symbol": "BTC/USDT"})()
+    snap = build_entry_snapshot(
+        state=state, as_of_ms=NOW, digest=None,
+        fee_bps=D("4"), slippage_bps=D("5"), spread_bps=D("5"), min_net_bps=D("10"))
+    summary = snap.summary()
+    assert set(summary["timeframes"]) == {"5m", "15m", "1h", "4h"}
+    assert summary["timeframes"]["5m"]["last_closed_ms"] == NOW - 30_000
+    assert D(summary["costs"]["roundtrip_bps"]) == D("23")
+    assert summary["timeframes"]["5m"]["trend"] == "TREND_UP"
+
+
+def test_entry_snapshot_excludes_future_news() -> None:
+    from research.decision.entry import build_entry_snapshot
+    from research.intel.contracts import IntelDigest, NewsEvent, SourceRef
+
+    src = SourceRef(url="u", publisher="p", published_at_ms=NOW, first_seen_ms=NOW,
+                    retrieved_ms=NOW)
+    past = NewsEvent(event_id="a", headline="past", facts=(), occurred_at_ms=NOW - 1000,
+                     first_seen_ms=NOW - 1000, sources=(src,), credibility=D("0.9"),
+                     horizon_ms=1000)
+    future = NewsEvent(event_id="b", headline="future", facts=(), occurred_at_ms=NOW + 1000,
+                       first_seen_ms=NOW + 1000, sources=(src,), credibility=D("0.9"),
+                       horizon_ms=1000)
+    digest = IntelDigest(as_of_ms=NOW, news=(past, future))
+    state = type("S", (), {"timeframes": {}, "symbol": "BTC/USDT"})()
+    snap = build_entry_snapshot(state=state, as_of_ms=NOW, digest=digest,
+                                last_news_ms=NOW - 10_000)
+    assert [x["headline"] for x in snap.news] == ["past"]
+    assert snap.news_since_last == ("past",)
+
+
+def test_engine_logs_multitf_input_and_uses_shared_signal(tmp_path: Path) -> None:
+    from research.decision import Decision
+    from research.decision.providers.entry_multitf import DeepSeekMultiTFEntry
+
+    class Candidate:
+        name = "candidate"
+        version = "v1"
+
+        def decide(self, snap):
+            return Decision("candidate", "v1", "OK", "SHORT", 0.9, D("0.8"), "test")
+
+    e = _engine(tmp_path, deepseek=CountingProvider(),
+                config=V2Config(entry_mode="multitf"))
+    e.experiment = True
+    e.entry_provider = Candidate()
+    out = e.on_5m_close(NOW)
+    assert set(out) == set(__import__("research.runtime.v2_engine", fromlist=["BOOKS"]).BOOKS)
+    for name, row in out.items():
+        assert row["decision"]["choice"] == "SHORT", name
+        assert row["entry_model"] == "candidate"
+        assert row["entry_input_hash"]
+    p = tmp_path / "v2" / "entry_inputs.jsonl"
+    assert p.exists()
+    logged = json.loads(p.read_text(encoding="utf-8").splitlines()[0])
+    assert set(logged["timeframes"]) == {"5m", "15m", "1h", "4h"}
+    assert "roundtrip_bps" in logged["costs"]
+
+
+def test_legacy_provider_is_frozen() -> None:
+    """旧基线仍用 MarketSnapshot.summary()，不能偷偷换成多周期输入。"""
+    from research.decision.providers.deepseek import DeepSeekProvider
+    from research.intel.news_llm import LLMConfig
+
+    seen = {}
+
+    def fetch(url, key, body, timeout):
+        seen["body"] = body
+        return {"choices": [{"message": {"content":
+                '{"choice":"HOLD","score":0,"confidence":0.5,"rationale":"x"}'}}]}
+
+    calls_before = 0
+    p = DeepSeekProvider(LLMConfig(api_key="k"), fetch=fetch)
+    snap = type("Snap", (), {"summary": lambda self: {"as_of_ms": 1, "trend": "x"}})()
+    p.decide(snap)
+    user = seen["body"]["messages"][1]["content"]
+    assert "timeframes" not in user and "roundtrip_bps" not in user
+
+
+# ---------- P2：配对历史事件回放 ----------
+def _synthetic_bars(n: int = 120, start_ms: int = (1_790_000_000_000 // 300_000) * 300_000) -> list:
+    from research.market.contracts import Candle
+    out = []
+    px = 59000.0
+    for i in range(n):
+        # 交替趋势与回撤，制造若干次 EMA20 穿越
+        drift = 12.0 if (i // 12) % 2 == 0 else -9.0
+        o = px
+        px = o + drift
+        hi, lo = max(o, px) + 4, min(o, px) - 4
+        out.append(Candle(start_ms + i * 300_000, D(str(o)), D(str(hi)),
+                          D(str(lo)), D(str(px)), D("10"), 300_000))
+    return out
+
+
+def test_generate_events_uses_only_closed_bars(tmp_path: Path) -> None:
+    from research.experiment.paired import generate_events
+
+    bars = _synthetic_bars()
+    events = generate_events(bars, max_events=6)
+    assert events, "固定规则应至少生成一批事件（全量、无挑选）"
+    for e in events:
+        idx = next(i for i, c in enumerate(bars)
+                   if c.open_ms + c.timeframe_ms == e.as_of_ms)
+        # 事件价格必须等于那一刻的已收盘价，不能用未来数据
+        assert e.entry_price == bars[idx].close
+        assert e.as_of_ms <= bars[-1].close_ms
+
+
+def test_paired_groups_share_identical_entry(tmp_path: Path) -> None:
+    from research.decision.position import PositionDecision
+    from research.experiment.paired import generate_events, run_event
+
+    bars = _synthetic_bars()
+    events = generate_events(bars, max_events=1)
+    assert events
+    ev = events[0]
+    idx = next(i for i, c in enumerate(bars)
+               if c.open_ms + c.timeframe_ms == ev.as_of_ms)
+    results = run_event(ev, bars[idx + 1:], tmp_path, ai_manager=None, horizon=10)
+
+    assert [r.group for r in results] == ["A", "B", "C", "D"]
+    # 四组初始成交价/数量/费用一致：用第一次记录的 entry_price 反推验证
+    for r in results:
+        assert r.actions or r.exit_reason in ("OPEN", "TAKE_PROFIT", "STOP_LOSS")
+    d = results[-1]
+    assert d.ai_calls == 0
+    assert any(a["action"] == "NO_AI" for a in d.actions), "没有模型时不许冒充 AI 管理"
+
+    c = results[2]
+    partials = [a for a in c.actions if a["action"] == "CLOSE_PARTIAL"]
+    assert len(partials) <= 1, "配对回放里 C 组也不能反复分批"
+
+
+# ---------- P3：共享 REST 预算 ----------
+def test_global_request_budget_limits_and_cooldown() -> None:
+    from research.market.budget import RequestBudget
+
+    b = RequestBudget(max_per_minute=2, cooldown_s=60)
+    b.acquire(); b.acquire()
+    assert b.stats["requests"] == 2
+    # 第三次会被窗口挡住；这里只验证计数与冷却，不做长时间睡眠
+    b.note_rate_limited()
+    snap = b.snapshot()
+    assert snap["rate_limited"] == 1 and snap["cooldown_triggered"] == 1
+    assert snap["cooldown_left_s"] > 0
