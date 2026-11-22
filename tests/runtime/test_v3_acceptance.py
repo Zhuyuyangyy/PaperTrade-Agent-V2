@@ -339,3 +339,182 @@ def test_global_request_budget_limits_and_cooldown() -> None:
     snap = b.snapshot()
     assert snap["rate_limited"] == 1 and snap["cooldown_triggered"] == 1
     assert snap["cooldown_left_s"] > 0
+
+
+# ---------- P0：配对结算修正 ----------
+def test_open_position_is_marked_to_market_at_window_end(tmp_path: Path) -> None:
+    from research.experiment.paired import generate_events, run_event
+
+    bars = _synthetic_bars(n=160)
+    events = generate_events(bars, max_events=1)
+    assert events
+    ev = events[0]
+    idx = next(i for i, c in enumerate(bars)
+               if c.open_ms + c.timeframe_ms == ev.as_of_ms)
+    results = run_event(ev, bars[idx + 1:], tmp_path, horizon=12, ai_manager=None)
+    for r in results:
+        if r.exit_reason == "OPEN_AT_WINDOW_END":
+            assert r.unrealized_pnl != 0
+            assert r.equity_end == D("1000") + r.pnl
+        assert r.equity_end != D("1000") or r.pnl == 0
+        assert "fees_paid" in r.to_dict() and "funding" in r.to_dict()
+
+
+def test_d_snapshot_uses_real_trends_and_news_unavailable(tmp_path: Path) -> None:
+    from research.decision import Decision
+    from research.experiment.paired import generate_events, run_event
+
+    seen: list[dict] = []
+
+    class Recorder:
+        name, version = "recorder", "v1"
+
+        def decide(self, snap):
+            seen.append(snap.summary())
+            return Decision("recorder", "v1", "OK", "HOLD", 0.5, D("0.7"), "hold")
+
+    bars = _synthetic_bars(n=160)
+    events = generate_events(bars, max_events=1)
+    ev = events[0]
+    idx = next(i for i, c in enumerate(bars)
+               if c.open_ms + c.timeframe_ms == ev.as_of_ms)
+    run_event(ev, bars[idx + 1:], tmp_path, horizon=8, ai_manager=Recorder())
+    assert seen
+    s = seen[0]
+    assert s["news_status"] == "NEWS_UNAVAILABLE"
+    assert set(s["trend"]) == {"5m", "15m", "1h"}
+    assert all(v in ("TREND_UP", "TREND_DOWN", "FLAT", "UNKNOWN")
+               for v in s["trend"].values())
+    assert "mfe" in s and "mae" in s and "holding_ms" in s
+
+
+def test_a_group_uses_original_early_exit_rule(tmp_path: Path) -> None:
+    from research.experiment.paired import generate_events, run_event
+
+    bars = _synthetic_bars(n=160)
+    events = generate_events(bars, max_events=1)
+    ev = events[0]
+    idx = next(i for i, c in enumerate(bars)
+               if c.open_ms + c.timeframe_ms == ev.as_of_ms)
+    results = run_event(ev, bars[idx + 1:], tmp_path, horizon=12, ai_manager=None)
+    a = results[0]
+    assert all(x["provider"] == "fixed_atr_early_exit" for x in a.actions)
+    assert any("原始规则" in str(x["reason"]) for x in a.actions) or \
+        all(x["action"] in ("HOLD", "CLOSE_ALL") for x in a.actions)
+
+
+# ---------- P0：配对结算修正 ----------
+def test_open_position_is_marked_to_market_at_window_end(tmp_path: Path) -> None:
+    from research.experiment.paired import generate_events, run_event
+
+    bars = _synthetic_bars(n=160)
+    events = generate_events(bars, max_events=1)
+    assert events
+    ev = events[0]
+    idx = next(i for i, c in enumerate(bars)
+               if c.open_ms + c.timeframe_ms == ev.as_of_ms)
+    results = run_event(ev, bars[idx + 1:], tmp_path, horizon=12, ai_manager=None)
+    for r in results:
+        if r.exit_reason == "OPEN_AT_WINDOW_END":
+            assert r.unrealized_pnl != 0
+            assert r.equity_end == D("1000") + r.pnl
+        assert r.equity_end != D("1000") or r.pnl == 0
+        assert "fees_paid" in r.to_dict() and "funding" in r.to_dict()
+
+
+def test_d_snapshot_uses_real_trends_and_news_unavailable(tmp_path: Path) -> None:
+    from research.decision import Decision
+    from research.experiment.paired import generate_events, run_event
+
+    seen: list[dict] = []
+
+    class Recorder:
+        name, version = "recorder", "v1"
+
+        def decide(self, snap):
+            seen.append(snap.summary())
+            return Decision("recorder", "v1", "OK", "HOLD", 0.5, D("0.7"), "hold")
+
+    bars = _synthetic_bars(n=160)
+    events = generate_events(bars, max_events=1)
+    ev = events[0]
+    idx = next(i for i, c in enumerate(bars)
+               if c.open_ms + c.timeframe_ms == ev.as_of_ms)
+    run_event(ev, bars[idx + 1:], tmp_path, horizon=8, ai_manager=Recorder())
+    assert seen
+    s = seen[0]
+    assert s["news_status"] == "NEWS_UNAVAILABLE"
+    assert set(s["trend"]) == {"5m", "15m", "1h"}
+    assert all(v in ("TREND_UP", "TREND_DOWN", "FLAT", "UNKNOWN")
+               for v in s["trend"].values())
+    assert "mfe" in s and "mae" in s and "holding_ms" in s
+
+
+def test_a_group_uses_original_early_exit_rule(tmp_path: Path) -> None:
+    from research.experiment.paired import generate_events, run_event
+
+    bars = _synthetic_bars(n=160)
+    events = generate_events(bars, max_events=1)
+    ev = events[0]
+    idx = next(i for i, c in enumerate(bars)
+               if c.open_ms + c.timeframe_ms == ev.as_of_ms)
+    results = run_event(ev, bars[idx + 1:], tmp_path, horizon=12, ai_manager=None)
+    a = results[0]
+    assert all(x["provider"] == "fixed_atr_early_exit" for x in a.actions)
+    assert any("原始规则" in str(x["reason"]) for x in a.actions) or \
+        all(x["action"] in ("HOLD", "CLOSE_ALL") for x in a.actions)
+
+
+# ---------- P1：历史数据分页/校验与分析 ----------
+def test_bar_loader_paginates_and_detects_gap(tmp_path: Path) -> None:
+    from research.experiment.data import load_bars
+
+    step = 300_000
+    end = (1_790_000_000_000 // step) * step
+    start0 = ((end - 2 * 86_400_000) // step) * step
+    calls: list[str] = []
+
+    def fake(url):
+        calls.append(url)
+        s = int(url.split("startTime=")[1])
+        def row(t):
+            return [t, "59000", "59010", "58990", "59000", "10",
+                    "0", "0", "0", "0", "0", "0"]
+        if s == start0:
+            return [row(start0 + i * step) for i in range(500)]
+        if s == start0 + 500 * step:
+            # 从 start+step 开始，制造一根缺口
+            return [row(s + step + i * step) for i in range(100)]
+        return []
+
+    bs = load_bars(days=2, cache=tmp_path / "bars.json",
+                   fetch=fake, end_ms=end)
+    assert len(calls) == 2
+    assert bs.quality.gaps == 1
+    assert bs.quality.max_gap_ms == step * 2
+    bs2 = load_bars(days=2, cache=tmp_path / "bars.json", fetch=fake, end_ms=end)
+    assert bs2.quality.cache_hit and len(calls) == 2
+
+
+def test_analyze_run_marks_no_ai_and_overlap(tmp_path: Path) -> None:
+    from research.experiment.analyze import analyze_run
+
+    (tmp_path / "config.json").write_text(json.dumps({
+        "horizon_bars": 72, "days": 60, "sample_n": 2}), encoding="utf-8")
+    lines = []
+    for i in range(2):
+        for g in "ABCD":
+            lines.append(json.dumps({
+                "event": {"as_of_ms": 1_790_000_000_000 + i * 300_000,
+                          "regime": "RANGE"},
+                "result": {"group": g, "net_pnl": "1", "realized_pnl": "1",
+                           "unrealized_pnl": "0", "mfe": "2", "holding_ms": 1000,
+                           "fees_paid": "0.1", "exit_reason": "MGR_CLOSE",
+                           "ai_calls": 0, "ai_ok": 0, "ai_hold": 0, "ai_fail": 0,
+                           "actions": [{"action": "NO_AI"}] if g == "D" else []},
+            }))
+    (tmp_path / "paired_results.jsonl").write_text("\n".join(lines), encoding="utf-8")
+    out = analyze_run(tmp_path)
+    assert "NO_AI_CALL" in out["ai_position_manager"]["verdict"]
+    assert out["sample_overlap"]["overlapping_pairs"] == 1
+    assert out["groups"]["A"]["net_pnl_sum"] == "2"

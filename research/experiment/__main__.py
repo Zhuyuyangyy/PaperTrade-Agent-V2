@@ -1,108 +1,126 @@
-"""实验 M 命令行：配对历史事件回放。
+"""实验 M 命令行：独立 run_id 的配对历史事件回放。
 
-    python -m research.experiment paired --root data/v3_paired \
-        --cache data/v3_paired/bars_5m.json --max-events 20 --horizon 12
-
-只拉一次历史并缓存；后续全部离线回放，不重复打 Binance REST。
+    python -m research.experiment paired --root data/v3_paired_v2 \
+        --run-id r20261122_01 --days 60 --horizon 72 --sample 40
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
-import time
+import os
 from decimal import Decimal as D
 from pathlib import Path
 
-from research.market.contracts import Candle
-from research.runtime.live import BinanceKlineSource
-
-from .paired import generate_events, run_event
-
-
-def _load_bars(cache: Path, limit: int) -> tuple[list[Candle], bool]:
-    if cache.exists():
-        rows = json.loads(cache.read_text(encoding="utf-8"))
-        bars = [Candle(int(r["open_ms"]), D(str(r["open"])), D(str(r["high"])),
-                       D(str(r["low"])), D(str(r["close"])), D(str(r["volume"])),
-                       int(r["timeframe_ms"])) for r in rows]
-        return bars, True
-    # 只拉一次 5m，不用 BinanceKlineSource 的四周期批量请求——那正是 418 的来源。
-    import urllib.error
-    import urllib.request
-
-    url = f"https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=5m&limit={limit}"
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    op = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    raw = None
-    for attempt in range(3):
-        try:
-            with op.open(req, timeout=20) as resp:
-                raw = json.load(resp)
-            break
-        except urllib.error.HTTPError as exc:
-            if exc.code in (418, 429) and attempt < 2:
-                time.sleep(5 * (attempt + 1))
-                continue
-            raise
-    rows = raw or []
-    bars = [Candle(int(r[0]), D(str(r[1])), D(str(r[2])), D(str(r[3])),
-                   D(str(r[4])), D(str(r[5])), 300_000) for r in rows]
-    cache.parent.mkdir(parents=True, exist_ok=True)
-    cache.write_text(json.dumps([{
-        "open_ms": c.open_ms, "open": str(c.open), "high": str(c.high),
-        "low": str(c.low), "close": str(c.close), "volume": str(c.volume),
-        "timeframe_ms": c.timeframe_ms} for c in bars], ensure_ascii=False), encoding="utf-8")
-    return bars, False
+from .data import load_bars
+from .paired import generate_events, run_event, select_stratified
 
 
 def _paired(args) -> int:
-    root = Path(args.root)
-    root.mkdir(parents=True, exist_ok=True)
-    bars, cached = _load_bars(Path(args.cache), args.limit)
-    events = generate_events(bars, notional=D(str(args.notional)),
-                             max_events=args.max_events)
+    run_dir = Path(args.root) / args.run_id
+    if run_dir.exists():
+        raise SystemExit(f"run_id 已存在，拒绝复用旧目录/SQLite/JSONL: {run_dir}")
+    run_dir.mkdir(parents=True)
+    if getattr(args, "env_from", None):
+        import shutil
+        shutil.copy(Path(args.env_from), run_dir / ".env")
+    cache = run_dir / "bars_5m_cache.json"
+    if getattr(args, "cache_from", None):
+        import shutil
+        shutil.copy(Path(args.cache_from), cache)
+    barset = load_bars(days=args.days, cache=cache)
+    bars = barset.bars
+    if len(bars) < args.horizon + 100:
+        raise SystemExit(f"行情不足：{len(bars)} 根，至少需要 {args.horizon + 100}")
+
+    all_events = generate_events(bars, notional=D(str(args.notional)))
+    chosen = select_stratified(all_events, n=args.sample)
+    if not chosen:
+        raise SystemExit("没有生成任何事件")
+
     ai = None
     if args.ai == "deepseek":
         from research.decision.providers.position_ai import DeepSeekPositionManager
         from research.execution.binance_demo import load_demo_env
         from research.intel.news_llm import LLMConfig
-        import os
-        load_demo_env(root)
+        load_demo_env(run_dir)
         key = os.environ.get("DEEPSEEK_API_KEY", "")
         if key:
             ai = DeepSeekPositionManager(LLMConfig(api_key=key))
-    out_path = root / "paired_results.jsonl"
-    totals: dict[str, D] = {g: D("0") for g in "ABCD"}
-    with out_path.open("a", encoding="utf-8") as fh:
-        for ev in events:
-            idx = next((i for i, c in enumerate(bars) if c.open_ms + c.timeframe_ms == ev.as_of_ms), -1)
-            future = bars[idx + 1:] if idx >= 0 else []
-            for r in run_event(ev, future, root, ai_manager=ai,
-                               horizon=args.horizon, ai_only_when_success=True):
+
+    cfg = {
+        "run_id": args.run_id, "symbol": "BTCUSDT", "days": args.days,
+        "horizon_bars": args.horizon, "horizon_hours": args.horizon * 5 / 60,
+        "notional": str(args.notional), "sample_n": args.sample,
+        "event_rule": "fixed EMA20 cross, incremental ATR14, no lookahead",
+        "selection": "regime × time-quartile stratified, PnL-blind",
+        "news": "NEWS_UNAVAILABLE (no historical news feed)",
+        "ai": args.ai, "bar_quality": barset.quality.to_dict(),
+        "bars_sha256": hashlib.sha256(
+            json.dumps([c.open_ms for c in bars]).encode()).hexdigest()[:16],
+        "events_total": len(all_events),
+    }
+    (run_dir / "config.json").write_text(
+        json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+    (run_dir / "events.jsonl").write_text("".join(
+        json.dumps(e.to_dict(), ensure_ascii=False) + "\n" for e in all_events),
+        encoding="utf-8")
+
+    out_path = run_dir / "paired_results.jsonl"
+    totals = {g: D("0") for g in "ABCD"}
+    with out_path.open("x", encoding="utf-8") as fh:
+        for ev in chosen:
+            future = bars[ev.bar_index + 1:]
+            for r in run_event(ev, future, run_dir, ai_manager=ai,
+                               horizon=args.horizon):
                 totals[r.group] += r.pnl
                 fh.write(json.dumps({"event": ev.to_dict(), "result": r.to_dict()},
                                     ensure_ascii=False) + "\n")
     print(json.dumps({
-        "root": str(root), "bars": len(bars), "cache_hit": cached,
-        "events": len(events), "ai_manager": bool(ai),
-        "totals": {k: str(v) for k, v in totals.items()},
-        "out": str(out_path),
+        "run_dir": str(run_dir), "bars": len(bars), "cache_hit": barset.quality.cache_hit,
+        "bar_quality": barset.quality.to_dict(), "events_total": len(all_events),
+        "events_selected": len(chosen), "ai_manager": bool(ai),
+        "net_pnl_totals": {k: str(v) for k, v in totals.items()},
     }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _analyze(args) -> int:
+    from .analyze import analyze_run
+
+    out = analyze_run(Path(args.run), top_n=args.top)
+    text = json.dumps(out, ensure_ascii=False, indent=2)
+    if args.out:
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.out).write_text(text, encoding="utf-8")
+        print(f"written -> {args.out}")
+    else:
+        print(text)
     return 0
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(prog="research.experiment")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    p = sub.add_parser("paired", help="配对历史事件回放")
+    pa = sub.add_parser("analyze", help="汇总配对回放（只读）")
+    pa.add_argument("--run", required=True)
+    pa.add_argument("--out", default=None)
+    pa.add_argument("--top", type=int, default=12, help="控制台展示的统计字段数")
+    p = sub.add_parser("paired", help="配对历史事件回放（独立 run_id）")
     p.add_argument("--root", required=True)
-    p.add_argument("--cache", required=True, help="5m K 线缓存 JSON（只写一次）")
-    p.add_argument("--limit", type=int, default=500)
-    p.add_argument("--max-events", type=int, default=20)
-    p.add_argument("--horizon", type=int, default=12)
+    p.add_argument("--run-id", required=True)
+    p.add_argument("--days", type=int, default=60)
+    p.add_argument("--horizon", type=int, default=72, help="固定观察窗口，48-96 根 5m")
+    p.add_argument("--sample", type=int, default=40)
     p.add_argument("--notional", type=float, default=100)
     p.add_argument("--ai", choices=("none", "deepseek"), default="none")
+    p.add_argument("--env-from", default=None, help="复制 .env 到新 run 目录（不打印内容）")
+    p.add_argument("--cache-from", default=None, help="复用已有 bars_5m_cache.json，避免重复 REST")
     a = ap.parse_args()
+    if a.cmd == "analyze":
+        return _analyze(a)
+    if not 48 <= a.horizon <= 96:
+        raise SystemExit("--horizon 必须在 48-96 根 5m 之间（预先固定实验参数）")
     return _paired(a)
 
 

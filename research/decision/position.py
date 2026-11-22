@@ -57,6 +57,8 @@ class PositionSnapshot:
     entry_reason: str = ""
     invalid_if: tuple[str, ...] = ()
     news_delta: tuple[str, ...] = ()
+    #: 新闻来源状态。没有历史新闻时必须显式 NEWS_UNAVAILABLE，不能假装空列表=没有新消息。
+    news_status: str = "OK"
     trend_5m: str = ""
     trend_15m: str = ""
     trend_1h: str = ""
@@ -93,6 +95,7 @@ class PositionSnapshot:
             "entry_reason": self.entry_reason[:200],
             "invalid_if": list(self.invalid_if)[:5],
             "news_delta": list(self.news_delta)[:5],
+            "news_status": self.news_status,
             "trend": {"5m": self.trend_5m, "15m": self.trend_15m, "1h": self.trend_1h},
             "risk_budget_left": str(self.risk_budget_left),
             "data_as_of_ms": self.data_as_of_ms,
@@ -243,6 +246,7 @@ def rules_position_action(snap: PositionSnapshot,
 def snapshot_from_row(*, row: dict, mark: D, as_of_ms: int, fee_bps: D,
                       trends: dict[str, str] | None = None,
                       news_delta: tuple[str, ...] = (),
+                      news_status: str = "OK",
                       risk_budget_left: D = D("0"),
                       mfe: D = D("0"), mae: D = D("0"),
                       data_as_of_ms: int | None = None) -> PositionSnapshot:
@@ -274,6 +278,7 @@ def snapshot_from_row(*, row: dict, mark: D, as_of_ms: int, fee_bps: D,
         entry_reason=str(row.get("reason") or ""),
         invalid_if=tuple(invalid),
         news_delta=tuple(news_delta),
+        news_status=news_status,
         trend_5m=trends.get("5m", ""), trend_15m=trends.get("15m", ""),
         trend_1h=trends.get("1h", ""),
         risk_budget_left=risk_budget_left,
