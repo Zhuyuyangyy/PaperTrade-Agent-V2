@@ -1,12 +1,22 @@
 # Binance Demo 联调报告（第一阶段：只读验证）
 
-日期：2026-11-22 13:48–14:05
-代码：`c1e86c0` + 本轮新增修复
+日期：2026-11-22 13:48–14:30
+代码：`c1e86c0` → `037b3d5`（幂等预查三态 + 金额门槛）→ `52d165d`（.env 凭据通道）
 仓库：`D:/ZYY_Inovation/money/_openalpha/PaperTrade-Agent-V2`，分支 `sprint-9/v2-engine`
+测试：**830 passed, 1 skipped**（跳过项：Windows 缺 `SeCreateSymbolicLinkPrivilege`，与本轮无关）
 
 ## 结论：第一阶段被凭据缺失阻塞，第二/三阶段未启动
 
 **没有向交易所发出任何订单。没有使用真实资金。没有连接正式交易端点。**
+
+本轮实际提交（`sprint-9/v2-engine`）：
+
+| commit | 内容 |
+|---|---|
+| `037b3d5` | 幂等预查三态 + 下单前最小名义金额硬校验 + 离线全链路证据脚本 |
+| `52d165d` | 凭据支持从 `.env` 补充，缺失时输出已尝试路径 |
+
+全量测试：**830 passed, 1 skipped**。
 
 ## 一、凭据检查（不输出密钥内容）
 
@@ -17,13 +27,17 @@
 | Windows Machine 作用域 | MISSING | MISSING |
 | 仓库内 `.env` / config | 不存在 | 不存在 |
 
-`python -m research.runtime demo-exec --root data/openalpha_demo` 实际输出：
+`python -m research.runtime demo-exec --root data/openalpha_demo` 实际输出（`52d165d` 之后，已带候选路径）：
 
 ```json
 {
   "ok": false,
   "reason": "DEMO_UNAVAILABLE: 未设置 BINANCE_DEMO_API_KEY / BINANCE_DEMO_API_SECRET",
-  "note": "没有凭据时只允许离线验证；本地虚拟盘不用凭据也能继续跑。"
+  "env_files_checked": [
+    "data\\openalpha_demo\\.env",
+    "D:////ZYY_Inovation////money////_openalpha////PaperTrade-Agent-V2////.env"
+  ],
+  "note": "把两个变量写进上面任一路径的 .env（或设成系统环境变量）后重跑；没有凭据时只允许离线验证，本地虚拟盘不用凭据也能继续跑。"
 }
 ```
 
@@ -34,6 +48,22 @@
 Windows 环境变量在**设置之后新启动的进程**里才可见。WorkBuddy 及其子 shell 是在你设置之前启动的，
 所以读不到。需要你确认设置方式（`setx` 永久 / 某个终端里 `set` 临时 / 系统属性面板），
 并让程序在一个能看到该变量的新进程里运行。
+
+### 已提供的替代通道：`.env`（`52d165d`）
+
+为了避免"设了变量但当前进程看不到"这种反复排查，凭据读取现在有两条路：
+
+| 优先级 | 位置 | 说明 |
+|---|---|---|
+| 1 | 进程环境变量 | `BINANCE_DEMO_API_KEY` / `BINANCE_DEMO_API_SECRET`，有值就**不再读文件** |
+| 2 | `data/openalpha_demo/.env` | 账本目录，最省事 |
+| 3 | 当前工作目录 `./.env` | |
+| 4 | 仓库根 `.env` | 模板见 `.env.example` |
+
+只补**缺失**的键，只认这两个键（白名单外的行一律忽略），**值不打印、不进日志**。
+`.gitignore` 已忽略 `.env` / `.env.*`，只放行 `.env.example`。
+
+放好文件后**不需要重启任何东西**，直接重跑同一条命令即可。
 
 ## 二、已完成的真实只读验证（无需凭据的部分）
 
@@ -185,10 +215,22 @@ python -m research.runtime v2 --root data/openalpha_v2_demo --minutes 30 \
 
 - 客户端只允许 `https://demo-fapi.binance.com`，每次请求前重校验；10 组恶意 URL 全被拒
 - 行情读取用 `fapi.binance.com` 的**公开只读**端点（klines/ticker），不涉及账户与下单
-- 密钥只从环境变量读，不写入代码、配置、日志
+- 密钥只从环境变量或本地 `.env` 读（白名单两键、只补缺失、值不打印），不写入代码、配置、日志
 - 本报告与证据文件中的密钥均为占位符
 
 ## 九、旧验收进程
 
-PID 27200（13:00 启动，`--minutes 120`）在本报告撰写时仍在运行，13:48 时 7 轮、14:00 时 13 轮决策。
-它跑的是**修复前**的代码（日志无 `intel` / `closed_bar_ms` 字段），全程未被干扰。
+PID 27200（13:00:51 启动，`--minutes 120`）仍在运行，未被打断、未覆盖账本。14:20 时的状态：
+
+| 账本 | 轮次 | 区间 | 决策分布 | 是否含 `intel` 字段 |
+|---|---|---|---|---|
+| rules_5m | 17 | 13:00 → 14:20 | SHORT 17 | 否 |
+| deepseek_5m | 17 | 13:00 → 14:20 | SHORT 17 | 否 |
+| dual_5m | 17 | 13:00 → 14:20 | HOLD 17 | 否 |
+
+13:00→14:20 共 80 分钟，17 拍 = 首拍 + 16 个 5m 收盘，**每根 K 线一拍，无丢拍、无重复触发**。
+无 `intel` 字段说明它跑的是修复前代码（符合预期）。dual 全 HOLD 是既有的"第二模型缺席即暂停"逻辑，不是本轮改动。
+
+**旁注（不影响本轮结论，但值得记一笔）**：rules 与 deepseek 17 轮全部同向 SHORT，
+说明这段时间趋势极单边；这样的样本无法区分"模型有判断力"与"模型只会跟趋势"，
+等 Demo 联调稳定后建议补一段震荡行情对比。
