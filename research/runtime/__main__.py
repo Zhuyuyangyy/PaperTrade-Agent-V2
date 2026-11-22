@@ -286,14 +286,23 @@ def _run_v2(args) -> int:
     from research.runtime.v2_engine import V2Config
     v2cfg = V2Config(exit_bars=args.exit_bars,
                      exit_min_loss_bps=D(str(args.exit_min_loss_bps)),
-                     cooldown_bars=args.cooldown_bars)
+                     cooldown_bars=args.cooldown_bars,
+                     position_manager=args.position_manager,
+                     partial_fraction=D(str(args.partial_fraction)),
+                     trail_r=D(str(args.trail_r)))
+    position_ai = None
+    if args.position_manager == "ai" and key:
+        from research.decision.providers.position_ai import DeepSeekPositionManager
+        position_ai = DeepSeekPositionManager(LLMConfig(api_key=key))
     engine = V2Engine(Path(args.root), feed, RiskLimits(), deepseek=ds, second=second,
                       intel_fn=lambda ts: collect_intel(ts, intel_cfg),
-                      executor=executor, demo_book=demo_book, config=v2cfg)
+                      executor=executor, demo_book=demo_book, config=v2cfg,
+                      position_ai=position_ai)
     engine.load_history()
     print(f"v2 engine: root={args.root} minutes={args.minutes} "
           f"deepseek={'on' if ds else 'off'} second={'on' if second else 'off'} "
-          f"demo={'on:' + demo_book if demo_book else 'off(虚拟盘)'}")
+          f"demo={'on:' + demo_book if demo_book else 'off(虚拟盘)'} "
+          f"position_mgr={args.position_manager}")
     engine.run(args.minutes)
     print("done; errors:", engine.errors[-5:])
     if engine.last_inputs:
@@ -510,6 +519,12 @@ def main(argv: list[str] | None = None) -> int:
                       help="认错所需的最小毛亏 bps（默认 15，覆盖双边手续费+缓冲；0=旧行为）")
     p_v2.add_argument("--cooldown-bars", type=int, default=2,
                       help="平仓后同方向冷却 N 根 5m（默认 2；0=不冷却）")
+    p_v2.add_argument("--position-manager", default="off", choices=("off", "rules", "ai"),
+                      help="持仓管理：off=旧规则退场 / rules=确定性移动止损+分批 / ai=模型决策")
+    p_v2.add_argument("--partial-fraction", type=float, default=0.5,
+                      help="分批止盈比例（默认 0.5）")
+    p_v2.add_argument("--trail-r", type=float, default=1.0,
+                      help="移动止损距离（以 R 为单位，默认 1.0）")
 
     p_de = sub.add_parser("demo-exec", help="Binance Demo 联调：只读体检 / 受控小额测试单 / 对账")
     p_de.add_argument("--root", default="data/openalpha_demo")

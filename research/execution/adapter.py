@@ -503,6 +503,96 @@ class DemoExecutionAdapter:
                             for d in out["diffs"])
         return out
 
+    # ---------- 持仓管理动作 ----------
+    def _current_algo(self, intent_id: str, kind: str) -> dict | None:
+        if self._db is None:
+            return None
+        row = self._db.execute(
+            "SELECT * FROM demo_orders WHERE intent_id = ? AND kind = ? AND status = 'NEW'"
+            " ORDER BY ts_ms DESC LIMIT 1", (intent_id, kind)).fetchone()
+        return dict(row) if row else None
+
+    def _replace_algo(self, intent: TradeIntent, kind: str, order_type: str,
+                      trigger: Decimal, suffix: str) -> ExecutionResult:
+        """换保护单：**先挂新的，确认 NEW，再撤旧的**。
+
+        顺序反了就会出现"已经撤掉旧止损、新止损还没挂上"的裸仓窗口，
+        哪怕只有几十毫秒，也可能正好撞上插针。
+        """
+        if not self.available():
+            return ExecutionResult(False, "preflight", intent.intent_id, error="DEMO_UNAVAILABLE")
+        f = self._ensure_filters()
+        old = self._current_algo(intent.intent_id, kind)
+        qty = D(str(old["qty"])) if old else None
+        if qty is None:
+            row = self._db.execute(
+                "SELECT qty FROM demo_orders WHERE intent_id = ? AND kind = 'entry'"
+                " ORDER BY ts_ms DESC LIMIT 1", (intent.intent_id,)).fetchone() if self._db else None
+            qty = D(str(row["qty"])) if row and row["qty"] else None
+        if not qty:
+            return ExecutionResult(False, "replace", intent.intent_id,
+                                   error="找不到仓位数量，拒绝改保护单")
+        side = "SELL" if intent.side == "LONG" else "BUY"
+        n = int((old["exchange_id"] or "0")[-4:] or 0) if old else 0
+        cid = f"oa-{intent.intent_id}-{suffix}{n + 1}"[:36]
+        try:
+            new = self.client.new_order(symbol=self.symbol, side=side, qty=qty,
+                                        order_type=order_type, stop_price=f.price(trigger),
+                                        client_id=cid, reduce_only=True,
+                                        working_type="MARK_PRICE")
+        except Exception as exc:                     # noqa: BLE001
+            self.errors.append(f"replace {kind} {cid}: {type(exc).__name__}: {exc}")
+            return ExecutionResult(False, "replace", intent.intent_id, qty=qty,
+                                   error=f"{type(exc).__name__}: {exc}")
+        algo_id = str(new.get("algoId") or "")
+        self._record(cid, intent.intent_id, kind, exchange_id=algo_id, status="NEW",
+                     qty=qty, trigger=f.price(trigger), payload=new)
+        if old:
+            try:
+                self.client.cancel_algo(self.symbol, algo_id=int(old["exchange_id"] or 0),
+                                        client_algo_id=old["client_order_id"])
+                self._record(old["client_order_id"], intent.intent_id, kind,
+                             exchange_id=old["exchange_id"], status="CANCELED",
+                             qty=D(old["qty"] or "0"), trigger=D(old["trigger"] or "0"))
+            except Exception as exc:                 # noqa: BLE001
+                # 撤旧单失败 = 两张同时在，仍是受保护的；记日志不掩盖
+                self.errors.append(f"cancel old {kind}: {type(exc).__name__}: {exc}")
+                return ExecutionResult(True, "replace_partial", intent.intent_id, qty=qty,
+                                       order_id=algo_id,
+                                       error=f"新单已挂，旧单撤销失败：{exc}")
+        return ExecutionResult(True, "replace", intent.intent_id, qty=qty, order_id=algo_id)
+
+    def replace_stop(self, intent: TradeIntent, new_stop: Decimal) -> ExecutionResult:
+        return self._replace_algo(intent, "stop", "STOP_MARKET", new_stop, "s")
+
+    def replace_tp(self, intent: TradeIntent, new_tp: Decimal) -> ExecutionResult:
+        return self._replace_algo(intent, "tp", "TAKE_PROFIT_MARKET", new_tp, "t")
+
+    def reduce(self, intent: TradeIntent, qty: Decimal, reason: str = "") -> ExecutionResult:
+        """部分减仓：reduceOnly 市价，数量按 stepSize 向下取整。"""
+        if not self.available():
+            return ExecutionResult(False, "preflight", intent.intent_id, error="DEMO_UNAVAILABLE")
+        f = self._ensure_filters()
+        q = f.qty(qty)
+        if q <= 0:
+            return ExecutionResult(False, "validate", intent.intent_id, error="减仓数量取整后为 0")
+        side = "SELL" if intent.side == "LONG" else "BUY"
+        cid = f"oa-{intent.intent_id}-r{int(time.time()) % 100000}"[:36]
+        try:
+            order = self.client.new_order(symbol=self.symbol, side=side, qty=q,
+                                          order_type="MARKET", client_id=cid, reduce_only=True)
+            order = self._await_fill(order, cid)
+        except Exception as exc:                     # noqa: BLE001
+            self.errors.append(f"reduce {cid}: {type(exc).__name__}: {exc}")
+            return ExecutionResult(False, "reduce", intent.intent_id, qty=q,
+                                   error=f"{type(exc).__name__}: {exc}")
+        self._record(cid, intent.intent_id, "reduce", exchange_id=str(order.get("orderId", "")),
+                     status=str(order.get("status") or ""), qty=q, price=self._avg(order),
+                     payload=order)
+        return ExecutionResult(True, "reduce", intent.intent_id, qty=q,
+                               entry_price=self._avg(order),
+                               order_id=str(order.get("orderId", "")), payload=order)
+
     def close_db(self) -> None:
         if self._db is not None:
             self._db.close()

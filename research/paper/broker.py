@@ -12,6 +12,8 @@ Sprint 2.1 修掉：
 """
 from __future__ import annotations
 
+import json
+import json
 import sqlite3
 from dataclasses import dataclass
 from decimal import Decimal
@@ -55,10 +57,23 @@ CREATE TABLE IF NOT EXISTS positions (
     max_holding_ms INTEGER NOT NULL DEFAULT 0,
     strategy_id TEXT NOT NULL DEFAULT '',
     funding_paid TEXT NOT NULL DEFAULT '0',
+    reason TEXT NOT NULL DEFAULT '',
+    invalid_if TEXT NOT NULL DEFAULT '[]',
+    realized_net TEXT NOT NULL DEFAULT '0',
     exit_ts INTEGER,
     exit_price TEXT,
     exit_reason TEXT,
     pnl TEXT
+);
+CREATE TABLE IF NOT EXISTS position_fills (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pos_id INTEGER NOT NULL,
+    ts_ms INTEGER NOT NULL,
+    qty TEXT NOT NULL,
+    price TEXT NOT NULL,
+    fee TEXT NOT NULL,
+    pnl TEXT NOT NULL,
+    reason TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS equity (
     ts_ms INTEGER PRIMARY KEY,
@@ -152,6 +167,12 @@ class PaperBroker:
             self._db.execute("ALTER TABLE positions ADD COLUMN strategy_id TEXT NOT NULL DEFAULT ''")
         if "funding_paid" not in cols:
             self._db.execute("ALTER TABLE positions ADD COLUMN funding_paid TEXT NOT NULL DEFAULT '0'")
+        if "reason" not in cols:
+            self._db.execute("ALTER TABLE positions ADD COLUMN reason TEXT NOT NULL DEFAULT ''")
+        if "invalid_if" not in cols:
+            self._db.execute("ALTER TABLE positions ADD COLUMN invalid_if TEXT NOT NULL DEFAULT '[]'")
+        if "realized_net" not in cols:
+            self._db.execute("ALTER TABLE positions ADD COLUMN realized_net TEXT NOT NULL DEFAULT '0'")
         self._db.commit()
 
     # ---------- 查询 ----------
@@ -213,11 +234,13 @@ class PaperBroker:
         self._db.execute("UPDATE account SET cash = ? WHERE id = 1", (str(cash - notional - fee),))
         self._db.execute(
             "INSERT INTO positions (intent_id, symbol, side, qty, entry_price, entry_ts,"
-            " stop_price, tp_price, status, entry_fee, max_holding_ms, strategy_id)"
-            " VALUES (?,?,?,?,?,?,?,?,'open',?,?,?)",
+            " stop_price, tp_price, status, entry_fee, max_holding_ms, strategy_id,"
+            " reason, invalid_if)"
+            " VALUES (?,?,?,?,?,?,?,?,'open',?,?,?,?,?)",
             (intent.intent_id, intent.symbol, intent.side, str(qty), str(price),
              intent.decision_ts_ms, str(intent.stop_price), str(intent.take_profit_price),
-             str(fee), int(intent.expected_holding_ms), intent.strategy_id),
+             str(fee), int(intent.expected_holding_ms), intent.strategy_id,
+             intent.reason, json.dumps(list(intent.invalidations), ensure_ascii=False)),
         )
         self._db.commit()
         return Fill(intent.intent_id, intent.decision_ts_ms, intent.symbol, intent.side,
@@ -306,6 +329,120 @@ class PaperBroker:
         return closed
 
     # ---------- 权益 ----------
+
+    def close_partial(self, pos_id: int, qty: Decimal, price: Decimal, ts_ms: int,
+                      reason: str) -> dict | None:
+        """部分平仓：剩余仓位继续持有，按比例释放本金并结转已实现盈亏。
+
+        账务口径与 ``_close`` 保持一致（同一个滑点/手续费模型），
+        区别只是把 entry_fee 按数量比例分摊，剩余部分留在仓位上。
+        """
+        row = self._db.execute("SELECT * FROM positions WHERE id = ? AND status = 'open'",
+                               (pos_id,)).fetchone()
+        if row is None:
+            return None
+        held = Decimal(row["qty"])
+        if qty <= 0 or qty > held:
+            return None
+        if qty == held:
+            c = self.close_position(pos_id, price, ts_ms, reason)
+            return c.to_dict() if c else None
+
+        entry = Decimal(row["entry_price"])
+        entry_fee = Decimal(row["entry_fee"] or "0")
+        slip = self.slippage_bps / BPS
+        fill = price * (Decimal("1") - slip if row["side"] == "LONG" else Decimal("1") + slip)
+        direction = Decimal("1") if row["side"] == "LONG" else Decimal("-1")
+        gross = (fill - entry) * qty * direction
+        exit_fee = qty * fill * self.fee_bps / BPS
+        fee_part = entry_fee * qty / held
+        net = gross - exit_fee - fee_part
+
+        cash = self.cash() + qty * entry + gross - exit_fee
+        self._db.execute("UPDATE account SET cash = ? WHERE id = 1", (str(cash),))
+        self._db.execute(
+            "UPDATE positions SET qty = ?, entry_fee = ?, realized_net = ? WHERE id = ?",
+            (str(held - qty), str(entry_fee - fee_part),
+             str(Decimal(row["realized_net"] or "0") + net), pos_id))
+        self._db.execute(
+            "INSERT INTO position_fills (pos_id, ts_ms, qty, price, fee, pnl, reason)"
+            " VALUES (?,?,?,?,?,?,?)",
+            (pos_id, ts_ms, str(qty), str(fill), str(exit_fee + fee_part), str(net), reason))
+        self._db.commit()
+        return {"pos_id": pos_id, "qty": str(qty), "price": str(fill),
+                "pnl": str(net), "remaining": str(held - qty), "reason": reason}
+
+    def move_stop(self, pos_id: int, new_stop: Decimal) -> bool:
+        """只改止损价。收紧检查在调用方（风控/契约）做，这里只落库。"""
+        cur = self._db.execute(
+            "UPDATE positions SET stop_price = ? WHERE id = ? AND status = 'open'",
+            (str(new_stop), pos_id))
+        self._db.commit()
+        return cur.rowcount > 0
+
+    def update_tp(self, pos_id: int, new_tp: Decimal) -> bool:
+        cur = self._db.execute(
+            "UPDATE positions SET tp_price = ? WHERE id = ? AND status = 'open'",
+            (str(new_tp), pos_id))
+        self._db.commit()
+        return cur.rowcount > 0
+
+    def close_partial(self, pos_id: int, qty: Decimal, price: Decimal, ts_ms: int,
+                      reason: str) -> dict | None:
+        """部分平仓：剩余仓位继续持有，按比例释放本金并结转已实现盈亏。
+
+        账务口径与 ``_close`` 保持一致（同一个滑点/手续费模型），
+        区别只是把 entry_fee 按数量比例分摊，剩余部分留在仓位上。
+        """
+        row = self._db.execute("SELECT * FROM positions WHERE id = ? AND status = 'open'",
+                               (pos_id,)).fetchone()
+        if row is None:
+            return None
+        held = Decimal(row["qty"])
+        if qty <= 0 or qty > held:
+            return None
+        if qty == held:
+            c = self.close_position(pos_id, price, ts_ms, reason)
+            return c.to_dict() if c else None
+
+        entry = Decimal(row["entry_price"])
+        entry_fee = Decimal(row["entry_fee"] or "0")
+        slip = self.slippage_bps / BPS
+        fill = price * (Decimal("1") - slip if row["side"] == "LONG" else Decimal("1") + slip)
+        direction = Decimal("1") if row["side"] == "LONG" else Decimal("-1")
+        gross = (fill - entry) * qty * direction
+        exit_fee = qty * fill * self.fee_bps / BPS
+        fee_part = entry_fee * qty / held
+        net = gross - exit_fee - fee_part
+
+        cash = self.cash() + qty * entry + gross - exit_fee
+        self._db.execute("UPDATE account SET cash = ? WHERE id = 1", (str(cash),))
+        self._db.execute(
+            "UPDATE positions SET qty = ?, entry_fee = ?, realized_net = ? WHERE id = ?",
+            (str(held - qty), str(entry_fee - fee_part),
+             str(Decimal(row["realized_net"] or "0") + net), pos_id))
+        self._db.execute(
+            "INSERT INTO position_fills (pos_id, ts_ms, qty, price, fee, pnl, reason)"
+            " VALUES (?,?,?,?,?,?,?)",
+            (pos_id, ts_ms, str(qty), str(fill), str(exit_fee + fee_part), str(net), reason))
+        self._db.commit()
+        return {"pos_id": pos_id, "qty": str(qty), "price": str(fill),
+                "pnl": str(net), "remaining": str(held - qty), "reason": reason}
+
+    def move_stop(self, pos_id: int, new_stop: Decimal) -> bool:
+        """只改止损价。收紧检查在调用方（风控/契约）做，这里只落库。"""
+        cur = self._db.execute(
+            "UPDATE positions SET stop_price = ? WHERE id = ? AND status = 'open'",
+            (str(new_stop), pos_id))
+        self._db.commit()
+        return cur.rowcount > 0
+
+    def update_tp(self, pos_id: int, new_tp: Decimal) -> bool:
+        cur = self._db.execute(
+            "UPDATE positions SET tp_price = ? WHERE id = ? AND status = 'open'",
+            (str(new_tp), pos_id))
+        self._db.commit()
+        return cur.rowcount > 0
 
     def close_position(self, pos_id: int, price: Decimal, ts_ms: int, reason: str) -> ClosedPosition | None:
         """按指定价格平掉一个持仓（供 5m 认错/实时 guard 使用）。"""

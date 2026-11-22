@@ -46,6 +46,11 @@ class V2Config:
     exit_min_loss_bps: Decimal = D("15")
     #: 平仓后同方向冷却的 K 线数：避免"平了立刻再开"刷手续费
     cooldown_bars: int = 2
+    #: 持仓管理：off（旧行为：固定规则退场）| rules（确定性移动止损/分批）| ai（模型管理）
+    position_manager: str = "off"
+    #: 分批止盈比例、移动止损距离（以 R 为单位）
+    partial_fraction: Decimal = D("0.5")
+    trail_r: Decimal = D("1.0")
     #: 执行口径用的周期：入场价/止损止盈/提前退出的基准都取这个周期的收盘。
     #: 旧行为隐式用了 1h（state.features 来自 1h），导致同一小时内每笔的
     #: 入场价与保护价完全相同，而真实成交价差出几十美元。
@@ -97,6 +102,8 @@ class V2Engine:
     errors: list = field(default_factory=list)
     #: 最近一轮的实际模型输入（供审计：证明 digest 真的进了模型）
     last_inputs: dict = field(default_factory=dict)
+    #: 持仓管理模型（有 decide(snapshot) 即可）；None 且 position_manager=ai 时退化为 rules
+    position_ai: object = None
 
     def __post_init__(self) -> None:
         self.root = Path(self.root)
@@ -354,6 +361,41 @@ class V2Engine:
             self.errors.append(f"demo_close {intent.intent_id}: {res.error}")
         return res.to_dict()
 
+    def _mirror_reduce(self, name: str, pos: dict, qty) -> dict:
+        """部分减仓镜像到交易所（reduceOnly 市价）。"""
+        intent = self._mirrored.get(str(pos.get("intent_id") or "")) or self._intent_from_position(pos)
+        try:
+            res = self.executor.reduce(intent, D(str(qty)), "MGR_PARTIAL")
+        except Exception as exc:                     # noqa: BLE001
+            self.errors.append(f"demo_reduce {pos.get('intent_id')}: {type(exc).__name__}: {exc}")
+            return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+        if not res.ok:
+            self.errors.append(f"demo_reduce {intent.intent_id}: {res.error}")
+        return res.to_dict()
+
+    def _mirror_stop(self, name: str, pos: dict, new_stop: D) -> dict:
+        """换止损：先挂新单再撤旧单，任何时刻都不裸仓。"""
+        intent = self._mirrored.get(str(pos.get("intent_id") or "")) or self._intent_from_position(pos)
+        try:
+            res = self.executor.replace_stop(intent, D(str(new_stop)))
+        except Exception as exc:                     # noqa: BLE001
+            self.errors.append(f"demo_stop {pos.get('intent_id')}: {type(exc).__name__}: {exc}")
+            return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+        if not res.ok:
+            self.errors.append(f"demo_stop {intent.intent_id}: {res.error}")
+        return res.to_dict()
+
+    def _mirror_tp(self, name: str, pos: dict, new_tp: D) -> dict:
+        intent = self._mirrored.get(str(pos.get("intent_id") or "")) or self._intent_from_position(pos)
+        try:
+            res = self.executor.replace_tp(intent, D(str(new_tp)))
+        except Exception as exc:                     # noqa: BLE001
+            self.errors.append(f"demo_tp {pos.get('intent_id')}: {type(exc).__name__}: {exc}")
+            return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+        if not res.ok:
+            self.errors.append(f"demo_tp {intent.intent_id}: {res.error}")
+        return res.to_dict()
+
     def _intent_from_position(self, pos: dict) -> TradeIntent:
         side = str(pos["side"])
         return TradeIntent(str(pos["intent_id"]), int(pos["entry_ts"]), str(pos["symbol"]), side,
@@ -361,6 +403,77 @@ class V2Engine:
                            D(str(pos["entry_price"])), D(str(pos["stop_price"])),
                            D(str(pos["tp_price"])), int(pos.get("max_holding_ms") or 4 * TF_1H_MS),
                            D("0.5"), "restored from ledger", shadow=True)
+
+    # ---------- 持仓管理 ----------
+    def _manage_position(self, name: str, state, as_of_ms: int) -> dict | None:
+        """把当前仓位的"处境"交给规则或模型，拿回一个有界动作并执行。"""
+        from research.decision.position import (
+            PositionDecisionError, rules_position_action, snapshot_from_row,
+            validate_against_position,
+        )
+
+        broker = self.books[name]
+        pos = broker.open_positions()[0]
+        mark = self._mark_price(state)
+        if mark is None:
+            return {"action": "SKIP", "reason": "没有可用价格"}
+        trends = {tf: getattr(v, "trend", "") or "" for tf, v in
+                  (getattr(state, "timeframes", None) or {}).items()}
+        snap = snapshot_from_row(
+            row=pos, mark=mark, as_of_ms=as_of_ms, fee_bps=broker.fee_bps,
+            trends={k: (getattr(state, "trend", "") if k == "1h" else "") for k in ("5m", "15m", "1h")} or trends,
+            data_as_of_ms=as_of_ms,
+        )
+        mode = self.config.position_manager
+        if mode == "ai" and self.position_ai is not None:
+            try:
+                dec = self.position_ai.decide(snap)
+            except Exception as exc:                     # noqa: BLE001 - 模型挂了退回规则
+                self.errors.append(f"position_ai: {type(exc).__name__}: {exc}")
+                dec = rules_position_action(snap, trail_atr=self.config.trail_r,
+                                            partial_fraction=self.config.partial_fraction)
+        else:
+            dec = rules_position_action(snap, trail_atr=self.config.trail_r,
+                                        partial_fraction=self.config.partial_fraction)
+        try:
+            validate_against_position(dec, snap)
+        except PositionDecisionError as exc:
+            # 越界的动作一律不执行，退回 HOLD，并留痕
+            self.errors.append(f"position_decision 拒绝 {dec.action}: {exc}")
+            return {"action": "REJECTED", "requested": dec.action, "error": str(exc),
+                    "decision": dec.to_dict(), "snapshot": snap.summary()}
+
+        out = {"action": dec.action, "decision": dec.to_dict(), "snapshot": snap.summary(),
+               "executed": False}
+        if dec.action == "HOLD":
+            out["executed"] = True
+        elif dec.action == "CLOSE_PARTIAL":
+            qty = snap.qty * D(dec.fraction)
+            res = broker.close_partial(int(pos["id"]), qty, mark, as_of_ms, "MGR_PARTIAL")
+            out["executed"] = bool(res)
+            out["fill"] = res
+            if res and name == self.demo_book and self.executor is not None:
+                out["demo"] = self._mirror_reduce(name, pos, qty)
+        elif dec.action == "CLOSE_ALL":
+            c = broker.close_position(int(pos["id"]), mark, as_of_ms, "MGR_CLOSE")
+            out["executed"] = bool(c)
+            out["closed"] = c.to_dict() if c else None
+            if c:
+                self._last_close_ts[(name, str(pos["side"]))] = as_of_ms
+                self._mirror_close(name, pos, "MGR_CLOSE")
+        elif dec.action == "MOVE_STOP":
+            out["executed"] = broker.move_stop(int(pos["id"]), D(dec.new_stop))
+            if out["executed"] and name == self.demo_book and self.executor is not None:
+                out["demo"] = self._mirror_stop(name, pos, D(dec.new_stop))
+        elif dec.action == "UPDATE_TP":
+            out["executed"] = broker.update_tp(int(pos["id"]), D(dec.new_tp))
+            if out["executed"] and name == self.demo_book and self.executor is not None:
+                out["demo"] = self._mirror_tp(name, pos, D(dec.new_tp))
+        elif dec.action == "ADD_TO_WINNER":
+            # P3 第一轮明确禁止：加仓是独立实验，不能混进动态退出对照
+            out["executed"] = False
+            out["refused"] = "ADD_TO_WINNER 在 V3 第一轮被禁用（需单独实验）"
+        return out
 
     # ---------- 退出 ----------
     def _early_exit(self, name: str, state, as_of_ms: int) -> list:
@@ -540,10 +653,20 @@ class V2Engine:
         out = {}
         for name in BOOKS:
             decision = self._decide(name, state, digest, memo=memo, as_of_ms=as_of_ms)
-            entry = self._enter(name, decision, state, as_of_ms) if decision.actionable else None
-            closed = self._early_exit(name, state, as_of_ms)
+            managed = None
+            has_pos = bool(self.books[name].open_positions())
+            if self.config.position_manager != "off" and has_pos:
+                # 有仓位时由持仓管理决策；旧的"两根 K 线认错"同时停用，
+                # 否则两个出口会互相打架（一个要拿住、一个要平掉）。
+                managed = self._manage_position(name, state, as_of_ms)
+                entry, closed = None, []
+            else:
+                entry = self._enter(name, decision, state, as_of_ms) if decision.actionable else None
+                closed = self._early_exit(name, state, as_of_ms)
             entry = dict(entry or {})
             entry.update({"closed": [c.to_dict() for c in closed]})
+            if managed is not None:
+                entry["managed"] = managed
             log = {"as_of_ms": as_of_ms, "book": name, "decision": decision.to_dict(),
                    "entry": entry or None,
                    "closed_bar_ms": int(views["5m"][-1].close_ms),

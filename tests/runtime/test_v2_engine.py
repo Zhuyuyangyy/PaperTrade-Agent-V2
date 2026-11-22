@@ -630,3 +630,65 @@ def test_mark_price_prefers_live_price(tmp_path: Path) -> None:
     e.feed.price_value = 123.45
     state = _StubState({"5m": _view("5m", "100")}, {"close": D("200")})
     assert e._mark_price(state) == D("123.45")
+
+
+# ---------- V3 持仓管理接入 ----------
+def test_position_manager_holds_on_small_drawdown(tmp_path: Path) -> None:
+    """规则组接管后，噪声级浮亏不再走旧的「两根 K 线认错」。"""
+    e = _engine(tmp_path, deepseek=CountingProvider(),
+                config=V2Config(position_manager="rules"))
+    e.on_5m_close(NOW)
+    pos = e.books["deepseek_5m"].open_positions()[0]
+    entry = D(pos["entry_price"])
+    # 朝不利方向挪一点点（远小于 1R）
+    e.feed.price_value = float(entry - D("0.01")) if pos["side"] == "LONG" \
+        else float(entry + D("0.01"))
+    out = e.on_5m_close(NOW + 2 * 300_000)
+    managed = (out.get("deepseek_5m") or {}).get("entry", {}).get("managed") or {}
+    assert managed.get("action") == "HOLD", managed
+    assert len(e.books["deepseek_5m"].open_positions()) == 1
+
+
+def test_position_manager_partial_closes_at_one_r(tmp_path: Path) -> None:
+    e = _engine(tmp_path, deepseek=CountingProvider(),
+                config=V2Config(position_manager="rules"))
+    e.on_5m_close(NOW)
+    pos = e.books["deepseek_5m"].open_positions()[0]
+    entry = D(pos["entry_price"])
+    stop = D(pos["stop_price"])
+    r = abs(entry - stop)
+    # 朝有利方向 1.3R
+    e.feed.price_value = float(entry + r * D("1.3")) if pos["side"] == "LONG" \
+        else float(entry - r * D("1.3"))
+    out = e.on_5m_close(NOW + 2 * 300_000)
+    managed = (out.get("deepseek_5m") or {}).get("entry", {}).get("managed") or {}
+    assert managed.get("action") == "CLOSE_PARTIAL", managed
+    left = e.books["deepseek_5m"].open_positions()
+    assert len(left) == 1
+    assert D(left[0]["qty"]) < D(pos["qty"])
+
+
+def test_add_to_winner_is_refused_in_round_one(tmp_path: Path) -> None:
+    from research.decision.position import PositionDecision
+
+    class AddProvider:
+        def decide(self, snap):
+            return PositionDecision("stub", "v1", "ADD_TO_WINNER", "test add",
+                                    D("0.9"), notional=D("50"),
+                                    data_as_of_ms=snap.data_as_of_ms)
+
+    e = _engine(tmp_path, deepseek=CountingProvider(),
+                config=V2Config(position_manager="ai"))
+    e.position_ai = AddProvider()
+    e.on_5m_close(NOW)
+    pos = e.books["deepseek_5m"].open_positions()[0]
+    entry = D(pos["entry_price"])
+    stop = D(pos["stop_price"])
+    r = abs(entry - stop)
+    # 5R 确保扣掉双边手续费后仍是浮盈，才能走到「第一轮禁止加仓」分支
+    e.feed.price_value = float(entry + r * 5) if pos["side"] == "LONG" \
+        else float(entry - r * 5)
+    out = e.on_5m_close(NOW + 2 * 300_000)
+    managed = (out.get("deepseek_5m") or {}).get("entry", {}).get("managed") or {}
+    assert managed.get("action") == "ADD_TO_WINNER", managed
+    assert managed.get("executed") is False and "禁用" in managed.get("refused", "")

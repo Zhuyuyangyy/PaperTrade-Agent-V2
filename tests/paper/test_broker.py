@@ -98,3 +98,92 @@ def test_restore_after_reopen(tmp_path: Path) -> None:
     assert b2.cash() == cash
     assert len(b2.open_positions()) == 1
     assert b2.restore()["open_positions"] == 1
+
+# ---------- V3 持仓管理所需的账本能力 ----------
+def test_partial_close_keeps_remaining_position(broker: PaperBroker) -> None:
+    fill = broker.submit(_intent(), D("100"))
+    assert fill is not None
+    pos = broker.open_positions()[0]
+    half = D(fill.qty) / D("2")
+    res = broker.close_partial(int(pos["id"]), half, D("104"), BASE + 600_000, "MGR_PARTIAL")
+    assert res is not None and res["reason"] == "MGR_PARTIAL"
+    left = broker.open_positions()
+    assert len(left) == 1 and D(left[0]["qty"]) == half
+    assert D(left[0]["realized_net"]) > 0          # 多头在 104 减仓是盈利的
+    fills = broker._db.execute("SELECT * FROM position_fills").fetchall()
+    assert len(fills) == 1 and D(fills[0]["qty"]) == half
+
+
+def test_partial_close_then_full_close_accounts_once(broker: PaperBroker) -> None:
+    fill = broker.submit(_intent(), D("100"))
+    pos = broker.open_positions()[0]
+    q = D(fill.qty)
+    broker.close_partial(int(pos["id"]), q / D("4"), D("102"), BASE + 300_000, "PARTIAL")
+    c = broker.close_position(int(pos["id"]), D("103"), BASE + 600_000, "DONE")
+    assert c is not None
+    assert not broker.open_positions()
+    # 现金变化 = 剩余仓位释放的本金 + 两次毛利 - 两次手续费
+    assert broker.cash() > D("1000")
+
+
+def test_move_and_update_tp_persist(broker: PaperBroker) -> None:
+    broker.submit(_intent(), D("100"))
+    pos = broker.open_positions()[0]
+    assert broker.move_stop(int(pos["id"]), D("101")) is True
+    assert broker.update_tp(int(pos["id"]), D("106")) is True
+    p = broker.open_positions()[0]
+    assert D(p["stop_price"]) == D("101") and D(p["tp_price"]) == D("106")
+
+
+def test_partial_rejects_bad_qty(broker: PaperBroker) -> None:
+    broker.submit(_intent(), D("100"))
+    pos = broker.open_positions()[0]
+    q = D(pos["qty"])
+    assert broker.close_partial(int(pos["id"]), q * D("2"), D("104"), BASE, "x") is None
+    assert broker.close_partial(int(pos["id"]), D("0"), D("104"), BASE, "x") is None
+    assert len(broker.open_positions()) == 1
+
+
+# ---------- V3 持仓管理所需的账本能力 ----------
+def test_partial_close_keeps_remaining_position(broker: PaperBroker) -> None:
+    fill = broker.submit(_intent(), D("100"))
+    assert fill is not None
+    pos = broker.open_positions()[0]
+    half = D(fill.qty) / D("2")
+    res = broker.close_partial(int(pos["id"]), half, D("104"), BASE + 600_000, "MGR_PARTIAL")
+    assert res is not None and res["reason"] == "MGR_PARTIAL"
+    left = broker.open_positions()
+    assert len(left) == 1 and D(left[0]["qty"]) == half
+    assert D(left[0]["realized_net"]) > 0          # 多头在 104 减仓是盈利的
+    fills = broker._db.execute("SELECT * FROM position_fills").fetchall()
+    assert len(fills) == 1 and D(fills[0]["qty"]) == half
+
+
+def test_partial_close_then_full_close_accounts_once(broker: PaperBroker) -> None:
+    fill = broker.submit(_intent(), D("100"))
+    pos = broker.open_positions()[0]
+    q = D(fill.qty)
+    broker.close_partial(int(pos["id"]), q / D("4"), D("102"), BASE + 300_000, "PARTIAL")
+    c = broker.close_position(int(pos["id"]), D("103"), BASE + 600_000, "DONE")
+    assert c is not None
+    assert not broker.open_positions()
+    # 现金变化 = 剩余仓位释放的本金 + 两次毛利 - 两次手续费
+    assert broker.cash() > D("1000")
+
+
+def test_move_and_update_tp_persist(broker: PaperBroker) -> None:
+    broker.submit(_intent(), D("100"))
+    pos = broker.open_positions()[0]
+    assert broker.move_stop(int(pos["id"]), D("101")) is True
+    assert broker.update_tp(int(pos["id"]), D("106")) is True
+    p = broker.open_positions()[0]
+    assert D(p["stop_price"]) == D("101") and D(p["tp_price"]) == D("106")
+
+
+def test_partial_rejects_bad_qty(broker: PaperBroker) -> None:
+    broker.submit(_intent(), D("100"))
+    pos = broker.open_positions()[0]
+    q = D(pos["qty"])
+    assert broker.close_partial(int(pos["id"]), q * D("2"), D("104"), BASE, "x") is None
+    assert broker.close_partial(int(pos["id"]), D("0"), D("104"), BASE, "x") is None
+    assert len(broker.open_positions()) == 1

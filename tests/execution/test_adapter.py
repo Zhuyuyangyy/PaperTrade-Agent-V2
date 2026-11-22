@@ -499,3 +499,81 @@ def test_open_reports_unreachable_when_probe_also_fails(tmp_path: Path) -> None:
     a = _adapter(tmp_path, TimeoutAndUnreachable())
     res = a.open(_intent(), D("100"))
     assert res.ok is False and "无法确认" in res.error
+
+
+# ---------- V3：部分减仓与保护单更换 ----------
+def test_reduce_places_reduce_only_market(tmp_path: Path) -> None:
+    c = FakeClient()
+    a = _adapter(tmp_path, c)
+    res = a.reduce(_intent(), D("0.002"), "MGR_PARTIAL")
+    assert res.ok and res.stage == "reduce"
+    o = c.plain[-1]
+    assert o["reduceOnly"] is True and o["side"] == "SELL"   # LONG 的减仓方向
+    assert Decimal(o["executedQty"]) == D("0.002")
+
+
+def test_replace_stop_places_new_before_cancelling_old(tmp_path: Path) -> None:
+    c = FakeClient()
+    a = _adapter(tmp_path, c)
+    opened = a.open(_intent(), D("100"))
+    assert opened.ok
+    old_stop = [x for x in c.algo if x["type"] == "STOP_MARKET"][0]
+    res = a.replace_stop(_intent(), D("60500"))
+    assert res.ok and res.stage == "replace"
+    stops = [x for x in c.algo if x["type"] == "STOP_MARKET"]
+    assert len(stops) == 2 and stops[-1]["clientAlgoId"] != old_stop["clientAlgoId"]
+    assert ("algo", old_stop["clientAlgoId"]) in c.cancels
+
+
+def test_replace_stop_keeps_both_when_cancel_fails(tmp_path: Path) -> None:
+    class CancelFails(FakeClient):
+        def cancel_algo(self, symbol=SYMBOL, algo_id=None, client_algo_id=""):
+            raise RuntimeError("HTTP 500 cancel failed")
+
+    c = CancelFails()
+    a = _adapter(tmp_path, c)
+    a.open(_intent(), D("100"))
+    res = a.replace_stop(_intent(), D("60500"))
+    assert res.ok and res.stage == "replace_partial"
+    stops = [x for x in c.algo if x["type"] == "STOP_MARKET"]
+    assert len(stops) == 2, "新单已挂、旧单撤销失败时必须两张都在，不能裸仓"
+    assert "撤销失败" in res.error
+
+
+# ---------- V3：部分减仓与保护单更换 ----------
+def test_reduce_places_reduce_only_market(tmp_path: Path) -> None:
+    c = FakeClient()
+    a = _adapter(tmp_path, c)
+    res = a.reduce(_intent(), D("0.002"), "MGR_PARTIAL")
+    assert res.ok and res.stage == "reduce"
+    o = c.plain[-1]
+    assert o["reduceOnly"] is True and o["side"] == "SELL"   # LONG 的减仓方向
+    assert Decimal(o["executedQty"]) == D("0.002")
+
+
+def test_replace_stop_places_new_before_cancelling_old(tmp_path: Path) -> None:
+    c = FakeClient()
+    a = _adapter(tmp_path, c)
+    opened = a.open(_intent(), D("100"))
+    assert opened.ok
+    old_stop = [x for x in c.algo if x["type"] == "STOP_MARKET"][0]
+    res = a.replace_stop(_intent(), D("60500"))
+    assert res.ok and res.stage == "replace"
+    stops = [x for x in c.algo if x["type"] == "STOP_MARKET"]
+    assert len(stops) == 2 and stops[-1]["clientAlgoId"] != old_stop["clientAlgoId"]
+    assert ("algo", old_stop["clientAlgoId"]) in c.cancels
+
+
+def test_replace_stop_keeps_both_when_cancel_fails(tmp_path: Path) -> None:
+    class CancelFails(FakeClient):
+        def cancel_algo(self, symbol=SYMBOL, algo_id=None, client_algo_id=""):
+            raise RuntimeError("HTTP 500 cancel failed")
+
+    c = CancelFails()
+    a = _adapter(tmp_path, c)
+    a.open(_intent(), D("100"))
+    res = a.replace_stop(_intent(), D("60500"))
+    assert res.ok and res.stage == "replace_partial"
+    stops = [x for x in c.algo if x["type"] == "STOP_MARKET"]
+    assert len(stops) == 2, "新单已挂、旧单撤销失败时必须两张都在，不能裸仓"
+    assert "撤销失败" in res.error
