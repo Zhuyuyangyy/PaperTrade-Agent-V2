@@ -310,3 +310,51 @@ python -m research.runtime demo-exec --root data/openalpha_v2 --place-test-order
 | preflight 一击即溃 | 一个接口失败就整段 traceback，看不到其余信息 | 每步单独 try，输出 `steps` / `errors`，只有「账户可读 + 单向持仓 + 过滤器可读」才算 ok |
 
 实测时间偏差：**322 ms**（recvWindow 60000，余量充足）。
+
+
+## 十一、第三阶段（AI 自动交易）：执行链路已通，卡在 LLM 凭据
+
+14:47 启动：
+
+```bash
+python -m research.runtime v2 --root data/openalpha_v2_demo --minutes 30 \
+  --demo-exec --demo-book deepseek_5m
+```
+
+引擎正常起来（`demo=on:deepseek_5m`，凭据从 `.env` 读到），跑了 3 个 5m 收盘（约 9 分钟）后主动停止。
+
+### 11.1 决策结果：AI 没电，只有规则在跑
+
+| 账本 | 3 轮结果 | 状态 |
+|---|---|---|
+| rules_5m | SHORT / SHORT / SHORT | OK（趋势跟随） |
+| deepseek_5m | HOLD / HOLD / HOLD | **ERROR**（`deepseek_error: HTTPError`） |
+| dual_5m | HOLD / HOLD / HOLD | UNAVAILABLE（第二模型未配置） |
+
+**没有触发任何 Demo 订单**，账户无持仓、无挂单，余额仍为 4999.90484017 USDT。
+
+### 11.2 LLM 凭据实测（三项全废）
+
+| 变量 | 长度/前缀 | 实测结果 |
+|---|---|---|
+| `DEEPSEEK_API_KEY` | 35，`sk-` 前缀 | `HTTP 401 Authentication Fails, Your api key: ****d976 is invalid` |
+| `ZHIPU_API_KEY` | 49 | `HTTP 401 {"error":{"code":"1000","message":"身份验证失败。"}}` |
+| `OPENROUTER_API_KEY` | 49 | `HTTP 401 Missing Authentication header` |
+
+**关键发现**：`ZHIPU_API_KEY` 与 `OPENROUTER_API_KEY` 是**同一个值**（前缀 `cf7`、后缀 `Fks`），
+说明这两条是占位/复制错了的凭据，不是真 key。
+
+### 11.3 顺带修掉的两个「查不出来」
+
+| 问题 | 修法 |
+|---|---|
+| `DeepSeekProvider` 兜底只写 `deepseek_error: HTTPError`，401/402/超时/解析失败全一样 | 带上 `str(exc)[:120]`，一眼看出是哪类 |
+| `_run_v2` 构造 `IntelPipelineConfig` 未传 `llm` → 情报抽取**永远走规则回退**，即使有 key 也一样 | 把同一个 key 传进 `LLMConfig` |
+
+第二条是本轮最隐蔽的：日志里的 `LLM_UNAVAILABLE: no DEEPSEEK_API_KEY` 看起来像"没配 key"，
+实际原因是**代码没把 key 交给情报模块**——正是上一轮"情报没真正进入决策"的同类问题。
+
+### 11.4 结论
+
+执行链路（引擎 → 适配器 → 交易所）已经端到端跑通，**唯一缺的是一把有效的 LLM key**。
+拿到有效 key 后，直接重跑同一条命令即可，无需改代码。
