@@ -197,6 +197,27 @@ class DemoExecutionAdapter:
     def _entry_cid(self, intent: TradeIntent) -> str:
         return f"oa-{intent.intent_id}"[:36]
 
+    def _probe_existing(self, cid: str):
+        """查交易所是否已有这张单。
+
+        返回 dict = 已存在；None = 明确不存在；"UNREACHABLE" = 查不了（必须停）。
+        Binance 的「不存在」是 -2013 Order does not exist / -2011 Unknown order。
+        """
+        try:
+            row = self.client.order_status(self.symbol, client_id=cid)
+        except Exception as exc:  # noqa: BLE001
+            msg = str(exc)
+            if "-2013" in msg or "-2011" in msg or "does not exist" in msg.lower() \
+                    or "unknown order" in msg.lower():
+                return None
+            self.errors.append(f"probe {cid}: {type(exc).__name__}: {exc}")
+            return "UNREACHABLE"
+        if isinstance(row, dict) and row.get("orderId"):
+            return row
+        # 空 dict / 无 orderId：不能当成"已存在"，也不能当成"确认不存在"
+        self.errors.append(f"probe {cid}: 查询返回无 orderId（{str(row)[:120]}）")
+        return "UNREACHABLE"
+
     # ---------- 成交确认 ----------
     def _await_fill(self, order: dict, cid: str, tries: int | None = None) -> dict:
         """MARKET 单通常直接 FILLED；若是 NEW/PARTIALLY_FILLED 就轮询到终态。"""
@@ -231,13 +252,22 @@ class DemoExecutionAdapter:
         if known and known["status"] in ("FILLED", "NEW", "PARTIALLY_FILLED"):
             return ExecutionResult(True, "idempotent", intent.intent_id,
                                    qty=D(known["qty"] or "0"), order_id=known["exchange_id"])
-        # 交易所侧再查一次：本地库丢了也不会重复开仓
-        try:
-            existing = self.client.order_status(self.symbol, client_id=cid)
-        except Exception:  # noqa: BLE001 - 查不到就是没有，继续
-            existing = None
-        if existing and existing.get("orderId"):
+        # 交易所侧再查一次：本地库丢了也不会重复开仓。
+        # 只有明确的「订单不存在」才算没有；网络/签名/限流错误必须停下，
+        # 否则会把「查不到」当成「不存在」而重复下单。
+        existing = self._probe_existing(cid)
+        if existing == "UNREACHABLE":
+            return ExecutionResult(False, "probe", intent.intent_id,
+                                   error="无法确认订单是否已存在（查询失败），拒绝下单以免重复")
+        if isinstance(existing, dict):
             q = D(str(existing.get("executedQty") or "0"))
+            if q <= 0:
+                # 有 orderId 但没成交量：不是已成交，不能当成幂等成功
+                return ExecutionResult(False, "probe", intent.intent_id,
+                                       error=f"交易所已有订单 {existing.get('orderId')} 但成交量为 0，"
+                                             f"status={existing.get('status')}；需人工核对",
+                                       order_id=str(existing.get("orderId", "")),
+                                       payload=existing)
             return ExecutionResult(True, "idempotent_exchange", intent.intent_id, qty=q,
                                    entry_price=self._avg(existing),
                                    order_id=str(existing.get("orderId")), payload=existing)

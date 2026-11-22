@@ -1,0 +1,230 @@
+{
+  "generated_at_ms": 1795327080127,
+  "source": "demo-fapi.binance.com/fapi/v1/exchangeInfo (真实只读)",
+  "credentials_used": false,
+  "note": "全部请求由注入的 fetch 捕获，未发往交易所；密钥为占位符",
+  "demo_btcusdt_filters": {
+    "step_size": "0.0001",
+    "tick_size": "0.10",
+    "min_qty": "0.0001",
+    "min_notional": "50"
+  },
+  "preflight_ok": true,
+  "open_result": {
+    "ok": true,
+    "stage": "protected",
+    "intent_id": "offline-abc123",
+    "qty": "0.0020",
+    "entry_price": "58867",
+    "order_id": "1008",
+    "stop_algo_id": "2146769",
+    "tp_algo_id": "2146770",
+    "error": ""
+  },
+  "close_result": {
+    "ok": true,
+    "stage": "close",
+    "intent_id": "offline-abc123",
+    "qty": "0.0020",
+    "entry_price": "58867",
+    "order_id": "1013",
+    "stop_algo_id": "",
+    "tp_algo_id": "",
+    "error": ""
+  },
+  "signature_recomputable": true,
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/fapi/v1/positionSide/dual",
+      "host": "demo-fapi.binance.com",
+      "params": {
+        "timestamp": "1795327080106",
+        "recvWindow": "5000",
+        "signature": "5bf31f5465a5db640f5ac69baa7c171d038991c7596506b1de955ef353c72193"
+      },
+      "api_key_header_present": true
+    },
+    {
+      "method": "GET",
+      "path": "/fapi/v1/exchangeInfo",
+      "host": "demo-fapi.binance.com",
+      "params": {},
+      "api_key_header_present": true
+    },
+    {
+      "method": "GET",
+      "path": "/fapi/v2/account",
+      "host": "demo-fapi.binance.com",
+      "params": {
+        "timestamp": "1795327080107",
+        "recvWindow": "5000",
+        "signature": "e1ffde447683f9314353232ae565e253dfb557d57b7829d1f08acf4d80137f28"
+      },
+      "api_key_header_present": true
+    },
+    {
+      "method": "GET",
+      "path": "/fapi/v2/positionRisk",
+      "host": "demo-fapi.binance.com",
+      "params": {
+        "symbol": "BTCUSDT",
+        "timestamp": "1795327080107",
+        "recvWindow": "5000",
+        "signature": "077486c04b5fe69262a1572329f47f520d1c12658d32e8ed2122f05a8aadba36"
+      },
+      "api_key_header_present": true
+    },
+    {
+      "method": "GET",
+      "path": "/fapi/v1/openOrders",
+      "host": "demo-fapi.binance.com",
+      "params": {
+        "symbol": "BTCUSDT",
+        "timestamp": "1795327080107",
+        "recvWindow": "5000",
+        "signature": "077486c04b5fe69262a1572329f47f520d1c12658d32e8ed2122f05a8aadba36"
+      },
+      "api_key_header_present": true
+    },
+    {
+      "method": "GET",
+      "path": "/fapi/v1/openAlgoOrders",
+      "host": "demo-fapi.binance.com",
+      "params": {
+        "symbol": "BTCUSDT",
+        "timestamp": "1795327080107",
+        "recvWindow": "5000",
+        "signature": "077486c04b5fe69262a1572329f47f520d1c12658d32e8ed2122f05a8aadba36"
+      },
+      "api_key_header_present": true
+    },
+    {
+      "method": "GET",
+      "path": "/fapi/v1/order",
+      "host": "demo-fapi.binance.com",
+      "params": {
+        "symbol": "BTCUSDT",
+        "origClientOrderId": "oa-offline-abc123",
+        "timestamp": "1795327080107",
+        "recvWindow": "5000",
+        "signature": "ea5115f902d40ab01b1d861d82e04db462facae58c29835bf6cf836d5cc086bd"
+      },
+      "api_key_header_present": true
+    },
+    {
+      "method": "POST",
+      "path": "/fapi/v1/order",
+      "host": "demo-fapi.binance.com",
+      "params": {
+        "symbol": "BTCUSDT",
+        "side": "BUY",
+        "type": "MARKET",
+        "newClientOrderId": "oa-offline-abc123",
+        "newOrderRespType": "RESULT",
+        "quantity": "0.0020",
+        "timestamp": "1795327080107",
+        "recvWindow": "5000",
+        "signature": "80b634d0b5e47fcc036cee489d71cf79bf724a98245c0dec89ce8d0aca2e0b9d"
+      },
+      "api_key_header_present": true
+    },
+    {
+      "method": "POST",
+      "path": "/fapi/v1/algoOrder",
+      "host": "demo-fapi.binance.com",
+      "params": {
+        "algoType": "CONDITIONAL",
+        "symbol": "BTCUSDT",
+        "side": "SELL",
+        "type": "STOP_MARKET",
+        "workingType": "MARK_PRICE",
+        "newOrderRespType": "RESULT",
+        "triggerPrice": "58600",
+        "quantity": "0.0020",
+        "reduceOnly": "true",
+        "clientAlgoId": "oa-offline-abc123-s",
+        "timestamp": "1795327080111",
+        "recvWindow": "5000",
+        "signature": "8d4effa171d9efd78ea4de93bb7c09db3f2f2e48789bbf2855cf6772832c5580"
+      },
+      "api_key_header_present": true
+    },
+    {
+      "method": "POST",
+      "path": "/fapi/v1/algoOrder",
+      "host": "demo-fapi.binance.com",
+      "params": {
+        "algoType": "CONDITIONAL",
+        "symbol": "BTCUSDT",
+        "side": "SELL",
+        "type": "TAKE_PROFIT_MARKET",
+        "workingType": "MARK_PRICE",
+        "newOrderRespType": "RESULT",
+        "triggerPrice": "59100",
+        "quantity": "0.0020",
+        "reduceOnly": "true",
+        "clientAlgoId": "oa-offline-abc123-t",
+        "timestamp": "1795327080114",
+        "recvWindow": "5000",
+        "signature": "f4c8a0f4ed0fef279e42df0c0f5e447f71d0dcb773e28d195dad4c3627b86342"
+      },
+      "api_key_header_present": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/fapi/v1/algoOrder",
+      "host": "demo-fapi.binance.com",
+      "params": {
+        "symbol": "BTCUSDT",
+        "clientAlgoId": "oa-offline-abc123-s",
+        "timestamp": "1795327080117",
+        "recvWindow": "5000",
+        "signature": "d6e5227423e43cd0b533b88a7f80941bd97dd3b2870dadf00d12f4fe61ec5cf2"
+      },
+      "api_key_header_present": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/fapi/v1/algoOrder",
+      "host": "demo-fapi.binance.com",
+      "params": {
+        "symbol": "BTCUSDT",
+        "clientAlgoId": "oa-offline-abc123-t",
+        "timestamp": "1795327080121",
+        "recvWindow": "5000",
+        "signature": "c0ba8d8ea13411d4a66db3d9baf9729d9dcaeec73f8eef5395d71a9324367a59"
+      },
+      "api_key_header_present": true
+    },
+    {
+      "method": "POST",
+      "path": "/fapi/v1/order",
+      "host": "demo-fapi.binance.com",
+      "params": {
+        "symbol": "BTCUSDT",
+        "side": "SELL",
+        "type": "MARKET",
+        "newClientOrderId": "oa-offline-abc123-c",
+        "newOrderRespType": "RESULT",
+        "quantity": "0.0020",
+        "reduceOnly": "true",
+        "timestamp": "1795327080124",
+        "recvWindow": "5000",
+        "signature": "31b1948e4a637d60c29d9b7005d2c4dd303ed36ba7498c0f15d509a642edf322"
+      },
+      "api_key_header_present": true
+    }
+  ],
+  "assertions": {
+    "market_order_on_legacy_endpoint": true,
+    "stop_on_algo_endpoint": true,
+    "tp_on_algo_endpoint": true,
+    "no_stop_price_param_anywhere": true,
+    "all_algo_reduce_only": true,
+    "protective_orders_are_opposite_side": true,
+    "close_cancels_both_protective_orders": true,
+    "closing_market_order_is_reduce_only": true,
+    "all_hosts_are_demo": true
+  }
+}

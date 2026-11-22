@@ -335,13 +335,13 @@ def _run_demo_exec(args) -> int:
     print("reconcile:", json.dumps(rec, ensure_ascii=False, indent=2)[:2000])
 
     if not args.place_test_order:
-        print("\n只读体检完成。要下单请加 --place-test-order --test-notional 20")
+        print("\n只读体检完成。要下单请加 --place-test-order --test-notional 120")
         return 0
 
     # 受控小额测试单：用当前标记价构造 1 笔立刻可平的市价单
     pos = client.positions(args.symbol)
     if pos:
-        print(f"已有持仓 {pos}，拒绝叠加测试单。", file=sys.stderr)
+        print(f"已有持仓 {pos}，拒绝叠加测试单（先人工处理，不盲目下单）。", file=sys.stderr)
         return 4
     mark = Decimal(str(client._request(
         "GET", "/fapi/v1/premiumIndex", {"symbol": args.symbol}).get("markPrice", "0")))
@@ -349,6 +349,25 @@ def _run_demo_exec(args) -> int:
         print("拿不到标记价，停止。", file=sys.stderr)
         return 5
     notional = Decimal(str(args.test_notional))
+    # 用交易所真实过滤器前置校验：低于 minNotional 就明确告知需要多少，绝不硬试
+    f = adapter._ensure_filters()
+    qty = f.qty(notional / mark)
+    effective = qty * mark
+    if qty < f.min_qty or effective < f.min_notional:
+        need = (f.min_notional / mark / f.step_size).to_integral_value(rounding="ROUND_UP") \
+            * f.step_size
+        print(json.dumps({
+            "ok": False, "reason": "NOTIONAL_TOO_SMALL",
+            "requested_notional": str(notional), "mark": str(mark),
+            "rounded_qty": str(qty), "effective_notional": str(effective),
+            "min_qty": str(f.min_qty), "min_notional": str(f.min_notional),
+            "step_size": str(f.step_size),
+            "minimum_qty_to_pass": str(need),
+            "minimum_notional_to_pass": str(need * mark),
+            "hint": f"请加 --test-notional {int((need * mark).to_integral_value(rounding='ROUND_UP'))} "
+                    f"或更大；本轮未发任何订单。",
+        }, ensure_ascii=False, indent=2))
+        return 7
     atr_proxy = mark * Decimal("0.004")          # 0.4% 止损，约等于 5m ATR 的量级
     intent = TradeIntent(
         f"demo-test-{int(time.time())}", int(time.time() * 1000), args.symbol,
@@ -356,14 +375,20 @@ def _run_demo_exec(args) -> int:
         mark, mark - atr_proxy if args.test_side == "LONG" else mark + atr_proxy,
         mark + atr_proxy if args.test_side == "LONG" else mark - atr_proxy,
         600_000, Decimal("1"), "controlled demo connectivity test", shadow=False)
-    print(f"test order: {args.test_side} notional={notional} mark={mark}")
+    print(f"test order: {args.test_side} notional={notional} mark={mark} "
+          f"qty={qty} effective={effective}")
     opened = adapter.open(intent, notional)
     print("open:", json.dumps(opened.to_dict(), ensure_ascii=False))
     if not opened.ok:
+        # 失败后立刻查残留：绝不盲目重试
+        print("residual:", json.dumps(adapter.reconcile(), ensure_ascii=False)[:1500])
         return 6
     if not args.hold_test_order:
         closed = adapter.close(intent, opened.qty, "connectivity_test")
         print("close:", json.dumps(closed.to_dict(), ensure_ascii=False))
+        if not closed.ok:
+            print("residual:", json.dumps(adapter.reconcile(), ensure_ascii=False)[:1500])
+            return 8
     print("reconcile after:", json.dumps(adapter.reconcile(), ensure_ascii=False)[:1500])
     return 0
 
@@ -453,8 +478,9 @@ def main(argv: list[str] | None = None) -> int:
     p_de.add_argument("--symbol", default="BTCUSDT")
     p_de.add_argument("--place-test-order", action="store_true",
                       help="真的下一笔受控小额测试单（需显式开启）")
-    p_de.add_argument("--test-notional", type=float, default=20.0,
-                      help="测试单名义金额（USDT，默认 20，故意很小）")
+    p_de.add_argument("--test-notional", type=float, default=120.0,
+                      help="测试单名义金额（USDT，默认 120；Demo BTCUSDT minNotional=50，"
+                           "取整后低于门槛会被前置拒绝）")
     p_de.add_argument("--test-side", default="LONG", choices=["LONG", "SHORT"])
     p_de.add_argument("--hold-test-order", action="store_true",
                       help="不立刻平掉测试单（默认立刻平，避免留仓）")

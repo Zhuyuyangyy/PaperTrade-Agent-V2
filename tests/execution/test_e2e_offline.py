@@ -15,7 +15,11 @@ from research.execution.adapter import DemoExecutionAdapter, SymbolFilters
 from research.runtime.v2_engine import V2Engine
 from research.risk.engine import RiskLimits
 
-from tests.execution.test_adapter import EXCHANGE_INFO, FakeClient  # noqa: F401 - 复用替身
+# 注意：不要写 `from tests.execution.test_adapter import ...`。
+# 解释器 site-packages 里存在一个第三方顶层 `tests` 包（带 __init__.py），
+# 会抢在仓库的 namespace package 之前被解析，导致 ModuleNotFoundError: tests.execution。
+# 同目录相对导入不受影响。
+from .test_adapter import EXCHANGE_INFO, FakeClient  # noqa: F401 - 复用替身
 
 D = Decimal
 BASE = (1_795_000_000 // 300) * 300

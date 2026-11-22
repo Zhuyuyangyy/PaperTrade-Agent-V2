@@ -288,3 +288,155 @@ def test_unavailable_client_refuses_everything(tmp_path: Path) -> None:
     assert a.close(_intent(), D("0.001")).ok is False
     assert a.reconcile()["ok"] is False
     assert not c.plain and not c.algo
+
+# ---------- Demo 真实过滤器（取自 demo-fapi 2026-11-22 实测） ----------
+DEMO_EXCHANGE_INFO = {
+    "symbols": [{
+        "symbol": "BTCUSDT", "pricePrecision": 2, "quantityPrecision": 4,
+        "filters": [
+            {"filterType": "PRICE_FILTER", "tickSize": "0.10"},
+            {"filterType": "LOT_SIZE", "stepSize": "0.0001", "minQty": "0.0001"},
+            {"filterType": "MIN_NOTIONAL", "notional": "50"},
+        ],
+    }]
+}
+
+
+def test_demo_real_filters_are_parsed() -> None:
+    f = SymbolFilters.from_exchange_info(DEMO_EXCHANGE_INFO, SYMBOL)
+    assert f.step_size == D("0.0001")
+    assert f.min_qty == D("0.0001")
+    assert f.min_notional == D("50")
+    assert f.tick_size == D("0.10")
+
+
+def test_demo_20_usdt_notional_is_below_minimum(tmp_path: Path) -> None:
+    """实测：Demo BTCUSDT minNotional=50、stepSize=0.0001。
+
+    20 USDT @ 58867 → 0.0003 BTC → 名义 17.66 < 50，必须被拒，不能真发单。
+    """
+    c = FakeClient()
+    a = DemoExecutionAdapter(c, symbol=SYMBOL, root=tmp_path / "ex", poll_s=0.0, poll_tries=1)
+    a.filters = SymbolFilters.from_exchange_info(DEMO_EXCHANGE_INFO, SYMBOL)
+    mark = D("58867")
+    intent = _intent(entry_ref_price=mark, stop_price=D("58600"), take_profit_price=D("59100"))
+    res = a.open(intent, D("20"))
+    assert res.ok is False and res.stage == "validate"
+    assert "minNotional" in res.error or "minQty" in res.error
+    assert not c.plain and not c.algo, "低于门槛不许发任何订单"
+
+
+def test_demo_120_usdt_notional_passes(tmp_path: Path) -> None:
+    c = FakeClient()
+    a = DemoExecutionAdapter(c, symbol=SYMBOL, root=tmp_path / "ex", poll_s=0.0, poll_tries=1)
+    a.filters = SymbolFilters.from_exchange_info(DEMO_EXCHANGE_INFO, SYMBOL)
+    mark = D("58867")
+    intent = _intent(entry_ref_price=mark, stop_price=D("58600"), take_profit_price=D("59100"))
+    res = a.open(intent, D("120"))
+    assert res.ok and res.stage == "protected"
+    assert res.qty == D("0.0020"), f"120/58867 向下取整应为 0.0020，实测 {res.qty}"
+    assert res.qty * mark >= D("50")
+
+
+# ---------- Demo 真实过滤器（取自 demo-fapi 2026-11-22 实测） ----------
+DEMO_EXCHANGE_INFO = {
+    "symbols": [{
+        "symbol": "BTCUSDT", "pricePrecision": 2, "quantityPrecision": 4,
+        "filters": [
+            {"filterType": "PRICE_FILTER", "tickSize": "0.10"},
+            {"filterType": "LOT_SIZE", "stepSize": "0.0001", "minQty": "0.0001"},
+            {"filterType": "MIN_NOTIONAL", "notional": "50"},
+        ],
+    }]
+}
+
+
+def test_demo_real_filters_are_parsed() -> None:
+    f = SymbolFilters.from_exchange_info(DEMO_EXCHANGE_INFO, SYMBOL)
+    assert f.step_size == D("0.0001")
+    assert f.min_qty == D("0.0001")
+    assert f.min_notional == D("50")
+    assert f.tick_size == D("0.10")
+
+
+def test_demo_20_usdt_notional_is_below_minimum(tmp_path: Path) -> None:
+    """实测：Demo BTCUSDT minNotional=50、stepSize=0.0001。
+
+    20 USDT @ 58867 → 0.0003 BTC → 名义 17.66 < 50，必须被拒，不能真发单。
+    """
+    c = FakeClient()
+    a = DemoExecutionAdapter(c, symbol=SYMBOL, root=tmp_path / "ex", poll_s=0.0, poll_tries=1)
+    a.filters = SymbolFilters.from_exchange_info(DEMO_EXCHANGE_INFO, SYMBOL)
+    mark = D("58867")
+    intent = _intent(entry_ref_price=mark, stop_price=D("58600"), take_profit_price=D("59100"))
+    res = a.open(intent, D("20"))
+    assert res.ok is False and res.stage == "validate"
+    assert "minNotional" in res.error or "minQty" in res.error
+    assert not c.plain and not c.algo, "低于门槛不许发任何订单"
+
+
+def test_demo_120_usdt_notional_passes(tmp_path: Path) -> None:
+    c = FakeClient()
+    a = DemoExecutionAdapter(c, symbol=SYMBOL, root=tmp_path / "ex", poll_s=0.0, poll_tries=1)
+    a.filters = SymbolFilters.from_exchange_info(DEMO_EXCHANGE_INFO, SYMBOL)
+    mark = D("58867")
+    intent = _intent(entry_ref_price=mark, stop_price=D("58600"), take_profit_price=D("59100"))
+    res = a.open(intent, D("120"))
+    assert res.ok and res.stage == "protected"
+    assert res.qty == D("0.0020"), f"120/58867 向下取整应为 0.0020，实测 {res.qty}"
+    assert res.qty * mark >= D("50")
+
+
+# ---------- 幂等预查：不能把「查不了」当成「不存在」 ----------
+def test_probe_unreachable_refuses_to_place(tmp_path: Path) -> None:
+    """网络/签名错误时必须停，不能当成订单不存在而重复下单。"""
+    class Flaky(FakeClient):
+        def order_status(self, symbol=SYMBOL, order_id=None, client_id=""):
+            raise RuntimeError("binance_error -1022: Signature for this request is not valid")
+
+    c = Flaky()
+    a = _adapter(tmp_path, c)
+    res = a.open(_intent(), D("100"))
+    assert res.ok is False and res.stage == "probe"
+    assert "拒绝下单" in res.error
+    assert not c.plain and not c.algo, "查不了就不许发单"
+
+
+def test_probe_order_not_found_proceeds(tmp_path: Path) -> None:
+    """-2013 Order does not exist 是明确的「不存在」，应当继续下单。"""
+    class NotFound(FakeClient):
+        def order_status(self, symbol=SYMBOL, order_id=None, client_id=""):
+            raise RuntimeError("binance_error -2013: Order does not exist.")
+
+    c = NotFound()
+    a = _adapter(tmp_path, c)
+    res = a.open(_intent(), D("100"))
+    assert res.ok and res.stage == "protected"
+    assert len(c.plain) == 1
+
+
+def test_probe_empty_response_refuses(tmp_path: Path) -> None:
+    """空响应/无 orderId：既不能当已存在，也不能当确认不存在。"""
+    class Empty(FakeClient):
+        def order_status(self, symbol=SYMBOL, order_id=None, client_id=""):
+            return {}
+
+    c = Empty()
+    a = _adapter(tmp_path, c)
+    res = a.open(_intent(), D("100"))
+    assert res.ok is False and res.stage == "probe"
+    assert not c.plain and not c.algo
+
+
+def test_probe_zero_filled_existing_order_refuses(tmp_path: Path) -> None:
+    """有 orderId 但成交量 0：不是幂等成功，必须报出来而不是返回假成交。"""
+    class ZeroFill(FakeClient):
+        def order_status(self, symbol=SYMBOL, order_id=None, client_id=""):
+            return {"orderId": 555, "status": "NEW", "executedQty": "0"}
+
+    c = ZeroFill()
+    a = _adapter(tmp_path, c)
+    res = a.open(_intent(), D("100"))
+    assert res.ok is False and res.stage == "probe"
+    assert res.order_id == "555"
+    assert not c.plain, "已存在未成交订单时不得再发新单"
