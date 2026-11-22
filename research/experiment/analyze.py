@@ -112,13 +112,34 @@ def analyze_run(run: Path, *, top_n: int = 12) -> dict:
         ai["verdict"] = "AI_HOLD_ONLY: 与固定持有几乎等价，不得宣称动态管理优势"
     else:
         ai["verdict"] = "AI_MANAGEMENT_CALLED"
+    # 逐事件配对差异：同一事件里两组净值相减，比汇总净收益更可信
+    # （汇总会被事件集差异、重叠窗口污染）。只对同一 run 内比较有效。
+    paired: dict[str, dict] = {}
+    by_event: dict[str, dict] = {}
+    for r in rows:
+        by_event.setdefault(str(r["event"].get("event_id")), {})[r["result"]["group"]] = r["result"]
+    for x, y in (("D", "B"), ("C", "B"), ("B", "A"), ("D", "A"), ("D", "C")):
+        vals = [_d(g[x].get("net_pnl")) - _d(g[y].get("net_pnl"))
+                for g in by_event.values() if x in g and y in g]
+        if not vals:
+            continue
+        paired[f"{x}-{y}"] = {
+            "n": len(vals), "sum": str(sum(vals)),
+            "mean": str(sum(vals) / len(vals)),
+            "wins": sum(1 for v in vals if v > 0),
+            "losses": sum(1 for v in vals if v < 0),
+            "ties": sum(1 for v in vals if v == 0),
+        }
+
     return {
         "run": str(run), "config": cfg, "groups": by_group, "by_regime": by_regime,
         "time_split": split, "ai_position_manager": ai,
         "sample_overlap": _overlap(rows, horizon),
+        "paired_diffs": paired,
         "notes": [
             "净收益含窗口末盯市与预计平仓成本；未平仓不再记 0。",
             "新闻为 NEWS_UNAVAILABLE，D 组没有外部情报输入。",
             "AI 推理费用尚未计入净收益；样本外区间仅按时间顺序划分。",
+            "paired_diffs 仅同一 run 内逐事件配对有效；跨 run 比较前必须核对 config.events_fingerprint 一致。",
         ],
     }

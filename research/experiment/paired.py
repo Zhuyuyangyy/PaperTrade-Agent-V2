@@ -160,8 +160,12 @@ def generate_events(bars: list[Candle], *, notional: D = D("100"),
             continue
 
         atr_pct = atr14 / c.close
-        if atr_pct >= D("0.006"):
+        # 事先固定的分层规则（不用收益挑选）：
+        # 高波动优先；其次价格贴着 EMA20（±0.5ATR）算震荡；否则按趋势方向。
+        if atr_pct >= D("0.004"):
             regime = "HIGH_VOL"
+        elif abs(c.close - new_ema) <= D("0.5") * atr14:
+            regime = "RANGE"
         elif trend_now == "TREND_UP":
             regime = "TREND_UP"
         elif trend_now == "TREND_DOWN":

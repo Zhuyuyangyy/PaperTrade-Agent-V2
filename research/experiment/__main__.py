@@ -59,6 +59,10 @@ def _paired(args) -> int:
         "bars_sha256": hashlib.sha256(
             json.dumps([c.open_ms for c in bars]).encode()).hexdigest()[:16],
         "events_total": len(all_events),
+        # 选中事件集的指纹：只有 fingerprint 相同的 run 才能跨 run 比较收益。
+        "events_fingerprint": hashlib.sha256(
+            json.dumps([(e.as_of_ms, e.side, e.regime) for e in chosen],
+                       ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:16],
     }
     (run_dir / "config.json").write_text(
         json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")

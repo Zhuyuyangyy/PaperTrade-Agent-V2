@@ -518,3 +518,61 @@ def test_analyze_run_marks_no_ai_and_overlap(tmp_path: Path) -> None:
     assert "NO_AI_CALL" in out["ai_position_manager"]["verdict"]
     assert out["sample_overlap"]["overlapping_pairs"] == 1
     assert out["groups"]["A"]["net_pnl_sum"] == "2"
+
+
+# ---------- P3：事件指纹与逐事件配对差异 ----------
+def test_paired_diffs_only_within_matching_events(tmp_path: Path) -> None:
+    from research.experiment.analyze import analyze_run
+
+    (tmp_path / "config.json").write_text(json.dumps({
+        "horizon_bars": 72, "days": 60, "sample_n": 2,
+        "events_fingerprint": "abc123"}), encoding="utf-8")
+    lines = []
+    for i in range(2):
+        for g, v in (("A", 1), ("B", 2), ("C", 1), ("D", 2)):
+            lines.append(json.dumps({
+                "event": {"event_id": f"e{i}", "as_of_ms": 1_790_000_000_000 + i * 300_000,
+                          "regime": "RANGE"},
+                "result": {"group": g, "net_pnl": str(v + (1 if i == 1 else 0)),
+                           "realized_pnl": str(v), "unrealized_pnl": "0", "mfe": "3",
+                           "holding_ms": 1000, "fees_paid": "0.1",
+                           "exit_reason": "MGR_CLOSE", "ai_calls": 0, "ai_ok": 0,
+                           "ai_hold": 0, "ai_fail": 0},
+            }))
+    (tmp_path / "paired_results.jsonl").write_text("\n".join(lines), encoding="utf-8")
+    out = analyze_run(tmp_path)
+    assert out["config"]["events_fingerprint"] == "abc123"
+    # D 恒等于 B（都给 v=2）：两个事件的差都是 0
+    assert out["paired_diffs"]["D-B"]["ties"] == 2
+    assert out["paired_diffs"]["D-B"]["sum"] == "0"
+    # B 比 A 每个事件多 1
+    assert out["paired_diffs"]["B-A"]["sum"] == "2"
+
+
+# ---------- P3：事件指纹与逐事件配对差异 ----------
+def test_paired_diffs_only_within_matching_events(tmp_path: Path) -> None:
+    from research.experiment.analyze import analyze_run
+
+    (tmp_path / "config.json").write_text(json.dumps({
+        "horizon_bars": 72, "days": 60, "sample_n": 2,
+        "events_fingerprint": "abc123"}), encoding="utf-8")
+    lines = []
+    for i in range(2):
+        for g, v in (("A", 1), ("B", 2), ("C", 1), ("D", 2)):
+            lines.append(json.dumps({
+                "event": {"event_id": f"e{i}", "as_of_ms": 1_790_000_000_000 + i * 300_000,
+                          "regime": "RANGE"},
+                "result": {"group": g, "net_pnl": str(v + (1 if i == 1 else 0)),
+                           "realized_pnl": str(v), "unrealized_pnl": "0", "mfe": "3",
+                           "holding_ms": 1000, "fees_paid": "0.1",
+                           "exit_reason": "MGR_CLOSE", "ai_calls": 0, "ai_ok": 0,
+                           "ai_hold": 0, "ai_fail": 0},
+            }))
+    (tmp_path / "paired_results.jsonl").write_text("\n".join(lines), encoding="utf-8")
+    out = analyze_run(tmp_path)
+    assert out["config"]["events_fingerprint"] == "abc123"
+    # D 恒等于 B（都给 v=2）：两个事件的差都是 0
+    assert out["paired_diffs"]["D-B"]["ties"] == 2
+    assert out["paired_diffs"]["D-B"]["sum"] == "0"
+    # B 比 A 每个事件多 1
+    assert out["paired_diffs"]["B-A"]["sum"] == "2"
