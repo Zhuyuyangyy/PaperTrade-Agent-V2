@@ -27,6 +27,7 @@ import json
 import os
 import pathlib
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
@@ -131,7 +132,8 @@ class DemoConfig:
     api_key: str = ""
     api_secret: str = ""
     base_url: str = DEMO_BASE
-    recv_window: int = 5000
+    #: Binance 上限 60000；本机到 Demo 的 RTT 有 4s 级抖动，5000 会被 -1021 打回
+    recv_window: int = 60000
     timeout_s: float = 10.0
 
     def __post_init__(self) -> None:
@@ -152,6 +154,8 @@ class DemoClient:
     config: DemoConfig
     fetch: object = None
     errors: list = field(default_factory=list)
+    #: 服务器时间 - 本地时间（毫秒），由 sync_time() 校准
+    time_offset_ms: int = 0
 
     def available(self) -> bool:
         return self.config.available
@@ -162,43 +166,101 @@ class DemoClient:
         return hmac.new(self.config.api_secret.encode(), qs.encode(),
                         hashlib.sha256).hexdigest()
 
+    # ---------- 服务器时间 ----------
+    def sync_time(self, samples: int = 3) -> int:
+        """用 Demo 的 /fapi/v1/time 校准本地时钟偏差，返回 offset 毫秒。
+
+        本地时钟慢/快几秒都会被 -1021 拒绝；签名用的 timestamp 必须是**服务器时间**。
+        取样 3 次，取 **RTT 最小**的那次（NTP 思路）：RTT 越大，中点估计越偏。
+        """
+        best = None            # (rtt, offset)
+        for _ in range(max(1, samples)):
+            t0 = time.time() * 1000
+            payload = self._request("GET", "/fapi/v1/time")
+            t1 = time.time() * 1000
+            srv = int(payload.get("serverTime") or 0)
+            if srv <= 0:
+                raise RuntimeError(f"time: 响应缺少 serverTime（{str(payload)[:120]}）")
+            rtt = t1 - t0
+            offset = srv - (t0 + t1) / 2
+            if best is None or rtt < best[0]:
+                best = (rtt, offset)
+        self.time_offset_ms = int(round(best[1]))
+        return self.time_offset_ms
+
+    def server_now_ms(self) -> int:
+        return int(time.time() * 1000) + self.time_offset_ms
+
+    def _safe_sync_time(self) -> None:
+        try:
+            self.sync_time()
+        except Exception as exc:  # noqa: BLE001 - 校准失败不掩盖原始错误
+            self.errors.append(f"sync_time: {type(exc).__name__}: {exc}")
+
     def _request(self, method: str, path: str, params: dict | None = None,
                  signed: bool = False) -> dict:
         if not self.available():
             raise RuntimeError("DEMO_UNAVAILABLE: missing api key/secret")
         # 每次请求前重新校验：config 被改写也绕不过去
         base = validate_base_url(self.config.base_url)
-        params = dict(params or {})
-        if signed:
-            params["timestamp"] = int(time.time() * 1000)
-            params["recvWindow"] = self.config.recv_window
-            params["signature"] = self._sign(params)
-        url = base + path
-        headers = {"X-MBX-APIKEY": self.config.api_key}
-        if method == "GET":
-            url = f"{url}?{urllib.parse.urlencode(params)}"
-            body = None
-        else:
-            body = urllib.parse.urlencode(params).encode()
-            headers["Content-Type"] = "application/x-www-form-urlencoded"
         fn = self.fetch or self._default_fetch
-        try:
-            payload = fn(method, url, headers, body, self.config.timeout_s)
-        except Exception as exc:  # noqa: BLE001
-            self.errors.append(f"{path}: {type(exc).__name__}: {exc}")
-            raise
-        if isinstance(payload, dict) and payload.get("code") not in _OK_CODES:
-            self.errors.append(f"{path}: {payload.get('code')} {payload.get('msg')}")
-            raise RuntimeError(f"binance_error {payload.get('code')}: {payload.get('msg')}")
-        return payload if isinstance(payload, (dict, list)) else {}
+        last: Exception | None = None
+        for attempt in (0, 1):
+            p = dict(params or {})
+            if signed:
+                p["timestamp"] = self.server_now_ms()
+                p["recvWindow"] = self.config.recv_window
+                p["signature"] = self._sign(p)
+            headers = {"X-MBX-APIKEY": self.config.api_key}
+            if method == "GET":
+                url = f"{base}{path}?{urllib.parse.urlencode(p)}"
+                body = None
+            else:
+                url = base + path
+                body = urllib.parse.urlencode(p).encode()
+                headers["Content-Type"] = "application/x-www-form-urlencoded"
+            try:
+                payload = fn(method, url, headers, body, self.config.timeout_s)
+            except Exception as exc:  # noqa: BLE001
+                last = exc
+                if signed and attempt == 0 and "-1021" in str(exc):
+                    self.errors.append(f"{path}: -1021 时间戳越界，校准后重试一次")
+                    self._safe_sync_time()
+                    continue
+                self.errors.append(f"{path}: {type(exc).__name__}: {exc}")
+                raise
+            code = payload.get("code") if isinstance(payload, dict) else None
+            if code not in _OK_CODES:
+                if signed and attempt == 0 and str(code) == "-1021":
+                    self.errors.append(f"{path}: -1021 时间戳越界，校准后重试一次")
+                    self._safe_sync_time()
+                    continue
+                self.errors.append(f"{path}: {code} {payload.get('msg')}")
+                raise RuntimeError(f"binance_error {code}: {payload.get('msg')}")
+            return payload if isinstance(payload, (dict, list)) else {}
+        raise last if last is not None else RuntimeError(f"{path}: unknown error")
 
     @staticmethod
     def _default_fetch(method: str, url: str, headers: dict, body: bytes | None,
                        timeout: float) -> dict:
         req = urllib.request.Request(url, data=body, method=method, headers=headers)
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        with opener.open(req, timeout=timeout) as resp:
-            return json.loads(resp.read().decode("utf-8", errors="replace"))
+        try:
+            with opener.open(req, timeout=timeout) as resp:
+                raw = resp.read()
+        except urllib.error.HTTPError as err:
+            # Binance 的错误码/原因全在响应体里；不读 body 就只剩 "HTTP Error 400"，
+            # 无法判断是签名错、权限不足还是参数错。这里必须把 body 捞出来。
+            raw = err.read() if hasattr(err, "read") else b""
+            text = raw.decode("utf-8", errors="replace")
+            try:
+                payload = json.loads(text or "{}")
+            except ValueError:
+                payload = {}
+            code = payload.get("code", f"HTTP_{err.code}")
+            msg = payload.get("msg") or text[:200] or err.reason
+            raise RuntimeError(f"HTTP {err.code} {code}: {msg}") from None
+        return json.loads(raw.decode("utf-8", errors="replace"))
 
     # ---------- 查询 ----------
     def account(self) -> dict:

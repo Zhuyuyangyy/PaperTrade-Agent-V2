@@ -41,6 +41,28 @@ class FakeClient:
         self._orders: dict[str, dict] = {}
         self._algos: dict[str, dict] = {}
 
+    #: preflight 会读这两个；测试里时钟就是准的
+    time_offset_ms = 0
+
+    class _Cfg:
+        recv_window = 60000
+
+    config = _Cfg()
+
+    def sync_time(self, samples: int = 1) -> int:
+        return 0
+
+    #: preflight 会读这两个；测试里时钟就是准的
+    time_offset_ms = 0
+
+    class _Cfg:
+        recv_window = 60000
+
+    config = _Cfg()
+
+    def sync_time(self, samples: int = 1) -> int:
+        return 0
+
     def available(self) -> bool:
         return True
 

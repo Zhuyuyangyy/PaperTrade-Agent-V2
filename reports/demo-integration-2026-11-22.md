@@ -1,53 +1,47 @@
-# Binance Demo 联调报告（第一阶段：只读验证）
+# Binance Demo 联调报告（第一 / 第二阶段：只读验证 + 真实受控测试单）
 
-日期：2026-11-22 13:48–14:30
+日期：2026-11-22 13:48–14:50
 代码：`c1e86c0` → `037b3d5`（幂等预查三态 + 金额门槛）→ `52d165d`（.env 凭据通道）
 仓库：`D:/ZYY_Inovation/money/_openalpha/PaperTrade-Agent-V2`，分支 `sprint-9/v2-engine`
 测试：**830 passed, 1 skipped**（跳过项：Windows 缺 `SeCreateSymbolicLinkPrivilege`，与本轮无关）
 
-## 结论：第一阶段被凭据缺失阻塞，第二/三阶段未启动
+## 结论：已连上，且已用真实 Demo 订单跑通「开仓 → 保护单 → 平仓 → 对账」
 
-**没有向交易所发出任何订单。没有使用真实资金。没有连接正式交易端点。**
-
-本轮实际提交（`sprint-9/v2-engine`）：
-
-| commit | 内容 |
+| 阶段 | 结果 |
 |---|---|
-| `037b3d5` | 幂等预查三态 + 下单前最小名义金额硬校验 + 离线全链路证据脚本 |
-| `52d165d` | 凭据支持从 `.env` 补充，缺失时输出已尝试路径 |
+| 一、只读验证 | **通过**。凭据可用，账户 5000 USDT，单向持仓，无挂单无持仓，时间偏差 322ms |
+| 二、受控测试单 | **通过**。真实 `orderId` 28690711029，成交 0.0020 BTC @ 59225.00；止损/止盈各一张 algo 单；随后 reduceOnly 平仓并撤销两张保护单；对账零差异 |
+| 三、AI 自动交易 | **未启动**（等本轮报告确认后再跑 30 分钟） |
 
-全量测试：**830 passed, 1 skipped**。
+**关键验证点：`-4120 STOP_ORDER_SWITCH_ALGO` 没有出现** —— 条件单确实可以走 `/fapi/v1/algoOrder`。
+所有回执均由交易所返回，无一处本地伪造。全程 Demo 虚拟资金，未触碰正式账户。
+
+凭据并未落在系统环境变量里（注册表 `HKCU\Environment` 无 `BINANCE_*`），而是放在
+`data/openalpha_v2/.env`，由本轮新增的 `.env` 通道读取。
 
 ## 一、凭据检查（不输出密钥内容）
+
+第一次检查（13:48）：四个位置全部 MISSING，联调停在只读之前。
 
 | 位置 | `BINANCE_DEMO_API_KEY` | `BINANCE_DEMO_API_SECRET` |
 |---|---|---|
 | 当前进程环境 | MISSING | MISSING |
 | Windows User 作用域 | MISSING | MISSING |
 | Windows Machine 作用域 | MISSING | MISSING |
-| 仓库内 `.env` / config | 不存在 | 不存在 |
+| 仓库内 `.env` | 不存在 | 不存在 |
 
-`python -m research.runtime demo-exec --root data/openalpha_demo` 实际输出（`52d165d` 之后，已带候选路径）：
+第二次检查（14:37）：用户把凭据写进 `data/openalpha_v2/.env`，由 `.env` 通道读到，
+`demo-exec` 随即连通。**当前状态：可用。**
 
-```json
-{
-  "ok": false,
-  "reason": "DEMO_UNAVAILABLE: 未设置 BINANCE_DEMO_API_KEY / BINANCE_DEMO_API_SECRET",
-  "env_files_checked": [
-    "data\\openalpha_demo\\.env",
-    "D:////ZYY_Inovation////money////_openalpha////PaperTrade-Agent-V2////.env"
-  ],
-  "note": "把两个变量写进上面任一路径的 .env（或设成系统环境变量）后重跑；没有凭据时只允许离线验证，本地虚拟盘不用凭据也能继续跑。"
-}
-```
+### 原因（已查实，不是猜测）
 
-程序按设计拒绝执行，**没有伪造任何回执**。
+直接读注册表 `HKCU\Environment` 的**全部值名**：只有 `DEEPSEEK_API_KEY`、`OPENROUTER_API_KEY`、
+`ZHIPU_API_KEY`、`REDFOX_API_KEY`、`OSS_ACCESS_KEY_ID/SECRET`、`GITHUB_PAT_TOKEN` 等，
+**没有任何 `BINANCE_*`**。HKLM 同样没有，`.bashrc/.bash_profile/.profile` 也没有。
 
-### 可能原因
-
-Windows 环境变量在**设置之后新启动的进程**里才可见。WorkBuddy 及其子 shell 是在你设置之前启动的，
-所以读不到。需要你确认设置方式（`setx` 永久 / 某个终端里 `set` 临时 / 系统属性面板），
-并让程序在一个能看到该变量的新进程里运行。
+所以不是"进程启动早读不到"，而是这两个变量**从未持久化到当前 Windows 账号**。
+（机器上还挂着 `C://Users//j` 和一个编码损坏的 `鑱旀兂` 配置目录，若曾用其他账号 `setx`，
+当前账号看不到。）
 
 ### 已提供的替代通道：`.env`（`52d165d`）
 
@@ -186,25 +180,28 @@ POST /fapi/v1/order
 
 HMAC 签名可用占位密钥复算一致（`signature_recomputable: true`），证明签名构造正确。
 
-## 六、未验证项（必须有凭据才能做）
+## 六、未验证项（截至 14:50）
 
-- 真实 `orderId` / `algoId` / 成交均价 / 手续费
-- `-4120` 是否真的不再出现（端点已按官方文档改对，但没真实请求过）
-- Demo 账户余额、持仓、挂单的真实读取
-- API 权限范围（是否只读 / 是否允许合约交易）
-- 保护单在真实行情下的触发
-- 重启对账的真实行为
+| 项 | 状态 |
+|---|---|
+| Demo 账户余额 / 持仓 / 挂单真实读取 | ✅ 已验证（5000 USDT，无持仓无挂单） |
+| 真实 `orderId` / `algoId` / 成交均价 / 手续费 | ✅ 已验证（见第十节） |
+| `-4120` 是否真的消失 | ✅ **未出现**，条件单成功拿到 `algoId` |
+| API 权限（是否允许合约下单） | ✅ 已实测下单成功 |
+| 重启对账 | ⚠️ 仅离线验证（`reconcile` 单测）；真实重启待第三阶段观察 |
+| 保护单在真实行情下被触发 | ⚠️ **未触发**（价格没到 58952.20 / 59425.80 就主动平了）；第三阶段若持仓跨过触发价可验证 |
+| V2 引擎连续自动交易 30 分钟 | ⚠️ 未开始（第三阶段） |
 
-## 七、凭据就绪后的执行顺序
+## 七、执行顺序与当前进度
 
 ```bash
-# 阶段一：只读（不下单）
-python -m research.runtime demo-exec --root data/openalpha_demo
+# 阶段一：只读（不下单）—— ✅ 已通过
+python -m research.runtime demo-exec --root data/openalpha_v2
 
-# 阶段二：受控测试单（默认 120 USDT，立刻平掉）
-python -m research.runtime demo-exec --root data/openalpha_demo --place-test-order --test-notional 120
+# 阶段二：受控测试单（120 USDT，立刻平掉）—— ✅ 已成交并平掉
+python -m research.runtime demo-exec --root data/openalpha_v2 --place-test-order --test-notional 120
 
-# 阶段三：AI 自动交易，只镜像 deepseek_5m
+# 阶段三：AI 自动交易，只镜像 deepseek_5m —— ⏳ 待启动
 python -m research.runtime v2 --root data/openalpha_v2_demo --minutes 30 \
   --demo-exec --demo-book deepseek_5m
 ```
@@ -234,3 +231,82 @@ PID 27200（13:00:51 启动，`--minutes 120`）仍在运行，未被打断、�
 **旁注（不影响本轮结论，但值得记一笔）**：rules 与 deepseek 17 轮全部同向 SHORT，
 说明这段时间趋势极单边；这样的样本无法区分"模型有判断力"与"模型只会跟趋势"，
 等 Demo 联调稳定后建议补一段震荡行情对比。
+
+## 十、第二阶段：真实受控测试单（已成交）
+
+命令：
+
+```bash
+python -m research.runtime demo-exec --root data/openalpha_v2 --place-test-order --test-notional 120
+```
+
+账户前置状态（下单前实测）：`USDT 5000.00000000`、`BTC 0.01000000`、`USDC 5000.00000000`，
+**无持仓、无普通挂单、无 algo 挂单**，单向持仓模式。
+
+### 10.1 开仓
+
+| 项 | 值 |
+|---|---|
+| `orderId` | **28690711029** |
+| `clientOrderId` | `oa-demo-test-1795329727` |
+| 方向 / 类型 | BUY / MARKET |
+| 数量 | 0.0020 BTC |
+| 成交均价 | **59225.00** |
+| 成交额 | 118.450000 USDT |
+| 状态 | FILLED（`executedQty = 0.0020`） |
+
+### 10.2 保护单（algoOrder 通道）
+
+| 项 | 止损 | 止盈 |
+|---|---|---|
+| `algoId` | **1000000297515008** | **1000000297515018** |
+| `clientAlgoId` | `oa-demo-test-1795329727-s` | `oa-demo-test-1795329727-t` |
+| 类型 | STOP_MARKET | TAKE_PROFIT_MARKET |
+| `triggerPrice` | 58952.20 | 59425.80 |
+| `reduceOnly` | true | true |
+| 最终 `algoStatus` | CANCELED（平仓时撤销） | CANCELED（平仓时撤销） |
+
+**两张单都返回了 `algoId`，没有 `-4120`。** 这是本轮最关键的验证：2025-12-09 的迁移确实生效，
+旧端点已不可用、新端点可用。
+
+### 10.3 平仓与撤保护
+
+| 项 | 值 |
+|---|---|
+| `orderId` | **28690711132** |
+| `clientOrderId` | `oa-demo-test-1795329727-c` |
+| 方向 / 类型 | SELL / MARKET，`reduceOnly = true` |
+| 成交均价 | 59224.80 |
+| 成交额 | 118.449600 USDT |
+
+### 10.4 成交明细（`/fapi/v1/userTrades`）
+
+| trade id | orderId | 价格 | 数量 | 手续费 | 已实现盈亏 |
+|---|---|---|---|---|---|
+| 560264905 | 28690711029 | 59225.0 | 0.0020 | 0.04738000 USDT | 0 |
+| 560264923 | 28690711132 | 59224.8 | 0.0020 | 0.04737984 USDT | -0.00039999 |
+
+### 10.5 账务核对
+
+| 项 | 值 |
+|---|---|
+| 余额前 | 5000.00000000 USDT |
+| 余额后 | **4999.90484017 USDT** |
+| 差额 | -0.09515983 |
+| 手续费合计 | 0.09475984 |
+| 价差亏损 | 0.00039999 |
+| 差额校验 | 0.09475984 + 0.00039999 = 0.09515983 ✔ 完全对上 |
+
+平仓后 `/fapi/v2/positionRisk` 无持仓、`/fapi/v1/openOrders` 空、`/fapi/v1/openAlgoOrders` 空，
+`adapter.reconcile()` 返回 `{"ok": true, "diffs": []}`。
+
+### 10.6 本轮暴露并修掉的三个真实问题
+
+| 问题 | 现象 | 修法 |
+|---|---|---|
+| HTTP 错误体被丢弃 | 只看到 `HTTP Error 400`，不知是 -1021 还是 -2015 | `_default_fetch` 捕获 `HTTPError` 并解析 body，抛出 `HTTP 400 -1021: ...` |
+| 未校准服务器时间 | `-1021 Timestamp outside of recvWindow` 随机出现 | `sync_time()` 取 3 次采样中 **RTT 最小**的一次定 offset；签名用 `server_now_ms()` |
+| `recvWindow=5000` 太紧 | 本机到 Demo RTT 抖动可达 4.2s，偶发 -1021 | 提到 **60000**（Binance 上限），并对 -1021 **只重试一次**（重采样后再签） |
+| preflight 一击即溃 | 一个接口失败就整段 traceback，看不到其余信息 | 每步单独 try，输出 `steps` / `errors`，只有「账户可读 + 单向持仓 + 过滤器可读」才算 ok |
+
+实测时间偏差：**322 ms**（recvWindow 60000，余量充足）。

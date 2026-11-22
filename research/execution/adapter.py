@@ -143,27 +143,59 @@ class DemoExecutionAdapter:
         return bool(self.client.available()) and self._db is not None
 
     def preflight(self) -> dict:
-        """只读体检：凭据、持仓模式、过滤器、余额。任何一项不过就不要开自动交易。"""
-        out: dict = {"symbol": self.symbol}
+        """只读体检：凭据、服务器时间、持仓模式、过滤器、余额、挂单。
+
+        每一步单独 try：一个接口挂了不能掩盖其余信息（联调时最怕只看到第一个报错）。
+        只有「读到账户」成功且「单向持仓」才 ok。
+        """
+        out: dict = {"symbol": self.symbol, "steps": {}, "errors": []}
         if not self.client.available():
             out.update({"ok": False, "reason": "DEMO_UNAVAILABLE: 没有 Demo 凭据"})
             return out
-        dual = self.client._request("GET", "/fapi/v1/positionSide/dual", signed=True)
-        out["hedge_mode"] = bool(dual.get("dualSidePosition"))
-        info = self.client._request("GET", "/fapi/v1/exchangeInfo")
-        self.filters = SymbolFilters.from_exchange_info(info, self.symbol)
-        out["filters"] = {"step_size": str(self.filters.step_size),
-                          "tick_size": str(self.filters.tick_size),
-                          "min_qty": str(self.filters.min_qty),
-                          "min_notional": str(self.filters.min_notional)}
-        out["balances"] = self.client.balances()
-        out["open_positions"] = self.client.positions(self.symbol)
-        out["open_orders"] = self.client.open_orders(self.symbol)
-        out["open_algo_orders"] = self.client.open_algo_orders(self.symbol)
-        ok = not out["hedge_mode"]        # 引擎按单向持仓建模；双向持仓会算错方向
-        out["ok"] = ok
-        if not ok:
-            out["reason"] = "REFUSED: 账户是双向持仓模式，本适配器只支持单向持仓"
+
+        def step(label: str, fn):
+            try:
+                val = fn()
+                out["steps"][label] = "OK"
+                return val
+            except Exception as exc:  # noqa: BLE001
+                out["steps"][label] = f"FAIL: {type(exc).__name__}: {exc}"
+                out["errors"].append(f"{label}: {type(exc).__name__}: {exc}")
+                return None
+
+        offset = step("sync_time", self.client.sync_time)
+        out["server_time_offset_ms"] = offset
+        out["recv_window_ms"] = self.client.config.recv_window
+
+        dual = step("position_mode", lambda: self.client._request(
+            "GET", "/fapi/v1/positionSide/dual", signed=True))
+        out["hedge_mode"] = None if dual is None else bool(dual.get("dualSidePosition"))
+
+        def load_filters():
+            info = self.client._request("GET", "/fapi/v1/exchangeInfo")
+            self.filters = SymbolFilters.from_exchange_info(info, self.symbol)
+            return {"step_size": str(self.filters.step_size),
+                    "tick_size": str(self.filters.tick_size),
+                    "min_qty": str(self.filters.min_qty),
+                    "min_notional": str(self.filters.min_notional)}
+
+        out["filters"] = step("exchange_info", load_filters)
+        out["balances"] = step("account", self.client.balances)
+        out["open_positions"] = step("positions", lambda: self.client.positions(self.symbol))
+        out["open_orders"] = step("open_orders", lambda: self.client.open_orders(self.symbol))
+        out["open_algo_orders"] = step("open_algo_orders",
+                                       lambda: self.client.open_algo_orders(self.symbol))
+
+        reasons = []
+        if out["balances"] is None:
+            reasons.append("读不到账户（凭据/权限/签名问题）")
+        if out["hedge_mode"]:
+            reasons.append("账户是双向持仓模式，本适配器只支持单向持仓")
+        if out["filters"] is None:
+            reasons.append("读不到 exchangeInfo 过滤器，无法安全下单")
+        out["ok"] = not reasons
+        if reasons:
+            out["reason"] = "REFUSED: " + "；".join(reasons)
         return out
 
     def _ensure_filters(self) -> SymbolFilters:

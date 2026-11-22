@@ -237,3 +237,143 @@ def test_env_candidates_prioritise_root(tmp_path) -> None:
     cands = [str(p) for p in env_candidates(tmp_path)]
     assert cands[0] == str(tmp_path / ".env")
     assert len(cands) == len(set(c.lower() for c in cands))
+
+
+# ---------- 时间同步与错误细节 ----------
+def test_http_error_body_code_is_preserved(monkeypatch) -> None:
+    """HTTP 400 的 body 必须被读出来，否则只剩 'HTTP Error 400' 无法定位。"""
+    import io
+    import urllib.error
+
+    from research.execution.binance_demo import DemoClient
+
+    body = io.BytesIO(b'{"code":-1021,"msg":"Timestamp for this request is outside of the recvWindow."}')
+
+    class Opener:
+        def open(self, req, timeout=None):
+            raise urllib.error.HTTPError(req.full_url, 400, "Bad Request", {}, body)
+
+    monkeypatch.setattr("urllib.request.build_opener", lambda *a, **k: Opener())
+    import pytest
+    with pytest.raises(RuntimeError, match="-1021"):
+        DemoClient._default_fetch("GET", "https://demo-fapi.binance.com/fapi/v1/time",
+                                  {}, None, 5)
+
+
+def test_minus_1021_resyncs_and_retries_once() -> None:
+    calls = []
+
+    def fake(method, url, headers, body, timeout):
+        calls.append(url)
+        if "/fapi/v1/time" in url:
+            import time as _t
+            return {"serverTime": int(_t.time() * 1000) + 1500}
+        if len([c for c in calls if "/fapi/v1/time" not in c]) == 1:
+            raise RuntimeError("HTTP 400 -1021: Timestamp for this request is outside of the recvWindow.")
+        return {"ok": True}
+
+    c = _client(fake)
+    assert c._request("GET", "/fapi/v1/account", signed=True) == {"ok": True}
+    assert c.time_offset_ms > 0          # 已经校准过
+    signed = [u for u in calls if "/fapi/v1/time" not in u]
+    assert len(signed) == 2, "只允许重试一次"
+
+
+def test_minus_1021_retries_only_once_then_raises() -> None:
+    def fake(method, url, headers, body, timeout):
+        if "/fapi/v1/time" in url:
+            import time as _t
+            return {"serverTime": int(_t.time() * 1000)}
+        raise RuntimeError("HTTP 400 -1021: outside recvWindow")
+
+    c = _client(fake)
+    import pytest
+    with pytest.raises(RuntimeError, match="-1021"):
+        c._request("GET", "/fapi/v1/account", signed=True)
+    assert len([u for u in c.errors if "-1021" in u]) == 2
+
+
+def test_preflight_reports_each_step_and_survives_partial_failure() -> None:
+    from research.execution.adapter import DemoExecutionAdapter
+    from .test_adapter import FakeClient  # 相对导入：site-packages 有同名 tests 包
+
+    class NoAccount(FakeClient):
+        def balances(self):
+            raise RuntimeError("HTTP 401 -2015: Invalid API-key")
+
+    a = DemoExecutionAdapter(NoAccount(), symbol="BTCUSDT", root=None)
+    r = a.preflight()
+    assert r["ok"] is False and "读不到账户" in r["reason"]
+    assert r["steps"]["exchange_info"] == "OK"        # 其余步骤仍然跑完
+    assert r["steps"]["account"].startswith("FAIL")
+    assert any("-2015" in e for e in r["errors"])
+
+
+# ---------- 时间同步与错误细节 ----------
+def test_http_error_body_code_is_preserved(monkeypatch) -> None:
+    """HTTP 400 的 body 必须被读出来，否则只剩 'HTTP Error 400' 无法定位。"""
+    import io
+    import urllib.error
+
+    from research.execution.binance_demo import DemoClient
+
+    body = io.BytesIO(b'{"code":-1021,"msg":"Timestamp for this request is outside of the recvWindow."}')
+
+    class Opener:
+        def open(self, req, timeout=None):
+            raise urllib.error.HTTPError(req.full_url, 400, "Bad Request", {}, body)
+
+    monkeypatch.setattr("urllib.request.build_opener", lambda *a, **k: Opener())
+    import pytest
+    with pytest.raises(RuntimeError, match="-1021"):
+        DemoClient._default_fetch("GET", "https://demo-fapi.binance.com/fapi/v1/time",
+                                  {}, None, 5)
+
+
+def test_minus_1021_resyncs_and_retries_once() -> None:
+    calls = []
+
+    def fake(method, url, headers, body, timeout):
+        calls.append(url)
+        if "/fapi/v1/time" in url:
+            import time as _t
+            return {"serverTime": int(_t.time() * 1000) + 1500}
+        if len([c for c in calls if "/fapi/v1/time" not in c]) == 1:
+            raise RuntimeError("HTTP 400 -1021: Timestamp for this request is outside of the recvWindow.")
+        return {"ok": True}
+
+    c = _client(fake)
+    assert c._request("GET", "/fapi/v1/account", signed=True) == {"ok": True}
+    assert c.time_offset_ms > 0          # 已经校准过
+    signed = [u for u in calls if "/fapi/v1/time" not in u]
+    assert len(signed) == 2, "只允许重试一次"
+
+
+def test_minus_1021_retries_only_once_then_raises() -> None:
+    def fake(method, url, headers, body, timeout):
+        if "/fapi/v1/time" in url:
+            import time as _t
+            return {"serverTime": int(_t.time() * 1000)}
+        raise RuntimeError("HTTP 400 -1021: outside recvWindow")
+
+    c = _client(fake)
+    import pytest
+    with pytest.raises(RuntimeError, match="-1021"):
+        c._request("GET", "/fapi/v1/account", signed=True)
+    assert len([u for u in c.errors if "-1021" in u]) == 2
+
+
+def test_preflight_reports_each_step_and_survives_partial_failure() -> None:
+    from research.execution.adapter import DemoExecutionAdapter
+    from .test_adapter import FakeClient  # 相对导入：site-packages 有同名 tests 包
+
+    class NoAccount(FakeClient):
+        def balances(self):
+            raise RuntimeError("HTTP 401 -2015: Invalid API-key")
+
+    a = DemoExecutionAdapter(NoAccount(), symbol="BTCUSDT", root=None)
+    r = a.preflight()
+    assert r["ok"] is False and "读不到账户" in r["reason"]
+    assert r["steps"]["exchange_info"] == "OK"        # 其余步骤仍然跑完
+    assert r["steps"]["account"].startswith("FAIL")
+    assert any("-2015" in e for e in r["errors"])
