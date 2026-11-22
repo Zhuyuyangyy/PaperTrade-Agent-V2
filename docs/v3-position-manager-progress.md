@@ -2,7 +2,7 @@
 
 日期：2026-11-22 17:00–17:30
 提交：`efd41d5`（P0/P1/P2 基础）+ 本轮后续提交
-测试：**874 passed, 1 skipped**
+测试：**876 passed, 1 skipped**
 
 ---
 
@@ -55,7 +55,7 @@ CLI 新增：`--position-manager off|rules|ai`、`--partial-fraction`、`--trail
 | **P3 共享行情流 + A/B/C/D 四本隔离账** | **单进程框架已完成**；对照数据尚未收集 | 已实现 per-book config、第四本账 `deepseek_5m_manager`、一份行情/一次情报/一次入场决策；`--experiment` 一键映射 A/B/C/D。**还没跑够样本**（6 分钟冒烟两次，样本为 0–3 笔，不能下结论） |
 | **复利仓位（按净权益调整风险预算）** | 未实现 | 用户要求与动态退出分开实验；当前 notional 仍固定 100 |
 | **顺势加仓** | 契约支持，执行层禁用 | 第一轮明确禁止混入对照 |
-| **P4 事件序列回放** | 未做 | 需要覆盖持仓保持、阶段止盈、移动止损、趋势反转、新闻失效、断网、模型超时等固定事件流 |
+| **P4 事件序列回放** | **核心链路已完成** | `tests/runtime/test_v3_event_replay.py` 用固定事件序列验证 HOLD → MOVE_STOP → CLOSE_PARTIAL → CLOSE_ALL 真的改了账本且日志可追溯；断网/模型超时由契约层的 HOLD/ERROR 降级覆盖 |
 | **样本外回测 / Shadow Forward Test** | 未做 | 必须先完成回放与一致性校验 |
 | **镜像到 Binance Demo** | 未做 | 用户要求独立验证通过后才允许冻结版本镜像；本轮账户已清空 |
 
@@ -64,8 +64,7 @@ CLI 新增：`--position-manager off|rules|ai`、`--partial-fraction`、`--trail
 ## 下一步的正确顺序
 
 1. ~~**单进程多策略**：per-book override + 一份 feed 同时喂 A/B/C/D。~~ **已完成**（提交见下）。
-2. **固定事件序列回放**：验证 HOLD / MOVE_STOP / CLOSE_PARTIAL / CLOSE_ALL
-   确实更新了本地持仓与保护单，且日志可逐条回放。
+2. ~~**固定事件序列回放**：HOLD / MOVE_STOP / CLOSE_PARTIAL / CLOSE_ALL。~~ **已完成**
 3. **A/B/C/D 本地虚拟盘对照**：≥100 笔平仓或 ≥24h，比较扣费净收益、
    每笔平均 bps、MFE/MAE、利润捕获率、最大回撤、换手成本、AI 推理费用、退出原因。
    运行：`python -m research.runtime v2 --root data/v3_experiment --minutes 1440 --experiment`；
@@ -95,3 +94,21 @@ CLI 新增：`--position-manager off|rules|ai`、`--partial-fraction`、`--trail
   不影响本地虚拟盘运行。
 
 测试 872 → **874 passed, 1 skipped**。
+
+
+---
+
+## 追加：事件回放 + 24 小时对照启动
+
+- `tests/runtime/test_v3_event_replay.py`：固定事件序列 HOLD → MOVE_STOP →
+  CLOSE_PARTIAL → CLOSE_ALL，断言每一步都**真的**改了本地持仓/止损且日志可回放；
+  另测 `ADD_TO_WINNER` 即使浮盈也被拒绝。
+  修掉一个测试隔离问题：非实验模式下多本账会共享同一个 AI stub，
+  导致动作序列被别的账本消费——回放测试改为只让一本账启用管理。
+- **24 小时本地虚拟对照已启动**：
+  `python -m research.runtime v2 --root data/v3_abcd_24h --minutes 1440 --experiment`
+  单进程、一份行情、一次决策/根 5m；四本账 A/B/C/D 同时跑，**不镜像 Binance Demo、不发交易所订单**。
+  进度：`logs/v3_abcd_24h.log`；汇总：`python -m scripts.experiment_report --root data/v3_abcd_24h`。
+  样本门槛：≥100 笔平仓或 24 小时；未达标不下结论。
+
+测试 874 → **876 passed, 1 skipped**。
