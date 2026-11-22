@@ -32,7 +32,7 @@ from research.strategy.registry import DEFAULT_SPECS
 from .dashboard import build_state, render_html
 from .heartbeat import read as read_heartbeat
 from .live import BinanceKlineSource
-from .v2_engine import V2Engine
+from .v2_engine import BOOKS, V2Engine
 from research.terminal.feed import BinanceFeed
 from .loop import LoopConfig, RunLoop
 from .metrics import summarize_books
@@ -272,13 +272,99 @@ def _run_v2(args) -> int:
         if endpoint and jk:
             second = JevProvider(endpoint, jk, os.environ.get("JEV_MODEL", "jev"))
     intel_cfg = IntelPipelineConfig(max_news=10, with_books=False)
+    executor, demo_book = _build_executor(args)
     engine = V2Engine(Path(args.root), feed, RiskLimits(), deepseek=ds, second=second,
-                      intel_fn=lambda ts: collect_intel(ts, intel_cfg))
+                      intel_fn=lambda ts: collect_intel(ts, intel_cfg),
+                      executor=executor, demo_book=demo_book)
     engine.load_history()
     print(f"v2 engine: root={args.root} minutes={args.minutes} "
-          f"deepseek={'on' if ds else 'off'} second={'on' if second else 'off'}")
+          f"deepseek={'on' if ds else 'off'} second={'on' if second else 'off'} "
+          f"demo={'on:' + demo_book if demo_book else 'off(虚拟盘)'}")
     engine.run(args.minutes)
     print("done; errors:", engine.errors[-5:])
+    if engine.last_inputs:
+        print("last inputs:", json.dumps(engine.last_inputs, ensure_ascii=False)[:800])
+    return 0
+
+
+def _build_executor(args):
+    """只有显式 --demo-exec 且凭据齐全时才构造适配器；否则纯虚拟盘。"""
+    if not getattr(args, "demo_exec", False):
+        return None, None
+    from research.execution.adapter import DemoExecutionAdapter
+    from research.execution.binance_demo import DemoClient, DemoConfig
+
+    cfg = DemoConfig.from_env()
+    if not cfg.available:
+        print("WARNING: --demo-exec 需要 BINANCE_DEMO_API_KEY / BINANCE_DEMO_API_SECRET；"
+              "当前缺失，退回纯虚拟盘，一个订单都不会发。", file=sys.stderr)
+        return None, None
+    adapter = DemoExecutionAdapter(DemoClient(cfg), symbol="BTCUSDT",
+                                   root=Path(args.root))
+    return adapter, args.demo_book
+
+
+def _run_demo_exec(args) -> int:
+    """Demo 联调：preflight（只读）→ 可选受控小额测试单 → 对账。
+
+    默认只做 preflight。下单必须显式加 --place-test-order，且名义金额受 --test-notional 限制。
+    """
+    from research.execution.adapter import DemoExecutionAdapter
+    from research.execution.binance_demo import DemoClient, DemoConfig
+    from research.strategy.contracts import TradeIntent
+
+    cfg = DemoConfig.from_env()
+    client = DemoClient(cfg)
+    if not cfg.available:
+        print(json.dumps({"ok": False, "reason": "DEMO_UNAVAILABLE: 未设置 "
+                           "BINANCE_DEMO_API_KEY / BINANCE_DEMO_API_SECRET",
+                          "note": "没有凭据时只允许离线验证；本地虚拟盘不用凭据也能继续跑。"},
+                         ensure_ascii=False, indent=2))
+        return 2
+    root = Path(args.root)
+    root.mkdir(parents=True, exist_ok=True)
+    adapter = DemoExecutionAdapter(client, symbol=args.symbol, root=root,
+                                   place_tp=not args.no_tp, poll_s=0.5, poll_tries=8)
+
+    pre = adapter.preflight()
+    print("preflight:", json.dumps(pre, ensure_ascii=False, indent=2)[:2000])
+    if not pre.get("ok"):
+        print("preflight 未通过，停止（不发任何订单）。", file=sys.stderr)
+        return 3
+    rec = adapter.reconcile()
+    print("reconcile:", json.dumps(rec, ensure_ascii=False, indent=2)[:2000])
+
+    if not args.place_test_order:
+        print("\n只读体检完成。要下单请加 --place-test-order --test-notional 20")
+        return 0
+
+    # 受控小额测试单：用当前标记价构造 1 笔立刻可平的市价单
+    pos = client.positions(args.symbol)
+    if pos:
+        print(f"已有持仓 {pos}，拒绝叠加测试单。", file=sys.stderr)
+        return 4
+    mark = Decimal(str(client._request(
+        "GET", "/fapi/v1/premiumIndex", {"symbol": args.symbol}).get("markPrice", "0")))
+    if mark <= 0:
+        print("拿不到标记价，停止。", file=sys.stderr)
+        return 5
+    notional = Decimal(str(args.test_notional))
+    atr_proxy = mark * Decimal("0.004")          # 0.4% 止损，约等于 5m ATR 的量级
+    intent = TradeIntent(
+        f"demo-test-{int(time.time())}", int(time.time() * 1000), args.symbol,
+        args.test_side, "demo-connectivity", "manual",
+        mark, mark - atr_proxy if args.test_side == "LONG" else mark + atr_proxy,
+        mark + atr_proxy if args.test_side == "LONG" else mark - atr_proxy,
+        600_000, Decimal("1"), "controlled demo connectivity test", shadow=False)
+    print(f"test order: {args.test_side} notional={notional} mark={mark}")
+    opened = adapter.open(intent, notional)
+    print("open:", json.dumps(opened.to_dict(), ensure_ascii=False))
+    if not opened.ok:
+        return 6
+    if not args.hold_test_order:
+        closed = adapter.close(intent, opened.qty, "connectivity_test")
+        print("close:", json.dumps(closed.to_dict(), ensure_ascii=False))
+    print("reconcile after:", json.dumps(adapter.reconcile(), ensure_ascii=False)[:1500])
     return 0
 
 
@@ -357,6 +443,22 @@ def main(argv: list[str] | None = None) -> int:
     p_v2.add_argument("--root", default="data/openalpha_v2")
     p_v2.add_argument("--minutes", type=float, default=30.0)
     p_v2.add_argument("--no-second", action="store_true")
+    p_v2.add_argument("--demo-exec", action="store_true",
+                      help="把指定账本镜像到 Binance Demo（需 Demo 凭据；默认关）")
+    p_v2.add_argument("--demo-book", default="deepseek_5m", choices=list(BOOKS),
+                      help="镜像哪本账到交易所（默认 deepseek_5m）")
+
+    p_de = sub.add_parser("demo-exec", help="Binance Demo 联调：只读体检 / 受控小额测试单 / 对账")
+    p_de.add_argument("--root", default="data/openalpha_demo")
+    p_de.add_argument("--symbol", default="BTCUSDT")
+    p_de.add_argument("--place-test-order", action="store_true",
+                      help="真的下一笔受控小额测试单（需显式开启）")
+    p_de.add_argument("--test-notional", type=float, default=20.0,
+                      help="测试单名义金额（USDT，默认 20，故意很小）")
+    p_de.add_argument("--test-side", default="LONG", choices=["LONG", "SHORT"])
+    p_de.add_argument("--hold-test-order", action="store_true",
+                      help="不立刻平掉测试单（默认立刻平，避免留仓）")
+    p_de.add_argument("--no-tp", action="store_true", help="只挂止损，不挂止盈")
 
     p_dash = sub.add_parser("dashboard", help="只读看板（JSON 或 HTML）")
     p_dash.add_argument("--root", required=True)
@@ -376,6 +478,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_report(args)
     if args.cmd == "v2":
         return _run_v2(args)
+    if args.cmd == "demo-exec":
+        return _run_demo_exec(args)
     if args.cmd == "shadow":
         return _run_shadow(args)
     return _run_dashboard(args)
