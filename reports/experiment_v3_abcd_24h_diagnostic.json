@@ -1,0 +1,105 @@
+{
+  "root": "data\\v3_abcd_24h",
+  "books": [
+    {
+      "book": "rules_5m",
+      "label": "A 固定ATR+旧认错",
+      "decisions": 9,
+      "entries": 0,
+      "closed_trades_db": 0,
+      "partial_fills": 0,
+      "managed_close_all": 0,
+      "cooldown_blocks": 0,
+      "open_positions": 0,
+      "realized_closed": "0E-8",
+      "realized_partial": "0E-8",
+      "realized_net": "0E-8",
+      "unrealized_est": "0E-8",
+      "notional_traded": "0.0000",
+      "avg_bps_per_notional": "0.0000",
+      "max_drawdown_pct": "0.0000",
+      "managed_actions": {},
+      "ai_status": {},
+      "exit_reasons": {
+        "MGR_PARTIAL": 0
+      },
+      "data_stats": {},
+      "position_ai_stats": {}
+    },
+    {
+      "book": "deepseek_5m",
+      "label": "B 成本感知+冷却",
+      "decisions": 9,
+      "entries": 0,
+      "closed_trades_db": 0,
+      "partial_fills": 0,
+      "managed_close_all": 0,
+      "cooldown_blocks": 0,
+      "open_positions": 0,
+      "realized_closed": "0E-8",
+      "realized_partial": "0E-8",
+      "realized_net": "0E-8",
+      "unrealized_est": "0E-8",
+      "notional_traded": "0.0000",
+      "avg_bps_per_notional": "0.0000",
+      "max_drawdown_pct": "0.0000",
+      "managed_actions": {},
+      "ai_status": {},
+      "exit_reasons": {
+        "MGR_PARTIAL": 0
+      },
+      "data_stats": {},
+      "position_ai_stats": {}
+    },
+    {
+      "book": "dual_5m",
+      "label": "D AI 持仓管理",
+      "decisions": 9,
+      "entries": 0,
+      "closed_trades_db": 0,
+      "partial_fills": 0,
+      "managed_close_all": 0,
+      "cooldown_blocks": 0,
+      "open_positions": 0,
+      "realized_closed": "0E-8",
+      "realized_partial": "0E-8",
+      "realized_net": "0E-8",
+      "unrealized_est": "0E-8",
+      "notional_traded": "0.0000",
+      "avg_bps_per_notional": "0.0000",
+      "max_drawdown_pct": "0.0000",
+      "managed_actions": {},
+      "ai_status": {},
+      "exit_reasons": {
+        "MGR_PARTIAL": 0
+      },
+      "data_stats": {},
+      "position_ai_stats": {}
+    },
+    {
+      "book": "deepseek_5m_manager",
+      "label": "C 确定性移动止损/分批",
+      "decisions": 9,
+      "entries": 0,
+      "closed_trades_db": 0,
+      "partial_fills": 0,
+      "managed_close_all": 0,
+      "cooldown_blocks": 0,
+      "open_positions": 0,
+      "realized_closed": "0E-8",
+      "realized_partial": "0E-8",
+      "realized_net": "0E-8",
+      "unrealized_est": "0E-8",
+      "notional_traded": "0.0000",
+      "avg_bps_per_notional": "0.0000",
+      "max_drawdown_pct": "0.0000",
+      "managed_actions": {},
+      "ai_status": {},
+      "exit_reasons": {
+        "MGR_PARTIAL": 0
+      },
+      "data_stats": {},
+      "position_ai_stats": {}
+    }
+  ]
+}

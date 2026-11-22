@@ -1,0 +1,233 @@
+{
+  "root": "data\\v3_abcd_24h",
+  "books": {
+    "rules_5m": {
+      "decisions": 9,
+      "db_tables": [
+        "account",
+        "equity",
+        "orders",
+        "position_fills",
+        "positions",
+        "sqlite_sequence"
+      ],
+      "has_mgmt_stage_column": false,
+      "closed_positions": 0,
+      "partial_fills": 0,
+      "open_positions": 0,
+      "realized_in_closed": 0,
+      "realized_in_fills": 0,
+      "realized_net_column": 0,
+      "entry_closed_count": 0,
+      "managed_closed_count": 0,
+      "managed_actions": {},
+      "ai_status": {},
+      "ai_providers": {},
+      "snapshots": 0,
+      "snap_nonempty_fields": [],
+      "snap_zero_counts": {},
+      "history_refresh_attempts": 7,
+      "history_refresh_ok": 4,
+      "errors_418_429_seen": 6
+    },
+    "deepseek_5m": {
+      "decisions": 9,
+      "db_tables": [
+        "account",
+        "equity",
+        "orders",
+        "position_fills",
+        "positions",
+        "sqlite_sequence"
+      ],
+      "has_mgmt_stage_column": false,
+      "closed_positions": 0,
+      "partial_fills": 0,
+      "open_positions": 0,
+      "realized_in_closed": 0,
+      "realized_in_fills": 0,
+      "realized_net_column": 0,
+      "entry_closed_count": 0,
+      "managed_closed_count": 0,
+      "managed_actions": {},
+      "ai_status": {},
+      "ai_providers": {},
+      "snapshots": 0,
+      "snap_nonempty_fields": [],
+      "snap_zero_counts": {},
+      "history_refresh_attempts": 7,
+      "history_refresh_ok": 4,
+      "errors_418_429_seen": 6
+    },
+    "dual_5m": {
+      "decisions": 9,
+      "db_tables": [
+        "account",
+        "equity",
+        "orders",
+        "position_fills",
+        "positions",
+        "sqlite_sequence"
+      ],
+      "has_mgmt_stage_column": false,
+      "closed_positions": 0,
+      "partial_fills": 0,
+      "open_positions": 0,
+      "realized_in_closed": 0,
+      "realized_in_fills": 0,
+      "realized_net_column": 0,
+      "entry_closed_count": 0,
+      "managed_closed_count": 0,
+      "managed_actions": {},
+      "ai_status": {},
+      "ai_providers": {},
+      "snapshots": 0,
+      "snap_nonempty_fields": [],
+      "snap_zero_counts": {},
+      "history_refresh_attempts": 7,
+      "history_refresh_ok": 4,
+      "errors_418_429_seen": 6
+    },
+    "deepseek_5m_manager": {
+      "decisions": 9,
+      "db_tables": [
+        "account",
+        "equity",
+        "orders",
+        "position_fills",
+        "positions",
+        "sqlite_sequence"
+      ],
+      "has_mgmt_stage_column": false,
+      "closed_positions": 0,
+      "partial_fills": 0,
+      "open_positions": 0,
+      "realized_in_closed": 0,
+      "realized_in_fills": 0,
+      "realized_net_column": 0,
+      "entry_closed_count": 0,
+      "managed_closed_count": 0,
+      "managed_actions": {},
+      "ai_status": {},
+      "ai_providers": {},
+      "snapshots": 0,
+      "snap_nonempty_fields": [],
+      "snap_zero_counts": {},
+      "history_refresh_attempts": 7,
+      "history_refresh_ok": 4,
+      "errors_418_429_seen": 6
+    }
+  },
+  "findings": [
+    {
+      "id": "P0-1",
+      "title": "C 组重复减仓风险",
+      "evidence": {
+        "c_partial_actions": 0,
+        "mgmt_stage_column": false,
+        "partial_fills": 0
+      },
+      "verdict": "NOT_OBSERVED_YET"
+    },
+    {
+      "id": "P0-2",
+      "title": "部分平仓收益漏算",
+      "evidence": {
+        "rules_5m": {
+          "fills": 0,
+          "closed": 0,
+          "realized_net_col": 0
+        },
+        "deepseek_5m": {
+          "fills": 0,
+          "closed": 0,
+          "realized_net_col": 0
+        },
+        "dual_5m": {
+          "fills": 0,
+          "closed": 0,
+          "realized_net_col": 0
+        },
+        "deepseek_5m_manager": {
+          "fills": 0,
+          "closed": 0,
+          "realized_net_col": 0
+        }
+      },
+      "verdict": "NO_FILLS_YET"
+    },
+    {
+      "id": "P0-3",
+      "title": "managed CLOSE_ALL 未计入 closes",
+      "evidence": {
+        "rules_5m": {
+          "entry_closed": 0,
+          "managed_closed": 0,
+          "db_closed": 0
+        },
+        "deepseek_5m": {
+          "entry_closed": 0,
+          "managed_closed": 0,
+          "db_closed": 0
+        },
+        "dual_5m": {
+          "entry_closed": 0,
+          "managed_closed": 0,
+          "db_closed": 0
+        },
+        "deepseek_5m_manager": {
+          "entry_closed": 0,
+          "managed_closed": 0,
+          "db_closed": 0
+        }
+      },
+      "verdict": "NO_MANAGED_CLOSE_YET"
+    },
+    {
+      "id": "P1-4",
+      "title": "D 组 AI 快照完整性",
+      "evidence": {
+        "nonempty_fields": [],
+        "zero_counts": {},
+        "snapshots": 0
+      },
+      "verdict": "NO_SNAPSHOT_YET"
+    },
+    {
+      "id": "P1-5",
+      "title": "D 组是否真的调用了模型",
+      "evidence": {
+        "status": {},
+        "providers": {}
+      },
+      "verdict": "NO_SUCCESSFUL_AI_CALL"
+    },
+    {
+      "id": "P1-6",
+      "title": "418/429 数据质量",
+      "evidence": {
+        "rules_5m": {
+          "attempts": 7,
+          "ok": 4,
+          "errors": 6
+        },
+        "deepseek_5m": {
+          "attempts": 7,
+          "ok": 4,
+          "errors": 6
+        },
+        "dual_5m": {
+          "attempts": 7,
+          "ok": 4,
+          "errors": 6
+        },
+        "deepseek_5m_manager": {
+          "attempts": 7,
+          "ok": 4,
+          "errors": 6
+        }
+      },
+      "verdict": "DEGRADED"
+    }
+  ]
+}
