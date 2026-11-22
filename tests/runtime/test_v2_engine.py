@@ -65,10 +65,12 @@ class LongProvider:
 
 
 def _engine(tmp_path: Path, deepseek=None, second=None) -> V2Engine:
-    return V2Engine(tmp_path / "v2", FakeFeed(), RiskLimits(min_volatility_budget_bps=D("0"),
-                                                             fee_bps=D("0"),
-                                                             slippage_bps=D("0")),
-                    deepseek=deepseek, second=second)
+    eng = V2Engine(tmp_path / "v2", FakeFeed(), RiskLimits(min_volatility_budget_bps=D("0"),
+                                                           fee_bps=D("0"),
+                                                           slippage_bps=D("0")),
+                   deepseek=deepseek, second=second)
+    eng.load_history = lambda: None      # 测试不拉真实网络
+    return eng
 
 
 def test_three_books_are_isolated(tmp_path: Path) -> None:
@@ -78,7 +80,7 @@ def test_three_books_are_isolated(tmp_path: Path) -> None:
         assert (tmp_path / "v2" / f"{name}.sqlite").is_file()
     assert e.books["rules_5m"]._db.execute("SELECT COUNT(*) FROM orders").fetchone()[0] >= 0
     assert e.books["deepseek_5m"]._db.execute("SELECT COUNT(*) FROM orders").fetchone()[0] == 1
-    assert e.books["dual_5m"]._db.execute("SELECT COUNT(*) FROM orders").fetchone()[0] == 1
+    assert e.books["dual_5m"]._db.execute("SELECT COUNT(*) FROM orders").fetchone()[0] == 0  # 第二模型缺失 -> 暂停
 
 
 def test_prefilter_blocks_when_cost_too_high(tmp_path: Path) -> None:
@@ -118,5 +120,15 @@ def test_dual_without_second_marks_unavailable(tmp_path: Path) -> None:
     e.on_5m_close(NOW)
     log = (tmp_path / "v2" / "dual_5m_decisions.jsonl").read_text(encoding="utf-8").splitlines()
     row = json.loads(log[-1])
-    assert row["decision"]["choice"] == "LONG"
-    assert "second=UNAVAILABLE" in row["decision"]["rationale"]
+    assert row["decision"]["choice"] == "HOLD"
+    assert "dual_paused" in row["decision"]["rationale"]
+
+def test_history_refreshes_across_nine_hours(tmp_path: Path) -> None:
+    """模拟时钟：9 小时内每 5 分钟刷新一次历史，避免越跑越旧。"""
+    e = _engine(tmp_path, deepseek=LongProvider())
+    calls = []
+    e.load_history = lambda: calls.append(1)
+    for minute in range(0, 9 * 60, 5):
+        e.on_5m_close(NOW + minute * 60_000)
+    assert len(calls) >= 100, f"refreshed {len(calls)} times in 9h"
+    assert e._history_ts == NOW + (9 * 60 - 5) * 60_000

@@ -58,6 +58,7 @@ class V2Engine:
     books: dict = field(default_factory=dict)
     history: dict = field(default_factory=dict)
     _last_bar: int = 0
+    _history_ts: int = 0
     _stop: threading.Event = field(default_factory=threading.Event)
     errors: list = field(default_factory=list)
 
@@ -126,26 +127,32 @@ class V2Engine:
         return Decision("rules_5m", "registry", "OK", "HOLD", 0.0, D("0"),
                         sel.hold_reason or "no strategy", ())
 
-    def _model_decision(self, name: str, provider: Provider | None, state) -> Decision:
+    def _model_decision(self, name: str, provider: Provider | None, state,
+                        digest=None) -> Decision:
         reason = self._prefilter(state)
         if reason:
             return Decision(name, "prefilter", "NO_DATA", "HOLD", 0.0, D("0"), reason)
         if provider is None or not provider.available():
             return Decision(name, "unavailable", "UNAVAILABLE", "HOLD", 0.0, D("0"),
                             "provider not configured")
-        snap = MarketSnapshot(int(time.time() * 1000), SYMBOL, state, compute_intel(state, None))
+        snap = MarketSnapshot(int(time.time() * 1000), SYMBOL, state,
+                              compute_intel(state, digest))
         return provider.decide(snap)
 
-    def _decide(self, name: str, state) -> Decision:
+    def _decide(self, name: str, state, digest=None) -> Decision:
         if name == "rules_5m":
             return self._rules_decision(state)
-        ds = self._model_decision("deepseek_5m", self.deepseek, state)
+        ds = self._model_decision("deepseek_5m", self.deepseek, state, digest)
         if name == "deepseek_5m":
             return ds
-        second = self._model_decision("dual_5m", self.second, state)
+        # 第二模型未配置：Dual 盘暂停开仓，不复制 DeepSeek 的决策，也不重复调用
+        if self.second is None or not self.second.available():
+            return Decision("dual_5m", ds.version, "UNAVAILABLE", "HOLD", 0.0, D("0"),
+                            "dual_paused: second model not configured", ())
+        second = self._model_decision("dual_5m", self.second, state, digest)
         if second.status != "OK":
-            return Decision("dual_5m", ds.version, "OK", ds.choice, ds.score, ds.confidence,
-                            f"{ds.rationale} | second=UNAVAILABLE", ds.evidence)
+            return Decision("dual_5m", ds.version, "UNAVAILABLE", "HOLD", 0.0, D("0"),
+                            f"dual_paused: second={second.rationale}", ())
         if ds.choice == second.choice:
             return Decision("dual_5m", "dual", "OK", ds.choice, (ds.score + second.score) / 2,
                             min(ds.confidence, second.confidence),
@@ -223,6 +230,10 @@ class V2Engine:
 
     # ---------- 5m 决策 ----------
     def on_5m_close(self, as_of_ms: int) -> dict:
+        # 历史只在启动加载会越跑越旧（夜间 73/94 轮 STALE）；每 5 分钟刷新一次
+        if as_of_ms - self._history_ts >= 300_000:
+            self.load_history()
+            self._history_ts = as_of_ms
         views = self._views()
         if not views.get("5m"):
             return {}
