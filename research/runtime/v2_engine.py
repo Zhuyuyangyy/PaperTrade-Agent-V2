@@ -47,6 +47,9 @@ class V2Config:
     settle_ms: int = 30_000
     #: 历史刷新周期（5 分钟）；失败不推进，按退避重试
     history_refresh_ms: int = 300_000
+    #: 最新已收盘 5m K 线最多能比 as_of 旧多久；超过就不许开新仓
+    #: （Binance REST 会 418/429 限流，刷新连续失败时会触发）
+    max_stale_ms: int = 3 * 300_000
     #: 最长持有期（超时平仓）
     max_holding_ms: int = 4 * TF_1H_MS
 
@@ -400,6 +403,18 @@ class V2Engine:
                 "fingerprint": dict(self._history_fp),
                 "errors": self.errors[-2:] if not ok else []}
 
+    @staticmethod
+    def _stale_ms(views: dict, as_of_ms: int) -> int:
+        """最新一根**参与决策的**已收盘 5m K 线距 as_of 多久（毫秒）。
+
+        必须看 views 而不是 self.history：history 可能为空（测试注入 feed、或启动加载失败），
+        真正喂给模型的永远是 views。
+        """
+        c5 = views.get("5m") or []
+        if not c5:
+            return 10 ** 9
+        return int(as_of_ms) - int(c5[-1].close_ms)
+
     def _collect_intel(self, as_of_ms: int):
         """真正调用 intel_fn。情报失败不阻塞交易，但必须留痕。"""
         if self.intel_fn is None:
@@ -431,6 +446,15 @@ class V2Engine:
         refresh = self._refresh_history(as_of_ms)
         views = self._views(as_of_ms)
         if not views.get("5m") or not views.get("1h"):
+            return {}
+        # 数据陈旧时**不许开新仓**：REST 被 418/429 限流时 refresh 会失败，
+        # 此时 history 还是上一次的快照，继续交易等于拿旧行情下新单。
+        stale_ms = self._stale_ms(views, as_of_ms)
+        if stale_ms > self.config.max_stale_ms:
+            self.errors.append(
+                f"stale: 最新 5m 收盘已是 {stale_ms // 1000}s 前"
+                f"（阈值 {self.config.max_stale_ms // 1000}s），本轮跳过开仓；"
+                f"history_refresh={refresh.get('ok')}")
             return {}
         state = analyze(SYMBOL, views, as_of_ms, settle_ms=self.config.settle_ms)
         digest, intel_info = self._collect_intel(as_of_ms)

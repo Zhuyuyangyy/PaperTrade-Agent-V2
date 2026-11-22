@@ -513,3 +513,13 @@ def test_mirror_halts_after_uncertain_failure(tmp_path: Path) -> None:
     assert e.mirror_halted is True
     e.on_5m_close(NOW + 300_000)
     assert ex.calls == 1, "已经 halt 就不该再向交易所发单"
+
+
+def test_stale_history_blocks_new_entries(tmp_path: Path) -> None:
+    """feed 停在原地、时钟前进 25 分钟：不许拿旧行情开新仓。"""
+    e = _engine(tmp_path, deepseek=CountingProvider())
+    e.on_5m_close(NOW + 25 * 60_000)
+    assert any("stale:" in x for x in e.errors), e.errors[-3:]
+    log = tmp_path / "v2" / "deepseek_5m_decisions.jsonl"
+    assert not log.exists() or not log.read_text(encoding="utf-8").strip()
+    assert not e.books["deepseek_5m"].open_positions()
