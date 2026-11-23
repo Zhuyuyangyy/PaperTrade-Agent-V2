@@ -34,13 +34,15 @@ class FundingParams:
     hold_bars: int = 72
     #: True = 顺势（高费率做多）；False = 拥挤反向（高费率做空）
     flip: bool = False
+    #: level = 费率水平；delta = 费率变化率（拥挤加速度）
+    mode: str = "level"
     notional: D = D("100")
     fee_bps: D = D("4")
     slippage_bps: D = D("5")
 
     @property
     def key(self) -> str:
-        return (f"z{self.z_threshold}-stop{self.stop_atr}"
+        return (f"{self.mode}-z{self.z_threshold}-stop{self.stop_atr}"
                 f"-trail{self.trail_atr}-h{self.hold_bars}"
                 f"{'-flip' if self.flip else ''}")
 
@@ -88,7 +90,8 @@ def run_funding_variant(bars: list[Candle], funding: list[dict],
                         *, single_position: bool = True) -> dict:
     """跑一组参数，返回逐笔 + 研究/样本外统计。"""
     sigs: list[FundingSignal] = funding_signals(
-        funding, bars, lookback=p.lookback, z_threshold=p.z_threshold)
+        funding, bars, lookback=p.lookback, z_threshold=p.z_threshold,
+        mode=p.mode)
     f_times = [int(x["funding_ms"]) for x in funding]
     f_rates = [D(x["rate"]) for x in funding]
 
@@ -218,20 +221,21 @@ def _counts(values) -> dict[str, int]:
 
 
 def grid(params_cls=FundingParams) -> list[FundingParams]:
-    """3 z × 3 stop × 2 trail × 2 hold × 2 方向 = 72 组全因子。
+    """2 模式 × 2 z × 3 stop × 2 trail × 2 hold × 2 方向 = 96 组全因子。
 
     方向（拥挤反向 / 顺势）必须进网格：只测一种方向等于预设结论，
     而置换检验会按网格大小自动校正多重比较。
     """
     out = []
-    for z in ("1.5", "2.0", "2.5"):
-        for stop in ("1.5", "2.0", "2.5"):
-            for trail in ("0.75", "1.0"):
-                for hold in (24, 72):
-                    for flip in (False, True):
-                        out.append(params_cls(z_threshold=D(z), stop_atr=D(stop),
-                                              trail_atr=D(trail), hold_bars=hold,
-                                              flip=flip))
+    for mode in ("level", "delta"):
+        for z in ("2.0", "2.5"):
+            for stop in ("1.5", "2.0", "2.5"):
+                for trail in ("0.75", "1.0"):
+                    for hold in (24, 72):
+                        for flip in (False, True):
+                            out.append(params_cls(z_threshold=D(z), stop_atr=D(stop),
+                                                  trail_atr=D(trail), hold_bars=hold,
+                                                  flip=flip, mode=mode))
     return out
 
 

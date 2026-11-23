@@ -89,7 +89,8 @@ class FundingSignal:
 
 def funding_signals(funding: list[dict], bars: list[Candle], *,
                     lookback: int = 90, z_threshold: D = D("2.0"),
-                    min_history: int = 30) -> list[FundingSignal]:
+                    min_history: int = 30,
+                    mode: str = "level") -> list[FundingSignal]:
     """滚动 z 值越界即产生反向信号；只用当前及之前的费率，无前视。
 
     费率每 8h 一条，lookback=90 ≈ 30 天。z 用滚动均值/标准差（样本内滚动，非全样本）。
@@ -97,13 +98,22 @@ def funding_signals(funding: list[dict], bars: list[Candle], *,
     bars_start = int(bars[0].open_ms) if bars else 0
     bars_end = int(bars[-1].close_ms) if bars else 0
     rates = [D(x["rate"]) for x in funding]
+    if mode == "delta":
+        # Δrate 衡量**拥挤加速度**，与水平不同：水平是"贵不贵"，变化率是"变贵得快不快"
+        values = [D("0")] + [rates[i] - rates[i - 1] for i in range(1, len(rates))]
+    elif mode == "level":
+        values = list(rates)
+    else:
+        raise ValueError(f"mode 非法: {mode}")
     out: list[FundingSignal] = []
     for i, f in enumerate(funding):
         ts = int(f["funding_ms"])
         if ts < bars_start or ts > bars_end:
             continue
+        if mode == "delta" and i == 0:
+            continue
         lo = max(0, i - lookback)
-        window = rates[lo:i]                  # 不含当次，避免自我污染
+        window = values[lo:i]                 # 不含当次，避免自我污染
         if len(window) < min_history:
             continue
         n = D(len(window))
@@ -112,7 +122,7 @@ def funding_signals(funding: list[dict], bars: list[Candle], *,
         sd = var.sqrt()
         if sd <= 0:
             continue
-        z = (rates[i] - mean) / sd
+        z = (values[i] - mean) / sd
         if z >= z_threshold:
             out.append(FundingSignal(ts, rates[i], z, "SHORT"))   # 多头拥挤 → 做空
         elif z <= -z_threshold:

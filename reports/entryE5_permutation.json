@@ -1,0 +1,12 @@
+{
+  "n_perm": 120,
+  "seed": 20261125,
+  "grid_size": 96,
+  "real_best": {
+    "key": "delta-z2.5-stop1.5-trail0.75-h24",
+    "research_net": "7.8727"
+  },
+  "n_perm_better_or_equal": 10,
+  "p_value": "0.0833",
+  "verdict": "FAIL_OVERFIT"
+}

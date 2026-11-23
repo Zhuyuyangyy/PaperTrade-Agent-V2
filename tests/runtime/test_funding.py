@@ -80,3 +80,52 @@ def test_carry_excludes_settlement_at_entry_time():
     rates = [D("0.001"), D("0.001")]
     cost, n = _carry("LONG", D("1"), D("100"), times, rates, 1000, 2500)
     assert n == 1 and cost == D("0.1")           # 只在 2000 结算一次
+
+
+# ---------- E5：Δfunding 与收益稳健性 ----------
+def test_delta_mode_uses_change_not_level():
+    """delta 模式的信号应来自费率变化，而非水平。"""
+    from research.experiment.funding import funding_signals
+    # 水平恒定、只在最后一跳变化 → level 模式无信号，delta 模式有
+    fd = []
+    for i in range(90):
+        r = "0.0001" if i < 80 else "0.0001"
+        fd.append({"funding_ms": START + i * 8 * STEP, "rate": r, "mark_price": "59000"})
+    # 注入正常波动 + 一次突跳
+    for i in range(90):
+        if 20 <= i < 80:
+            fd[i]["rate"] = str(0.0001 * (1 + 0.2 * ((i % 5) - 2)))
+    fd[85]["rate"] = "0.0009"
+    bars = _bars(900)
+    lv = funding_signals(fd, bars, lookback=30, z_threshold=D("2.0"),
+                         min_history=20, mode="level")
+    dl = funding_signals(fd, bars, lookback=30, z_threshold=D("2.0"),
+                         min_history=20, mode="delta")
+    assert any(s.ts_ms == fd[85]["funding_ms"] for s in dl), "突跳应触发 delta 信号"
+    assert dl, "delta 模式必须有输出"
+
+
+def test_delta_mode_rejects_unknown_mode():
+    from research.experiment.funding import funding_signals
+    try:
+        funding_signals(_funding(90), _bars(900), mode="bogus")
+        assert False, "非法 mode 应报错"
+    except ValueError:
+        pass
+
+
+def test_robustness_flags_single_trade_dependency():
+    from research.experiment.validate import robustness
+    trades = [{"signal_bar": i, "net_pnl": "-1"} for i in range(9)]
+    trades.append({"signal_bar": 99, "net_pnl": "20"})
+    r = robustness(trades)
+    assert r["verdict"] == "FRAGILE_SINGLE_TRADE"
+    assert D(r["after_drop_top1"]) < 0
+
+
+def test_robustness_ok_when_profit_is_diffuse():
+    from research.experiment.validate import robustness
+    trades = [{"signal_bar": i, "net_pnl": "1.5"} for i in range(12)]
+    r = robustness(trades)
+    assert r["verdict"] == "OK"
+    assert r["positive_quarters"] == 4

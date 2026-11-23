@@ -168,3 +168,61 @@ def permutation_test(bars: list[Candle], *, n_perm: int = 1000, seed: int = 2026
 
 __all__ = ["grid_variants", "shuffle_bars", "best_on_research", "plateau",
            "permutation_test", "GRID_STOP", "GRID_TRAIL", "GRID_START"]
+
+
+def robustness(trades: list[dict], *, ts_key: str = "signal_bar",
+               pnl_key: str = "net_pnl", bars_per_day: int = 24) -> dict:
+    """收益稳健性：剔除最大盈利笔 + 按季度拆解。
+
+    置换检验回答「这套流程能否击败随机」；本函数回答
+    「真实收益是不是靠极少数几笔撑起来的」——两者缺一不可。
+    一个可用策略不应该因为剔掉一笔就归零。
+    """
+    pnls = sorted((D(str(t.get(pnl_key) or "0")) for t in trades), reverse=True)
+    n = len(pnls)
+    total = sum(pnls, D("0"))
+    if n == 0:
+        return {"n": 0, "total": "0", "verdict": "NO_TRADES"}
+
+    def drop(k: int) -> str:
+        return str(sum(pnls[k:], D("0")).quantize(D("0.0001")))
+
+    win = sum(1 for x in pnls if x > 0)
+    avg_w = sum((x for x in pnls if x > 0), D("0")) / max(1, win)
+    avg_l = sum((x for x in pnls if x <= 0), D("0")) / max(1, n - win)
+
+    # 季度拆解：用 signal_bar × bars_per_day 估算日期不精确，故由调用方给 ts_ms 更好；
+    # 这里按「时间顺序四分位」拆，避免依赖日历
+    quarters: list[dict] = []
+    if n >= 4:
+        ordered = sorted(trades, key=lambda t: int(t.get(ts_key) or 0))
+        size = max(1, n // 4)
+        for q in range(4):
+            rows = ordered[q * size:(q + 1) * size] if q < 3 else ordered[q * size:]
+            net = sum((D(str(r.get(pnl_key) or "0")) for r in rows), D("0"))
+            quarters.append({"bucket": f"Q{q+1}", "n": len(rows),
+                             "net": str(net.quantize(D("0.0001")))})
+
+    pos_q = sum(1 for q in quarters if D(q["net"]) > 0)
+    drop1 = D(drop(1))
+    verdict = ("FRAGILE_SINGLE_TRADE" if total > 0 and drop1 <= 0
+               else "FRAGILE_FEW_TRADES" if total > 0 and D(drop(2)) <= 0
+               else "OK" if total > 0 else "NEGATIVE")
+    return {
+        "n": n, "total": str(total.quantize(D("0.0001"))),
+        "max_trade": str(pnls[0].quantize(D("0.0001"))),
+        "second_trade": str(pnls[1].quantize(D("0.0001"))) if n > 1 else "0",
+        "after_drop_top1": drop(1), "after_drop_top2": drop(2),
+        "after_drop_top3": drop(3),
+        "win_rate_pct": str((D(win) / n * 100).quantize(D("0.01"))),
+        "avg_win": str(avg_w.quantize(D("0.0001"))),
+        "avg_loss": str(avg_l.quantize(D("0.0001"))),
+        "payoff_ratio": str((abs(avg_w / avg_l)).quantize(D("0.01"))) if avg_l else "-",
+        "quarters": quarters, "positive_quarters": pos_q,
+        "verdict": verdict,
+        "note": "剔除前 1 大盈利即转负 = 收益依赖单笔，不得视为策略优势。",
+    }
+
+
+__all__ = ["grid_variants", "shuffle_bars", "best_on_research", "plateau",
+           "permutation_test", "robustness", "GRID_STOP", "GRID_TRAIL", "GRID_START"]
