@@ -50,8 +50,9 @@ class BarSet:
 
 
 def _fetch_page(start_ms: int, limit: int = 1000,
-                fetch: Callable[[str], object] | None = None) -> list[list]:
-    url = f"{KLINE_URL}?symbol=BTCUSDT&interval=5m&limit={limit}&startTime={start_ms}"
+                fetch: Callable[[str], object] | None = None,
+                interval: str = "5m", symbol: str = "BTCUSDT") -> list[list]:
+    url = f"{KLINE_URL}?symbol={symbol}&interval={interval}&limit={limit}&startTime={start_ms}"
     if fetch is not None:
         return list(fetch(url) or [])
     for attempt in range(4):
@@ -67,6 +68,12 @@ def _fetch_page(start_ms: int, limit: int = 1000,
             if exc.code in (418, 429) and attempt < 3:
                 continue
             raise
+        except (TimeoutError, OSError) as exc:
+            # GET 无副作用：读超时/连接断重试，不把半个窗口的缓存写盘
+            if attempt < 3:
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            raise RuntimeError(f"klines 拉取失败: {type(exc).__name__}: {exc}") from exc
     return []
 
 
@@ -109,12 +116,50 @@ def load_bars(*, days: int = 60, cache: Path,
     return _validate([_row_to_candle(rows[k]) for k in sorted(rows)], q)
 
 
-def _row_to_candle(r: list) -> Candle:
+def load_klines(*, interval: str, step_ms: int, days: int, cache: Path,
+                symbol: str = "BTCUSDT",
+                fetch: Callable[[str], object] | None = None,
+                end_ms: int | None = None) -> BarSet:
+    """任意周期的分页拉取 + 缓存 + 缺口校验（与 load_bars 同口径）。"""
+    q = BarQuality(requested_days=days)
+    if cache.exists():
+        payload = json.loads(cache.read_text(encoding="utf-8"))
+        bars = [_row_to_candle(r, step_ms) for r in payload.get("rows", [])]
+        q.cache_hit = True
+        return _validate(bars, q, step_ms)
+
+    end = int(end_ms or (time.time() * 1000))
+    end = end // step_ms * step_ms
+    start = end - days * 86_400_000
+    start = start // step_ms * step_ms
+    rows: dict[int, list] = {}
+    cursor = start
+    for _ in range(2000):
+        page = _fetch_page(cursor, 1000, fetch=fetch, interval=interval, symbol=symbol)
+        q.requests += 1
+        if not page:
+            break
+        for r in page:
+            rows[int(r[0])] = list(r)
+        nxt = int(page[-1][0]) + step_ms
+        if nxt <= cursor or nxt >= end:
+            break
+        cursor = nxt
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    cache.write_text(json.dumps({
+        "symbol": symbol, "interval": interval, "start_ms": start, "end_ms": end,
+        "fetched_at_ms": int(time.time() * 1000),
+        "rows": [rows[k] for k in sorted(rows)],
+    }, ensure_ascii=False), encoding="utf-8")
+    return _validate([_row_to_candle(rows[k], step_ms) for k in sorted(rows)], q, step_ms)
+
+
+def _row_to_candle(r: list, step_ms: int = STEP_MS) -> Candle:
     return Candle(int(r[0]), D(str(r[1])), D(str(r[2])), D(str(r[3])),
-                  D(str(r[4])), D(str(r[5])), STEP_MS)
+                  D(str(r[4])), D(str(r[5])), step_ms)
 
 
-def _validate(bars: list[Candle], q: BarQuality) -> BarSet:
+def _validate(bars: list[Candle], q: BarQuality, step_ms: int = STEP_MS) -> BarSet:
     q.bars = len(bars)
     if not bars:
         return BarSet(bars, q)
@@ -126,7 +171,7 @@ def _validate(bars: list[Candle], q: BarQuality) -> BarSet:
             q.duplicate_open_ms += 1
         seen.add(int(a.open_ms))
         gap = int(b.open_ms - a.open_ms)
-        if gap > STEP_MS:
+        if gap > step_ms:
             q.gaps += 1
             q.max_gap_ms = max(q.max_gap_ms, gap)
     return BarSet(bars, q)

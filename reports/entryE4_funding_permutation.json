@@ -1,0 +1,13 @@
+{
+  "n_perm": 120,
+  "seed": 20261124,
+  "grid_size": 72,
+  "real_best": {
+    "key": "z2.5-stop1.5-trail0.75-h24",
+    "research_net": "2.6316"
+  },
+  "n_perm_better_or_equal": 12,
+  "p_value": "0.1000",
+  "verdict": "FAIL_OVERFIT",
+  "note": "p = 假行情中能优化出 >= 真实成绩的比例；p<=5% 才算过。"
+}
