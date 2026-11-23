@@ -1,0 +1,27 @@
+{
+  "n_perm": 1000,
+  "seed": 20261123,
+  "tf": "4h",
+  "grid_size": 32,
+  "real_best": {
+    "variant": "4h-trail",
+    "stop": "2.5",
+    "trail": "0.75",
+    "start": "1.0",
+    "research_net": "3.6543",
+    "oos_net": "2.3890",
+    "n": 17,
+    "win_pct": "82.35"
+  },
+  "perm_best_net": {
+    "median": "4.1073",
+    "p90": "14.6976",
+    "p95": "18.0011",
+    "max": "36.3787",
+    "min": "-15.5740"
+  },
+  "n_perm_better_or_equal": 522,
+  "p_value": "0.5220",
+  "verdict": "FAIL_OVERFIT",
+  "note": "p = 假行情中能优化出 >= 真实成绩的比例；p<=5% 才算过。"
+}

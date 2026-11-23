@@ -213,3 +213,65 @@ def test_structure_cost_to_atr_ratio_ordering():
             ratios[tf] = rt / (sum(vals) / len(vals))
     ordered = [ratios[t] for t in ("5m", "15m", "1h", "4h") if t in ratios]
     assert all(ordered[i] > ordered[i + 1] for i in range(len(ordered) - 1))
+
+
+# ---------- E3：反过拟合验证 ----------
+def test_shuffle_preserves_endpoints_and_distribution():
+    from research.experiment.validate import shuffle_bars
+    bars = _bars(400)
+    fake = shuffle_bars(bars, 7)
+    assert len(fake) == len(bars)
+    # 起点终点必须一致（否则等于换了行情，不是置换）
+    assert abs(fake[0].close - bars[0].close) < D("0.01")
+    assert abs(fake[-1].close - bars[-1].close) < D("0.01")
+    # OHLC 自洽
+    for c in fake:
+        assert c.low <= min(c.open, c.close) and c.high >= max(c.open, c.close)
+
+
+def test_shuffle_destroys_autocorrelation_and_is_seeded():
+    from research.experiment.validate import shuffle_bars
+    # 构造强趋势序列：自相关接近 1
+    bars = []
+    start = (1_790_000_000_000 // 300_000) * 300_000
+    px = D("59000")
+    for i in range(300):
+        nxt = px * (D("1") + (D("0.001") if i % 2 == 0 else D("-0.0006")))
+        bars.append(Candle(start + i * STEP, px, max(px, nxt) + D("1"),
+                           min(px, nxt) - D("1"), nxt, D("10"), STEP))
+        px = nxt
+
+    def acf1(xs):
+        m = sum(xs) / len(xs)
+        num = sum((xs[i] - m) * (xs[i - 1] - m) for i in range(1, len(xs)))
+        den = sum((v - m) ** 2 for v in xs)
+        return num / den if den else 0
+
+    def rets(xs):
+        return [float(xs[i].close / xs[i - 1].close) - 1 for i in range(1, len(xs))]
+
+    real_acf = acf1(rets(bars))
+    fake_acf = acf1(rets(shuffle_bars(bars, 11)))
+    assert abs(fake_acf) < abs(real_acf) / 2, "置换后自相关必须显著下降"
+    # 同种子可复算
+    a, b = shuffle_bars(bars, 3), shuffle_bars(bars, 3)
+    assert [c.close for c in a] == [c.close for c in b]
+
+
+def test_grid_variants_is_full_factorial():
+    from research.experiment.validate import (GRID_START, GRID_STOP, GRID_TRAIL,
+                                              grid_variants)
+    vs = grid_variants("4h")
+    assert len(vs) == len(GRID_STOP) * len(GRID_TRAIL) * len(GRID_START)
+    assert len({(str(v.stop_atr), str(v.trail_atr), str(v.trail_start_atr))
+                for v in vs}) == len(vs)
+
+
+def test_permutation_test_shape_and_pvalue_bounds():
+    from research.experiment.validate import permutation_test
+    bars = _bars(400)
+    r = permutation_test(bars, n_perm=3, seed=1, tf="5m")
+    assert 0 <= D(r["p_value"]) <= 1
+    assert r["n_perm"] == 3
+    assert r["verdict"] in ("PASS", "FAIL_OVERFIT")
+    assert "median" in r["perm_best_net"]
