@@ -106,4 +106,101 @@ def simulate_hold(bars: list[Candle], signal_bar: int, side: str, notional: D,
     )
 
 
-__all__ = ["simulate_hold"]
+def simulate_trail(bars: list[Candle], signal_bar: int, side: str, notional: D,
+                   stop_price: D, *, root: str = "",
+                   fee_bps: D = D("4"), slippage_bps: D = D("5"),
+                   funding_bps_per_8h: D = D("1"),
+                   max_hold_bars: int = 72,
+                   trail_atr: D = D("1.0"), atr_abs: D | None = None,
+                   trail_start_atr: D = D("1.0")) -> TradeResult | None:
+    """移动止损退出：盈利达 trail_start_atr×ATR 后启动，止损跟随最优价 trail_atr×ATR。
+
+    只收紧不放松；跳空按更差开盘价成交；其余（流水/费用/资金费）与 simulate_hold 同口径。
+    """
+    if atr_abs is None or atr_abs <= 0:
+        return simulate_hold(bars, signal_bar, side, notional, stop_price,
+                             stop_price, root=root, fee_bps=fee_bps,
+                             slippage_bps=slippage_bps,
+                             funding_bps_per_8h=funding_bps_per_8h,
+                             max_hold_bars=max_hold_bars)
+    ledger = CashLedger()
+    try:
+        # 先用 stop_price 开仓（tp 用不到，传 stop 占位）
+        pos, entry_flows = open_at_next_bar(
+            bars, signal_bar, side, notional, stop_price, stop_price,
+            fee_bps=fee_bps, slippage_bps=slippage_bps, ref=root)
+    except ValueError:
+        return None
+    for f in entry_flows:
+        ledger.record(f.ts_ms, f.kind, f.amount, f.ref)
+
+    entry = pos.entry_fill
+    direction = D("1") if side == "LONG" else D("-1")
+    mfe = mae = D("0")
+    stop = D(stop_price)
+    best = entry
+    armed = False
+    exit_fill = exit_reason = ""
+    exit_ts = 0
+    last_bar = min(len(bars) - 1, signal_bar + max_hold_bars)
+
+    for j in range(signal_bar + 1, last_bar + 1):
+        bar = bars[j]
+        fav = ((bar.high - entry) if direction > 0 else (entry - bar.low)) * pos.qty
+        adv = ((entry - bar.low) if direction > 0 else (bar.high - entry)) * pos.qty
+        mfe, mae = max(mfe, fav), max(mae, adv)
+
+        # 先判跳空/止损（保守：同一根内先看止损）
+        gap_stop = (bar.open <= stop) if direction > 0 else (bar.open >= stop)
+        hit_stop = (bar.low <= stop) if direction > 0 else (bar.high >= stop)
+        if gap_stop or hit_stop:
+            raw = bar.open if gap_stop else stop
+            exit_fill = _fill_price(raw, "SHORT" if direction > 0 else "LONG", slippage_bps)
+            exit_reason = "TRAIL_STOP" if armed else "STOP"
+            exit_ts = int(bar.open_ms if gap_stop else bar.close_ms)
+            break
+
+        # 更新最优价与移动止损（只用本根已收盘信息，下一根生效）
+        if direction > 0:
+            best = max(best, bar.high)
+            if not armed and (best - entry) >= trail_start_atr * atr_abs:
+                armed = True
+            if armed:
+                stop = max(stop, best - trail_atr * atr_abs)
+        else:
+            best = min(best, bar.low)
+            if not armed and (entry - best) >= trail_start_atr * atr_abs:
+                armed = True
+            if armed:
+                stop = min(stop, best + trail_atr * atr_abs)
+
+    if not exit_reason:
+        last = bars[last_bar]
+        exit_fill = _fill_price(last.close, "SHORT" if direction > 0 else "LONG", slippage_bps)
+        exit_reason = "TIME_EXIT"
+        exit_ts = int(last.close_ms)
+
+    gross = (exit_fill - entry) * pos.qty * direction
+    exit_fee = pos.qty * exit_fill * D(fee_bps) / BPS
+    hours = D(max(0, exit_ts - pos.entry_ts_ms)) / D("3_600_000")
+    funding = _funding(pos, hours, funding_bps_per_8h)
+    net = gross - pos.entry_fee - exit_fee - funding
+
+    ledger.record(exit_ts, "EXIT_PROCEEDS", pos.qty * entry + gross, root)
+    ledger.record(exit_ts, "EXIT_FEE", -exit_fee, root)
+    ledger.record(exit_ts, "FUNDING", -funding, root)
+    assert abs((ledger.cash - ledger.starting_cash) - net) < D("0.0000001"), \
+        f"流水与净盈亏不符: cash={ledger.cash} net={net}"
+
+    return TradeResult(
+        signal_bar=int(signal_bar), entry_bar=int(signal_bar + 1), side=side,
+        signal_close=D(bars[signal_bar].close), entry_fill=entry, exit_fill=exit_fill,
+        qty=pos.qty, gross=gross, entry_fee=pos.entry_fee, exit_fee=exit_fee,
+        funding=funding, net_pnl=net, exit_reason=exit_reason,
+        holding_ms=max(0, exit_ts - pos.entry_ts_ms), mfe=mfe, mae=mae,
+        flows=[{"kind": f.kind, "amount": str(f.amount), "ts_ms": f.ts_ms}
+               for f in ledger.flows],
+    )
+
+
+__all__ = ["simulate_hold", "simulate_trail"]

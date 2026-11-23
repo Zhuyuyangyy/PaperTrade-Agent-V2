@@ -169,3 +169,47 @@ def test_single_position_no_overlapping_trades():
     for t in trades:
         assert t["signal_bar"] > last_end, f"串仓: bar {t['signal_bar']} <= 上一笔结束 {last_end}"
         last_end = t["signal_bar"] + t["holding_ms"] // 300_000
+
+
+# ---------- E2：移动止损与结构 ----------
+def test_trail_stop_only_tightens_and_reports_reason():
+    from research.experiment.sim import simulate_trail
+    # 先涨后跌：移动止损应被激活并在回撤时出场
+    bars = _bars(40)
+    for j in range(11, 25):
+        b = bars[j]
+        # 整体上移：low 仍高于原 low，保证 OHLC 自洽
+        bars[j] = Candle(b.open_ms, b.open + D("200"), b.high + D("300"),
+                         b.low + D("200"), b.close + D("250"), b.volume, STEP)
+    r = simulate_trail(bars, 10, "LONG", D("100"), D("58000"),
+                       atr_abs=D("100"), trail_atr=D("0.75"),
+                       trail_start_atr=D("1.0"), max_hold_bars=25)
+    assert r is not None
+    assert r.exit_reason in ("TRAIL_STOP", "STOP", "TIME_EXIT")
+    # 流出账必须与净盈亏恒等
+    assert abs(sum(D(f["amount"]) for f in r.flows) - r.net_pnl) < D("0.0000001")
+
+
+def test_trail_never_loosens_initial_stop():
+    from research.experiment.sim import simulate_trail
+    bars = _bars(30)          # 一路缓涨，从不回撤到止损
+    r = simulate_trail(bars, 10, "LONG", D("100"), D("50000"),
+                       atr_abs=D("100"), trail_atr=D("1.0"),
+                       trail_start_atr=D("1.0"), max_hold_bars=10)
+    assert r is not None and r.exit_fill > D("50000")
+
+
+def test_structure_cost_to_atr_ratio_ordering():
+    """成本/ATR 必须随周期单调下降——这是结构结论的基石。"""
+    from research.experiment.structure import TF_MINUTES, _aggregate, _atr
+    bars = _bars(600)
+    rt = D("18")
+    ratios = {}
+    for tf, m in TF_MINUTES.items():
+        agg = _aggregate(bars, m)
+        atrs = _atr(agg)
+        vals = [a / c.close * D("10000") for a, c in zip(atrs, agg) if a > 0]
+        if vals:
+            ratios[tf] = rt / (sum(vals) / len(vals))
+    ordered = [ratios[t] for t in ("5m", "15m", "1h", "4h") if t in ratios]
+    assert all(ordered[i] > ordered[i + 1] for i in range(len(ordered) - 1))

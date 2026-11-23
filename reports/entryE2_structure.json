@@ -1,0 +1,346 @@
+{
+  "bars": 17281,
+  "quality": {
+    "requested_days": 60,
+    "bars": 17281,
+    "gaps": 0,
+    "max_gap_ms": 0,
+    "first_open_ms": 1790214600000,
+    "last_open_ms": 1795398600000,
+    "duplicate_open_ms": 0,
+    "cache_hit": false,
+    "requests": 18
+  },
+  "variants": [
+    {
+      "variant": "5m-fixed",
+      "tf": "5m",
+      "exit_mode": "fixed",
+      "config": {
+        "stop_atr": "1.5",
+        "tp_atr": "3",
+        "trail_atr": "1.0",
+        "gate_mult": "1.0",
+        "hold_tf_bars": 24,
+        "roundtrip_bps": "18"
+      },
+      "all": {
+        "n": 214,
+        "net": "-41.3761",
+        "avg": "-0.1933",
+        "win_pct": "28.97",
+        "fees": "17.1205",
+        "avg_hold_h": "0.99",
+        "max_dd_pct": "4.1502",
+        "exits": {
+          "TIME_EXIT": 48,
+          "STOP": 120,
+          "TAKE_PROFIT": 46
+        }
+      },
+      "research": {
+        "n": 89,
+        "net": "-15.9292",
+        "avg": "-0.1790",
+        "win_pct": "28.09",
+        "fees": "7.1199",
+        "avg_hold_h": "0.94",
+        "max_dd_pct": "1.6124",
+        "exits": {
+          "TIME_EXIT": 19,
+          "STOP": 50,
+          "TAKE_PROFIT": 20
+        }
+      },
+      "oos": {
+        "n": 125,
+        "net": "-25.4468",
+        "avg": "-0.2036",
+        "win_pct": "29.60",
+        "fees": "10.0006",
+        "avg_hold_h": "1.02",
+        "max_dd_pct": "2.5573",
+        "exits": {
+          "TIME_EXIT": 29,
+          "STOP": 70,
+          "TAKE_PROFIT": 26
+        }
+      }
+    },
+    {
+      "variant": "5m-trail",
+      "tf": "5m",
+      "exit_mode": "trail",
+      "config": {
+        "stop_atr": "1.5",
+        "tp_atr": "3",
+        "trail_atr": "1.0",
+        "gate_mult": "1.0",
+        "hold_tf_bars": 24,
+        "roundtrip_bps": "18"
+      },
+      "all": {
+        "n": 266,
+        "net": "-37.5427",
+        "avg": "-0.1411",
+        "win_pct": "35.34",
+        "fees": "21.2848",
+        "avg_hold_h": "0.68",
+        "max_dd_pct": "3.7751",
+        "exits": {
+          "TRAIL_STOP": 144,
+          "STOP": 107,
+          "TIME_EXIT": 15
+        }
+      },
+      "research": {
+        "n": 109,
+        "net": "-17.4977",
+        "avg": "-0.1605",
+        "win_pct": "30.28",
+        "fees": "8.7207",
+        "avg_hold_h": "0.65",
+        "max_dd_pct": "1.7582",
+        "exits": {
+          "TRAIL_STOP": 58,
+          "STOP": 46,
+          "TIME_EXIT": 5
+        }
+      },
+      "oos": {
+        "n": 157,
+        "net": "-20.0450",
+        "avg": "-0.1277",
+        "win_pct": "38.85",
+        "fees": "12.5641",
+        "avg_hold_h": "0.69",
+        "max_dd_pct": "2.0173",
+        "exits": {
+          "TRAIL_STOP": 86,
+          "STOP": 61,
+          "TIME_EXIT": 10
+        }
+      }
+    },
+    {
+      "variant": "15m-fixed",
+      "tf": "15m",
+      "exit_mode": "fixed",
+      "config": {
+        "stop_atr": "1.5",
+        "tp_atr": "3",
+        "trail_atr": "1.0",
+        "gate_mult": "1.0",
+        "hold_tf_bars": 24,
+        "roundtrip_bps": "18"
+      },
+      "all": {
+        "n": 200,
+        "net": "-31.6597",
+        "avg": "-0.1583",
+        "win_pct": "34.00",
+        "fees": "15.9928",
+        "avg_hold_h": "2.52",
+        "max_dd_pct": "3.5306",
+        "exits": {
+          "STOP": 110,
+          "TAKE_PROFIT": 55,
+          "TIME_EXIT": 35
+        }
+      },
+      "research": {
+        "n": 135,
+        "net": "-19.6901",
+        "avg": "-0.1459",
+        "win_pct": "34.81",
+        "fees": "10.7982",
+        "avg_hold_h": "2.46",
+        "max_dd_pct": "2.0688",
+        "exits": {
+          "STOP": 74,
+          "TAKE_PROFIT": 39,
+          "TIME_EXIT": 22
+        }
+      },
+      "oos": {
+        "n": 65,
+        "net": "-11.9696",
+        "avg": "-0.1841",
+        "win_pct": "32.31",
+        "fees": "5.1946",
+        "avg_hold_h": "2.66",
+        "max_dd_pct": "1.4633",
+        "exits": {
+          "STOP": 36,
+          "TIME_EXIT": 13,
+          "TAKE_PROFIT": 16
+        }
+      }
+    },
+    {
+      "variant": "15m-trail",
+      "tf": "15m",
+      "exit_mode": "trail",
+      "config": {
+        "stop_atr": "1.5",
+        "tp_atr": "3",
+        "trail_atr": "1.0",
+        "gate_mult": "1.0",
+        "hold_tf_bars": 24,
+        "roundtrip_bps": "18"
+      },
+      "all": {
+        "n": 259,
+        "net": "-46.1182",
+        "avg": "-0.1781",
+        "win_pct": "37.45",
+        "fees": "20.7136",
+        "avg_hold_h": "1.60",
+        "max_dd_pct": "4.7448",
+        "exits": {
+          "STOP": 110,
+          "TRAIL_STOP": 140,
+          "TIME_EXIT": 9
+        }
+      },
+      "research": {
+        "n": 180,
+        "net": "-32.8497",
+        "avg": "-0.1825",
+        "win_pct": "35.00",
+        "fees": "14.3978",
+        "avg_hold_h": "1.54",
+        "max_dd_pct": "3.2920",
+        "exits": {
+          "STOP": 78,
+          "TRAIL_STOP": 96,
+          "TIME_EXIT": 6
+        }
+      },
+      "oos": {
+        "n": 79,
+        "net": "-13.2685",
+        "avg": "-0.1680",
+        "win_pct": "43.04",
+        "fees": "6.3157",
+        "avg_hold_h": "1.75",
+        "max_dd_pct": "1.4529",
+        "exits": {
+          "STOP": 32,
+          "TRAIL_STOP": 44,
+          "TIME_EXIT": 3
+        }
+      }
+    },
+    {
+      "variant": "1h-fixed",
+      "tf": "1h",
+      "exit_mode": "fixed",
+      "config": {
+        "stop_atr": "1.5",
+        "tp_atr": "3",
+        "trail_atr": "1.0",
+        "gate_mult": "1.0",
+        "hold_tf_bars": 24,
+        "roundtrip_bps": "18"
+      },
+      "all": {
+        "n": 61,
+        "net": "-31.2902",
+        "avg": "-0.5130",
+        "win_pct": "22.95",
+        "fees": "4.8755",
+        "avg_hold_h": "11.26",
+        "max_dd_pct": "3.2040",
+        "exits": {
+          "STOP": 41,
+          "TIME_EXIT": 11,
+          "TAKE_PROFIT": 9
+        }
+      },
+      "research": {
+        "n": 48,
+        "net": "-18.4417",
+        "avg": "-0.3842",
+        "win_pct": "25.00",
+        "fees": "3.8388",
+        "avg_hold_h": "10.10",
+        "max_dd_pct": "2.0373",
+        "exits": {
+          "STOP": 33,
+          "TIME_EXIT": 7,
+          "TAKE_PROFIT": 8
+        }
+      },
+      "oos": {
+        "n": 13,
+        "net": "-12.8485",
+        "avg": "-0.9883",
+        "win_pct": "15.38",
+        "fees": "1.0366",
+        "avg_hold_h": "15.54",
+        "max_dd_pct": "1.5090",
+        "exits": {
+          "TAKE_PROFIT": 1,
+          "TIME_EXIT": 4,
+          "STOP": 8
+        }
+      }
+    },
+    {
+      "variant": "1h-trail",
+      "tf": "1h",
+      "exit_mode": "trail",
+      "config": {
+        "stop_atr": "1.5",
+        "tp_atr": "3",
+        "trail_atr": "1.0",
+        "gate_mult": "1.0",
+        "hold_tf_bars": 24,
+        "roundtrip_bps": "18"
+      },
+      "all": {
+        "n": 79,
+        "net": "-14.6148",
+        "avg": "-0.1850",
+        "win_pct": "46.84",
+        "fees": "6.3148",
+        "avg_hold_h": "7.62",
+        "max_dd_pct": "1.5918",
+        "exits": {
+          "STOP": 31,
+          "TIME_EXIT": 5,
+          "TRAIL_STOP": 43
+        }
+      },
+      "research": {
+        "n": 59,
+        "net": "-12.1194",
+        "avg": "-0.2054",
+        "win_pct": "44.07",
+        "fees": "4.7188",
+        "avg_hold_h": "7.10",
+        "max_dd_pct": "1.5918",
+        "exits": {
+          "STOP": 25,
+          "TIME_EXIT": 3,
+          "TRAIL_STOP": 31
+        }
+      },
+      "oos": {
+        "n": 20,
+        "net": "-2.4955",
+        "avg": "-0.1248",
+        "win_pct": "55.00",
+        "fees": "1.5961",
+        "avg_hold_h": "9.18",
+        "max_dd_pct": "0.8365",
+        "exits": {
+          "TRAIL_STOP": 12,
+          "TIME_EXIT": 2,
+          "STOP": 6
+        }
+      }
+    }
+  ]
+}
