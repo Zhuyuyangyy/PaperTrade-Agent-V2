@@ -1,0 +1,98 @@
+{
+  "round_trip_bps": 18.0,
+  "rows": [
+    {
+      "tf": "5m",
+      "bars": 17281,
+      "source_step_ms": 300000,
+      "source": "data/v3_entryE/bars_5m_cache.json",
+      "factor": 1,
+      "target_step_ms": 300000,
+      "atr": {
+        "n": 5000,
+        "period": 14,
+        "median_bps": 13.0,
+        "p25_bps": 8.6,
+        "p75_bps": 19.6,
+        "mean_bps": 15.5
+      },
+      "pressure": {
+        "round_trip_bps": 18.0,
+        "atr_bps": 13.0,
+        "cost_over_atr_pct": 138.5,
+        "atr_needed_to_break_even": 1.385,
+        "note": "比例 >100% 表示一次完整往返的成本大于该周期一根 K 线的平均波幅，意味着一根 K 线级别的优势在数学上不可能覆盖成本。"
+      }
+    },
+    {
+      "tf": "15m",
+      "bars": 5759,
+      "source_step_ms": 300000,
+      "source": "data/v3_entryE/bars_5m_cache.json",
+      "factor": 3,
+      "target_step_ms": 900000,
+      "atr": {
+        "n": 5000,
+        "period": 14,
+        "median_bps": 24.7,
+        "p25_bps": 16.7,
+        "p75_bps": 35.7,
+        "mean_bps": 28.2
+      },
+      "pressure": {
+        "round_trip_bps": 18.0,
+        "atr_bps": 24.7,
+        "cost_over_atr_pct": 72.9,
+        "atr_needed_to_break_even": 0.729,
+        "note": "比例 >100% 表示一次完整往返的成本大于该周期一根 K 线的平均波幅，意味着一根 K 线级别的优势在数学上不可能覆盖成本。"
+      }
+    },
+    {
+      "tf": "1h",
+      "bars": 17521,
+      "source_step_ms": 3600000,
+      "source": "data/v3_funding/bars_1h.json",
+      "factor": 1,
+      "target_step_ms": 3600000,
+      "atr": {
+        "n": 5000,
+        "period": 14,
+        "median_bps": 58.4,
+        "p25_bps": 42.5,
+        "p75_bps": 78.6,
+        "mean_bps": 64.4
+      },
+      "pressure": {
+        "round_trip_bps": 18.0,
+        "atr_bps": 58.4,
+        "cost_over_atr_pct": 30.8,
+        "atr_needed_to_break_even": 0.308,
+        "note": "比例 >100% 表示一次完整往返的成本大于该周期一根 K 线的平均波幅，意味着一根 K 线级别的优势在数学上不可能覆盖成本。"
+      }
+    },
+    {
+      "tf": "4h",
+      "bars": 4380,
+      "source_step_ms": 3600000,
+      "source": "data/v3_funding/bars_1h.json",
+      "factor": 4,
+      "target_step_ms": 14400000,
+      "atr": {
+        "n": 4366,
+        "period": 14,
+        "median_bps": 120.7,
+        "p25_bps": 94.9,
+        "p75_bps": 156.6,
+        "mean_bps": 132.7
+      },
+      "pressure": {
+        "round_trip_bps": 18.0,
+        "atr_bps": 120.7,
+        "cost_over_atr_pct": 14.9,
+        "atr_needed_to_break_even": 0.149,
+        "note": "比例 >100% 表示一次完整往返的成本大于该周期一根 K 线的平均波幅，意味着一根 K 线级别的优势在数学上不可能覆盖成本。"
+      }
+    }
+  ],
+  "note": "5m/15m 来自近 60 天缓存，1h/4h 来自 2 年缓存；只做量级比较。"
+}

@@ -85,6 +85,136 @@ def _carry(side: str, qty: D, base: D, f_times: list[int], f_rates: list[D],
     return total, n
 
 
+def prepare_context(bars: list[Candle], s: FundingSignal) -> dict | None:
+    """把信号翻成执行上下文。
+
+    这里算出的东西（K 线下标、ATR、下一根开盘价）**与退出参数无关**，
+    因此可以被网格扫描和随机对照反复复用，避免重复计算。
+    返回 None 表示该信号不可交易（历史不足/ATR 无效），与旧口径一致。
+    """
+    idx = _index_at(bars, s.ts_ms)
+    if idx < 20 or idx + 1 >= len(bars):
+        return None
+    atr = _atr14(bars, idx)
+    if atr <= 0:
+        return None
+    return {"idx": idx, "atr": atr, "default_side": s.side,
+            "z": str(s.z), "rate": str(s.rate),
+            "entry_open_ms": int(bars[idx + 1].open_ms),
+            "ref": bars[idx + 1].open}
+
+
+def simulate_signal(bars: list[Candle], f_times: list[int], f_rates: list[D],
+                    ctx: dict, side: str, p: FundingParams, *,
+                    fee_bps: D | None = None,
+                    slippage_bps: D | None = None,
+                    notional: D | None = None) -> dict:
+    """单笔撮合：**唯一实现**，E5 回测与 R0 随机基线共用，防止口径漂移。
+
+    成本参数可覆盖（用于成本敏感性实验），默认取 ``p`` 上的冻结值。
+    """
+    fee_bps = p.fee_bps if fee_bps is None else fee_bps
+    slippage_bps = p.slippage_bps if slippage_bps is None else slippage_bps
+    notional = p.notional if notional is None else notional
+
+    idx = int(ctx["idx"])
+    atr = ctx["atr"]
+    ref = ctx["ref"]
+    entry_bar = bars[idx + 1]
+    sign = D("1") if side == "LONG" else D("-1")
+    stop = ref - sign * p.stop_atr * atr
+    entry_fill = _fill_price(ref, side, slippage_bps)
+    qty = notional / entry_fill
+
+    stop_cur = stop
+    best = entry_fill
+    armed = False
+    exit_fill = exit_reason = ""
+    exit_ts = 0
+    last = min(len(bars) - 1, idx + 1 + p.hold_bars)
+    for j in range(idx + 1, last + 1):
+        bar = bars[j]
+        gap_stop = (bar.open <= stop_cur) if sign > 0 else (bar.open >= stop_cur)
+        hit_stop = (bar.low <= stop_cur) if sign > 0 else (bar.high >= stop_cur)
+        if gap_stop or hit_stop:
+            raw = bar.open if gap_stop else stop_cur
+            exit_fill = _fill_price(raw, "SHORT" if sign > 0 else "LONG", slippage_bps)
+            exit_reason = "TRAIL_STOP" if armed else "STOP"
+            exit_ts = int(bar.open_ms if gap_stop else bar.close_ms)
+            break
+        if sign > 0:
+            best = max(best, bar.high)
+            if not armed and (best - entry_fill) >= p.trail_start_atr * atr:
+                armed = True
+            if armed:
+                stop_cur = max(stop_cur, best - p.trail_atr * atr)
+        else:
+            best = min(best, bar.low)
+            if not armed and (entry_fill - best) >= p.trail_start_atr * atr:
+                armed = True
+            if armed:
+                stop_cur = min(stop_cur, best + p.trail_atr * atr)
+    if not exit_reason:
+        b = bars[last]
+        exit_fill = _fill_price(b.close, "SHORT" if sign > 0 else "LONG", slippage_bps)
+        exit_reason = "TIME_EXIT"
+        exit_ts = int(b.close_ms)
+
+    gross = (exit_fill - entry_fill) * qty * sign
+    entry_fee = notional * fee_bps / BPS
+    exit_fee = qty * exit_fill * fee_bps / BPS
+    carry, n_carry = _carry(side, qty, entry_fill, f_times, f_rates,
+                            int(entry_bar.open_ms), exit_ts)
+    net = gross - entry_fee - exit_fee - carry
+
+    ledger = CashLedger()
+    ledger.record(int(entry_bar.open_ms), "ENTRY_NOTIONAL", -notional)
+    ledger.record(int(entry_bar.open_ms), "ENTRY_FEE", -entry_fee)
+    ledger.record(exit_ts, "EXIT_PROCEEDS", qty * entry_fill + gross)
+    ledger.record(exit_ts, "EXIT_FEE", -exit_fee)
+    ledger.record(exit_ts, "FUNDING", -carry)
+    assert abs((ledger.cash - ledger.starting_cash) - net) < D("0.0000001"), \
+        f"流水与净盈亏不符: {ledger.cash} vs {net}"
+
+    r = TradeResult(
+        signal_bar=idx, entry_bar=idx + 1, side=side, signal_close=D(bars[idx].close),
+        entry_fill=entry_fill, exit_fill=exit_fill, qty=qty, gross=gross,
+        entry_fee=entry_fee, exit_fee=exit_fee, funding=carry, net_pnl=net,
+        exit_reason=exit_reason, holding_ms=max(0, exit_ts - int(entry_bar.open_ms)),
+        mfe=D("0"), mae=D("0"),
+        flows=[{"kind": f.kind, "amount": str(f.amount)} for f in ledger.flows])
+    d = r.to_dict()
+    d.update({"z": str(ctx["z"]), "rate": str(ctx["rate"]), "carry_events": n_carry,
+              "atr_bps": str((atr / ref * BPS).quantize(D("0.1"))),
+              # 供重叠度/暴露度分析，不参与盈亏计算
+              "entry_ts_ms": int(entry_bar.open_ms), "exit_ts_ms": int(exit_ts)})
+    return d
+
+
+def book_stats(rows: list[dict]) -> dict:
+    """逐笔集合 → 统计（净值/胜率/回撤/持仓/退出分布）。"""
+    if not rows:
+        return {"n": 0}
+    pnl = sum((D(x["net_pnl"]) for x in rows), D("0"))
+    carry = sum((D(x["funding"]) for x in rows), D("0"))
+    wins = sum(1 for x in rows if D(x["net_pnl"]) > 0)
+    eq, peak, dd = D("1000"), D("1000"), D("0")
+    for x in sorted(rows, key=lambda z: z["signal_bar"]):
+        eq += D(x["net_pnl"]); peak = max(peak, eq)
+        dd = max(dd, (peak - eq) / peak if peak > 0 else D("0"))
+    holds = [int(x["holding_ms"]) for x in rows]
+    return {"n": len(rows), "net": str(pnl.quantize(D("0.0001"))),
+            "avg": str((pnl / len(rows)).quantize(D("0.0001"))),
+            "carry": str(carry.quantize(D("0.0001"))),
+            "carry_share_pct": str((carry / abs(pnl) * 100).quantize(D("0.1")))
+                               if pnl != 0 else "0",
+            "win_pct": str((D(wins) / len(rows) * 100).quantize(D("0.01"))),
+            "avg_hold_h": str((D(sum(holds)) / len(holds) / 3_600_000
+                               ).quantize(D("0.01"))),
+            "max_dd_pct": str((dd * 100).quantize(D("0.0001"))),
+            "exits": _counts(x["exit_reason"] for x in rows)}
+
+
 def run_funding_variant(bars: list[Candle], funding: list[dict],
                         p: FundingParams,
                         *, single_position: bool = True) -> dict:
@@ -98,119 +228,29 @@ def run_funding_variant(bars: list[Candle], funding: list[dict],
     trades: list[dict] = []
     busy_until = -1
     for s in sigs:
-        idx = _index_at(bars, s.ts_ms)
-        if idx < 20 or idx + 1 >= len(bars):
+        ctx = prepare_context(bars, s)
+        if ctx is None:
             continue
+        idx = int(ctx["idx"])
         if single_position and idx + 1 <= busy_until:
             continue
-        atr = _atr14(bars, idx)
-        if atr <= 0:
-            continue
-        entry_bar = bars[idx + 1]
         side = s.side
         if p.flip:                       # 反转方向假设
             side = "LONG" if side == "SHORT" else "SHORT"
-        sign = D("1") if side == "LONG" else D("-1")
-        ref = entry_bar.open
-        stop = ref - sign * p.stop_atr * atr
-        entry_fill = _fill_price(ref, side, p.slippage_bps)
-        qty = p.notional / entry_fill
-
-        stop_cur = stop
-        best = entry_fill
-        armed = False
-        exit_fill = exit_reason = ""
-        exit_ts = 0
-        last = min(len(bars) - 1, idx + 1 + p.hold_bars)
-        for j in range(idx + 1, last + 1):
-            bar = bars[j]
-            gap_stop = (bar.open <= stop_cur) if sign > 0 else (bar.open >= stop_cur)
-            hit_stop = (bar.low <= stop_cur) if sign > 0 else (bar.high >= stop_cur)
-            if gap_stop or hit_stop:
-                raw = bar.open if gap_stop else stop_cur
-                exit_fill = _fill_price(raw, "SHORT" if sign > 0 else "LONG", p.slippage_bps)
-                exit_reason = "TRAIL_STOP" if armed else "STOP"
-                exit_ts = int(bar.open_ms if gap_stop else bar.close_ms)
-                break
-            if sign > 0:
-                best = max(best, bar.high)
-                if not armed and (best - entry_fill) >= p.trail_start_atr * atr:
-                    armed = True
-                if armed:
-                    stop_cur = max(stop_cur, best - p.trail_atr * atr)
-            else:
-                best = min(best, bar.low)
-                if not armed and (entry_fill - best) >= p.trail_start_atr * atr:
-                    armed = True
-                if armed:
-                    stop_cur = min(stop_cur, best + p.trail_atr * atr)
-        if not exit_reason:
-            b = bars[last]
-            exit_fill = _fill_price(b.close, "SHORT" if sign > 0 else "LONG", p.slippage_bps)
-            exit_reason = "TIME_EXIT"
-            exit_ts = int(b.close_ms)
-
-        gross = (exit_fill - entry_fill) * qty * sign
-        entry_fee = p.notional * p.fee_bps / BPS
-        exit_fee = qty * exit_fill * p.fee_bps / BPS
-        carry, n_carry = _carry(side, qty, entry_fill, f_times, f_rates,
-                                int(entry_bar.open_ms), exit_ts)
-        net = gross - entry_fee - exit_fee - carry
-
-        ledger = CashLedger()
-        ledger.record(int(entry_bar.open_ms), "ENTRY_NOTIONAL", -p.notional)
-        ledger.record(int(entry_bar.open_ms), "ENTRY_FEE", -entry_fee)
-        ledger.record(exit_ts, "EXIT_PROCEEDS", qty * entry_fill + gross)
-        ledger.record(exit_ts, "EXIT_FEE", -exit_fee)
-        ledger.record(exit_ts, "FUNDING", -carry)
-        assert abs((ledger.cash - ledger.starting_cash) - net) < D("0.0000001"), \
-            f"流水与净盈亏不符: {ledger.cash} vs {net}"
-
-        r = TradeResult(
-            signal_bar=idx, entry_bar=idx + 1, side=side, signal_close=D(bars[idx].close),
-            entry_fill=entry_fill, exit_fill=exit_fill, qty=qty, gross=gross,
-            entry_fee=entry_fee, exit_fee=exit_fee, funding=carry, net_pnl=net,
-            exit_reason=exit_reason, holding_ms=max(0, exit_ts - int(entry_bar.open_ms)),
-            mfe=D("0"), mae=D("0"),
-            flows=[{"kind": f.kind, "amount": str(f.amount)} for f in ledger.flows])
-        d = r.to_dict()
-        d.update({"z": str(s.z), "rate": str(s.rate), "carry_events": n_carry,
-                  "atr_bps": str((atr / ref * BPS).quantize(D("0.1")))})
+        d = simulate_signal(bars, f_times, f_rates, ctx, side, p)
         trades.append(d)
         if single_position:
-            busy_until = idx + 1 + int(r.holding_ms // TF_MS)
+            busy_until = idx + 1 + int(int(d["holding_ms"]) // TF_MS)
 
     cut = int(len(bars) * 0.7)
-    def stat(rows: list[dict]) -> dict:
-        if not rows:
-            return {"n": 0}
-        pnl = sum((D(x["net_pnl"]) for x in rows), D("0"))
-        carry = sum((D(x["funding"]) for x in rows), D("0"))
-        wins = sum(1 for x in rows if D(x["net_pnl"]) > 0)
-        eq, peak, dd = D("1000"), D("1000"), D("0")
-        for x in sorted(rows, key=lambda z: z["signal_bar"]):
-            eq += D(x["net_pnl"]); peak = max(peak, eq)
-            dd = max(dd, (peak - eq) / peak if peak > 0 else D("0"))
-        holds = [int(x["holding_ms"]) for x in rows]
-        return {"n": len(rows), "net": str(pnl.quantize(D("0.0001"))),
-                "avg": str((pnl / len(rows)).quantize(D("0.0001"))),
-                "carry": str(carry.quantize(D("0.0001"))),
-                "carry_share_pct": str((carry / abs(pnl) * 100).quantize(D("0.1")))
-                                   if pnl != 0 else "0",
-                "win_pct": str((D(wins) / len(rows) * 100).quantize(D("0.01"))),
-                "avg_hold_h": str((D(sum(holds)) / len(holds) / 3_600_000
-                                   ).quantize(D("0.01"))),
-                "max_dd_pct": str((dd * 100).quantize(D("0.0001"))),
-                "exits": _counts(x["exit_reason"] for x in rows)}
-
     research = [x for x in trades if x["signal_bar"] < cut]
     oos = [x for x in trades if x["signal_bar"] >= cut]
     return {"key": p.key, "params": {"z": str(p.z_threshold), "lookback": p.lookback,
                                      "stop_atr": str(p.stop_atr), "trail_atr": str(p.trail_atr),
                                      "trail_start_atr": str(p.trail_start_atr),
                                      "hold_bars": p.hold_bars},
-            "signals": len(sigs), "all": stat(trades),
-            "research": stat(research), "oos": stat(oos), "trades": trades}
+            "signals": len(sigs), "all": book_stats(trades),
+            "research": book_stats(research), "oos": book_stats(oos), "trades": trades}
 
 
 def _counts(values) -> dict[str, int]:
@@ -239,4 +279,5 @@ def grid(params_cls=FundingParams) -> list[FundingParams]:
     return out
 
 
-__all__ = ["FundingParams", "run_funding_variant", "grid"]
+__all__ = ["FundingParams", "run_funding_variant", "grid", "prepare_context",
+           "simulate_signal", "book_stats", "_carry", "_index_at", "_atr14"]

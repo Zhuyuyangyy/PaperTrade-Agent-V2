@@ -1,0 +1,76 @@
+{
+  "version": "R0-v1",
+  "frozen_at": "2026-11-23 15:15:41",
+  "spec": {
+    "version": "R0-v1",
+    "interval": "1h",
+    "step_ms": 3600000,
+    "days": 730,
+    "lookback": 90,
+    "min_history": 30,
+    "e5_mode": "delta",
+    "e5_z": "2.5",
+    "e5_key": "delta-z2.5-stop1.5-trail0.75-h24",
+    "research_frac": 0.7,
+    "notional": "100",
+    "fee_bps": "4",
+    "slippage_bps": "5",
+    "round_trip_bps": "18",
+    "seed": 20261123,
+    "n_mc": 2000
+  },
+  "data_fingerprint": {
+    "bars": 17521,
+    "funding": 2190,
+    "first_open_ms": 1732334400000,
+    "last_close_ms": 1795410000000,
+    "funding_first_ms": 1732348800000,
+    "funding_last_ms": 1795392000000,
+    "bars_sha256": "445d126af7f7baa292caae19235777e219baaba94b2c5587008cbcf6447b026f",
+    "funding_sha256": "b4bb41a9db9723f325d475d5a2eab6b0e2a582a56da16b4836f36b428b4527cb"
+  },
+  "data_sources": {
+    "bars": "data/v3_funding/bars_1h.json",
+    "funding": "data/v3_funding/funding.json",
+    "network_access": "FORBIDDEN — scripts abort if cache missing"
+  },
+  "seed_scheme": {
+    "base": 20261123,
+    "R0_*": "base + k  (k = 0..n_mc-1)",
+    "R1_*": "base + 10000 + k",
+    "R0_full_process": "base + 7000 + k"
+  },
+  "grids": {
+    "exit_12": "stop_atr ∈ {1.5,2.0,2.5} × trail_atr ∈ {0.75,1.0} × hold_bars ∈ {24,72}",
+    "full_96_E5": "mode × z × stop × trail × hold × flip（锁定信号集后仅 12 个有效）",
+    "R0_full_effective_48": "4 个信号集 (level|delta × z2.0|z2.5) × 12 组退出"
+  },
+  "cost_scenarios_round_trip_bps": [
+    0,
+    8,
+    12,
+    18,
+    24,
+    30
+  ],
+  "cost_primary_round_trip_bps": 18,
+  "cost_mapping": "等比缩放：fee=4×rt/18, slippage=5×rt/18；仅 18bps 为实测",
+  "n_mc": 2000,
+  "research_frac": 0.7,
+  "research_cut_bar": 12264,
+  "baseline_events": {
+    "R1_fixed_median": -4.751,
+    "R1_fixed_p05": -13.2333,
+    "R1_fixed_p95": 4.2696,
+    "R1_fixed_pct_positive": 20.4
+  },
+  "verdicts": {
+    "R0_indep_fixed": 0.2135,
+    "R0_matched_fixed": 0.1625,
+    "R0_indep_select12": 0.281,
+    "R0_matched_select12": 0.2485,
+    "R0_indep_select96": 0.281,
+    "R1_fixed": 0.0155,
+    "R1_select12": 0.053
+  }
+}
