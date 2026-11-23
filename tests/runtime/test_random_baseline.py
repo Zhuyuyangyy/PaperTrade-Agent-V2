@@ -10,12 +10,14 @@ from decimal import Decimal as D
 
 import pytest
 
-from research.experiment.baseline import (Prepared, R0Spec, atr_series,
-                                          cost_sensitivity, e5_params,
-                                          mc_r0, mc_r1, multiple_testing,
+from research.experiment.baseline import (Prepared, R0Spec, aggregate_bars,
+                                          atr_series, cost_sensitivity,
+                                          e5_params, fourh_params, mc_r0,
+                                          mc_r1, multiple_testing,
                                           overlap_stats, quantile,
                                           reverse_test, risk_adjusted, run_book,
-                                          scale_costs, summarize, wilson_ci)
+                                          scale_costs, spec_4h, summarize,
+                                          wilson_ci)
 from research.experiment.funding_exp import (_atr14, book_stats,
                                               run_funding_variant)
 from research.market.contracts import Candle
@@ -260,3 +262,66 @@ def test_multiple_testing_fdr_monotone():
 
 def test_book_stats_empty():
     assert book_stats([]) == {"n": 0}
+
+
+# ---------------------------------------------------------------- 4h 聚合
+def test_aggregate_bars_ohlc_is_correct():
+    # 起点必须对齐 4h 边界；不对齐时 aggregate_bars 会丢弃开头（见下一个用例）
+    ms4 = STEP * 4
+    start = START + (ms4 - START % ms4) % ms4
+    bars, px = [], 59000.0
+    for i in range(16):
+        nxt = px * (1.0012 if i % 3 else 0.9988)
+        bars.append(Candle(start + i * STEP, D(str(px)),
+                           D(str(max(px, nxt) + 8)), D(str(min(px, nxt) - 8)),
+                           D(str(nxt)), D("10"), STEP))
+        px = nxt
+    big = aggregate_bars(bars, 4)
+    assert len(big) == 4
+    for i, b in enumerate(big):
+        chunk = bars[i * 4:(i + 1) * 4]
+        assert b.open == chunk[0].open
+        assert b.close == chunk[-1].close
+        assert b.high == max(c.high for c in chunk)
+        assert b.low == min(c.low for c in chunk)
+        assert b.open_ms == chunk[0].open_ms
+        assert b.timeframe_ms == STEP * 4
+
+
+def test_aggregate_bars_factor_one_is_identity():
+    bars = _bars(10)
+    assert aggregate_bars(bars, 1) == bars
+
+
+def test_aggregate_bars_aligns_to_boundary():
+    """起点不对齐时必须丢弃开头不足一个周期的部分，而不是造出非法 Candle。"""
+    bars = _bars(12)
+    # 从第 1 根开始，open_ms 不再对齐 4×STEP
+    shifted = bars[1:]
+    big = aggregate_bars(shifted, 4)
+    assert big, "应至少产出一根合法 K 线"
+    for b in big:
+        assert int(b.open_ms) % (STEP * 4) == 0
+
+
+def test_spec_4h_defaults():
+    s = spec_4h()
+    assert s.interval == "4h" and s.step_ms == 14_400_000
+    assert s.version.startswith("R0-4h")
+
+
+def test_fourh_params_are_prior_not_optimized():
+    """4h 主口径必须是先验中心参数，不能偷偷用 1h 的最优参数。"""
+    spec = spec_4h()
+    p = fourh_params(spec)
+    assert (p.stop_atr, p.trail_atr, p.trail_start_atr, p.hold_bars) == (
+        D("2.0"), D("1.0"), D("1.0"), 24)
+    e5 = e5_params(spec)
+    assert (e5.stop_atr, e5.trail_atr) == (D("1.5"), D("0.75")), \
+        "1h 的最优参数不应被搬到 4h"
+
+
+def test_fourh_hold_covers_multiple_days():
+    """hold 24 根 4h = 4 天；这是跨周期可比的前提。"""
+    p = fourh_params(spec_4h())
+    assert p.hold_bars * 4 * 3600_000 == 4 * 86_400_000

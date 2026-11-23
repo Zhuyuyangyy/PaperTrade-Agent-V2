@@ -1,0 +1,1291 @@
+{
+  "spec": {
+    "version": "R0-4h-v1",
+    "interval": "4h",
+    "step_ms": 14400000,
+    "days": 730,
+    "lookback": 90,
+    "min_history": 30,
+    "e5_mode": "delta",
+    "e5_z": "2.5",
+    "e5_key": "delta-z2.5-stop1.5-trail0.75-h24",
+    "research_frac": 0.7,
+    "notional": "100",
+    "fee_bps": "4",
+    "slippage_bps": "5",
+    "round_trip_bps": "18",
+    "seed": 20261123,
+    "n_mc": 2000
+  },
+  "fingerprint": {
+    "bars": 4380,
+    "funding": 2190,
+    "first_open_ms": 1732334400000,
+    "last_close_ms": 1795406400000,
+    "funding_first_ms": 1732348800000,
+    "funding_last_ms": 1795392000000,
+    "bars_sha256": "76138a528a674b05f8116601cc2ca7ed7e5fabb6c20e420fe534c478987c7794",
+    "funding_sha256": "b4bb41a9db9723f325d475d5a2eab6b0e2a582a56da16b4836f36b428b4527cb"
+  },
+  "aggregation": {
+    "source": "1h",
+    "factor": 4,
+    "gaps": 0,
+    "atr": {
+      "n": 4366,
+      "period": 14,
+      "median_bps": 120.7,
+      "p25_bps": 94.9,
+      "p75_bps": 156.6,
+      "mean_bps": 132.7
+    }
+  },
+  "base_params": {
+    "key": "delta-z2.5-stop2.0-trail1.0-h24",
+    "stop_atr": "2.0",
+    "trail_atr": "1.0",
+    "trail_start_atr": "1.0",
+    "hold_bars": 24,
+    "note": "先验中心参数，非优化结果"
+  },
+  "real_4h": {
+    "research_net": "1.2077",
+    "oos_net": "-5.9411",
+    "all": {
+      "n": 27,
+      "net": "-4.7334",
+      "avg": "-0.1753",
+      "carry": "-0.0772",
+      "carry_share_pct": "-1.6",
+      "win_pct": "51.85",
+      "avg_hold_h": "30.37",
+      "max_dd_pct": "1.6718",
+      "exits": {
+        "TRAIL_STOP": 15,
+        "STOP": 11,
+        "TIME_EXIT": 1
+      }
+    },
+    "filled": 27,
+    "attempted": 38
+  },
+  "grid_size": 18,
+  "generated_at": "2026-11-23 15:51:00",
+  "R0_indep_fixed": {
+    "kind": "R0_indep",
+    "grid": "fixed_e5",
+    "mode": "delta",
+    "z": "2.5",
+    "n_mc": 2000,
+    "seed": 20261123,
+    "n_signals": 38,
+    "real": {
+      "research": 1.2077,
+      "all": -4.7334,
+      "oos": -5.9411,
+      "filled": 27,
+      "n_long": 17,
+      "n_short": 10,
+      "signal_long": 25,
+      "signal_short": 13,
+      "win_pct": 51.85,
+      "max_dd_pct": 1.6718
+    },
+    "research_net": {
+      "n": 2000,
+      "mean": -7.042,
+      "sd": 11.5573,
+      "median": -7.0748,
+      "p05": -25.5055,
+      "p95": 12.4061,
+      "p05_ci95": [
+        -26.5511,
+        -24.5903
+      ],
+      "p95_ci95": [
+        11.6778,
+        13.1485
+      ],
+      "min": -43.2557,
+      "max": 23.7212,
+      "share_positive_pct": 28.5,
+      "real": 1.2077,
+      "real_percentile": 74.95,
+      "n_better_or_equal": 501,
+      "p_value": 0.2505,
+      "p_wilson_ci95": [
+        0.232,
+        0.27
+      ],
+      "p_mc_se": 0.00969,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "all_net": {
+      "n": 2000,
+      "mean": -10.2439,
+      "sd": 12.8943,
+      "median": -10.426,
+      "p05": -31.5382,
+      "p95": 11.2473,
+      "p05_ci95": [
+        -32.6065,
+        -30.0904
+      ],
+      "p95_ci95": [
+        9.9203,
+        12.7277
+      ],
+      "min": -52.3955,
+      "max": 25.4267,
+      "share_positive_pct": 22.45,
+      "real": -4.7334,
+      "real_percentile": 66.6,
+      "n_better_or_equal": 668,
+      "p_value": 0.334,
+      "p_wilson_ci95": [
+        0.3137,
+        0.355
+      ],
+      "p_mc_se": 0.01055,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "win_pct": {
+      "n": 2000,
+      "mean": 60.1595,
+      "sd": 8.3976,
+      "median": 60.0,
+      "p05": 46.15,
+      "p95": 74.07,
+      "p05_ci95": [
+        46.15,
+        46.43
+      ],
+      "p95_ci95": [
+        73.08,
+        74.1165
+      ],
+      "min": 30.77,
+      "max": 85.71,
+      "share_positive_pct": 100.0,
+      "real": 51.85,
+      "real_percentile": 13.7,
+      "n_better_or_equal": 1726,
+      "p_value": 0.863,
+      "p_wilson_ci95": [
+        0.8472,
+        0.8774
+      ],
+      "p_mc_se": 0.00769,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "max_dd_pct": {
+      "n": 2000,
+      "mean": 2.0214,
+      "sd": 0.8101,
+      "median": 1.9406,
+      "p05": 0.8243,
+      "p95": 3.4526,
+      "p05_ci95": [
+        0.804,
+        0.8487
+      ],
+      "p95_ci95": [
+        3.392,
+        3.5327
+      ],
+      "min": 0.4349,
+      "max": 5.2395,
+      "share_positive_pct": 100.0,
+      "real": 1.6718,
+      "real_percentile": 36.75,
+      "n_better_or_equal": 1265,
+      "p_value": 0.6325,
+      "p_wilson_ci95": [
+        0.6111,
+        0.6534
+      ],
+      "p_mc_se": 0.01078,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "n_trades": {
+      "n": 2000,
+      "mean": 26.492,
+      "sd": 0.87,
+      "median": 26.0,
+      "p05": 25.0,
+      "p95": 28.0,
+      "p05_ci95": [
+        25.0,
+        25.0
+      ],
+      "p95_ci95": [
+        28.0,
+        28.0
+      ],
+      "min": 25.0,
+      "max": 28.0,
+      "share_positive_pct": 100.0,
+      "real": 27.0,
+      "real_percentile": 50.35,
+      "n_better_or_equal": 993,
+      "p_value": 0.4965,
+      "p_wilson_ci95": [
+        0.4746,
+        0.5184
+      ],
+      "p_mc_se": 0.01118,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "best_key_freq": {
+      "delta-z2.5-stop2.0-trail1.0-h24": 2000
+    },
+    "per_signal": []
+  },
+  "R0_matched_fixed": {
+    "kind": "R0_matched",
+    "grid": "fixed_e5",
+    "mode": "delta",
+    "z": "2.5",
+    "n_mc": 2000,
+    "seed": 20261123,
+    "n_signals": 38,
+    "real": {
+      "research": 1.2077,
+      "all": -4.7334,
+      "oos": -5.9411,
+      "filled": 27,
+      "n_long": 17,
+      "n_short": 10,
+      "signal_long": 25,
+      "signal_short": 13,
+      "win_pct": 51.85,
+      "max_dd_pct": 1.6718
+    },
+    "research_net": {
+      "n": 2000,
+      "mean": -4.5708,
+      "sd": 10.9817,
+      "median": -4.5,
+      "p05": -22.7255,
+      "p95": 13.5537,
+      "p05_ci95": [
+        -23.4899,
+        -21.9333
+      ],
+      "p95_ci95": [
+        12.6071,
+        14.4442
+      ],
+      "min": -40.32,
+      "max": 25.8415,
+      "share_positive_pct": 34.55,
+      "real": 1.2077,
+      "real_percentile": 69.1,
+      "n_better_or_equal": 618,
+      "p_value": 0.309,
+      "p_wilson_ci95": [
+        0.2891,
+        0.3296
+      ],
+      "p_mc_se": 0.01033,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "all_net": {
+      "n": 2000,
+      "mean": -6.8601,
+      "sd": 12.411,
+      "median": -6.8201,
+      "p05": -27.6245,
+      "p95": 13.6381,
+      "p05_ci95": [
+        -28.6935,
+        -26.3477
+      ],
+      "p95_ci95": [
+        12.6359,
+        14.6341
+      ],
+      "min": -48.2096,
+      "max": 37.0498,
+      "share_positive_pct": 29.75,
+      "real": -4.7334,
+      "real_percentile": 56.5,
+      "n_better_or_equal": 870,
+      "p_value": 0.435,
+      "p_wilson_ci95": [
+        0.4134,
+        0.4568
+      ],
+      "p_mc_se": 0.01109,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "win_pct": {
+      "n": 2000,
+      "mean": 62.2284,
+      "sd": 8.1408,
+      "median": 62.96,
+      "p05": 48.15,
+      "p95": 75.0,
+      "p05_ci95": [
+        48.15,
+        50.0
+      ],
+      "p95_ci95": [
+        74.07,
+        76.92
+      ],
+      "min": 36.0,
+      "max": 92.59,
+      "share_positive_pct": 100.0,
+      "real": 51.85,
+      "real_percentile": 8.55,
+      "n_better_or_equal": 1829,
+      "p_value": 0.9145,
+      "p_wilson_ci95": [
+        0.9014,
+        0.926
+      ],
+      "p_mc_se": 0.00625,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "max_dd_pct": {
+      "n": 2000,
+      "mean": 1.8331,
+      "sd": 0.7407,
+      "median": 1.7548,
+      "p05": 0.7539,
+      "p95": 3.1578,
+      "p05_ci95": [
+        0.7136,
+        0.7831
+      ],
+      "p95_ci95": [
+        3.0824,
+        3.2035
+      ],
+      "min": 0.2827,
+      "max": 4.821,
+      "share_positive_pct": 100.0,
+      "real": 1.6718,
+      "real_percentile": 45.45,
+      "n_better_or_equal": 1091,
+      "p_value": 0.5455,
+      "p_wilson_ci95": [
+        0.5236,
+        0.5672
+      ],
+      "p_mc_se": 0.01113,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "n_trades": {
+      "n": 2000,
+      "mean": 26.6505,
+      "sd": 0.8458,
+      "median": 27.0,
+      "p05": 25.0,
+      "p95": 28.0,
+      "p05_ci95": [
+        25.0,
+        25.0
+      ],
+      "p95_ci95": [
+        28.0,
+        28.0
+      ],
+      "min": 25.0,
+      "max": 28.0,
+      "share_positive_pct": 100.0,
+      "real": 27.0,
+      "real_percentile": 41.95,
+      "n_better_or_equal": 1161,
+      "p_value": 0.5805,
+      "p_wilson_ci95": [
+        0.5587,
+        0.602
+      ],
+      "p_mc_se": 0.01103,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "best_key_freq": {
+      "delta-z2.5-stop2.0-trail1.0-h24": 2000
+    },
+    "per_signal": []
+  },
+  "R0_indep_select18": {
+    "kind": "R0_indep",
+    "grid": "reselect_18",
+    "mode": "delta",
+    "z": "2.5",
+    "n_mc": 2000,
+    "seed": 20261123,
+    "n_signals": 38,
+    "real": {
+      "research": 1.2077,
+      "all": -4.7334,
+      "oos": -5.9411,
+      "filled": 27,
+      "n_long": 17,
+      "n_short": 10,
+      "signal_long": 25,
+      "signal_short": 13,
+      "win_pct": 51.85,
+      "max_dd_pct": 1.6718
+    },
+    "research_net": {
+      "n": 2000,
+      "mean": 6.7788,
+      "sd": 11.1996,
+      "median": 6.9135,
+      "p05": -11.6243,
+      "p95": 25.3224,
+      "p05_ci95": [
+        -12.1139,
+        -10.7745
+      ],
+      "p95_ci95": [
+        24.4629,
+        26.3643
+      ],
+      "min": -24.3847,
+      "max": 37.5363,
+      "share_positive_pct": 71.9,
+      "real": 1.2077,
+      "real_percentile": 31.85,
+      "n_better_or_equal": 1363,
+      "p_value": 0.6815,
+      "p_wilson_ci95": [
+        0.6607,
+        0.7016
+      ],
+      "p_mc_se": 0.01042,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "all_net": {
+      "n": 2000,
+      "mean": 3.8543,
+      "sd": 12.1327,
+      "median": 3.6648,
+      "p05": -16.4568,
+      "p95": 23.9624,
+      "p05_ci95": [
+        -17.5768,
+        -15.1548
+      ],
+      "p95_ci95": [
+        22.8526,
+        24.6102
+      ],
+      "min": -28.1227,
+      "max": 38.3286,
+      "share_positive_pct": 61.6,
+      "real": -4.7334,
+      "real_percentile": 24.5,
+      "n_better_or_equal": 1510,
+      "p_value": 0.755,
+      "p_wilson_ci95": [
+        0.7357,
+        0.7733
+      ],
+      "p_mc_se": 0.00962,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "win_pct": {
+      "n": 2000,
+      "mean": 65.1686,
+      "sd": 9.0417,
+      "median": 65.22,
+      "p05": 50.0,
+      "p95": 79.2115,
+      "p05_ci95": [
+        50.0,
+        51.85
+      ],
+      "p95_ci95": [
+        79.17,
+        80.0
+      ],
+      "min": 35.71,
+      "max": 91.67,
+      "share_positive_pct": 100.0,
+      "real": 51.85,
+      "real_percentile": 5.65,
+      "n_better_or_equal": 1887,
+      "p_value": 0.9435,
+      "p_wilson_ci95": [
+        0.9325,
+        0.9528
+      ],
+      "p_mc_se": 0.00516,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "max_dd_pct": {
+      "n": 2000,
+      "mean": 1.175,
+      "sd": 0.4704,
+      "median": 1.1026,
+      "p05": 0.527,
+      "p95": 2.0264,
+      "p05_ci95": [
+        0.5135,
+        0.536
+      ],
+      "p95_ci95": [
+        1.9855,
+        2.0889
+      ],
+      "min": 0.2543,
+      "max": 3.2153,
+      "share_positive_pct": 100.0,
+      "real": 1.6718,
+      "real_percentile": 85.0,
+      "n_better_or_equal": 300,
+      "p_value": 0.15,
+      "p_wilson_ci95": [
+        0.135,
+        0.1663
+      ],
+      "p_mc_se": 0.00798,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "n_trades": {
+      "n": 2000,
+      "mean": 25.623,
+      "sd": 2.4135,
+      "median": 27.0,
+      "p05": 21.0,
+      "p95": 28.0,
+      "p05_ci95": [
+        21.0,
+        21.0
+      ],
+      "p95_ci95": [
+        28.0,
+        28.0
+      ],
+      "min": 20.0,
+      "max": 28.0,
+      "share_positive_pct": 100.0,
+      "real": 27.0,
+      "real_percentile": 42.7,
+      "n_better_or_equal": 1146,
+      "p_value": 0.573,
+      "p_wilson_ci95": [
+        0.5512,
+        0.5945
+      ],
+      "p_mc_se": 0.01106,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "best_key_freq": {
+      "delta-z2.5-stop2.5-trail0.75-h48": 670,
+      "delta-z2.5-stop1.5-trail0.75-h12": 580,
+      "delta-z2.5-stop1.5-trail0.75-h48": 505,
+      "delta-z2.5-stop2.5-trail0.75-h24": 160,
+      "delta-z2.5-stop1.5-trail0.75-h24": 39,
+      "delta-z2.5-stop2.0-trail0.75-h12": 16,
+      "delta-z2.5-stop1.5-trail1.0-h12": 10,
+      "delta-z2.5-stop2.5-trail0.75-h12": 8,
+      "delta-z2.5-stop2.0-trail0.75-h48": 7,
+      "delta-z2.5-stop2.5-trail1.0-h24": 5
+    },
+    "per_signal": []
+  },
+  "R1_fixed": {
+    "kind": "R1_random_time",
+    "grid": "fixed_e5",
+    "n_mc": 2000,
+    "seed": 20261123,
+    "target_n": 27,
+    "n_long": 17,
+    "n_short": 10,
+    "tradable_pool": 4359,
+    "real": {
+      "research": 1.2077,
+      "all": -4.7334,
+      "filled": 27,
+      "win_pct": 51.85,
+      "max_dd_pct": 1.6718
+    },
+    "research_net": {
+      "n": 2000,
+      "mean": -3.3179,
+      "sd": 9.7457,
+      "median": -3.64,
+      "p05": -19.1029,
+      "p95": 13.0535,
+      "p05_ci95": [
+        -20.0433,
+        -18.0957
+      ],
+      "p95_ci95": [
+        12.2284,
+        13.7487
+      ],
+      "min": -34.0881,
+      "max": 33.2091,
+      "share_positive_pct": 35.25,
+      "real": 1.2077,
+      "real_percentile": 68.2,
+      "n_better_or_equal": 636,
+      "p_value": 0.318,
+      "p_wilson_ci95": [
+        0.298,
+        0.3387
+      ],
+      "p_mc_se": 0.01041,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "all_net": {
+      "n": 2000,
+      "mean": -5.3037,
+      "sd": 11.03,
+      "median": -5.312,
+      "p05": -22.8158,
+      "p95": 13.0924,
+      "p05_ci95": [
+        -23.6106,
+        -21.9969
+      ],
+      "p95_ci95": [
+        12.366,
+        14.0809
+      ],
+      "min": -40.6624,
+      "max": 32.1288,
+      "share_positive_pct": 30.45,
+      "real": -4.7334,
+      "real_percentile": 52.2,
+      "n_better_or_equal": 956,
+      "p_value": 0.478,
+      "p_wilson_ci95": [
+        0.4562,
+        0.4999
+      ],
+      "p_mc_se": 0.01117,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "win_pct": {
+      "n": 2000,
+      "mean": 54.5527,
+      "sd": 10.0065,
+      "median": 54.55,
+      "p05": 38.1,
+      "p95": 70.83,
+      "p05_ci95": [
+        37.5,
+        39.13
+      ],
+      "p95_ci95": [
+        70.37,
+        71.43
+      ],
+      "min": 25.93,
+      "max": 90.48,
+      "share_positive_pct": 100.0,
+      "real": 51.85,
+      "real_percentile": 36.7,
+      "n_better_or_equal": 1266,
+      "p_value": 0.633,
+      "p_wilson_ci95": [
+        0.6116,
+        0.6539
+      ],
+      "p_mc_se": 0.01078,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "max_dd_pct": {
+      "n": 2000,
+      "mean": 1.3787,
+      "sd": 0.6423,
+      "median": 1.2704,
+      "p05": 0.5132,
+      "p95": 2.5794,
+      "p05_ci95": [
+        0.488,
+        0.5374
+      ],
+      "p95_ci95": [
+        2.4815,
+        2.6556
+      ],
+      "min": 0.2261,
+      "max": 4.1131,
+      "share_positive_pct": 100.0,
+      "real": 1.6718,
+      "real_percentile": 71.45,
+      "n_better_or_equal": 571,
+      "p_value": 0.2855,
+      "p_wilson_ci95": [
+        0.2661,
+        0.3057
+      ],
+      "p_mc_se": 0.0101,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "attempts": {
+      "n": 2000,
+      "mean": 52.006,
+      "sd": 16.3298,
+      "median": 60.0,
+      "p05": 10.0,
+      "p95": 60.0,
+      "p05_ci95": [
+        9.0,
+        13.0
+      ],
+      "p95_ci95": [
+        60.0,
+        60.0
+      ],
+      "min": 1.0,
+      "max": 60.0,
+      "share_positive_pct": 100.0,
+      "real": 1.0,
+      "real_percentile": 0.0,
+      "n_better_or_equal": 2000,
+      "p_value": 1.0,
+      "p_wilson_ci95": [
+        0.9981,
+        1.0
+      ],
+      "p_mc_se": 0.0,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "best_key_freq": {
+      "delta-z2.5-stop2.0-trail1.0-h24": 2000
+    }
+  },
+  "R1_select18": {
+    "kind": "R1_random_time",
+    "grid": "reselect_18",
+    "n_mc": 2000,
+    "seed": 20261123,
+    "target_n": 27,
+    "n_long": 17,
+    "n_short": 10,
+    "tradable_pool": 4359,
+    "real": {
+      "research": 1.2077,
+      "all": -4.7334,
+      "filled": 27,
+      "win_pct": 51.85,
+      "max_dd_pct": 1.6718
+    },
+    "research_net": {
+      "n": 2000,
+      "mean": 2.1174,
+      "sd": 8.945,
+      "median": 1.7138,
+      "p05": -12.0363,
+      "p95": 17.432,
+      "p05_ci95": [
+        -12.586,
+        -11.218
+      ],
+      "p95_ci95": [
+        16.4634,
+        18.4044
+      ],
+      "min": -30.2849,
+      "max": 38.9755,
+      "share_positive_pct": 57.5,
+      "real": 1.2077,
+      "real_percentile": 47.8,
+      "n_better_or_equal": 1044,
+      "p_value": 0.522,
+      "p_wilson_ci95": [
+        0.5001,
+        0.5438
+      ],
+      "p_mc_se": 0.01117,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "all_net": {
+      "n": 2000,
+      "mean": 0.4065,
+      "sd": 10.1665,
+      "median": 0.0574,
+      "p05": -15.5809,
+      "p95": 17.5515,
+      "p05_ci95": [
+        -16.6296,
+        -14.8003
+      ],
+      "p95_ci95": [
+        16.5323,
+        18.9916
+      ],
+      "min": -31.1575,
+      "max": 36.2994,
+      "share_positive_pct": 50.15,
+      "real": -4.7334,
+      "real_percentile": 31.0,
+      "n_better_or_equal": 1380,
+      "p_value": 0.69,
+      "p_wilson_ci95": [
+        0.6694,
+        0.7099
+      ],
+      "p_mc_se": 0.01034,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "win_pct": {
+      "n": 2000,
+      "mean": 58.6083,
+      "sd": 11.2103,
+      "median": 58.33,
+      "p05": 40.74,
+      "p95": 77.27,
+      "p05_ci95": [
+        40.703,
+        41.67
+      ],
+      "p95_ci95": [
+        76.19,
+        77.78
+      ],
+      "min": 20.83,
+      "max": 95.83,
+      "share_positive_pct": 100.0,
+      "real": 51.85,
+      "real_percentile": 25.45,
+      "n_better_or_equal": 1491,
+      "p_value": 0.7455,
+      "p_wilson_ci95": [
+        0.726,
+        0.7641
+      ],
+      "p_mc_se": 0.00974,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "max_dd_pct": {
+      "n": 2000,
+      "mean": 1.0307,
+      "sd": 0.4909,
+      "median": 0.9285,
+      "p05": 0.3974,
+      "p95": 1.9788,
+      "p05_ci95": [
+        0.3707,
+        0.415
+      ],
+      "p95_ci95": [
+        1.9232,
+        2.0505
+      ],
+      "min": 0.0965,
+      "max": 3.1594,
+      "share_positive_pct": 100.0,
+      "real": 1.6718,
+      "real_percentile": 89.1,
+      "n_better_or_equal": 218,
+      "p_value": 0.109,
+      "p_wilson_ci95": [
+        0.0961,
+        0.1234
+      ],
+      "p_mc_se": 0.00697,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "attempts": {
+      "n": 2000,
+      "mean": 52.006,
+      "sd": 16.3298,
+      "median": 60.0,
+      "p05": 10.0,
+      "p95": 60.0,
+      "p05_ci95": [
+        9.0,
+        13.0
+      ],
+      "p95_ci95": [
+        60.0,
+        60.0
+      ],
+      "min": 1.0,
+      "max": 60.0,
+      "share_positive_pct": 100.0,
+      "real": 1.0,
+      "real_percentile": 0.0,
+      "n_better_or_equal": 2000,
+      "p_value": 1.0,
+      "p_wilson_ci95": [
+        0.9981,
+        1.0
+      ],
+      "p_mc_se": 0.0,
+      "p_mc_se_note": "se = sqrt(p(1-p)/n)；95% 区间见 p_wilson_ci95"
+    },
+    "best_key_freq": {
+      "delta-z2.5-stop1.5-trail0.75-h12": 253,
+      "delta-z2.5-stop1.5-trail1.0-h12": 210,
+      "delta-z2.5-stop1.5-trail0.75-h24": 159,
+      "delta-z2.5-stop1.5-trail1.0-h24": 141,
+      "delta-z2.5-stop2.5-trail0.75-h12": 140,
+      "delta-z2.5-stop2.0-trail1.0-h12": 136,
+      "delta-z2.5-stop2.5-trail0.75-h24": 121,
+      "delta-z2.5-stop2.5-trail1.0-h12": 119,
+      "delta-z2.5-stop2.5-trail0.75-h48": 113,
+      "delta-z2.5-stop2.0-trail0.75-h24": 110,
+      "delta-z2.5-stop2.0-trail0.75-h12": 104,
+      "delta-z2.5-stop2.0-trail1.0-h24": 85,
+      "delta-z2.5-stop2.5-trail1.0-h48": 80,
+      "delta-z2.5-stop2.5-trail1.0-h24": 79,
+      "delta-z2.5-stop2.0-trail0.75-h48": 59,
+      "delta-z2.5-stop2.0-trail1.0-h48": 45,
+      "delta-z2.5-stop1.5-trail1.0-h48": 25,
+      "delta-z2.5-stop1.5-trail0.75-h48": 21
+    }
+  },
+  "overlap_real": {
+    "n": 27,
+    "overlap_pairs": 0,
+    "total_pairs": 351,
+    "overlap_pct": 0.0,
+    "max_concurrent": 1,
+    "exposure_pct": 4.77,
+    "note": "重叠对 = 两笔持仓时间区间相交；max_concurrent>1 说明单仓约束确实在挡单。"
+  },
+  "overlap_r2": {
+    "n": 26,
+    "overlap_pairs": 0,
+    "total_pairs": 325,
+    "overlap_pct": 0.0,
+    "max_concurrent": 1,
+    "exposure_pct": 5.05,
+    "note": "重叠对 = 两笔持仓时间区间相交；max_concurrent>1 说明单仓约束确实在挡单。"
+  },
+  "R2_reverse": {
+    "kind": "R2_reverse",
+    "params": "delta-z2.5-stop2.0-trail1.0-h24",
+    "research_net": "-15.3243",
+    "oos_net": "-2.0295",
+    "all": {
+      "n": 26,
+      "net": "-17.3538",
+      "avg": "-0.6675",
+      "carry": "0.1232",
+      "carry_share_pct": "0.7",
+      "win_pct": "69.23",
+      "avg_hold_h": "33.38",
+      "max_dd_pct": "1.8001",
+      "exits": {
+        "STOP": 7,
+        "TRAIL_STOP": 19
+      }
+    },
+    "research": {
+      "n": 17,
+      "net": "-15.3243",
+      "avg": "-0.9014",
+      "carry": "0.1587",
+      "carry_share_pct": "1.0",
+      "win_pct": "70.59",
+      "avg_hold_h": "37.65",
+      "max_dd_pct": "1.6907",
+      "exits": {
+        "STOP": 5,
+        "TRAIL_STOP": 12
+      }
+    },
+    "oos": {
+      "n": 9,
+      "net": "-2.0295",
+      "avg": "-0.2255",
+      "carry": "-0.0355",
+      "carry_share_pct": "-1.8",
+      "win_pct": "66.67",
+      "avg_hold_h": "25.33",
+      "max_dd_pct": "0.3168",
+      "exits": {
+        "STOP": 2,
+        "TRAIL_STOP": 7
+      }
+    },
+    "filled": 26,
+    "reselect_best": {
+      "key": "delta-z2.5-stop2.5-trail0.75-h48",
+      "research_net": -7.3969,
+      "oos_net": 4.5138,
+      "filled": 22
+    }
+  },
+  "cost_sensitivity": {
+    "scenarios": [
+      {
+        "round_trip_bps": "0",
+        "fee_bps_per_side": "0.0000",
+        "slippage_bps_per_side": "0.0000",
+        "filled": 27,
+        "net": "0.1400",
+        "research_net": "4.6401",
+        "oos_net": "-4.5000",
+        "win_pct": "51.85",
+        "gross": "0.0629",
+        "fees": "0.0000",
+        "funding": "-0.0772",
+        "avg_gross_per_trade": "0.0023",
+        "avg_cost_per_trade": "-0.0029",
+        "breakeven_gross_needed": "-0.0029",
+        "atr_bps_mean": 160.7,
+        "cost_over_atr_pct": 0.0,
+        "is_assumption": true
+      },
+      {
+        "round_trip_bps": "8",
+        "fee_bps_per_side": "1.7778",
+        "slippage_bps_per_side": "2.2222",
+        "filled": 27,
+        "net": "-2.0261",
+        "research_net": "3.1145",
+        "oos_net": "-5.1406",
+        "win_pct": "51.85",
+        "gross": "-1.1415",
+        "fees": "0.9617",
+        "funding": "-0.0772",
+        "avg_gross_per_trade": "-0.0423",
+        "avg_cost_per_trade": "0.0328",
+        "breakeven_gross_needed": "0.0328",
+        "atr_bps_mean": 160.7,
+        "cost_over_atr_pct": 5.0,
+        "is_assumption": true
+      },
+      {
+        "round_trip_bps": "12",
+        "fee_bps_per_side": "2.6667",
+        "slippage_bps_per_side": "3.3333",
+        "filled": 27,
+        "net": "-3.1091",
+        "research_net": "2.3517",
+        "oos_net": "-5.4608",
+        "win_pct": "51.85",
+        "gross": "-1.7437",
+        "fees": "1.4425",
+        "funding": "-0.0772",
+        "avg_gross_per_trade": "-0.0646",
+        "avg_cost_per_trade": "0.0506",
+        "breakeven_gross_needed": "0.0506",
+        "atr_bps_mean": 160.7,
+        "cost_over_atr_pct": 7.5,
+        "is_assumption": true
+      },
+      {
+        "round_trip_bps": "18",
+        "fee_bps_per_side": "4.0000",
+        "slippage_bps_per_side": "5.0000",
+        "filled": 27,
+        "net": "-4.7334",
+        "research_net": "1.2077",
+        "oos_net": "-5.9411",
+        "win_pct": "51.85",
+        "gross": "-2.6468",
+        "fees": "2.1637",
+        "funding": "-0.0772",
+        "avg_gross_per_trade": "-0.0980",
+        "avg_cost_per_trade": "0.0773",
+        "breakeven_gross_needed": "0.0773",
+        "atr_bps_mean": 160.7,
+        "cost_over_atr_pct": 11.2,
+        "is_assumption": false
+      },
+      {
+        "round_trip_bps": "24",
+        "fee_bps_per_side": "5.3333",
+        "slippage_bps_per_side": "6.6667",
+        "filled": 27,
+        "net": "-6.3576",
+        "research_net": "0.0638",
+        "oos_net": "-6.4214",
+        "win_pct": "51.85",
+        "gross": "-3.5499",
+        "fees": "2.8849",
+        "funding": "-0.0772",
+        "avg_gross_per_trade": "-0.1315",
+        "avg_cost_per_trade": "0.1040",
+        "breakeven_gross_needed": "0.1040",
+        "atr_bps_mean": 160.7,
+        "cost_over_atr_pct": 14.9,
+        "is_assumption": true
+      },
+      {
+        "round_trip_bps": "30",
+        "fee_bps_per_side": "6.6667",
+        "slippage_bps_per_side": "8.3333",
+        "filled": 27,
+        "net": "-7.9816",
+        "research_net": "-1.0800",
+        "oos_net": "-6.9016",
+        "win_pct": "51.85",
+        "gross": "-4.4529",
+        "fees": "3.6059",
+        "funding": "-0.0772",
+        "avg_gross_per_trade": "-0.1649",
+        "avg_cost_per_trade": "0.1307",
+        "breakeven_gross_needed": "0.1307",
+        "atr_bps_mean": 160.7,
+        "cost_over_atr_pct": 18.7,
+        "is_assumption": true
+      }
+    ],
+    "primary_round_trip_bps": "18",
+    "note": "18bps 为实测主口径（4+5 单边 ×2）；其余为等比缩放假设情景。"
+  },
+  "grid_cells": [
+    {
+      "key": "delta-z2.5-stop1.5-trail0.75-h12",
+      "real_research": "10.1467",
+      "real_oos": "-6.6805",
+      "n": 28
+    },
+    {
+      "key": "delta-z2.5-stop1.5-trail0.75-h24",
+      "real_research": "8.7298",
+      "real_oos": "-7.2006",
+      "n": 28
+    },
+    {
+      "key": "delta-z2.5-stop1.5-trail0.75-h48",
+      "real_research": "14.8924",
+      "real_oos": "-7.2006",
+      "n": 28
+    },
+    {
+      "key": "delta-z2.5-stop1.5-trail1.0-h12",
+      "real_research": "5.5775",
+      "real_oos": "-3.4817",
+      "n": 28
+    },
+    {
+      "key": "delta-z2.5-stop1.5-trail1.0-h24",
+      "real_research": "4.1147",
+      "real_oos": "-4.2181",
+      "n": 28
+    },
+    {
+      "key": "delta-z2.5-stop1.5-trail1.0-h48",
+      "real_research": "9.6828",
+      "real_oos": "-4.2181",
+      "n": 28
+    },
+    {
+      "key": "delta-z2.5-stop2.0-trail0.75-h12",
+      "real_research": "6.1598",
+      "real_oos": "-8.9191",
+      "n": 27
+    },
+    {
+      "key": "delta-z2.5-stop2.0-trail0.75-h24",
+      "real_research": "6.0587",
+      "real_oos": "-8.9191",
+      "n": 27
+    },
+    {
+      "key": "delta-z2.5-stop2.0-trail0.75-h48",
+      "real_research": "12.2212",
+      "real_oos": "-8.9191",
+      "n": 27
+    },
+    {
+      "key": "delta-z2.5-stop2.0-trail1.0-h12",
+      "real_research": "1.5906",
+      "real_oos": "-5.9411",
+      "n": 27
+    },
+    {
+      "key": "delta-z2.5-stop2.0-trail1.0-h24",
+      "real_research": "1.2077",
+      "real_oos": "-5.9411",
+      "n": 27
+    },
+    {
+      "key": "delta-z2.5-stop2.0-trail1.0-h48",
+      "real_research": "6.7758",
+      "real_oos": "-5.9411",
+      "n": 27
+    },
+    {
+      "key": "delta-z2.5-stop2.5-trail0.75-h12",
+      "real_research": "3.2084",
+      "real_oos": "-6.3540",
+      "n": 26
+    },
+    {
+      "key": "delta-z2.5-stop2.5-trail0.75-h24",
+      "real_research": "5.2042",
+      "real_oos": "-6.8741",
+      "n": 26
+    },
+    {
+      "key": "delta-z2.5-stop2.5-trail0.75-h48",
+      "real_research": "11.3668",
+      "real_oos": "-6.8741",
+      "n": 26
+    },
+    {
+      "key": "delta-z2.5-stop2.5-trail1.0-h12",
+      "real_research": "-1.3608",
+      "real_oos": "-3.3759",
+      "n": 26
+    },
+    {
+      "key": "delta-z2.5-stop2.5-trail1.0-h24",
+      "real_research": "0.2506",
+      "real_oos": "-4.1123",
+      "n": 26
+    },
+    {
+      "key": "delta-z2.5-stop2.5-trail1.0-h48",
+      "real_research": "5.8187",
+      "real_oos": "-4.1123",
+      "n": 26
+    }
+  ],
+  "grid_positive": 17,
+  "grid_total": 18,
+  "grid_median_research": 6.0587,
+  "risk_adjusted_real": {
+    "n": 27,
+    "total": -4.7334,
+    "mean": -0.1753,
+    "sd": 2.7715,
+    "sharpe_per_trade": -0.0633,
+    "sharpe_annualized": -0.3287,
+    "sortino_per_trade": -0.0671,
+    "max_dd_pct": 1.6718,
+    "calmar": -0.2831,
+    "note": "Sharpe 按笔口径，annualized 用 sqrt(笔数) 粗放年化，仅供参考。"
+  },
+  "multiple_testing": {
+    "families": 4,
+    "detail": {
+      "E2/E3 均线结构(4h)": {
+        "p_raw": 0.522,
+        "bonferroni": 1.0,
+        "grid_size": null,
+        "bh_fdr": 0.522
+      },
+      "E4 费率水平": {
+        "p_raw": 0.1,
+        "bonferroni": 0.4,
+        "grid_size": null,
+        "bh_fdr": 0.2
+      },
+      "E5 费率变化率": {
+        "p_raw": 0.0833,
+        "bonferroni": 0.3332,
+        "grid_size": null,
+        "bh_fdr": 0.2
+      },
+      "R0-4h 先验参数": {
+        "p_raw": 0.2505,
+        "bonferroni": 1.0,
+        "grid_size": null,
+        "bh_fdr": 0.334
+      }
+    },
+    "threshold": 0.05,
+    "verdict_note": "Bonferroni 后全部不显著",
+    "caveat": "这是事后校正，不是预注册；校正后不显著只能说明证据不足，校正后显著也不等于可上线。"
+  },
+  "cost_sensitivity_fix": "已修正：原表误用 1h 的 stop1.5/trail0.75，现为 4h 先验 stop2.0/trail1.0"
+}

@@ -28,7 +28,7 @@ import json
 import math
 import random
 import statistics
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from decimal import Decimal as D
 from pathlib import Path
 
@@ -231,6 +231,32 @@ def e5_params(spec: R0Spec, **over) -> FundingParams:
     return FundingParams(**base)
 
 
+def fourh_params(spec: R0Spec, **over) -> FundingParams:
+    """4h 框架的**先验**参数：取网格中心，不基于任何结果挑选。
+
+    stop 2.0 / trail 1.0 / start 1.0 / hold 24 根（4h × 24 = 4 天）。
+    1h 口径是 24 根 = 1 天；4h 按周期等比放大到 4 天，保持"持仓约 4 个交易日"的语义。
+
+    为什么不做参数优化：E3 已经证明 4h 的参数扫描能被置换检验否掉（p=0.522）。
+    再扫一次只会重复同一个错误——把选择偏差误当优势。这里用**先验中位**，
+    并用 18 组网格报告全分布，避免单点选择的运气。
+    """
+    base = dict(z_threshold=spec.e5_z, lookback=spec.lookback, stop_atr=D("2.0"),
+                trail_atr=D("1.0"), trail_start_atr=D("1.0"), hold_bars=24,
+                flip=False, mode=spec.e5_mode,
+                notional=spec.notional, fee_bps=spec.fee_bps,
+                slippage_bps=spec.slippage_bps)
+    base.update(over)
+    return FundingParams(**base)
+
+
+def spec_4h(**over) -> R0Spec:
+    """4h 口径的冻结配置（数据由 1h 聚合而来，仍是同一份缓存）。"""
+    base = dict(version="R0-4h-v1", interval="4h", step_ms=14_400_000, days=730)
+    base.update(over)
+    return R0Spec(**base)
+
+
 # --------------------------------------------------------------------------
 # 统计工具
 # --------------------------------------------------------------------------
@@ -322,6 +348,7 @@ def mc_r0(prep: Prepared, spec: R0Spec, *, n_mc: int | None = None,
           grid: list[FundingParams] | None = None,
           matched: bool = False, mode: str | None = None, z: D | None = None,
           seed: int | None = None, collect_per_signal: bool = False,
+          base_params: FundingParams | None = None,
           progress=None) -> dict:
     """R0 Monte Carlo。
 
@@ -341,7 +368,7 @@ def mc_r0(prep: Prepared, spec: R0Spec, *, n_mc: int | None = None,
     if n_sig == 0:
         return {"error": "无可用信号"}
 
-    base = e5_params(spec)
+    base = base_params or e5_params(spec)
     fixed = base if not grid else None
 
     # 真实多空比例：信号层（38 个）与成交层（34 笔）不同——单仓约束会挡单。
@@ -550,7 +577,8 @@ def mc_r1(prep: Prepared, spec: R0Spec, *, n_mc: int | None = None,
           grid: list[FundingParams] | None = None,
           target_n: int | None = None, n_long: int | None = None,
           n_short: int | None = None, seed: int | None = None,
-          max_retry: int = 60, progress=None) -> dict:
+          max_retry: int = 60, base_params: FundingParams | None = None,
+          progress=None) -> dict:
     """R1：从可交易时段无放回抽取入场点，匹配真实笔数与多空比。
 
     单仓约束保留（与 E5 同规则），因此抽样后可能被挡掉几笔；
@@ -559,7 +587,7 @@ def mc_r1(prep: Prepared, spec: R0Spec, *, n_mc: int | None = None,
     """
     n_mc = spec.n_mc if n_mc is None else n_mc
     seed = spec.seed if seed is None else seed
-    base = e5_params(spec)
+    base = base_params or e5_params(spec)
 
     # 以 E5 真实账本为匹配基准
     ctxs = prep.contexts(spec.e5_mode, spec.e5_z)
@@ -644,7 +672,8 @@ def mc_r1(prep: Prepared, spec: R0Spec, *, n_mc: int | None = None,
 # R2：全部反向（确定性，无需 MC）
 # --------------------------------------------------------------------------
 def reverse_test(prep: Prepared, spec: R0Spec,
-                 grid: list[FundingParams] | None = None) -> dict:
+                 grid: list[FundingParams] | None = None,
+                 base_params: FundingParams | None = None) -> dict:
     """R2：保留信号时间，把所有方向翻过来。
 
     这是确定性的——只有一个结果，不是分布。它能立刻回答
@@ -653,7 +682,7 @@ def reverse_test(prep: Prepared, spec: R0Spec,
     ctxs = prep.contexts(spec.e5_mode, spec.e5_z)
     flip = {"LONG": "SHORT", "SHORT": "LONG"}
     sides = [flip[c["default_side"]] for c in ctxs]
-    base = e5_params(spec)
+    base = base_params or e5_params(spec)
     r = run_book(prep, base, ctxs, sides)
     out = {"kind": "R2_reverse", "params": base.key,
            "research_net": r["research"].get("net", "0"),
@@ -688,15 +717,16 @@ def scale_costs(spec: R0Spec, round_trip_bps: D) -> tuple[D, D]:
 
 
 def cost_sensitivity(prep: Prepared, spec: R0Spec,
-                     scenarios: tuple[D, ...] = COST_SCENARIOS) -> dict:
+                     scenarios: tuple[D, ...] = COST_SCENARIOS,
+                     base_params: FundingParams | None = None) -> dict:
     """同一套冻结策略在 0/8/12/18/24/30 bps 往返成本下的表现。"""
     ctxs = prep.contexts(spec.e5_mode, spec.e5_z)
     sides = [c["default_side"] for c in ctxs]
-    base = e5_params(spec)
+    base = base_params or e5_params(spec)
     rows = []
     for rt in scenarios:
         fee, slip = scale_costs(spec, rt)
-        p = e5_params(spec, fee_bps=fee, slippage_bps=slip)
+        p = replace(base, fee_bps=fee, slippage_bps=slip)
         r = run_book(prep, p, ctxs, sides, fee_bps=fee, slippage_bps=slip)
         gross = sum((D(x["gross"]) for x in r["trades"]), D("0"))
         fees = sum((D(x["entry_fee"]) + D(x["exit_fee"]) for x in r["trades"]), D("0"))
@@ -924,7 +954,8 @@ def cost_pressure(atr_bps: float, round_trip_bps: float) -> dict:
 
 __all__ = [
     "R0Spec", "Prepared", "data_fingerprint", "atr_series", "run_book",
-    "e5_params", "mc_r0", "mc_r0_signal_family", "mc_r1", "reverse_test",
+    "e5_params", "fourh_params", "spec_4h",
+    "mc_r0", "mc_r0_signal_family", "mc_r1", "reverse_test",
     "cost_sensitivity",
     "scale_costs", "overlap_stats", "risk_adjusted", "multiple_testing",
     "summarize", "wilson_ci", "quantile", "COST_SCENARIOS", "BPS",
