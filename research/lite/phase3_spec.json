@@ -1,0 +1,83 @@
+{
+  "name": "phase3_vol_target_risk_parity",
+  "version": "1.0",
+  "locked_at_utc": "2026-11-25T08:15:00Z",
+  "rationale": "短中频择时与结构性收益均被否（15m 毛/成本 0.04、carry 12%→2.7%、截面离散度 21.8%→7.3%）。Phase 3 不再赌方向，只做仓位管理：验证波动率目标与风险平价能否在压低回撤的同时改善风险调整后收益。",
+  "data": {
+    "source": "spot 1h aggregated to daily bars (UTC 00:00)",
+    "path": "research/lite/data/spot_{symbol}_1h.jsonl",
+    "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
+    "window": ["2023-10-01", "2026-11-24"],
+    "backtest_start": "2023-11-27",
+    "drop_unclosed_day": true,
+    "note": "用现货而非永续：B&H 基准不该背 funding。实测现货 vs 永续收盘差中位 4.6-5.1bps。"
+  },
+  "volatility": {
+    "window_days": 20,
+    "annualize_days": 365,
+    "target_annual": 0.30,
+    "estimator": "stdev(daily close-to-close returns) * sqrt(365)"
+  },
+  "baseline1": {
+    "symbol": "BTCUSDT",
+    "target_weight": "min(target_annual / sigma20, 1.0)",
+    "buffer_abs": 0.10,
+    "max_weight": 1.0,
+    "leverage": false,
+    "short": false
+  },
+  "baseline2": {
+    "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
+    "weighting": "inverse_vol, normalized to sum=1",
+    "portfolio_target": "min(target_annual / sigma_portfolio, 1.0)",
+    "buffer_per_coin_abs": 0.05,
+    "max_gross": 1.0,
+    "leverage": false,
+    "short": false
+  },
+  "execution": {
+    "decision": "D-1 close",
+    "fill": "D open",
+    "overnight_pnl_uses_old_weight": true,
+    "intraday_pnl_uses_new_weight": true
+  },
+  "cost": {
+    "per_side_bps": 11.0,
+    "components": "spot taker 10bps + slippage 1bps",
+    "formula": "sum(|w_new - w_old|) * 11bps",
+    "stress_multiplier": 2.0
+  },
+  "benchmarks": {
+    "btc_bh": {"weights": {"BTCUSDT": 1.0}, "rebalance": false},
+    "equal_bh": {"weights": {"BTCUSDT": 0.3333333333, "ETHUSDT": 0.3333333333, "SOLUSDT": 0.3333333333}, "rebalance": false},
+    "initial_cost_applies": true
+  },
+  "split": {
+    "full": ["2023-11-27", "2026-11-24"],
+    "oos": ["2025-11-25", "2026-11-24"]
+  },
+  "gates": {
+    "Q1_full_sharpe_gt_btc_bh": true,
+    "Q2_full_mdd_le_btc_bh_x0.70": true,
+    "Q3_full_calmar_gt_btc_bh": true,
+    "Q4_oos_sharpe_ge_btc_bh_and_mdd_x0.70": true,
+    "Q5_holds_at_2x_cost": true,
+    "Q6_avg_rebalances_per_year_le_10": true
+  },
+  "verdict_rule": {
+    "NOT_FALSIFIED": "Q1-Q6 全过",
+    "PARTIAL": "Q2 & Q3 & Q4 过，Q1 不过（有效风控工具，不是更好的策略）",
+    "FALSIFIED": "其余"
+  },
+  "readonly_controls": {
+    "static_bh_at_avg_weight": "按策略全样本平均 gross 仓位构造固定轻仓 B&H，验证动态调仓相对静态少买的增量",
+    "cash_yield_annual": 0.04,
+    "cash_yield_applies_to_main_verdict": false
+  },
+  "forbidden": [
+    "参数网格搜索",
+    "跑完后修改门槛或切分点",
+    "合并两个基线择优",
+    "用永续价格替换现货以美化结果"
+  ]
+}

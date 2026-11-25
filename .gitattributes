@@ -1,4 +1,4 @@
 # 契约文件必须逐字节稳定：换行被 git 改写会让 sha256 锁失配
-research/lite/phase2_spec.json -text
-research/lite/phase2_spec.lock.json -text
+research/lite/*_spec.json -text
+research/lite/*_spec.lock.json -text
 research/lite/data/*.manifest.json -text
