@@ -1,0 +1,114 @@
+{
+  "sweeps": 11,
+  "median_sweep_s": 5.347,
+  "tokens": 1307,
+  "observations": 11,
+  "opportunities": 1,
+  "opps_3s": 1,
+  "opps_net_positive_fee0": 0,
+  "opps_net_positive_fee1": 0,
+  "opps_net_positive_fee5": 0,
+  "max_deployable_usd": 15792.6,
+  "top": [
+    {
+      "key": "neg:106981",
+      "kind": "negRisk",
+      "title": "Bitcoin vs. Gold vs. S&P 500 in 2026",
+      "sweeps_seen": 11,
+      "duration_s": 55.12,
+      "best_sum_ask": 0.999,
+      "max_deployable_usd": 15792.6,
+      "best_net_bps_fee0": -158.66,
+      "best_net_bps_fee1": -168.4,
+      "best_net_bps_fee5": -207.38,
+      "n_legs": 3
+    }
+  ],
+  "by_kind": {
+    "negRisk": 1
+  },
+  "incomplete_apparent": [
+    {
+      "title": "AFC Asian Cup 2027: Group F Winner",
+      "kind": "negRisk",
+      "sum_ask": 0.115,
+      "sum_mid": 0.095,
+      "gross_edge": 0.885,
+      "n_legs": 4
+    },
+    {
+      "title": "AFC Asian Cup 2027: Group D Winner",
+      "kind": "negRisk",
+      "sum_ask": 0.137,
+      "sum_mid": 0.0895,
+      "gross_edge": 0.863,
+      "n_legs": 4
+    },
+    {
+      "title": "AFC Asian Cup 2027: Group A Winner",
+      "kind": "negRisk",
+      "sum_ask": 0.144,
+      "sum_mid": 0.1115,
+      "gross_edge": 0.856,
+      "n_legs": 4
+    },
+    {
+      "title": "AFC Asian Cup 2027: Group B Winner",
+      "kind": "negRisk",
+      "sum_ask": 0.2,
+      "sum_mid": 0.1315,
+      "gross_edge": 0.8,
+      "n_legs": 4
+    },
+    {
+      "title": "Pro Football: Tyreek Hill Next Team",
+      "kind": "negRisk",
+      "sum_ask": 0.912,
+      "sum_mid": 0.6405,
+      "gross_edge": 0.088,
+      "n_legs": 32
+    },
+    {
+      "title": "Fall Elections Combo: Brazil, Israel, US Senate",
+      "kind": "negRisk",
+      "sum_ask": 0.945,
+      "sum_mid": 0.876,
+      "gross_edge": 0.055,
+      "n_legs": 3
+    },
+    {
+      "title": "Victoria Parliamentary Election: 2nd Place",
+      "kind": "negRisk",
+      "sum_ask": 0.965,
+      "sum_mid": 0.941,
+      "gross_edge": 0.035,
+      "n_legs": 4
+    },
+    {
+      "title": "How many more Millennium Prize Problems will AI solve in 2026?",
+      "kind": "negRisk",
+      "sum_ask": 0.977,
+      "sum_mid": 0.955,
+      "gross_edge": 0.023,
+      "n_legs": 6
+    },
+    {
+      "title": "AFCON 2027 Qualifying: Group D Winner",
+      "kind": "negRisk",
+      "sum_ask": 0.998,
+      "sum_mid": 0.9605,
+      "gross_edge": 0.002,
+      "n_legs": 4
+    },
+    {
+      "title": "Republican nomination odds leader on March 31?",
+      "kind": "negRisk",
+      "sum_ask": 0.998,
+      "sum_mid": 0.939,
+      "gross_edge": 0.002,
+      "n_legs": 6
+    }
+  ],
+  "incomplete_count": 10,
+  "incomplete_max_edge": 0.885
+}

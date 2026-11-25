@@ -1,0 +1,687 @@
+{
+  "generated_utc": 1795608065027,
+  "hours_before_end": 6.0,
+  "min_volume": 10000.0,
+  "samples": 91,
+  "buckets": [
+    {
+      "lo": 0.5,
+      "hi": 0.8,
+      "n": 23,
+      "avg_price": 0.6242,
+      "realized_yes": 0.4783,
+      "edge_bps": -1458.9
+    },
+    {
+      "lo": 0.8,
+      "hi": 0.9,
+      "n": 6,
+      "avg_price": 0.8603,
+      "realized_yes": 0.8333,
+      "edge_bps": -269.2
+    },
+    {
+      "lo": 0.9,
+      "hi": 0.95,
+      "n": 2,
+      "avg_price": 0.9133,
+      "realized_yes": 1.0,
+      "edge_bps": 867.5
+    },
+    {
+      "lo": 0.95,
+      "hi": 0.98,
+      "n": 3,
+      "avg_price": 0.9675,
+      "realized_yes": 1.0,
+      "edge_bps": 325.0
+    },
+    {
+      "lo": 0.98,
+      "hi": 0.99,
+      "n": 3,
+      "avg_price": 0.985,
+      "realized_yes": 1.0,
+      "edge_bps": 150.0
+    }
+  ],
+  "detail": [
+    {
+      "q": "Will Donald Trump win the 2024 US Presidential Election?",
+      "p": 0.6275,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 1531479284.504353
+    },
+    {
+      "q": "Will Kamala Harris win the 2024 US Presidential Election?",
+      "p": 0.4225,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 1037039118.18879
+    },
+    {
+      "q": "Will Zelenskyy wear a suit before July?",
+      "p": 0.0225,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 242231180.272023
+    },
+    {
+      "q": "US x Iran ceasefire extended by April 22, 2026?",
+      "p": 0.66,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 203621392.1401
+    },
+    {
+      "q": "US x Iran permanent peace deal by June 15, 2026?",
+      "p": 0.8165,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 177370818.43892464
+    },
+    {
+      "q": "US x Iran ceasefire by April 7?",
+      "p": 0.0225,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 173696184.17746878
+    },
+    {
+      "q": "Kamala Harris wins the popular vote?",
+      "p": 0.728,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 163779786.645492
+    },
+    {
+      "q": "US government shutdown Saturday?",
+      "p": 0.865,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 157296576.448084
+    },
+    {
+      "q": "Will Zohran Mamdani win the 2025 NYC mayoral election?",
+      "p": 0.9215,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 143254859.334333
+    },
+    {
+      "q": "Khamenei out as Supreme Leader of Iran by February 28?",
+      "p": 0.019,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 131114970.827221
+    },
+    {
+      "q": "Will Donald Trump win the popular vote in the 2024 Presidential Election?",
+      "p": 0.2735,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 119932620.818624
+    },
+    {
+      "q": "Will the Democratic candidate win Pennsylvania by 1.5%-2.0%?",
+      "p": 0.056,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 109063759.600993
+    },
+    {
+      "q": "US strikes Iran by February 28, 2026?",
+      "p": 0.545,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 89652867.363489
+    },
+    {
+      "q": "Will Lee Jae-myung be elected the next president of South Korea?",
+      "p": 0.9635,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 88035547.447225
+    },
+    {
+      "q": "US x Iran permanent peace deal by May 31, 2026?",
+      "p": 0.0245,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 87888981.28583376
+    },
+    {
+      "q": "Will Inter Milan win the UEFA Champions League?",
+      "p": 0.402,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 82978657.0443518
+    },
+    {
+      "q": "Will Eleven die in \"Stranger Things: Season 5\"?",
+      "p": 0.295,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 80824835.00196
+    },
+    {
+      "q": "US forces enter Iran by March 31?",
+      "p": 0.052,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 73927762.4785615
+    },
+    {
+      "q": "Will Kim Moon-soo be elected the next president of South Korea?",
+      "p": 0.036,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 73197949.803466
+    },
+    {
+      "q": "Will Kamala Harris be inaugurated?",
+      "p": 0.0135,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 72247146.4466322
+    },
+    {
+      "q": "Will Pierre Poilievre be the next Canadian Prime Minister?",
+      "p": 0.2245,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 67376035.838465
+    },
+    {
+      "q": "No change in Fed interest rates after September 2025 meeting?",
+      "p": 0.022,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 67368762.49652
+    },
+    {
+      "q": "Will there be no change in Fed interest rates after the September 2026 meeting?",
+      "p": 0.115,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 56435144.72298723
+    },
+    {
+      "q": "Fed decreases interest rates by 25 bps after December 2025 meeting?",
+      "p": 0.9685,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 54634506.683355
+    },
+    {
+      "q": "Fed decreases interest rates by 25 bps after October 2025 meeting?",
+      "p": 0.9825,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 51626217.76071
+    },
+    {
+      "q": "Will Paris Saint-Germain win the UEFA Champions League?",
+      "p": 0.5985,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 51320576.4557441
+    },
+    {
+      "q": "US x Venezuela military engagement by December 31?",
+      "p": 0.022,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 51073020.592839
+    },
+    {
+      "q": "Will New Hampshire be the closest state?",
+      "p": 0.048,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 50856971.134739
+    },
+    {
+      "q": "Fed decreases interest rates by 50+ bps after September 2025 meeting?",
+      "p": 0.073,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 49890284.071409
+    },
+    {
+      "q": "Khamenei out as Supreme Leader of Iran by January 31?",
+      "p": 0.01,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 49748804.334599
+    },
+    {
+      "q": "US x Iran permanent peace deal by June 30, 2026?",
+      "p": 0.275,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 49036513.606860146
+    },
+    {
+      "q": "Will Andrew Cuomo win the 2025 NYC mayoral election?",
+      "p": 0.0785,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 48755937.180665
+    },
+    {
+      "q": "Iran x Israel/US conflict ends by April 7?",
+      "p": 0.01,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 48720376.31273075
+    },
+    {
+      "q": "Will the Democratic candidate win Nevada by 3.0%-4.0%? ",
+      "p": 0.045,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 47843276.232386
+    },
+    {
+      "q": "No change in Fed interest rates after October 2025 meeting?",
+      "p": 0.0125,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 46052653.992844
+    },
+    {
+      "q": "No change in Fed interest rates after December 2025 meeting?",
+      "p": 0.0255,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 44523455.111481
+    },
+    {
+      "q": "France vs. Spain: Team to Advance",
+      "p": 0.56625,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 43828728.57358984
+    },
+    {
+      "q": "Spain vs. Argentina: Team to Advance",
+      "p": 0.58875,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 43352822.78394441
+    },
+    {
+      "q": "Will the Fed increase interest rates by 25 bps after the September 2026 meeting?",
+      "p": 0.875,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 42158279.47949004
+    },
+    {
+      "q": "US strikes Iran by January 31, 2026?",
+      "p": 0.095,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 41754060.055673
+    },
+    {
+      "q": "Will Rafał Trzaskowski be the next President of Poland?",
+      "p": 0.74,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 40863065.298881
+    },
+    {
+      "q": "Will there be no change in Fed interest rates after the July 2026 meeting?",
+      "p": 0.769,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 40497085.547722004
+    },
+    {
+      "q": "Will Paris Saint-Germain FC win on 2026-05-30?",
+      "p": 0.385,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 38427417.853250585
+    },
+    {
+      "q": "Will Belgium win on 2026-07-01?",
+      "p": 0.455,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 37800234.64466119
+    },
+    {
+      "q": "Will the Democratic candidate win Wisconsin by 3%-4.0%? ",
+      "p": 0.1075,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 37386911.778964
+    },
+    {
+      "q": "Will Roberto Sánchez Palomino win the 2026 Peruvian presidential election?",
+      "p": 0.3875,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 36601896.005035795
+    },
+    {
+      "q": "Will Mark Carney be the next Canadian Prime Minister?",
+      "p": 0.7765,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 36416000.185007
+    },
+    {
+      "q": "Fed decreases interest rates by 25 bps after September 2025 meeting?",
+      "p": 0.905,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 36329925.673244
+    },
+    {
+      "q": "Seahawks vs. Patriots",
+      "p": 0.675,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 36281747.672415
+    },
+    {
+      "q": "Will Canada win on 2026-06-28?",
+      "p": 0.525,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 36162490.191441655
+    },
+    {
+      "q": "Will United States win on 2026-06-25?",
+      "p": 0.505,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 36081118.38206247
+    },
+    {
+      "q": "Will Morocco win on 2026-07-04?",
+      "p": 0.545,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 35432188.53751932
+    },
+    {
+      "q": "Will the Democratic candidate win Pennsylvania by 0.5%-1%?",
+      "p": 0.055,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 33119218.154897
+    },
+    {
+      "q": "Will France win on 2026-07-14?",
+      "p": 0.37625,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 32717593.783729352
+    },
+    {
+      "q": "Mexico vs. England: Team to Advance",
+      "p": 0.495,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 32593774.390561555
+    },
+    {
+      "q": "Will Mike Tyson win his boxing match against Jake Paul?",
+      "p": 0.155,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 32399877.164035
+    },
+    {
+      "q": "Will Karol Nawrocki be the next President of Poland?",
+      "p": 0.255,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 31735999.949038
+    },
+    {
+      "q": "Will Melania say \"Career\" during AI talk on Friday?",
+      "p": 0.355,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 31097575.061839
+    },
+    {
+      "q": "Will Germany win on 2026-06-20?",
+      "p": 0.685,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 31040324.64426019
+    },
+    {
+      "q": "U.S. anti-cartel ground operation in Mexico by January 31?",
+      "p": 0.0475,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 30194309.815936
+    },
+    {
+      "q": "Will Nevada be the closest state?",
+      "p": 0.21,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 30180182.963199
+    },
+    {
+      "q": "Will Belgium win on 2026-06-15?",
+      "p": 0.635,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 29529221.83360376
+    },
+    {
+      "q": "Will Japan win on 2026-06-25?",
+      "p": 0.4415,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 29397547.75841289
+    },
+    {
+      "q": "No change in Fed interest rates after July 2025 meeting?",
+      "p": 0.9705,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 28670116.640169
+    },
+    {
+      "q": "Fordow nuclear facility destroyed before July?",
+      "p": 0.987,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 28623187.178979
+    },
+    {
+      "q": "Will Bitcoin hit $100k in November?",
+      "p": 0.022,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 28587434.430255
+    },
+    {
+      "q": "Spurs vs. Knicks",
+      "p": 0.455,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 28351356.52365322
+    },
+    {
+      "q": "Will Trump say \"Iran\" during events with Xi Jinping?",
+      "p": 0.335,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 28337791.229197014
+    },
+    {
+      "q": "LoL: T1 vs KT Rolster (BO5)",
+      "p": 0.895,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 28232897.552131
+    },
+    {
+      "q": "No change in Fed interest rates after June 2025 meeting?",
+      "p": 0.9855,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 28071372.791282
+    },
+    {
+      "q": "England vs. Argentina: Team to Advance",
+      "p": 0.54375,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 27825503.72144274
+    },
+    {
+      "q": "Will United States win on 2026-06-12?",
+      "p": 0.465,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 27745325.144072264
+    },
+    {
+      "q": "Will Argentina win on 2026-07-03?",
+      "p": 0.855,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 27706689.41426485
+    },
+    {
+      "q": "Norway vs. England: Team to Advance",
+      "p": 0.31875,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 27545833.395524234
+    },
+    {
+      "q": "Will Kanye launch a coin in February?",
+      "p": 0.036,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 27507326.472995
+    },
+    {
+      "q": "Will Jake Paul win his boxing match against Anthony Joshua?",
+      "p": 0.1215,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 26258664.60106
+    },
+    {
+      "q": "Will IR Iran win on 2026-06-15?",
+      "p": 0.535,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 26085380.534743734
+    },
+    {
+      "q": "Will the Fed increase interest rates by 25 bps after the July 2026 meeting?",
+      "p": 0.243,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 25890005.575899016
+    },
+    {
+      "q": "Will Germany win on 2026-06-25?",
+      "p": 0.6085,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 25829443.2331225
+    },
+    {
+      "q": "QatarEnergy announces/resumes LNG production in Qatar by April 30?",
+      "p": 0.039,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 25495050.864901926
+    },
+    {
+      "q": "Argentina vs. Egypt: Team to Advance",
+      "p": 0.855,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 25151175.404421493
+    },
+    {
+      "q": "Will Türkiye win on 2026-06-19?",
+      "p": 0.485,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 25033864.729953494
+    },
+    {
+      "q": "Spurs vs. Knicks",
+      "p": 0.465,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 24834201.640931245
+    },
+    {
+      "q": "Will the next Prime Minister of Hungary be Péter Magyar?",
+      "p": 0.705,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 24555476.477281053
+    },
+    {
+      "q": "Will Germany win on 2026-06-29?",
+      "p": 0.735,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 24012879.428884313
+    },
+    {
+      "q": "Will Czechia win on 2026-06-18?",
+      "p": 0.535,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 23866870.866488546
+    },
+    {
+      "q": "Fed decreases interest rates by 25 bps after July 2025 meeting?",
+      "p": 0.0255,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 23551704.395621
+    },
+    {
+      "q": "No change in Fed interest rates after 2024 September meeting?",
+      "p": 0.014,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 23499210.730061
+    },
+    {
+      "q": "Will Trump create Bitcoin reserve in first 100 days?",
+      "p": 0.0235,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 23324353.367396
+    },
+    {
+      "q": "US x Iran permanent peace deal by May 26, 2026?",
+      "p": 0.115,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 22930944.340371944
+    },
+    {
+      "q": "Will England win on 2026-07-11?",
+      "p": 0.52375,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 22701021.18817368
+    }
+  ]
+}

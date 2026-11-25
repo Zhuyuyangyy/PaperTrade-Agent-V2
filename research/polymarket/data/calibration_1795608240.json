@@ -1,0 +1,3711 @@
+{
+  "generated_utc": 1795608240110,
+  "hours_before_end": 6.0,
+  "min_volume": 5000.0,
+  "samples": 523,
+  "buckets": [
+    {
+      "lo": 0.5,
+      "hi": 0.8,
+      "n": 179,
+      "avg_price": 0.618,
+      "realized_yes": 0.6089,
+      "edge_bps": -90.4
+    },
+    {
+      "lo": 0.8,
+      "hi": 0.9,
+      "n": 23,
+      "avg_price": 0.8562,
+      "realized_yes": 0.8261,
+      "edge_bps": -300.7
+    },
+    {
+      "lo": 0.9,
+      "hi": 0.95,
+      "n": 8,
+      "avg_price": 0.9221,
+      "realized_yes": 0.875,
+      "edge_bps": -471.3
+    },
+    {
+      "lo": 0.95,
+      "hi": 0.98,
+      "n": 10,
+      "avg_price": 0.9656,
+      "realized_yes": 1.0,
+      "edge_bps": 344.5
+    },
+    {
+      "lo": 0.98,
+      "hi": 0.99,
+      "n": 9,
+      "avg_price": 0.9846,
+      "realized_yes": 1.0,
+      "edge_bps": 153.9
+    }
+  ],
+  "detail": [
+    {
+      "q": "Will Donald Trump win the 2024 US Presidential Election?",
+      "p": 0.6275,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 1531479284.504353
+    },
+    {
+      "q": "Will Kamala Harris win the 2024 US Presidential Election?",
+      "p": 0.4225,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 1037039118.18879
+    },
+    {
+      "q": "Will Zelenskyy wear a suit before July?",
+      "p": 0.0225,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 242231180.272023
+    },
+    {
+      "q": "US x Iran ceasefire extended by April 22, 2026?",
+      "p": 0.66,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 203621392.1401
+    },
+    {
+      "q": "US x Iran permanent peace deal by June 15, 2026?",
+      "p": 0.8165,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 177370818.43892464
+    },
+    {
+      "q": "US x Iran ceasefire by April 7?",
+      "p": 0.0225,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 173696184.17746878
+    },
+    {
+      "q": "Kamala Harris wins the popular vote?",
+      "p": 0.728,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 163779786.645492
+    },
+    {
+      "q": "US government shutdown Saturday?",
+      "p": 0.865,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 157296576.448084
+    },
+    {
+      "q": "Will Zohran Mamdani win the 2025 NYC mayoral election?",
+      "p": 0.9215,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 143254859.334333
+    },
+    {
+      "q": "Khamenei out as Supreme Leader of Iran by February 28?",
+      "p": 0.019,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 131114970.827221
+    },
+    {
+      "q": "Will Donald Trump win the popular vote in the 2024 Presidential Election?",
+      "p": 0.2735,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 119932620.818624
+    },
+    {
+      "q": "Will the Democratic candidate win Pennsylvania by 1.5%-2.0%?",
+      "p": 0.056,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 109063759.600993
+    },
+    {
+      "q": "US strikes Iran by February 28, 2026?",
+      "p": 0.545,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 89652867.363489
+    },
+    {
+      "q": "Will Lee Jae-myung be elected the next president of South Korea?",
+      "p": 0.9635,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 88035547.447225
+    },
+    {
+      "q": "US x Iran permanent peace deal by May 31, 2026?",
+      "p": 0.0245,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 87888981.28583376
+    },
+    {
+      "q": "Will Inter Milan win the UEFA Champions League?",
+      "p": 0.402,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 82978657.0443518
+    },
+    {
+      "q": "Will Eleven die in \"Stranger Things: Season 5\"?",
+      "p": 0.295,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 80824835.00196
+    },
+    {
+      "q": "US forces enter Iran by March 31?",
+      "p": 0.052,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 73927762.4785615
+    },
+    {
+      "q": "Will Kim Moon-soo be elected the next president of South Korea?",
+      "p": 0.036,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 73197949.803466
+    },
+    {
+      "q": "Will Kamala Harris be inaugurated?",
+      "p": 0.0135,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 72247146.4466322
+    },
+    {
+      "q": "Will Pierre Poilievre be the next Canadian Prime Minister?",
+      "p": 0.2245,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 67376035.838465
+    },
+    {
+      "q": "No change in Fed interest rates after September 2025 meeting?",
+      "p": 0.022,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 67368762.49652
+    },
+    {
+      "q": "Will there be no change in Fed interest rates after the September 2026 meeting?",
+      "p": 0.115,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 56435144.72298723
+    },
+    {
+      "q": "Fed decreases interest rates by 25 bps after December 2025 meeting?",
+      "p": 0.9685,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 54634506.683355
+    },
+    {
+      "q": "Fed decreases interest rates by 25 bps after October 2025 meeting?",
+      "p": 0.9825,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 51626217.76071
+    },
+    {
+      "q": "Will Paris Saint-Germain win the UEFA Champions League?",
+      "p": 0.5985,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 51320576.4557441
+    },
+    {
+      "q": "US x Venezuela military engagement by December 31?",
+      "p": 0.022,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 51073020.592839
+    },
+    {
+      "q": "Will New Hampshire be the closest state?",
+      "p": 0.048,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 50856971.134739
+    },
+    {
+      "q": "Fed decreases interest rates by 50+ bps after September 2025 meeting?",
+      "p": 0.073,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 49890284.071409
+    },
+    {
+      "q": "Khamenei out as Supreme Leader of Iran by January 31?",
+      "p": 0.01,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 49748804.334599
+    },
+    {
+      "q": "US x Iran permanent peace deal by June 30, 2026?",
+      "p": 0.275,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 49036513.606860146
+    },
+    {
+      "q": "Will Andrew Cuomo win the 2025 NYC mayoral election?",
+      "p": 0.0785,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 48755937.180665
+    },
+    {
+      "q": "Iran x Israel/US conflict ends by April 7?",
+      "p": 0.01,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 48720376.31273075
+    },
+    {
+      "q": "Will the Democratic candidate win Nevada by 3.0%-4.0%? ",
+      "p": 0.045,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 47843276.232386
+    },
+    {
+      "q": "No change in Fed interest rates after October 2025 meeting?",
+      "p": 0.0125,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 46052653.992844
+    },
+    {
+      "q": "No change in Fed interest rates after December 2025 meeting?",
+      "p": 0.0255,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 44523455.111481
+    },
+    {
+      "q": "France vs. Spain: Team to Advance",
+      "p": 0.56625,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 43828728.57358984
+    },
+    {
+      "q": "Spain vs. Argentina: Team to Advance",
+      "p": 0.58875,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 43352822.78394441
+    },
+    {
+      "q": "Will the Fed increase interest rates by 25 bps after the September 2026 meeting?",
+      "p": 0.875,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 42158279.47949004
+    },
+    {
+      "q": "US strikes Iran by January 31, 2026?",
+      "p": 0.095,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 41754060.055673
+    },
+    {
+      "q": "Will Rafał Trzaskowski be the next President of Poland?",
+      "p": 0.74,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 40863065.298881
+    },
+    {
+      "q": "Will there be no change in Fed interest rates after the July 2026 meeting?",
+      "p": 0.769,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 40497085.547722004
+    },
+    {
+      "q": "Will Paris Saint-Germain FC win on 2026-05-30?",
+      "p": 0.385,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 38427417.853250585
+    },
+    {
+      "q": "Will Belgium win on 2026-07-01?",
+      "p": 0.455,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 37800234.64466119
+    },
+    {
+      "q": "Will the Democratic candidate win Wisconsin by 3%-4.0%? ",
+      "p": 0.1075,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 37386911.778964
+    },
+    {
+      "q": "Will Roberto Sánchez Palomino win the 2026 Peruvian presidential election?",
+      "p": 0.3875,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 36601896.005035795
+    },
+    {
+      "q": "Will Mark Carney be the next Canadian Prime Minister?",
+      "p": 0.7765,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 36416000.185007
+    },
+    {
+      "q": "Fed decreases interest rates by 25 bps after September 2025 meeting?",
+      "p": 0.905,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 36329925.673244
+    },
+    {
+      "q": "Seahawks vs. Patriots",
+      "p": 0.675,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 36281747.672415
+    },
+    {
+      "q": "Will Canada win on 2026-06-28?",
+      "p": 0.525,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 36162490.191441655
+    },
+    {
+      "q": "Will United States win on 2026-06-25?",
+      "p": 0.505,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 36081118.38206247
+    },
+    {
+      "q": "Will Morocco win on 2026-07-04?",
+      "p": 0.545,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 35432188.53751932
+    },
+    {
+      "q": "Will the Democratic candidate win Pennsylvania by 0.5%-1%?",
+      "p": 0.055,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 33119218.154897
+    },
+    {
+      "q": "Will France win on 2026-07-14?",
+      "p": 0.37625,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 32717593.783729352
+    },
+    {
+      "q": "Mexico vs. England: Team to Advance",
+      "p": 0.495,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 32593774.390561555
+    },
+    {
+      "q": "Will Mike Tyson win his boxing match against Jake Paul?",
+      "p": 0.155,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 32399877.164035
+    },
+    {
+      "q": "Will Karol Nawrocki be the next President of Poland?",
+      "p": 0.255,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 31735999.949038
+    },
+    {
+      "q": "Will Melania say \"Career\" during AI talk on Friday?",
+      "p": 0.355,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 31097575.061839
+    },
+    {
+      "q": "Will Germany win on 2026-06-20?",
+      "p": 0.685,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 31040324.64426019
+    },
+    {
+      "q": "U.S. anti-cartel ground operation in Mexico by January 31?",
+      "p": 0.0475,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 30194309.815936
+    },
+    {
+      "q": "Will Nevada be the closest state?",
+      "p": 0.21,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 30180182.963199
+    },
+    {
+      "q": "Will Belgium win on 2026-06-15?",
+      "p": 0.635,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 29529221.83360376
+    },
+    {
+      "q": "Will Japan win on 2026-06-25?",
+      "p": 0.4415,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 29397547.75841289
+    },
+    {
+      "q": "No change in Fed interest rates after July 2025 meeting?",
+      "p": 0.9705,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 28670116.640169
+    },
+    {
+      "q": "Fordow nuclear facility destroyed before July?",
+      "p": 0.987,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 28623187.178979
+    },
+    {
+      "q": "Will Bitcoin hit $100k in November?",
+      "p": 0.022,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 28587434.430255
+    },
+    {
+      "q": "Spurs vs. Knicks",
+      "p": 0.455,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 28351356.52365322
+    },
+    {
+      "q": "Will Trump say \"Iran\" during events with Xi Jinping?",
+      "p": 0.335,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 28337791.229197014
+    },
+    {
+      "q": "LoL: T1 vs KT Rolster (BO5)",
+      "p": 0.895,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 28232897.552131
+    },
+    {
+      "q": "No change in Fed interest rates after June 2025 meeting?",
+      "p": 0.9855,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 28071372.791282
+    },
+    {
+      "q": "England vs. Argentina: Team to Advance",
+      "p": 0.54375,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 27825503.72144274
+    },
+    {
+      "q": "Will United States win on 2026-06-12?",
+      "p": 0.465,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 27745325.144072264
+    },
+    {
+      "q": "Will Argentina win on 2026-07-03?",
+      "p": 0.855,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 27706689.41426485
+    },
+    {
+      "q": "Norway vs. England: Team to Advance",
+      "p": 0.31875,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 27545833.395524234
+    },
+    {
+      "q": "Will Kanye launch a coin in February?",
+      "p": 0.036,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 27507326.472995
+    },
+    {
+      "q": "Will Jake Paul win his boxing match against Anthony Joshua?",
+      "p": 0.1215,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 26258664.60106
+    },
+    {
+      "q": "Will IR Iran win on 2026-06-15?",
+      "p": 0.535,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 26085380.534743734
+    },
+    {
+      "q": "Will the Fed increase interest rates by 25 bps after the July 2026 meeting?",
+      "p": 0.243,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 25890005.575899016
+    },
+    {
+      "q": "Will Germany win on 2026-06-25?",
+      "p": 0.6085,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 25829443.2331225
+    },
+    {
+      "q": "QatarEnergy announces/resumes LNG production in Qatar by April 30?",
+      "p": 0.039,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 25495050.864901926
+    },
+    {
+      "q": "Argentina vs. Egypt: Team to Advance",
+      "p": 0.855,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 25151175.404421493
+    },
+    {
+      "q": "Will Türkiye win on 2026-06-19?",
+      "p": 0.485,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 25033864.729953494
+    },
+    {
+      "q": "Spurs vs. Knicks",
+      "p": 0.465,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 24834201.640931245
+    },
+    {
+      "q": "Will the next Prime Minister of Hungary be Péter Magyar?",
+      "p": 0.705,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 24555476.477281053
+    },
+    {
+      "q": "Will Germany win on 2026-06-29?",
+      "p": 0.735,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 24012879.428884313
+    },
+    {
+      "q": "Will Czechia win on 2026-06-18?",
+      "p": 0.535,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 23866870.866488546
+    },
+    {
+      "q": "Fed decreases interest rates by 25 bps after July 2025 meeting?",
+      "p": 0.0255,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 23551704.395621
+    },
+    {
+      "q": "No change in Fed interest rates after 2024 September meeting?",
+      "p": 0.014,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 23499210.730061
+    },
+    {
+      "q": "Will Trump create Bitcoin reserve in first 100 days?",
+      "p": 0.0235,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 23324353.367396
+    },
+    {
+      "q": "US x Iran permanent peace deal by May 26, 2026?",
+      "p": 0.115,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 22930944.340371944
+    },
+    {
+      "q": "Will England win on 2026-07-11?",
+      "p": 0.52375,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 22701021.18817368
+    },
+    {
+      "q": "Will Norway win on 2026-06-22?",
+      "p": 0.415,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 22598452.18195877
+    },
+    {
+      "q": "France vs. Morocco: O/U 2.5",
+      "p": 0.48625,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 22492660.68181417
+    },
+    {
+      "q": "Fed decreases interest rates by 25 bps after June 2025 meeting?",
+      "p": 0.012,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 22347675.300958
+    },
+    {
+      "q": "Will France win on 2026-07-18?",
+      "p": 0.555,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 21958455.592650715
+    },
+    {
+      "q": "France vs. England: Team to Win",
+      "p": 0.685,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 21903579.589002114
+    },
+    {
+      "q": "Will France win on 2026-07-09?",
+      "p": 0.61125,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 21875491.882710956
+    },
+    {
+      "q": "Will Keiko Fujimori win the 2026 Peruvian presidential election?",
+      "p": 0.615,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 21817048.613106236
+    },
+    {
+      "q": "Fed decreases interest rates by 25 bps after May 2025 meeting?",
+      "p": 0.0155,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 21653201.774564
+    },
+    {
+      "q": "Will Brazil win on 2026-06-29?",
+      "p": 0.555,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 21449755.607713584
+    },
+    {
+      "q": "Will Spain win on 2026-07-10?",
+      "p": 0.60125,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 21403123.724798873
+    },
+    {
+      "q": "Will France win on 2026-06-30?",
+      "p": 0.775,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 21360211.01875305
+    },
+    {
+      "q": "Fed decreases interest rates by 25 bps after January 2025 meeting?",
+      "p": 0.021,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 21247359.999879
+    },
+    {
+      "q": "Will Argentina win on 2026-06-22?",
+      "p": 0.675,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 21219503.760994226
+    },
+    {
+      "q": "Will Spain win on 2026-06-15?",
+      "p": 0.925,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 21209383.43092772
+    },
+    {
+      "q": "Will Spain win on 2026-06-26?",
+      "p": 0.585,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 21107566.788395956
+    },
+    {
+      "q": "No change in Fed interest rates after January 2025 meeting?",
+      "p": 0.9775,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 21033386.279391
+    },
+    {
+      "q": "Will Spain win on 2026-07-19?",
+      "p": 0.42625,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 20835093.762332156
+    },
+    {
+      "q": "Will Argentina win on 2026-07-07?",
+      "p": 0.735,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 20802138.270757653
+    },
+    {
+      "q": "No change in Fed interest rates after May 2025 meeting?",
+      "p": 0.9835,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 20629387.641397
+    },
+    {
+      "q": "Fed rate cut by September 18?",
+      "p": 0.9865,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 20345317.826273
+    },
+    {
+      "q": "Will Argentina win on 2026-07-11?",
+      "p": 0.57375,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 20312069.978136703
+    },
+    {
+      "q": "United States vs. Belgium: Team to Advance",
+      "p": 0.535,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 20213564.330224928
+    },
+    {
+      "q": "Will France win on 2026-06-16?",
+      "p": 0.675,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 19987092.112487588
+    },
+    {
+      "q": "Will Netherlands win on 2026-06-14?",
+      "p": 0.455,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 19893698.639120743
+    },
+    {
+      "q": "Argentina vs. Switzerland: Team to Advance",
+      "p": 0.75625,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 19403729.686489776
+    },
+    {
+      "q": "Will André Ventura win the 2026 Portugal presidential election?",
+      "p": 0.0175,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 19399481.037677
+    },
+    {
+      "q": "Will Portugal win on 2026-06-27?",
+      "p": 0.525,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 19361160.17850011
+    },
+    {
+      "q": "Will Anthony Joshua win his boxing match against Jake Paul?",
+      "p": 0.855,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 19074523.591451
+    },
+    {
+      "q": "Will France win on 2026-06-26?",
+      "p": 0.695,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 18919350.29098934
+    },
+    {
+      "q": "Will Morocco win on 2026-06-24?",
+      "p": 0.815,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 18844769.047732238
+    },
+    {
+      "q": "Knicks vs. Spurs",
+      "p": 0.365,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 18768516.955810275
+    },
+    {
+      "q": "Will Argentina win on 2026-06-16?",
+      "p": 0.645,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 18767166.838750347
+    },
+    {
+      "q": "Will Sweden win on 2026-06-14?",
+      "p": 0.505,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 18760216.76957973
+    },
+    {
+      "q": "Will a Democrat win the popular vote and a Republican win the Presidency?",
+      "p": 0.37,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 18758441.931819
+    },
+    {
+      "q": "Will AfD win the most seats in the next German election?",
+      "p": 0.0395,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 18597089.079314
+    },
+    {
+      "q": "Argentina vs. Cabo Verde: Team to Advance",
+      "p": 0.925,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 18530672.386328004
+    },
+    {
+      "q": "Will Norway win on 2026-07-11?",
+      "p": 0.22875,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 18513932.8140016
+    },
+    {
+      "q": "Will Croatia win on 2026-06-27?",
+      "p": 0.545,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 18418022.199651264
+    },
+    {
+      "q": "Will Arsenal FC win on 2026-04-29?",
+      "p": 0.425,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 18387774.814044967
+    },
+    {
+      "q": "Switzerland vs. Colombia: Team to Advance",
+      "p": 0.395,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 18242667.174410556
+    },
+    {
+      "q": "Will Belgium win on 2026-06-21?",
+      "p": 0.695,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 18080948.748315174
+    },
+    {
+      "q": "Will the New England Patriots win Super Bowl 2026?",
+      "p": 0.318,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 17884421.031288
+    },
+    {
+      "q": "Will  Zohran Mamdani win the Democratic Primary for Mayor of New York City?",
+      "p": 0.543,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 17848349.233334
+    },
+    {
+      "q": "Knicks vs. Spurs",
+      "p": 0.325,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 17832436.79199658
+    },
+    {
+      "q": "Will Senegal win on 2026-07-01?",
+      "p": 0.255,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 17827341.63682033
+    },
+    {
+      "q": "Will Andrew Cuomo win the Democratic Primary for Mayor of New York City?",
+      "p": 0.455,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 17826731.742495
+    },
+    {
+      "q": "Will a Republican win the popular vote and a Democrat win the Presidency?",
+      "p": 0.027,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 17751068.899255
+    },
+    {
+      "q": "Will Colombia win on 2026-06-17?",
+      "p": 0.715,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 17636106.97954206
+    },
+    {
+      "q": "Will England win on 2026-07-15?",
+      "p": 0.36125,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 17582672.06301029
+    },
+    {
+      "q": "UFC 329: Max Holloway vs. Conor McGregor (Welterweight, Main Card)",
+      "p": 0.715,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 17549281.23491078
+    },
+    {
+      "q": "Will Scotland win on 2026-06-13?",
+      "p": 0.615,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 17517132.89494811
+    },
+    {
+      "q": "Spread: Morocco (-1.5)",
+      "p": 0.605,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 17350668.706474006
+    },
+    {
+      "q": "Will Norway win on 2026-06-30?",
+      "p": 0.445,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 17247649.762743395
+    },
+    {
+      "q": "Will England win on 2026-07-05?",
+      "p": 0.375,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 17145306.784341436
+    },
+    {
+      "q": "Will Argentina win on 2026-07-19?",
+      "p": 0.26125,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 17136118.76088532
+    },
+    {
+      "q": "Will the Republican candidate win Iowa by 9.0-10.0%? ",
+      "p": 0.085,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 17135203.886696
+    },
+    {
+      "q": "Spread: France (-1.5)",
+      "p": 0.595,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 17075290.12752207
+    },
+    {
+      "q": "Will United States win on 2026-07-06?",
+      "p": 0.365,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 17059652.406796068
+    },
+    {
+      "q": "Will Colombia win on 2026-07-07?",
+      "p": 0.415,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 17015796.39914403
+    },
+    {
+      "q": "Israel strikes Iran by January 31, 2026?",
+      "p": 0.05,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 16913391.371627
+    },
+    {
+      "q": "Will Egypt win on 2026-06-21?",
+      "p": 0.615,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 16909396.870261263
+    },
+    {
+      "q": "Will Morocco win on 2026-06-19?",
+      "p": 0.595,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 16880499.15083813
+    },
+    {
+      "q": "Will Portugal win on 2026-07-02?",
+      "p": 0.57625,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 16724381.27333695
+    },
+    {
+      "q": "Will Korea Republic win on 2026-06-24?",
+      "p": 0.575,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 16644052.228769382
+    },
+    {
+      "q": "Will England win on 2026-06-23?",
+      "p": 0.835,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 16506998.079854466
+    },
+    {
+      "q": "Will the Chiefs win Super Bowl 2025?",
+      "p": 0.5215,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 16403932.8394891
+    },
+    {
+      "q": "Trump wins every swing state?",
+      "p": 0.195,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 16221133.479478
+    },
+    {
+      "q": "Exact Score: Spain 2 - 3 Argentina?",
+      "p": 0.0375,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 16204391.908962158
+    },
+    {
+      "q": "Will the Democratic candidate win Pennsylvania by 1.0%-1.5%?",
+      "p": 0.067,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 16035015.066406
+    },
+    {
+      "q": "Spurs vs. Thunder",
+      "p": 0.425,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 16019822.259044647
+    },
+    {
+      "q": "Will Jake Paul win his boxing match against Mike Tyson?",
+      "p": 0.56,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 15917754.336328
+    },
+    {
+      "q": "Will Türkiye win on 2026-06-14?",
+      "p": 0.565,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 15897492.422452303
+    },
+    {
+      "q": "Will England win on 2026-06-17?",
+      "p": 0.575,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 15857649.80726726
+    },
+    {
+      "q": "Will Cabo Verde win on 2026-07-03?",
+      "p": 0.0345,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 15768824.99498326
+    },
+    {
+      "q": "Will Netherlands win on 2026-06-29?",
+      "p": 0.405,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 15535558.642318143
+    },
+    {
+      "q": "Iran closes its airspace by May 24?",
+      "p": 0.1485,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 15430021.40518324
+    },
+    {
+      "q": "Will Brazil win on 2026-06-13?",
+      "p": 0.585,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 15381429.4228347
+    },
+    {
+      "q": "Will the Republican candidate win Iowa by 3.0-4.0%? ",
+      "p": 0.055,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 15358928.308862
+    },
+    {
+      "q": "Will Algeria win on 2026-06-22?",
+      "p": 0.645,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 15331447.252722226
+    },
+    {
+      "q": "Will the Seattle Seahawks win Super Bowl 2026?",
+      "p": 0.681,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 15295581.172679
+    },
+    {
+      "q": "Will a Republican win the popular vote and the Presidency? ",
+      "p": 0.245,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 15286458.166973
+    },
+    {
+      "q": "Spurs vs. Thunder",
+      "p": 0.305,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 15241937.859735252
+    },
+    {
+      "q": "Knicks vs. Spurs",
+      "p": 0.365,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 15167671.513275115
+    },
+    {
+      "q": "US strikes Iran by February 13, 2026?",
+      "p": 0.44,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 15146244.148657
+    },
+    {
+      "q": "Will Jake Paul vs. Anthony Joshua have no official winner?",
+      "p": 0.0285,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 15085502.841227
+    },
+    {
+      "q": "Will Switzerland win on 2026-07-07?",
+      "p": 0.265,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 15056425.09967799
+    },
+    {
+      "q": "Thailand strikes Cambodia by Friday?",
+      "p": 0.345,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 15037403.469426
+    },
+    {
+      "q": "Will Jake Paul vs. Mike Tyson have no official winner?",
+      "p": 0.395,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 14968970.920633
+    },
+    {
+      "q": "Will Mexico win on 2026-07-05?",
+      "p": 0.315,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 14952162.835206179
+    },
+    {
+      "q": "Spread: Spain (-2.5)",
+      "p": 0.585,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 14946863.663578162
+    },
+    {
+      "q": "Will Netherlands win on 2026-06-20?",
+      "p": 0.575,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 14904080.953970106
+    },
+    {
+      "q": "Spurs vs. Thunder",
+      "p": 0.415,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 14874526.115431359
+    },
+    {
+      "q": "Will a Democrat win the popular vote and the Presidency? ",
+      "p": 0.37,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 14756382.198283
+    },
+    {
+      "q": "Will Portugal win on 2026-07-06?",
+      "p": 0.235,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 14683388.203758901
+    },
+    {
+      "q": "Will Uruguay win on 2026-06-15?",
+      "p": 0.675,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 14400179.897012625
+    },
+    {
+      "q": "Will Portugal win on 2026-06-17?",
+      "p": 0.765,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 14396185.470534254
+    },
+    {
+      "q": "Will Canada win on 2026-06-18?",
+      "p": 0.755,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 14324374.22380302
+    },
+    {
+      "q": "Will Japan win on 2026-06-21?",
+      "p": 0.695,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 14280617.889725218
+    },
+    {
+      "q": "Will England win on 2026-07-01?",
+      "p": 0.765,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 14028646.015347352
+    },
+    {
+      "q": "Will Donald Trump win the Nobel Peace Prize in 2025?",
+      "p": 0.0435,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 13949920.231067
+    },
+    {
+      "q": "Will Israel invade Lebanon in September?",
+      "p": 0.105,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 13817736.165943
+    },
+    {
+      "q": "Will Brazil win on 2026-07-05?",
+      "p": 0.545,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 13711349.766059127
+    },
+    {
+      "q": "Will France win on 2026-07-04?",
+      "p": 0.825,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 13700917.396750243
+    },
+    {
+      "q": "Will Mexico win on 2026-06-30?",
+      "p": 0.435,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 13651106.71304677
+    },
+    {
+      "q": "US strikes Iran by January 14, 2026?",
+      "p": 0.125,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 13619741.635223
+    },
+    {
+      "q": "UFC 328: Sean Strickland vs. Khamzat Chimaev (Middleweight, Main Card)",
+      "p": 0.195,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 13619340.240118997
+    },
+    {
+      "q": "Rams vs. Seahawks",
+      "p": 0.445,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 13597731.415087
+    },
+    {
+      "q": "Government shutdown on Saturday?",
+      "p": 0.1375,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 13550398.086217
+    },
+    {
+      "q": "Will Norway win on 2026-09-24?",
+      "p": 0.615,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 13521950.763898997
+    },
+    {
+      "q": "US government shutdown by October 1?",
+      "p": 0.925,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 13491651.789377
+    },
+    {
+      "q": "Will United States win on 2026-06-19?",
+      "p": 0.595,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 13451120.520932108
+    },
+    {
+      "q": "Spurs vs. Thunder",
+      "p": 0.305,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 13406166.151104424
+    },
+    {
+      "q": "Will Egypt win on 2026-07-07?",
+      "p": 0.075,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 13315998.44800365
+    },
+    {
+      "q": "Will Spain win on 2026-07-02?",
+      "p": 0.75625,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 13221539.20717903
+    },
+    {
+      "q": "Will Carlos Álvarez win the 2026 Peruvian presidential election?",
+      "p": 0.1565,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 13208030.096722003
+    },
+    {
+      "q": "Will Spain win on 2026-07-06?",
+      "p": 0.505,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 13204480.785140388
+    },
+    {
+      "q": "Will Egypt win on 2026-07-03?",
+      "p": 0.405,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 13172189.128250167
+    },
+    {
+      "q": "Will South Korea presidential election winner get over 50% of votes?",
+      "p": 0.655,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 13094030.56774
+    },
+    {
+      "q": "Will Manchester City FC win on 2026-05-19?",
+      "p": 0.595,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 13065430.291494356
+    },
+    {
+      "q": "Will Curaçao win on 2026-06-14?",
+      "p": 0.0235,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 13022834.40429326
+    },
+    {
+      "q": "Broncos vs. Chiefs",
+      "p": 0.455,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 13008691.426227998
+    },
+    {
+      "q": "France vs. Spain: O/U 2.5",
+      "p": 0.51125,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 12990257.867788948
+    },
+    {
+      "q": "Will a Democrat win Pennsylvania Presidential Election?",
+      "p": 0.405,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 12960333.136703
+    },
+    {
+      "q": "Will Paris Saint-Germain FC win on 2026-04-08?",
+      "p": 0.525,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 12954170.097464152
+    },
+    {
+      "q": "Dota 2: TEAM VISION vs Team Spirit (BO5) - The International Playoffs",
+      "p": 0.555,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 12939215.049812995
+    },
+    {
+      "q": "Will Arsenal FC win on 2026-10-18?",
+      "p": 0.605,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 12891667.622467
+    },
+    {
+      "q": "Belgium vs. Senegal: Team to Advance",
+      "p": 0.605,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 12829287.896142043
+    },
+    {
+      "q": "Will Ghana win on 2026-06-17?",
+      "p": 0.405,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 12677277.821971292
+    },
+    {
+      "q": "Cavaliers vs. Knicks",
+      "p": 0.325,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 12577799.434202062
+    },
+    {
+      "q": "Will Mexico win on 2026-06-24?",
+      "p": 0.545,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 12546755.069057487
+    },
+    {
+      "q": "Will Croatia win on 2026-06-23?",
+      "p": 0.675,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 12543597.939382985
+    },
+    {
+      "q": "Will the Democratic candidate win Pennsylvania by 0%-0.5%?",
+      "p": 0.065,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 12530511.484186
+    },
+    {
+      "q": "Rams vs. Bears",
+      "p": 0.645,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 12527242.425586
+    },
+    {
+      "q": "Will a Republican win Pennsylvania Presidential Election?",
+      "p": 0.595,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 12519682.451836
+    },
+    {
+      "q": "Will Argentina win on 2026-07-15?",
+      "p": 0.30875,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 12499621.520787006
+    },
+    {
+      "q": "Thunder vs. Spurs",
+      "p": 0.435,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 12453340.363712948
+    },
+    {
+      "q": "Bills vs. Broncos",
+      "p": 0.465,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 12391201.173008
+    },
+    {
+      "q": "Thunder vs. Spurs",
+      "p": 0.405,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 12389500.95452817
+    },
+    {
+      "q": "Will Mexico win on 2026-06-18?",
+      "p": 0.475,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 12384636.801802278
+    },
+    {
+      "q": "Will England win on 2026-07-18?",
+      "p": 0.225,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 12360628.707999052
+    },
+    {
+      "q": "Will Trump talk to Xi Jinping in March?",
+      "p": 0.019,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 12358578.449661002
+    },
+    {
+      "q": "Will another candidate win the 2024 Romanian Presidential election?",
+      "p": 0.3835,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 12316645.738355
+    },
+    {
+      "q": "Patriots vs. Broncos",
+      "p": 0.645,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 12245929.37084
+    },
+    {
+      "q": "Will Uruguay win on 2026-06-21?",
+      "p": 0.695,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 12174216.258805264
+    },
+    {
+      "q": "Will Trump say \"Nuclear\" during events with Xi Jinping?",
+      "p": 0.205,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 12129905.141829975
+    },
+    {
+      "q": "Will Liverpool FC win on 2026-03-03?",
+      "p": 0.685,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 11995661.364783
+    },
+    {
+      "q": "Will Korea Republic win on 2026-06-18?",
+      "p": 0.235,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 11984525.580031335
+    },
+    {
+      "q": "Lakers vs. Rockets",
+      "p": 0.415,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 11957546.186419584
+    },
+    {
+      "q": "Brazil vs. Norway: Team to Advance",
+      "p": 0.705,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 11923981.581439018
+    },
+    {
+      "q": "US x Iran ceasefire continues through October 31?",
+      "p": 0.986,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11868401.715241
+    },
+    {
+      "q": "Will the Eagles win Super Bowl 2025?",
+      "p": 0.4785,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11829712.587561
+    },
+    {
+      "q": "Will Norway win on 2026-07-05?",
+      "p": 0.195,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11817524.37077899
+    },
+    {
+      "q": "Will Spain win on 2026-07-14?",
+      "p": 0.29875,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11798411.896690112
+    },
+    {
+      "q": "Germany vs. Paraguay: Team to Advance",
+      "p": 0.865,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 11740634.83555925
+    },
+    {
+      "q": "France vs. Morocco: Team to Advance",
+      "p": 0.77625,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11720445.174250074
+    },
+    {
+      "q": "Will Arsenal FC win on 2026-05-30?",
+      "p": 0.325,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 11627686.991607988
+    },
+    {
+      "q": "Will BV Borussia 09 Dortmund win on 2026-02-17?",
+      "p": 0.445,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11617612.259371
+    },
+    {
+      "q": "Will Republicans lose the Alaska, Iowa, Kansas, Maine, Michigan, Ohio, and Texas Senate se",
+      "p": 0.325,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11603210.272226002
+    },
+    {
+      "q": "Will Arsenal FC win on 2026-08-31?",
+      "p": 0.645,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11578177.229967006
+    },
+    {
+      "q": "Spain vs. Belgium: Team to Advance",
+      "p": 0.74125,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11508622.38312711
+    },
+    {
+      "q": "Will Canada win on 2026-07-04?",
+      "p": 0.175,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 11490388.328799505
+    },
+    {
+      "q": "Will Max Verstappen be the 2025 Drivers Champion?",
+      "p": 0.2365,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 11422382.278709
+    },
+    {
+      "q": "Will Switzerland vs. Colombia end in a draw?",
+      "p": 0.325,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11404160.054110978
+    },
+    {
+      "q": "Will Union win the most seats in the next German election?",
+      "p": 0.9615,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11315209.134728
+    },
+    {
+      "q": "Will United States win on 2026-07-01?",
+      "p": 0.715,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11274857.04986208
+    },
+    {
+      "q": "Spread: France (-2.5)",
+      "p": 0.585,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11158095.442464001
+    },
+    {
+      "q": "2024 Balance of Power: R Prez R Senate R House",
+      "p": 0.385,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11132803.610888
+    },
+    {
+      "q": "Will Belgium win on 2026-07-10?",
+      "p": 0.16125,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 11081162.873585187
+    },
+    {
+      "q": "Spread: Spain (-1.5)",
+      "p": 0.50375,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11072260.650332987
+    },
+    {
+      "q": "Will Korea Republic win on 2026-06-11?",
+      "p": 0.375,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 11005658.482559443
+    },
+    {
+      "q": "Portugal vs. Spain: Team to Advance",
+      "p": 0.355,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 10926108.814434128
+    },
+    {
+      "q": "Fed decreases interest rates by 50+ bps after September 2024 meeting?",
+      "p": 0.5165,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 10906333.42219
+    },
+    {
+      "q": "Israeli forces enters Lebanon in September?",
+      "p": 0.765,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 10886668.249385
+    },
+    {
+      "q": "Will the Democratic candidate win Nevada by 4.0% or more?",
+      "p": 0.085,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 10836422.212859
+    },
+    {
+      "q": "Will Switzerland win on 2026-07-02?",
+      "p": 0.48875,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 10803367.559351003
+    },
+    {
+      "q": "Will Canada win on 2026-06-12?",
+      "p": 0.535,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 10789560.30480742
+    },
+    {
+      "q": "Australia vs. Egypt: Team to Advance",
+      "p": 0.405,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 10689050.353866296
+    },
+    {
+      "q": "Cowboys vs. Lions",
+      "p": 0.365,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 10677885.073194
+    },
+    {
+      "q": "Will Liverpool FC win on 2026-01-31?",
+      "p": 0.585,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 10673406.910317
+    },
+    {
+      "q": "Will Ecuador win on 2026-06-25?",
+      "p": 0.1915,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 10670888.380003048
+    },
+    {
+      "q": "Bills vs. Jaguars",
+      "p": 0.475,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 10668681.308752
+    },
+    {
+      "q": "Will FC Barcelona win on 2026-05-10?",
+      "p": 0.575,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 10618784.457511151
+    },
+    {
+      "q": "Will the Los Angeles Dodgers win the 2025 World Series?",
+      "p": 0.315,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 10561644.990771
+    },
+    {
+      "q": "Will a Democrat win Michigan Presidential Election?",
+      "p": 0.6,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 10404102.083081
+    },
+    {
+      "q": "Will Trump visit China by March 31?",
+      "p": 0.12,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 10369639.104046939
+    },
+    {
+      "q": "Will Mexico win on 2026-06-11?",
+      "p": 0.695,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 10340701.03032523
+    },
+    {
+      "q": "Texans vs. Patriots",
+      "p": 0.375,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 10271202.959333
+    },
+    {
+      "q": "Bitcoin above $100,000 on December 20?",
+      "p": 0.0165,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 10202409.081955
+    },
+    {
+      "q": "Warriors vs. Suns",
+      "p": 0.415,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 10201183.732017076
+    },
+    {
+      "q": "Bitcoin above $98,000 on December 6?",
+      "p": 0.605,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 10177786.150918
+    },
+    {
+      "q": "Lakers vs. Rockets",
+      "p": 0.365,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 10129139.881575186
+    },
+    {
+      "q": "Will Arsenal FC win on 2026-03-01?",
+      "p": 0.635,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 10093606.974152
+    },
+    {
+      "q": "Will Likud win the most seats in the 2026 Israeli legislative election?",
+      "p": 0.9865,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 10080625.799564999
+    },
+    {
+      "q": "Bitcoin above $97,000 on February 14?",
+      "p": 0.515,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 10056695.402617
+    },
+    {
+      "q": "Will Trump say \"Strait\" or \"Hormuz\" during events with Xi Jinping?",
+      "p": 0.345,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9968465.165516004
+    },
+    {
+      "q": "Will Real Madrid CF win on 2026-10-14?",
+      "p": 0.495,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9956764.81501701
+    },
+    {
+      "q": "Will Marcel Ciolacu win the 2024 Romanian Presidential election?",
+      "p": 0.142,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9941723.513819
+    },
+    {
+      "q": "Will Liverpool FC win on 2026-01-21?",
+      "p": 0.505,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9940935.873046
+    },
+    {
+      "q": "Will DR Congo win on 2026-06-27?",
+      "p": 0.585,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9889793.045153989
+    },
+    {
+      "q": "Will ≥2% of votes go to 3rd Party candidates?",
+      "p": 0.625,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9870739.05869
+    },
+    {
+      "q": "Will Paris Saint-Germain FC win on 2026-01-28?",
+      "p": 0.645,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9860208.306297
+    },
+    {
+      "q": "Will Bitcoin hit $100k today?",
+      "p": 0.535,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9846390.507191
+    },
+    {
+      "q": "U.S. Government funding lapse on March 15?",
+      "p": 0.875,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9824901.649265
+    },
+    {
+      "q": "England vs. Argentina: Both Teams to Score",
+      "p": 0.525,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9807274.702009901
+    },
+    {
+      "q": "76ers vs. Celtics",
+      "p": 0.275,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9785387.112465104
+    },
+    {
+      "q": "US strikes Iran by February 6, 2026?",
+      "p": 0.245,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9750255.569183
+    },
+    {
+      "q": "Purdue Boilermakers vs. Arizona Wildcats",
+      "p": 0.285,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9717043.117489979
+    },
+    {
+      "q": "Will RFK Jr. drop out by Friday?",
+      "p": 0.95,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9659775.26
+    },
+    {
+      "q": "Will Elena Lasconi win the 2024 Romanian Presidential election?",
+      "p": 0.22,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9657896.45691801
+    },
+    {
+      "q": "Illinois Fighting Illini vs. Iowa Hawkeyes",
+      "p": 0.765,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9599689.653015034
+    },
+    {
+      "q": "Will FC Barcelona win on 2026-02-12?",
+      "p": 0.425,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9542375.599363
+    },
+    {
+      "q": "Illinois Fighting Illini vs. Houston Cougars",
+      "p": 0.415,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9537961.725441067
+    },
+    {
+      "q": "Will Colombia win on 2026-06-23?",
+      "p": 0.635,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9532218.851709109
+    },
+    {
+      "q": "49ers vs. Seahawks",
+      "p": 0.285,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9511184.942198
+    },
+    {
+      "q": "Will Switzerland win on 2026-06-24?",
+      "p": 0.385,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9495043.802012082
+    },
+    {
+      "q": "Argentina vs. Egypt: O/U 2.5",
+      "p": 0.475,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9414616.449165074
+    },
+    {
+      "q": "Spurs vs. Trail Blazers",
+      "p": 0.525,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9411070.407254066
+    },
+    {
+      "q": "Will Belgium win on 2026-07-06?",
+      "p": 0.345,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9380330.243092118
+    },
+    {
+      "q": "Will Portugal win on 2026-06-23?",
+      "p": 0.855,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9364518.518527128
+    },
+    {
+      "q": "Will Donald Trump announce that the United States blockade of the Strait of Hormuz has bee",
+      "p": 0.055,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9359876.895693928
+    },
+    {
+      "q": "Will Paraguay win on 2026-06-29?",
+      "p": 0.085,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9348265.639179068
+    },
+    {
+      "q": "2024 Balance of Power: R Prez, R Senate, D House",
+      "p": 0.155,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9322470.30561
+    },
+    {
+      "q": "Spread: Seahawks (-4.5)",
+      "p": 0.505,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9320743.219459
+    },
+    {
+      "q": "Brazil vs. Norway: O/U 2.5",
+      "p": 0.575,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9301221.318306087
+    },
+    {
+      "q": "Spread: France (-1.5)",
+      "p": 0.525,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9285999.413685028
+    },
+    {
+      "q": "Knicks vs. Cavaliers",
+      "p": 0.435,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9277294.46497897
+    },
+    {
+      "q": "Will Algeria vs. Austria end in a draw?",
+      "p": 0.465,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9245319.949545983
+    },
+    {
+      "q": "Will Croatia win on 2026-07-02?",
+      "p": 0.16375,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9224423.770550994
+    },
+    {
+      "q": "Will Egypt win on 2026-06-26?",
+      "p": 0.365,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9220844.175980058
+    },
+    {
+      "q": "Will Morocco win on 2026-07-09?",
+      "p": 0.14125,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9213249.335347082
+    },
+    {
+      "q": "Packers vs. Bears",
+      "p": 0.545,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9202019.48984
+    },
+    {
+      "q": "Will France win on 2026-06-22?",
+      "p": 0.915,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9191826.131226048
+    },
+    {
+      "q": "Will OpenAI release a new frontier model on December 11?",
+      "p": 0.83,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9190060.842127
+    },
+    {
+      "q": "US x Venezuela military engagement by November 30?",
+      "p": 0.077,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9188343.67475
+    },
+    {
+      "q": "Lions vs. Bills",
+      "p": 0.305,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9174548.385193005
+    },
+    {
+      "q": "Rams vs. Broncos",
+      "p": 0.495,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9173708.224702004
+    },
+    {
+      "q": "Portugal vs. Spain: O/U 2.5",
+      "p": 0.545,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9156327.125378048
+    },
+    {
+      "q": "Knicks vs. Cavaliers",
+      "p": 0.545,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9120653.380570885
+    },
+    {
+      "q": "Will Spain vs. Argentina end in a draw?",
+      "p": 0.31875,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9115515.023500096
+    },
+    {
+      "q": "MegaETH market cap (FDV) >$2B one day after launch?",
+      "p": 0.585,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9056989.371149095
+    },
+    {
+      "q": "Will Real Betis Balompié win on 2026-09-17?",
+      "p": 0.635,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 9048522.265029998
+    },
+    {
+      "q": "Côte d'Ivoire vs. Norway: Team to Advance",
+      "p": 0.365,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 9021677.441263158
+    },
+    {
+      "q": "England vs. DR Congo: O/U 2.5",
+      "p": 0.465,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8946914.514398078
+    },
+    {
+      "q": "US x Iran Effective Ceasefire by July 31?",
+      "p": 0.095,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8917606.208237005
+    },
+    {
+      "q": "Will the Toronto Blue Jays win the 2025 World Series?",
+      "p": 0.678,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8901922.461705
+    },
+    {
+      "q": "Bengals vs. Ravens",
+      "p": 0.215,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8888622.238769
+    },
+    {
+      "q": "Will Jeannette Jara win the Chilean presidential election?",
+      "p": 0.1765,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8873168.0766
+    },
+    {
+      "q": "Norway vs. England: O/U 2.5",
+      "p": 0.56875,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8860953.239135047
+    },
+    {
+      "q": "Eagles vs. Bears",
+      "p": 0.635,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8847480.160110993
+    },
+    {
+      "q": "Bitcoin above $97,000 on January 10?",
+      "p": 0.1145,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8846664.201678
+    },
+    {
+      "q": "Will Mexico vs. Ecuador end in a draw?",
+      "p": 0.335,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8843123.880314995
+    },
+    {
+      "q": "Knicks vs. 76ers",
+      "p": 0.395,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8839450.077091996
+    },
+    {
+      "q": "Will Arsenal FC win on 2026-05-10?",
+      "p": 0.625,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8733707.715119015
+    },
+    {
+      "q": "Will Austria win on 2026-06-27?",
+      "p": 0.265,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8733405.134571051
+    },
+    {
+      "q": "US announces new Iran agreement/ceasefire extension by June 13?",
+      "p": 0.125,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8715169.978520965
+    },
+    {
+      "q": "Patriots vs. Ravens",
+      "p": 0.375,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8711562.23194
+    },
+    {
+      "q": "Brazil vs. Haiti: O/U 3.5",
+      "p": 0.505,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8698622.804907031
+    },
+    {
+      "q": "Exact Score: Spain 3 - 3 Argentina?",
+      "p": 0.016,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8697919.228001932
+    },
+    {
+      "q": "Will Chelsea FC win on 2026-05-04?",
+      "p": 0.645,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8679949.91766904
+    },
+    {
+      "q": "Will Friedrich Merz be the next Chancellor of Germany?",
+      "p": 0.955,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8653917.429013
+    },
+    {
+      "q": "Will Arsenal FC win on 2026-02-22?",
+      "p": 0.675,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8645680.350651
+    },
+    {
+      "q": "Will Morocco win on 2026-06-29?",
+      "p": 0.285,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8610997.066745996
+    },
+    {
+      "q": "Spain vs. Argentina: Both Teams to Score",
+      "p": 0.545,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8610153.156689007
+    },
+    {
+      "q": "Warriors vs. Clippers",
+      "p": 0.325,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8586786.87053718
+    },
+    {
+      "q": "Will FC Barcelona win on 2026-01-21?",
+      "p": 0.745,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8584792.035064
+    },
+    {
+      "q": "Spurs vs. Thunder",
+      "p": 0.235,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8574238.296618
+    },
+    {
+      "q": "Iran closes its airspace by May 31?",
+      "p": 0.051,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8565902.329688976
+    },
+    {
+      "q": "Miami vs. Indiana",
+      "p": 0.255,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8545588.387148
+    },
+    {
+      "q": "Will Brazil win on 2026-06-19?",
+      "p": 0.885,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8523406.23501897
+    },
+    {
+      "q": "Will Manchester United FC win on 2026-09-06?",
+      "p": 0.495,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8513198.76983601
+    },
+    {
+      "q": "Will Club Atlético de Madrid win on 2026-02-24?",
+      "p": 0.685,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8489980.92698
+    },
+    {
+      "q": "Will a Republican win Michigan Presidential Election?",
+      "p": 0.395,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8427215.034753
+    },
+    {
+      "q": "Bitcoin above $105,000 on January 31?",
+      "p": 0.3,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8422456.623766
+    },
+    {
+      "q": "Will Tottenham Hotspur FC win on 2026-01-17?",
+      "p": 0.535,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8408043.507648
+    },
+    {
+      "q": "Thunder vs. Lakers",
+      "p": 0.825,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8402338.252760137
+    },
+    {
+      "q": "Will Bitcoin reach $90,000 in December?",
+      "p": 0.055,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8400868.19698
+    },
+    {
+      "q": "Will England vs. Argentina end in a draw?",
+      "p": 0.33375,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8395482.98219705
+    },
+    {
+      "q": "Fed decreases interest rates by 50 bps after November 2024 meeting?",
+      "p": 0.014,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8393267.791414
+    },
+    {
+      "q": "Cavaliers vs. Knicks",
+      "p": 0.355,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8376531.411782543
+    },
+    {
+      "q": "Thunder vs. Spurs",
+      "p": 0.425,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8343870.488629068
+    },
+    {
+      "q": "Will the Democratic candidate win Pennsylvania by 2.5% or more?",
+      "p": 0.245,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8343710.123152
+    },
+    {
+      "q": "Will a U.S. anti-cartel operation outside of the United States occur by April 30, 2026?",
+      "p": 0.14,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8284127.671512002
+    },
+    {
+      "q": "Dota 2: Iron Wing vs BoomBoys (BO3) - The International Playoffs",
+      "p": 0.395,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8277466.699767003
+    },
+    {
+      "q": "Counter-Strike: FURIA vs FUT Esports (BO3) - Esports World Cup Playoffs",
+      "p": 0.605,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8260216.248608005
+    },
+    {
+      "q": "Will a Republican win Arizona US Senate Election?",
+      "p": 0.255,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8258327.18658
+    },
+    {
+      "q": "Spurs vs. Trail Blazers",
+      "p": 0.695,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8256667.750373082
+    },
+    {
+      "q": "Cavaliers vs. 76ers",
+      "p": 0.435,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8251637.980416
+    },
+    {
+      "q": "Heat vs. Hornets",
+      "p": 0.305,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8247551.409238994
+    },
+    {
+      "q": "Will Manchester City FC win on 2026-05-16?",
+      "p": 0.565,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8225168.862845045
+    },
+    {
+      "q": "Will Florida be the closest state?",
+      "p": 0.03,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8214061.612692
+    },
+    {
+      "q": "Will Biden pardon SBF?",
+      "p": 0.0295,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8209070.796648
+    },
+    {
+      "q": "Will Aston Villa FC win on 2026-01-18?",
+      "p": 0.605,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8195506.559319
+    },
+    {
+      "q": "Will Salvador Nasralla win the 2025 Honduras presidential election?",
+      "p": 0.57,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8185435.249886
+    },
+    {
+      "q": "Will CDU/CSU and Greens form the next German Government?",
+      "p": 0.024,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8182738.957633
+    },
+    {
+      "q": "Will Liverpool FC win on 2026-03-18?",
+      "p": 0.765,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8167338.320957994
+    },
+    {
+      "q": "Clippers vs. Hawks",
+      "p": 0.455,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8131714.565151
+    },
+    {
+      "q": "Canada vs. Morocco: Team to Advance",
+      "p": 0.285,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8106931.527877016
+    },
+    {
+      "q": "Will Club Atlético de Madrid win on 2026-10-13?",
+      "p": 0.535,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8104800.476555995
+    },
+    {
+      "q": "Will Manchester City FC win on 2026-03-21?",
+      "p": 0.73,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8098202.505656997
+    },
+    {
+      "q": "Nuggets vs. Timberwolves",
+      "p": 0.675,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8090763.250179075
+    },
+    {
+      "q": "Will Club Atlético de Madrid win on 2026-04-29?",
+      "p": 0.295,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8085644.130929168
+    },
+    {
+      "q": "Colts vs. Chiefs",
+      "p": 0.285,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8063003.874828002
+    },
+    {
+      "q": "Will Bitcoin reach $110,000 by January 31, 2025?",
+      "p": 0.0145,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8061597.738611
+    },
+    {
+      "q": "Will Japan win on 2026-06-29?",
+      "p": 0.185,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8054695.137975048
+    },
+    {
+      "q": "England vs. Argentina: O/U 2.5",
+      "p": 0.38625,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8048744.457232962
+    },
+    {
+      "q": "Netherlands vs. Morocco: Team to Advance",
+      "p": 0.575,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8046022.389178123
+    },
+    {
+      "q": "Will Germany vs. Paraguay end in a draw?",
+      "p": 0.185,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8041631.917780037
+    },
+    {
+      "q": "Spread: Germany (-3.5)",
+      "p": 0.535,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 8031330.163049004
+    },
+    {
+      "q": "Spurs vs. Timberwolves",
+      "p": 0.645,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8023685.687903052
+    },
+    {
+      "q": "Will Crude Oil (CL) hit (HIGH) $110 by end of March?",
+      "p": 0.124,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 8009442.956812905
+    },
+    {
+      "q": "No change in Fed interest rates after 2024 November meeting?",
+      "p": 0.0145,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7995206.758932
+    },
+    {
+      "q": "Will France vs. England end in a draw?",
+      "p": 0.225,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7991336.484533009
+    },
+    {
+      "q": "Will FC Barcelona win on 2026-01-18?",
+      "p": 0.615,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7976026.758481
+    },
+    {
+      "q": "US strikes Iran by January 15, 2026?",
+      "p": 0.515,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7975001.728113
+    },
+    {
+      "q": "Nuggets vs. Timberwolves",
+      "p": 0.515,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7972713.422236033
+    },
+    {
+      "q": "House control after 2024 election?",
+      "p": 0.5,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7967497.858254
+    },
+    {
+      "q": "Will Crude Oil (CL) hit (HIGH) $120 by end of March?",
+      "p": 0.014,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7966559.269008993
+    },
+    {
+      "q": "Lions vs. Panthers",
+      "p": 0.665,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7963861.820760997
+    },
+    {
+      "q": "Israel x Syria security agreement by June 30?",
+      "p": 0.485,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7961066.721005983
+    },
+    {
+      "q": "Will Chelsea FC win on 2026-10-24?",
+      "p": 0.505,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7952579.515821001
+    },
+    {
+      "q": "Will Argentina vs. Switzerland end in a draw?",
+      "p": 0.27375,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7921555.007364113
+    },
+    {
+      "q": "Will the Democrats win the Michigan Senate race in 2026?",
+      "p": 0.9835,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7920536.942460999
+    },
+    {
+      "q": "Eagles vs. Chargers",
+      "p": 0.555,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7920406.316492
+    },
+    {
+      "q": "Will Norway vs. Senegal end in a draw?",
+      "p": 0.285,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7906197.816467133
+    },
+    {
+      "q": "Will Nasry Juan Asfura Zablah win the 2025 Honduras presidential election?",
+      "p": 0.15,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7902409.57029
+    },
+    {
+      "q": "Will Oscar Piastri be the 2025 Drivers Champion?",
+      "p": 0.0345,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7895976.526057
+    },
+    {
+      "q": "Will Nicușor Dan win by more than 12%?",
+      "p": 0.0915,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7891266.898406
+    },
+    {
+      "q": "Will António José Seguro win the 2026 Portugal presidential election?",
+      "p": 0.9805,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7867806.308222
+    },
+    {
+      "q": "Israel x Hezbollah ceasefire by April 15, 2026?",
+      "p": 0.045,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7833257.504384964
+    },
+    {
+      "q": "Will Spain win on 2026-10-06?",
+      "p": 0.785,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7832156.442014006
+    },
+    {
+      "q": "Will  Alice Weidel be the next Chancellor of Germany?",
+      "p": 0.017,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7815463.900607
+    },
+    {
+      "q": "Will Arsenal FC win on 2026-04-11?",
+      "p": 0.665,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7772042.673206938
+    },
+    {
+      "q": "Will Paris Saint-Germain FC win on 2026-01-20?",
+      "p": 0.555,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7769518.680133
+    },
+    {
+      "q": "Will T1 win LoL Worlds 2025?",
+      "p": 0.625,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7753176.610305
+    },
+    {
+      "q": "Will Real Madrid CF win on 2026-02-17?",
+      "p": 0.435,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7735685.327279
+    },
+    {
+      "q": "Côte d'Ivoire vs. Norway: O/U 2.5",
+      "p": 0.515,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7717764.683706055
+    },
+    {
+      "q": "Will Brazil win on 2026-06-24?",
+      "p": 0.745,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7707332.210679964
+    },
+    {
+      "q": "US x Iran permanent peace deal by May 22, 2026?",
+      "p": 0.038,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7704920.399582997
+    },
+    {
+      "q": "Will Club Atlético de Madrid win on 2026-02-21?",
+      "p": 0.675,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7681286.254786
+    },
+    {
+      "q": "Michigan State Spartans vs. Connecticut Huskies",
+      "p": 0.445,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7654730.426618973
+    },
+    {
+      "q": "Will Trump visit China by May 31?",
+      "p": 0.715,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7626224.046920019
+    },
+    {
+      "q": "Spread: Canada (-1.5)",
+      "p": 0.525,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7622060.508901045
+    },
+    {
+      "q": "Lakers vs. Thunder",
+      "p": 0.115,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7617810.163455088
+    },
+    {
+      "q": "Will Türkiye win on 2026-06-25?",
+      "p": 0.265,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7603363.7921550535
+    },
+    {
+      "q": "MSFT shareholders vote for Bitcoin investment? ",
+      "p": 0.115,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7603059.085456
+    },
+    {
+      "q": "Will Argentina win on 2026-06-27?",
+      "p": 0.865,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7598609.843235994
+    },
+    {
+      "q": "Will Curaçao win on 2026-06-20?",
+      "p": 0.0555,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7574775.76100501
+    },
+    {
+      "q": "Will Trump deport 250,000-500,000 people?",
+      "p": 0.973,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7563256.444224
+    },
+    {
+      "q": "2024 presidential election: GOP wins by 65-104",
+      "p": 0.2,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7563202.909916
+    },
+    {
+      "q": "Will Trump dance today?",
+      "p": 0.455,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7532932.797939002
+    },
+    {
+      "q": "Will Brighton & Hove Albion FC win on 2026-10-18?",
+      "p": 0.675,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7510236.210913
+    },
+    {
+      "q": "Fed decreases interest rates by 25 bps after December 2024 meeting?",
+      "p": 0.9625,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7490697.06615098
+    },
+    {
+      "q": "Will France vs. Spain end in a draw?",
+      "p": 0.32125,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7480967.048757078
+    },
+    {
+      "q": "Will Mikie Sherrill win the New Jersey Governor Election in 2025",
+      "p": 0.855,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7479198.557189
+    },
+    {
+      "q": "Timberwolves vs. Spurs",
+      "p": 0.155,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7456893.715623169
+    },
+    {
+      "q": "Will Trump talk to Vladimir Putin in January?",
+      "p": 0.31,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7456315.379733
+    },
+    {
+      "q": "Trail Blazers vs. Spurs",
+      "p": 0.165,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7439938.066077015
+    },
+    {
+      "q": "Will George Simion win the 2024 Romanian Presidential election?",
+      "p": 0.178,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7430035.51406298
+    },
+    {
+      "q": "No change in Fed interest rates after December 2024 meeting?",
+      "p": 0.0345,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7400313.75189
+    },
+    {
+      "q": "Giants vs. Rams",
+      "p": 0.275,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7391327.508512996
+    },
+    {
+      "q": "Spain vs. Belgium: O/U 2.5",
+      "p": 0.55125,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7377084.1853799885
+    },
+    {
+      "q": "Will Ecuador win on 2026-06-14?",
+      "p": 0.385,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7355659.3151120655
+    },
+    {
+      "q": "Will Liverpool FC win on 2026-04-14?",
+      "p": 0.405,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7349911.152369008
+    },
+    {
+      "q": "Spurs vs. Lakers",
+      "p": 0.285,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7338046.301926
+    },
+    {
+      "q": "Will Ivan Cepeda Castro win the 2026 Colombian presidential election?",
+      "p": 0.125,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7331927.18613499
+    },
+    {
+      "q": "Will MrBeast raise $40M for clean water by August 31?",
+      "p": 0.885,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7326525.907317
+    },
+    {
+      "q": "Conservatives win majority in Canadian election?",
+      "p": 0.052,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7322211.32496
+    },
+    {
+      "q": "Ravens vs. Falcons",
+      "p": 0.375,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7296845.22692598
+    },
+    {
+      "q": "Spurs vs. Warriors",
+      "p": 0.665,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7296451.496621
+    },
+    {
+      "q": "Arizona Wildcats vs. Michigan Wolverines",
+      "p": 0.475,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7291734.136984097
+    },
+    {
+      "q": "Will Chelsea FC win on 2026-11-08?",
+      "p": 0.455,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7289087.625864
+    },
+    {
+      "q": "Connecticut Huskies vs. Michigan Wolverines",
+      "p": 0.265,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7283856.191282099
+    },
+    {
+      "q": "Brazil vs. Japan: O/U 2.5",
+      "p": 0.435,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7282055.423680959
+    },
+    {
+      "q": "Will Oh Se-hoon win the 2026 Seoul Mayoral Election",
+      "p": 0.24,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7267637.774252003
+    },
+    {
+      "q": "2024 presidential election: GOP wins by 215+",
+      "p": 0.0115,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7262055.993012
+    },
+    {
+      "q": "Will Norway win on 2026-06-26?",
+      "p": 0.125,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7258379.48992397
+    },
+    {
+      "q": "Trail Blazers vs. Lakers",
+      "p": 0.465,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7256774.812330999
+    },
+    {
+      "q": "Rockets vs. Lakers",
+      "p": 0.675,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7238844.225472949
+    },
+    {
+      "q": "Chiefs vs. Cowboys",
+      "p": 0.645,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7233874.654708
+    },
+    {
+      "q": "Will West Ham United FC win on 2026-05-24?",
+      "p": 0.585,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7217128.947017988
+    },
+    {
+      "q": "Will Senegal win on 2026-06-22?",
+      "p": 0.315,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7215593.812296025
+    },
+    {
+      "q": "Bitcoin above $100,000 on December 13?",
+      "p": 0.655,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7211697.798539
+    },
+    {
+      "q": "Will Croatia win on 2026-06-17?",
+      "p": 0.175,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7210340.936444105
+    },
+    {
+      "q": "Will Trump get 70-72m votes in the 2024 U.S. Presidential Election?",
+      "p": 0.075,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7204168.458315
+    },
+    {
+      "q": "England vs. DR Congo: Team to Advance",
+      "p": 0.875,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7170700.7368410425
+    },
+    {
+      "q": "Will SSC Napoli win on 2026-05-11?",
+      "p": 0.625,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7160301.892657001
+    },
+    {
+      "q": "Will Cabo Verde win on 2026-06-26?",
+      "p": 0.325,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7139473.054070085
+    },
+    {
+      "q": "Will Switzerland win on 2026-06-18?",
+      "p": 0.625,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7126756.505122047
+    },
+    {
+      "q": "Jensen Huang announced resignation or removal by November 11, 2026?",
+      "p": 0.165,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7123169.300001999
+    },
+    {
+      "q": "Will Ecuador win on 2026-06-20?",
+      "p": 0.845,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7118457.521967039
+    },
+    {
+      "q": "US x Iran meeting by April 10, 2026?",
+      "p": 0.2555,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7115644.975113006
+    },
+    {
+      "q": "Spread: Belgium (-1.5)",
+      "p": 0.435,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7111671.967758994
+    },
+    {
+      "q": "Will Qatar win on 2026-06-13?",
+      "p": 0.0595,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7111085.21857801
+    },
+    {
+      "q": "Will Australia win on 2026-07-03?",
+      "p": 0.265,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7111054.892541992
+    },
+    {
+      "q": "Spain vs. Argentina: O/U 2.5",
+      "p": 0.41375,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7107958.288181012
+    },
+    {
+      "q": "Will Lando Norris be the 2025 Drivers Champion?",
+      "p": 0.735,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7095379.332337
+    },
+    {
+      "q": "Knicks vs. Hawks",
+      "p": 0.505,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7092252.589904155
+    },
+    {
+      "q": "Spread: Argentina (-1.5)",
+      "p": 0.405,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7089777.2376550445
+    },
+    {
+      "q": "Raptors vs. Cavaliers",
+      "p": 0.275,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7081934.093862964
+    },
+    {
+      "q": "Will Trump say \"Dumbocrat\" during Bret Baier interview?",
+      "p": 0.44,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7080544.923814001
+    },
+    {
+      "q": "Hornets vs. Magic",
+      "p": 0.585,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7069013.964275983
+    },
+    {
+      "q": "Will England win on 2026-06-27?",
+      "p": 0.855,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7066368.354783069
+    },
+    {
+      "q": "Favorite to win on Polymarket day before election?",
+      "p": 0.0385,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 7048870.471444
+    },
+    {
+      "q": "49ers vs. Cowboys",
+      "p": 0.635,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 7045436.294057
+    },
+    {
+      "q": "US x Iran diplomatic meeting by June 30, 2026?",
+      "p": 0.57,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 6999918.236180979
+    },
+    {
+      "q": "Will Stade Rennais FC 1901 win on 2026-01-18?",
+      "p": 0.615,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 6995887.520583
+    },
+    {
+      "q": "Will Norway vs. England end in a draw?",
+      "p": 0.24625,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 6995582.537243032
+    },
+    {
+      "q": "UFC Freedom 250: Justin Gaethje vs. Ilia Topuria (Lightweight, Main Card)",
+      "p": 0.215,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 6986198.218212069
+    },
+    {
+      "q": "Giants vs. Patriots",
+      "p": 0.245,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 6982079.288954
+    },
+    {
+      "q": "Will People’s Party (PPLE) win the most seats in the 2026 Thai legislative election?",
+      "p": 0.735,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 6981656.439055
+    },
+    {
+      "q": "Bitcoin above $103,000 on January 24?",
+      "p": 0.915,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 6959870.453636
+    },
+    {
+      "q": "Will Dan or Simion win the diaspora vote?",
+      "p": 0.1825,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 6947261.525977
+    },
+    {
+      "q": "Will Rodrigo Paz win the 2025 Bolivia presidential election?",
+      "p": 0.4775,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 6918532.545232
+    },
+    {
+      "q": "Will José Antonio Kast win the Chilean presidential election?",
+      "p": 0.665,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 6918328.14737
+    },
+    {
+      "q": "Argentina vs. Austria: O/U 2.5",
+      "p": 0.485,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 6914147.701644995
+    },
+    {
+      "q": "Will Cabo Verde win on 2026-06-15?",
+      "p": 0.0225,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 6908118.161684922
+    },
+    {
+      "q": "US-Iran nuclear deal by May 31?",
+      "p": 0.027,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 6905766.889778924
+    },
+    {
+      "q": "Will Argentina vs. Egypt end in a draw?",
+      "p": 0.195,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 6898604.835501048
+    },
+    {
+      "q": "Will Abelardo de la Espriella  win the 2026 Colombian presidential election?",
+      "p": 0.885,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 6883971.476312924
+    },
+    {
+      "q": "Will Saudi Arabia vs. Uruguay end in a draw?",
+      "p": 0.215,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 6879447.553631104
+    },
+    {
+      "q": "Will Germany win on 2026-06-14?",
+      "p": 0.9455,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 6860608.394732029
+    },
+    {
+      "q": "Will Sweden win on 2026-06-25?",
+      "p": 0.2785,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 6850997.483982988
+    },
+    {
+      "q": "Clippers vs. Warriors",
+      "p": 0.505,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 6850808.171311
+    },
+    {
+      "q": "Will the Tesla Roadster's 0-60 time be less than 1 second?",
+      "p": 0.9735,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 6844356.4802170005
+    },
+    {
+      "q": "Trump x Ukraine mineral deal signed before May?",
+      "p": 0.0105,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 6833523.777216
+    },
+    {
+      "q": "Spurs vs. Timberwolves",
+      "p": 0.655,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 6825435.279079066
+    },
+    {
+      "q": "US x Venezuela military engagement by October 31?",
+      "p": 0.014,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 6816571.45939
+    },
+    {
+      "q": "Magic vs. Pistons",
+      "p": 0.225,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 6815586.23002506
+    },
+    {
+      "q": "Trump strikes another drug boat by Sep 30?",
+      "p": 0.046,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 6805884.965751
+    },
+    {
+      "q": "Will the AfD win 25-30% of the vote in the German election?",
+      "p": 0.108,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 6805513.851318
+    },
+    {
+      "q": "Will Manchester City FC win on 2026-02-21?",
+      "p": 0.645,
+      "yes": true,
+      "hours": 6.0,
+      "vol": 6779393.630582
+    },
+    {
+      "q": "Will Côte d'Ivoire win on 2026-06-20?",
+      "p": 0.125,
+      "yes": false,
+      "hours": 6.0,
+      "vol": 6769898.321413081
+    }
+  ]
+}

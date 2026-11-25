@@ -76,3 +76,7 @@ research/live/STOP
 
 # research/live/shadow_data：25 币 3 年日线 + funding，约 11MB，可用 funding_shadow.py 重建
 research/live/shadow_data/
+
+# research/polymarket：全市场快照单份 2MB+，可随时重跑；汇总与机会明细保留
+research/polymarket/data/snapshot_*.json
+research/polymarket/data/*.log
