@@ -1,0 +1,19 @@
+{
+  "lock_version": 1,
+  "locked_at": "2026-11-25T02:35:50+00:00",
+  "strategy": "s1-crowded-flush-reversal-btc-4h",
+  "contract_sha256": "a1aa277fda436081f17cd0872c9f5be86a581ce2cc9b500475a76a8c2bdf7a5f",
+  "contract": {
+    "name": "s1-crowded-flush-reversal-btc-4h",
+    "symbol": "BTCUSDT",
+    "interval": "4h",
+    "venue": "futures",
+    "falsify_if": {
+      "control_lift_ci_includes_zero": true,
+      "net_negative_at_fee_multiple": 2,
+      "worst_case_net_negative": true,
+      "min_fills": 30,
+      "grid_positive_ratio_min": 0.5
+    }
+  }
+}
