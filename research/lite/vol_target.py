@@ -58,7 +58,15 @@ def load_contract():
 # ---------------------------------------------------------------- 数据
 
 def load_daily(sym: str, win_start: str, win_end: str):
-    """现货 1h 聚合日线。返回 [(day_ms, o, h, l, c), ...]，已丢弃未收盘日。"""
+    """现货 1h 聚合日线。返回 [(day_ms, open, high, close, low), ...]，已丢弃未收盘日。
+
+    索引约定（全模块统一，不得再改）：
+        0=day  1=open  2=high  3=**close**  4=low
+
+    历史 bug：首版写成 (day, o, h, l, c)，而 run_baseline1/run_baseline2/run_bh
+    全部按 [3] 取收盘价，于是整个 Phase 3 首版跑的是"最低价收盘"的序列。
+    2026-11-25 修正为 (day, o, h, c, l)。首版结论（+19.10%/夏普 0.683）作废。
+    """
     store = al.load_store(al.store_path(sym, "1h", "spot"))
     by_day = {}
     for t in sorted(store):
@@ -85,7 +93,7 @@ def load_daily(sym: str, win_start: str, win_end: str):
         o, h, l, c, hours = by_day[d]
         if hours < 20:  # 当天不足 20 小时视为不完整，丢弃
             continue
-        days.append((d, o, h, l, c))
+        days.append((d, o, h, c, l))
     if not days:
         raise SystemExit(f"{sym} 聚合后无数据")
     return days

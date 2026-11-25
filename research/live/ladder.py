@@ -87,6 +87,11 @@ class Ladder:
     history: list = field(default_factory=list)    # every verdict ever rendered
     capital_usd: float = 0.0
     peak_equity: float = 0.0
+    # Per-strategy override of the halt thresholds. A daily strategy cannot be
+    # judged by a five-minute feed gap any more than a scalper can be judged by
+    # daily bars -- the rules are the same shape, the clock is not. Defaults to
+    # the module-level HALT_RULES so every existing strategy is unchanged.
+    halt_rules: dict = field(default_factory=lambda: dict(HALT_RULES))
 
     # ---------- recording ----------
     def record(self, net_pct: float, *, filled: bool = True, equity: float | None = None) -> None:
@@ -134,11 +139,15 @@ class Ladder:
         s = self.stats()
 
         # ---- halt conditions: checked before any statistic matters ----
-        if reconciliation_gap > HALT_RULES["reconciliation_tolerance"]:
+        # Read through the instance override so a daily strategy can set a
+        # 48-hour feed tolerance without weakening the 5-minute default for
+        # everything else.
+        hr = self.halt_rules or HALT_RULES
+        if reconciliation_gap > hr["reconciliation_tolerance"]:
             return self._verdict("halt", f"对账不平：{reconciliation_gap} 笔本地账本与交易所不匹配", s)
-        if s.get("worst_streak", 0) >= HALT_RULES["max_consecutive_losses"]:
+        if s.get("worst_streak", 0) >= hr["max_consecutive_losses"]:
             return self._verdict("halt", f"连续 {s['worst_streak']} 笔亏损，触及停机线", s)
-        if data_age_s is not None and data_age_s > HALT_RULES["max_data_gap_s"]:
+        if data_age_s is not None and data_age_s > hr["max_data_gap_s"]:
             return self._verdict("halt", f"行情数据中断 {data_age_s:.0f} 秒", s)
 
         rule = self.rules.get(self.tier, {})

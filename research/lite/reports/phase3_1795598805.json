@@ -1,0 +1,374 @@
+{
+  "phase": "Phase 3 vol target + risk parity",
+  "generated_at_utc": "2026-11-25T09:26:45Z",
+  "contract_sha256": "7ae39d11a9cb2dae0367bcc79aff1d8696cf2f736d5820991d830d1f0d30a0a4",
+  "spec": {
+    "name": "phase3_vol_target_risk_parity",
+    "version": "1.0",
+    "locked_at_utc": "2026-11-25T08:15:00Z",
+    "rationale": "短中频择时与结构性收益均被否（15m 毛/成本 0.04、carry 12%→2.7%、截面离散度 21.8%→7.3%）。Phase 3 不再赌方向，只做仓位管理：验证波动率目标与风险平价能否在压低回撤的同时改善风险调整后收益。",
+    "data": {
+      "source": "spot 1h aggregated to daily bars (UTC 00:00)",
+      "path": "research/lite/data/spot_{symbol}_1h.jsonl",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT",
+        "SOLUSDT"
+      ],
+      "window": [
+        "2023-10-01",
+        "2026-11-24"
+      ],
+      "backtest_start": "2023-11-27",
+      "drop_unclosed_day": true,
+      "note": "用现货而非永续：B&H 基准不该背 funding。实测现货 vs 永续收盘差中位 4.6-5.1bps。"
+    },
+    "volatility": {
+      "window_days": 20,
+      "annualize_days": 365,
+      "target_annual": 0.3,
+      "estimator": "stdev(daily close-to-close returns) * sqrt(365)"
+    },
+    "baseline1": {
+      "symbol": "BTCUSDT",
+      "target_weight": "min(target_annual / sigma20, 1.0)",
+      "buffer_abs": 0.1,
+      "max_weight": 1.0,
+      "leverage": false,
+      "short": false
+    },
+    "baseline2": {
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT",
+        "SOLUSDT"
+      ],
+      "weighting": "inverse_vol, normalized to sum=1",
+      "portfolio_target": "min(target_annual / sigma_portfolio, 1.0)",
+      "buffer_per_coin_abs": 0.05,
+      "max_gross": 1.0,
+      "leverage": false,
+      "short": false
+    },
+    "execution": {
+      "decision": "D-1 close",
+      "fill": "D open",
+      "overnight_pnl_uses_old_weight": true,
+      "intraday_pnl_uses_new_weight": true
+    },
+    "cost": {
+      "per_side_bps": 11.0,
+      "components": "spot taker 10bps + slippage 1bps",
+      "formula": "sum(|w_new - w_old|) * 11bps",
+      "stress_multiplier": 2.0
+    },
+    "benchmarks": {
+      "btc_bh": {
+        "weights": {
+          "BTCUSDT": 1.0
+        },
+        "rebalance": false
+      },
+      "equal_bh": {
+        "weights": {
+          "BTCUSDT": 0.3333333333,
+          "ETHUSDT": 0.3333333333,
+          "SOLUSDT": 0.3333333333
+        },
+        "rebalance": false
+      },
+      "initial_cost_applies": true
+    },
+    "split": {
+      "full": [
+        "2023-11-27",
+        "2026-11-24"
+      ],
+      "oos": [
+        "2025-11-25",
+        "2026-11-24"
+      ]
+    },
+    "gates": {
+      "Q1_full_sharpe_gt_btc_bh": true,
+      "Q2_full_mdd_le_btc_bh_x0.70": true,
+      "Q3_full_calmar_gt_btc_bh": true,
+      "Q4_oos_sharpe_ge_btc_bh_and_mdd_x0.70": true,
+      "Q5_holds_at_2x_cost": true,
+      "Q6_avg_rebalances_per_year_le_10": true
+    },
+    "verdict_rule": {
+      "NOT_FALSIFIED": "Q1-Q6 全过",
+      "PARTIAL": "Q2 & Q3 & Q4 过，Q1 不过（有效风控工具，不是更好的策略）",
+      "FALSIFIED": "其余"
+    },
+    "readonly_controls": {
+      "static_bh_at_avg_weight": "按策略全样本平均 gross 仓位构造固定轻仓 B&H，验证动态调仓相对静态少买的增量",
+      "cash_yield_annual": 0.04,
+      "cash_yield_applies_to_main_verdict": false
+    },
+    "forbidden": [
+      "参数网格搜索",
+      "跑完后修改门槛或切分点",
+      "合并两个基线择优",
+      "用永续价格替换现货以美化结果"
+    ]
+  },
+  "window": {
+    "start": "2023-11-27T00:00:00Z",
+    "end": "2026-11-24T00:00:00Z",
+    "oos_start": "2025-11-25T00:00:00Z"
+  },
+  "results": {
+    "baseline1": {
+      "full": {
+        "days": 1073,
+        "final_nav": 1.2154,
+        "total_pct": 21.5446,
+        "ann_pct": 6.8671,
+        "ann_vol_pct": 32.7403,
+        "sharpe": 0.366,
+        "mdd_pct": 46.2663,
+        "calmar": 0.148
+      },
+      "oos": {
+        "days": 365,
+        "final_nav": 0.7498,
+        "total_pct": -25.0189,
+        "ann_pct": -25.0337,
+        "ann_vol_pct": 32.4916,
+        "sharpe": -0.723,
+        "mdd_pct": 34.5487,
+        "calmar": -0.725
+      },
+      "rebalances": 91,
+      "avg_gross": 0.7273
+    },
+    "baseline1_2x": {
+      "full": {
+        "days": 1073,
+        "final_nav": 1.1959,
+        "total_pct": 19.5851,
+        "ann_pct": 6.2775,
+        "ann_vol_pct": 32.7412,
+        "sharpe": 0.349,
+        "mdd_pct": 46.4898,
+        "calmar": 0.135
+      },
+      "oos": {
+        "days": 365,
+        "final_nav": 0.7462,
+        "total_pct": -25.3804,
+        "ann_pct": -25.3954,
+        "ann_vol_pct": 32.4905,
+        "sharpe": -0.738,
+        "mdd_pct": 34.716,
+        "calmar": -0.732
+      },
+      "rebalances": 91
+    },
+    "baseline2": {
+      "full": {
+        "days": 1073,
+        "final_nav": 1.099,
+        "total_pct": 9.9021,
+        "ann_pct": 3.2663,
+        "ann_vol_pct": 35.0436,
+        "sharpe": 0.266,
+        "mdd_pct": 49.8353,
+        "calmar": 0.066
+      },
+      "oos": {
+        "days": 365,
+        "final_nav": 0.7027,
+        "total_pct": -29.735,
+        "ann_pct": -29.7519,
+        "ann_vol_pct": 34.4841,
+        "sharpe": -0.851,
+        "mdd_pct": 40.1572,
+        "calmar": -0.741
+      },
+      "rebalances": 155,
+      "avg_gross": 0.6294
+    },
+    "baseline2_2x": {
+      "full": {
+        "days": 1073,
+        "final_nav": 1.081,
+        "total_pct": 8.1023,
+        "ann_pct": 2.6875,
+        "ann_vol_pct": 35.0446,
+        "sharpe": 0.25,
+        "mdd_pct": 50.0307,
+        "calmar": 0.054
+      },
+      "oos": {
+        "days": 365,
+        "final_nav": 0.6988,
+        "total_pct": -30.1173,
+        "ann_pct": -30.1345,
+        "ann_vol_pct": 34.4856,
+        "sharpe": -0.867,
+        "mdd_pct": 40.2725,
+        "calmar": -0.748
+      },
+      "rebalances": 155
+    },
+    "btc_bh": {
+      "full": {
+        "days": 1073,
+        "final_nav": 1.4446,
+        "total_pct": 44.456,
+        "ann_pct": 13.3376,
+        "ann_vol_pct": 46.8051,
+        "sharpe": 0.5,
+        "mdd_pct": 52.9718,
+        "calmar": 0.252
+      },
+      "oos": {
+        "days": 365,
+        "final_nav": 0.6776,
+        "total_pct": -32.2401,
+        "ann_pct": -32.2582,
+        "ann_vol_pct": 44.2274,
+        "sharpe": -0.658,
+        "mdd_pct": 39.5321,
+        "calmar": -0.816
+      }
+    },
+    "equal_bh": {
+      "full": {
+        "days": 1073,
+        "final_nav": 1.1476,
+        "total_pct": 14.763,
+        "ann_pct": 4.7989,
+        "ann_vol_pct": 59.6264,
+        "sharpe": 0.376,
+        "mdd_pct": 64.31,
+        "calmar": 0.075
+      },
+      "oos": {
+        "days": 365,
+        "final_nav": 0.5873,
+        "total_pct": -41.2734,
+        "ann_pct": -41.2948,
+        "ann_vol_pct": 53.475,
+        "sharpe": -0.728,
+        "mdd_pct": 49.7649,
+        "calmar": -0.83
+      }
+    },
+    "static_btc_at_avg1": {
+      "full": {
+        "days": 1073,
+        "final_nav": 1.3923,
+        "total_pct": 39.2278,
+        "ann_pct": 11.9243,
+        "ann_vol_pct": 34.0414,
+        "sharpe": 0.5,
+        "mdd_pct": 41.2859,
+        "calmar": 0.289
+      },
+      "oos": {
+        "days": 365,
+        "final_nav": 0.7683,
+        "total_pct": -23.1689,
+        "ann_pct": -23.1827,
+        "ann_vol_pct": 32.1667,
+        "sharpe": -0.658,
+        "mdd_pct": 29.8322,
+        "calmar": -0.777
+      },
+      "avg_gross": 0.7273
+    },
+    "static_eq_at_avg2": {
+      "full": {
+        "days": 1073,
+        "final_nav": 1.2313,
+        "total_pct": 23.1281,
+        "ann_pct": 7.339,
+        "ann_vol_pct": 37.5309,
+        "sharpe": 0.376,
+        "mdd_pct": 46.1863,
+        "calmar": 0.159
+      },
+      "oos": {
+        "days": 365,
+        "final_nav": 0.7397,
+        "total_pct": -26.0336,
+        "ann_pct": -26.0489,
+        "ann_vol_pct": 33.659,
+        "sharpe": -0.728,
+        "mdd_pct": 34.0033,
+        "calmar": -0.766
+      },
+      "avg_gross": 0.6294
+    },
+    "baseline1_cash4": {
+      "full": {
+        "days": 1073,
+        "final_nav": 1.2543,
+        "total_pct": 25.4255,
+        "ann_pct": 8.0166,
+        "ann_vol_pct": 32.7413,
+        "sharpe": 0.399,
+        "mdd_pct": 45.8463,
+        "calmar": 0.175
+      },
+      "oos": {
+        "days": 365,
+        "final_nav": 0.7567,
+        "total_pct": -24.3323,
+        "ann_pct": -24.3468,
+        "ann_vol_pct": 32.4921,
+        "sharpe": -0.695,
+        "mdd_pct": 34.2175,
+        "calmar": -0.712
+      }
+    },
+    "baseline2_cash4": {
+      "full": {
+        "days": 1073,
+        "final_nav": 1.1471,
+        "total_pct": 14.7072,
+        "ann_pct": 4.7815,
+        "ann_vol_pct": 35.0444,
+        "sharpe": 0.308,
+        "mdd_pct": 49.3206,
+        "calmar": 0.097
+      },
+      "oos": {
+        "days": 365,
+        "final_nav": 0.7115,
+        "total_pct": -28.8516,
+        "ann_pct": -28.8682,
+        "ann_vol_pct": 34.485,
+        "sharpe": -0.815,
+        "mdd_pct": 39.8217,
+        "calmar": -0.725
+      }
+    }
+  },
+  "gates": {
+    "baseline1": {
+      "Q1": false,
+      "Q2": false,
+      "Q3": false,
+      "Q4": false,
+      "Q5": false,
+      "Q6": false
+    },
+    "baseline2": {
+      "Q1": false,
+      "Q2": false,
+      "Q3": false,
+      "Q4": false,
+      "Q5": false,
+      "Q6": false
+    }
+  },
+  "verdict": {
+    "baseline1": "FALSIFIED",
+    "baseline2": "FALSIFIED"
+  }
+}

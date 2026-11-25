@@ -1,0 +1,50 @@
+{
+  "name": "btc_voltarget_30",
+  "version": "1.0",
+  "pinned_at_utc": "2026-11-25T09:35:00Z",
+  "pinned_by": "user decision 2026-11-25 17:23 GMT+8",
+  "research_contract": "research/lite/phase3_spec.json",
+  "research_contract_sha256": "7ae39d11a9cb2dae0367bcc79aff1d8696cf2f736d5820991d830d1f0d30a0a4",
+  "strategy": "baseline1_btc_vol_target",
+  "symbol": "BTCUSDT",
+  "venue": "binance_spot",
+  "interval": "1h",
+  "tag": "spot",
+  "volatility": {
+    "window_days": 20,
+    "annualize_days": 365,
+    "target_annual": 0.30,
+    "estimator": "stdev(daily close-to-close returns) * sqrt(365)"
+  },
+  "position": {
+    "max_weight": 1.0,
+    "buffer_abs": 0.10,
+    "leverage": false,
+    "short": false
+  },
+  "execution": {
+    "decision_point": "D-1 close (UTC 00:00)",
+    "fill_point": "D open (UTC 00:00)",
+    "cost_per_side_bps": 11.0,
+    "cost_components": "spot taker 10bps + slippage 1bps"
+  },
+  "data_policy": {
+    "closed_bar_only": "close_time < serverTime",
+    "min_hours_per_day": 20,
+    "gap_window_days": 30,
+    "max_stale_days": 2,
+    "note": "缺口与陈旧只看信号窗口（最近 30 天）。2023-03 之前的历史缺口与当日信号无关，不阻断。"
+  },
+  "dryrun": {
+    "tier": "dryrun",
+    "weeks": 4,
+    "max_consecutive_losses": 8,
+    "max_data_gap_s": 172800,
+    "note": "日频策略的断流容忍是 48 小时，不是 5 分钟；连亏阈值按持仓期计，不按日历日。"
+  },
+  "forbidden": [
+    "改窗口、目标波动、缓冲带",
+    "在 dryrun 期间手工改仓位",
+    "把信号层接到任何下单接口"
+  ]
+}
