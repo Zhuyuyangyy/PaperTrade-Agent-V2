@@ -1,0 +1,19 @@
+{
+  "lock_version": 1,
+  "locked_at": "2026-11-25T02:50:11+00:00",
+  "strategy": "s2-squeeze-breakout-btc-4h",
+  "contract_sha256": "58ba0d4a5795fc4e1e9d37ca895babf3182fb3cd47ec1d9470ecd5bbae8b8f43",
+  "contract": {
+    "name": "s2-squeeze-breakout-btc-4h",
+    "symbol": "BTCUSDT",
+    "interval": "4h",
+    "venue": "futures",
+    "falsify_if": {
+      "control_lift_ci_includes_zero": true,
+      "net_negative_at_fee_multiple": 2,
+      "worst_case_net_negative": true,
+      "min_fills": 30,
+      "grid_positive_ratio_min": 0.5
+    }
+  }
+}
