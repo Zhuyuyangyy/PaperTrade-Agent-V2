@@ -1,0 +1,66 @@
+{
+  "generated_utc": 1795616091250,
+  "seconds": 181.0,
+  "messages": 121528,
+  "markets": 0,
+  "neg_events": 40,
+  "tokens": 255,
+  "fee_rate": 0.01,
+  "episodes": [
+    {
+      "key": "neg:991303",
+      "title": "Bank of Canada Decision in December?",
+      "start": 1795615867447,
+      "min_sum": 0.996,
+      "max_net": 0.0002411800000000036,
+      "n_legs": 5,
+      "updates": 0,
+      "confirmed": null,
+      "legs": 5,
+      "depth_shares": 22.03,
+      "asks": [
+        0.004,
+        0.75,
+        0.24,
+        0.001,
+        0.001
+      ],
+      "seen": 1,
+      "last_ok": 1795615867447,
+      "end": 1795615867447,
+      "dur_ms": 0,
+      "close_reason": "stale"
+    },
+    {
+      "key": "neg:991303",
+      "title": "Bank of Canada Decision in December?",
+      "start": 1795615951492,
+      "min_sum": 0.996,
+      "max_net": 0.0002411800000000036,
+      "n_legs": 5,
+      "updates": 6,
+      "confirmed": null,
+      "legs": 5,
+      "depth_shares": 22.03,
+      "asks": [
+        0.004,
+        0.75,
+        0.24,
+        0.001,
+        0.001
+      ],
+      "seen": 1,
+      "last_ok": 1795615956618,
+      "end": 1795615956618,
+      "dur_ms": 5126,
+      "close_reason": "stale"
+    }
+  ],
+  "min_sum_percentiles": {
+    "p0": 0.996,
+    "p1": 0.996,
+    "p5": 1.0,
+    "p25": 1.013,
+    "p50": 1.02
+  }
+}

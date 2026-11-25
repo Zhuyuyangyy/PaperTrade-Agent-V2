@@ -9,6 +9,8 @@ python research/polymarket/arb_probe.py probe --minutes 10       # 10 分钟高�
 python research/polymarket/arb_probe.py tail --max-hours 48      # 尾盘折价（<48h，0.90-0.995）
 python research/polymarket/arb_probe.py calibrate --markets 5000 --min-vol 5000 \
     --windows 6,24,48 --fee 0.01 --slip 35   # 已结算市场校准
+python research/polymarket/ws_probe.py --minutes 10 --max-tokens 1500   # 毫秒级盘口扫描
+python research/polymarket/latency_probe.py --minutes 30 --targets 10   # 双路延迟（Binance→CLOB）
 ```
 
 产物在 `data/`：`snapshot_*.json`、`probe_*.json`（汇总）、`opps_*.jsonl`（逐轮机会观测）、
@@ -16,14 +18,18 @@ python research/polymarket/arb_probe.py calibrate --markets 5000 --min-vol 5000 
 [`PHASE0_report_2026-11-25.md`](PHASE0_report_2026-11-25.md)（静态套利）与
 [`PHASE0_calibration_report_2026-11-25.md`](PHASE0_calibration_report_2026-11-25.md)（尾盘校准）。
 
-**两轮结论都是否定的**：
+**三轮结论都是否定的**：
 
 | 方向 | 结果 |
 |---|---|
-| NegRisk 完备集 / 二元 YES+NO 瞬时错价 | 0 个可吃；表观价差全是结果集缺腿 |
+| NegRisk 完备集 / 二元 YES+NO 瞬时错价（REST） | 0 个可吃；表观价差全是结果集缺腿 |
 | 0.95+ 尾盘折价 | 2,100 个市场、279 个首触事件：兑现 96.06% 对均价 96.15%，扣费 −48bps |
+| 毫秒级静态套利（WebSocket） | 750 个二元市场、37.7 万条推送、10 分钟：`sum_ask` 最小 **1.0010**，0 个事件 |
+| 信息差延迟（Binance→CLOB） | t1 中位 14ms，**安慰剂对照也是 14ms**；方向相关系数 0.02 |
 
-尾部定价是有效的。散户用公开 REST 数据，在这两个维度上都找不到可吃的空间。
+尾部定价是有效的，毫秒级的价差也被焊死在 1 tick。散户用公开数据，
+在这三个维度上都找不到可吃的空间。延迟报告见
+[`PHASE0_latency_report_2026-11-25.md`](PHASE0_latency_report_2026-11-25.md)。
 
 ---
 
