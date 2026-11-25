@@ -160,7 +160,16 @@ python research/lite/cross_section.py verify
 python research/lite/cross_section.py run --mc 2000
 ```
 
-## 8. 边界
+## 8. 待审草案（未锁、未跑）
+
+| 文档 | 内容 | 状态 |
+|---|---|---|
+| [`PHASE3_draft.md`](PHASE3_draft.md) | 日线波动率目标 + 风险平价，对比 B&H 的夏普/卡玛/回撤 | 待确认 3 个参数后锁跑 |
+| [`PHASE2B_draft.md`](PHASE2B_draft.md) | 离散度 FLAT 门控 + 纯 funding 截面，机会型卫星 | 备选，等 Phase 3 结论再议 |
+
+Phase 3 数据现成（现货 1h 聚合日线，三币各 1,151 天零缺口），确认后无需新拉。
+
+## 9. 边界
 
 - **单标的、单周期**：只验证 BTCUSDT 15m。结论不能外推到 1h/4h 或其他币
 - **无止损、无仓位管理、无资金费**：故意减少自由度。现货不计资金费；合约需另加
