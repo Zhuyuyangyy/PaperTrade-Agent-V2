@@ -1,0 +1,95 @@
+{
+  "name": "phase2b_dispersion_gated_funding",
+  "version": "1.0",
+  "locked_at_utc": "2026-11-25T08:40:00Z",
+  "rationale": "Phase 2 证明 funding 截面排序带信息（B 空头腿 +5.3%→+26.2%、MDD 29.6%→20.0%），且失效与截面离散度同步收缩（21.8%→7.3%）。新假设：截面策略只在分化足够大时有正期望，低分化期应强制 FLAT 而不是付过路费。独立契约，重新计数。",
+  "universe": [
+    "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
+    "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "DOTUSDT",
+    "LTCUSDT", "UNIUSDT", "ARBUSDT", "OPUSDT", "APTUSDT",
+    "ATOMUSDT", "FILUSDT", "NEARUSDT", "ETCUSDT", "BCHUSDT",
+    "TRXUSDT", "1000SHIBUSDT", "INJUSDT", "1000PEPEUSDT", "SUIUSDT"
+  ],
+  "universe_note": "完全复用 Phase 2 宽池，零新拉数据。",
+  "dynamic_pool": {
+    "size": 12,
+    "metric": "mean(quote_volume) over trailing 30 daily bars",
+    "window_days": 30,
+    "exclude_current_day": true,
+    "min_history_days": 14
+  },
+  "rebalance": {
+    "freq_days": 7,
+    "weekday": "Monday",
+    "decision_point": "D-1 close (UTC 00:00)",
+    "fill_point": "D open (UTC 00:00)",
+    "first_rebalance": "2023-11-27"
+  },
+  "signal": {
+    "type": "pure_funding",
+    "momentum_used": false,
+    "window_days": 14,
+    "settlements_per_day": 3,
+    "window_settlements": 42,
+    "min_settlements": 42,
+    "score": "mean(funding rate over last 42 settlements up to D-1 close) * 1095 * 100, annualized %",
+    "direction": "short top 3 highest funding, long bottom 3 lowest funding",
+    "insufficient_history": "coin excluded from ranking that week (not filled with 0)"
+  },
+  "dispersion_gate": {
+    "metric": "stdev of 14-day returns across the day's pool members, * 100, unit %",
+    "return_window_days": 14,
+    "percentile": 0.30,
+    "percentile_method": "linear interpolation on sorted IS values: idx = 0.30 * (n - 1)",
+    "fit_sample": "in_sample only (2023-11-27 .. 2025-11-25)",
+    "apply_to": "all rebalance dates as one fixed constant (IS uses the percentile, OOS uses the same frozen number)",
+    "on_trigger": "all weights = 0. No funding accrual. Closing turnover is still charged."
+  },
+  "positions": {
+    "long_n": 3,
+    "short_n": 3,
+    "weighting": "equal weight, gross exposure = 1.0 when invested, net = 0",
+    "per_leg_weight": 0.16666666666666666
+  },
+  "cost": {
+    "roundtrip_bps": 24.0,
+    "per_side_bps": 12.0,
+    "formula": "sum(|w_new - w_old|) * 12bps",
+    "stress_2x": true
+  },
+  "funding": {
+    "source": "fapi /fapi/v1/fundingRate",
+    "accrual": "actual settled rate every 8h, applied to held weight",
+    "sign": "long pays positive rate, short receives"
+  },
+  "split": {
+    "in_sample": ["2023-11-27", "2025-11-25"],
+    "out_of_sample": ["2025-11-25", "2026-11-25"]
+  },
+  "gates": {
+    "Q1_oos_sharpe_gt_0.8_1x": true,
+    "Q2_oos_sharpe_gt_0.8_2x": true,
+    "Q3_oos_return_gt_0_both": true,
+    "Q4_beats_random_p95_full": true,
+    "Q5_traded_rebalances_ge_20": true,
+    "Q6_both_legs_positive": true
+  },
+  "oos_insufficient_rule": "If OOS traded (non-FLAT) rebalances < 12, Q1-Q3 cannot be evaluated; verdict becomes INCONCLUSIVE rather than FALSIFIED. Full-sample gates are still reported.",
+  "random_control": {
+    "iterations": 2000,
+    "scheme": "same day, same pool, same FLAT schedule, random 3 long / 3 short, identical costs and funding",
+    "note": "FLAT schedule must match the real strategy, otherwise the control pays costs in weeks where the strategy is flat and the comparison is confounded"
+  },
+  "diagnostics": [
+    "ungated pure funding (threshold disabled): read-only comparison, NOT part of the verdict",
+    "FLAT ratio in IS and OOS, reported separately",
+    "dispersion distribution by calendar year"
+  ],
+  "forbidden": [
+    "参数网格搜索",
+    "换池重跑",
+    "跑完后修改阈值、分位点或切分点",
+    "把 ungated 诊断列当作判定依据",
+    "用未来数据补齐缺失币种"
+  ]
+}

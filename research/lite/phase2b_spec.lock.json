@@ -1,0 +1,7 @@
+{
+  "contract_file": "phase2b_spec.json",
+  "contract_sha256": "272d2ccd74250fdcde0231b2a99661ade2206bfab8de53230eba039113ccc9c6",
+  "locked_at_utc": "2026-11-25T08:41:00Z",
+  "locked_by": "user decision 2026-11-25 16:19 GMT+8",
+  "note": "最后一轮收官实验，严格限跑 1 次。锁规则不锁结果；改 spec 会让哈希失配，脚本拒跑。跑完即封存主动 Alpha 探索。"
+}

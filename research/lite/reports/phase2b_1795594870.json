@@ -1,0 +1,300 @@
+{
+  "phase": "Phase 2B dispersion-gated pure funding",
+  "generated_at_utc": "2026-11-25T08:21:10Z",
+  "contract_sha256": "272d2ccd74250fdcde0231b2a99661ade2206bfab8de53230eba039113ccc9c6",
+  "spec": {
+    "name": "phase2b_dispersion_gated_funding",
+    "version": "1.0",
+    "locked_at_utc": "2026-11-25T08:40:00Z",
+    "rationale": "Phase 2 证明 funding 截面排序带信息（B 空头腿 +5.3%→+26.2%、MDD 29.6%→20.0%），且失效与截面离散度同步收缩（21.8%→7.3%）。新假设：截面策略只在分化足够大时有正期望，低分化期应强制 FLAT 而不是付过路费。独立契约，重新计数。",
+    "universe": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "BNBUSDT",
+      "XRPUSDT",
+      "DOGEUSDT",
+      "ADAUSDT",
+      "AVAXUSDT",
+      "LINKUSDT",
+      "DOTUSDT",
+      "LTCUSDT",
+      "UNIUSDT",
+      "ARBUSDT",
+      "OPUSDT",
+      "APTUSDT",
+      "ATOMUSDT",
+      "FILUSDT",
+      "NEARUSDT",
+      "ETCUSDT",
+      "BCHUSDT",
+      "TRXUSDT",
+      "1000SHIBUSDT",
+      "INJUSDT",
+      "1000PEPEUSDT",
+      "SUIUSDT"
+    ],
+    "universe_note": "完全复用 Phase 2 宽池，零新拉数据。",
+    "dynamic_pool": {
+      "size": 12,
+      "metric": "mean(quote_volume) over trailing 30 daily bars",
+      "window_days": 30,
+      "exclude_current_day": true,
+      "min_history_days": 14
+    },
+    "rebalance": {
+      "freq_days": 7,
+      "weekday": "Monday",
+      "decision_point": "D-1 close (UTC 00:00)",
+      "fill_point": "D open (UTC 00:00)",
+      "first_rebalance": "2023-11-27"
+    },
+    "signal": {
+      "type": "pure_funding",
+      "momentum_used": false,
+      "window_days": 14,
+      "settlements_per_day": 3,
+      "window_settlements": 42,
+      "min_settlements": 42,
+      "score": "mean(funding rate over last 42 settlements up to D-1 close) * 1095 * 100, annualized %",
+      "direction": "short top 3 highest funding, long bottom 3 lowest funding",
+      "insufficient_history": "coin excluded from ranking that week (not filled with 0)"
+    },
+    "dispersion_gate": {
+      "metric": "stdev of 14-day returns across the day's pool members, * 100, unit %",
+      "return_window_days": 14,
+      "percentile": 0.3,
+      "percentile_method": "linear interpolation on sorted IS values: idx = 0.30 * (n - 1)",
+      "fit_sample": "in_sample only (2023-11-27 .. 2025-11-25)",
+      "apply_to": "all rebalance dates as one fixed constant (IS uses the percentile, OOS uses the same frozen number)",
+      "on_trigger": "all weights = 0. No funding accrual. Closing turnover is still charged."
+    },
+    "positions": {
+      "long_n": 3,
+      "short_n": 3,
+      "weighting": "equal weight, gross exposure = 1.0 when invested, net = 0",
+      "per_leg_weight": 0.16666666666666666
+    },
+    "cost": {
+      "roundtrip_bps": 24.0,
+      "per_side_bps": 12.0,
+      "formula": "sum(|w_new - w_old|) * 12bps",
+      "stress_2x": true
+    },
+    "funding": {
+      "source": "fapi /fapi/v1/fundingRate",
+      "accrual": "actual settled rate every 8h, applied to held weight",
+      "sign": "long pays positive rate, short receives"
+    },
+    "split": {
+      "in_sample": [
+        "2023-11-27",
+        "2025-11-25"
+      ],
+      "out_of_sample": [
+        "2025-11-25",
+        "2026-11-25"
+      ]
+    },
+    "gates": {
+      "Q1_oos_sharpe_gt_0.8_1x": true,
+      "Q2_oos_sharpe_gt_0.8_2x": true,
+      "Q3_oos_return_gt_0_both": true,
+      "Q4_beats_random_p95_full": true,
+      "Q5_traded_rebalances_ge_20": true,
+      "Q6_both_legs_positive": true
+    },
+    "oos_insufficient_rule": "If OOS traded (non-FLAT) rebalances < 12, Q1-Q3 cannot be evaluated; verdict becomes INCONCLUSIVE rather than FALSIFIED. Full-sample gates are still reported.",
+    "random_control": {
+      "iterations": 2000,
+      "scheme": "same day, same pool, same FLAT schedule, random 3 long / 3 short, identical costs and funding",
+      "note": "FLAT schedule must match the real strategy, otherwise the control pays costs in weeks where the strategy is flat and the comparison is confounded"
+    },
+    "diagnostics": [
+      "ungated pure funding (threshold disabled): read-only comparison, NOT part of the verdict",
+      "FLAT ratio in IS and OOS, reported separately",
+      "dispersion distribution by calendar year"
+    ],
+    "forbidden": [
+      "参数网格搜索",
+      "换池重跑",
+      "跑完后修改阈值、分位点或切分点",
+      "把 ungated 诊断列当作判定依据",
+      "用未来数据补齐缺失币种"
+    ]
+  },
+  "window": {
+    "start": "2023-11-27T00:00:00Z",
+    "end": "2026-11-25T00:00:00Z",
+    "oos_start": "2025-11-25T00:00:00Z"
+  },
+  "threshold": {
+    "value_pct": 7.75964,
+    "fit_n": 105,
+    "fit_median_pct": 9.1621,
+    "oos_median_pct": 6.8894
+  },
+  "dispersion_by_year": {
+    "2023": {
+      "n": 5,
+      "median": 21.758,
+      "p30": 9.398
+    },
+    "2024": {
+      "n": 53,
+      "median": 12.227,
+      "p30": 8.956
+    },
+    "2025": {
+      "n": 52,
+      "median": 8.078,
+      "p30": 6.157
+    },
+    "2026": {
+      "n": 47,
+      "median": 7.327,
+      "p30": 5.427
+    }
+  },
+  "flat": {
+    "is_ratio_pct": 30.48,
+    "oos_ratio_pct": 63.46,
+    "traded_all": 92,
+    "traded_oos": 19,
+    "total_rebalances": 157
+  },
+  "skipped_weeks_ungated_pnl_pct": 14.645,
+  "skipped_weeks_ungated_cost_pct": 6.12,
+  "results": {
+    "gated_1x": {
+      "all": {
+        "days": 1099,
+        "final_nav": 1.1642,
+        "total_pct": 16.4229,
+        "ann_pct": 5.2078,
+        "sharpe": 0.351,
+        "mdd_pct": 22.4812,
+        "seg_win_rate": 31.21,
+        "segments": 157,
+        "turnover_sum": 95.67,
+        "long_pnl_pct": 25.8757,
+        "short_pnl_pct": 6.9919
+      },
+      "oos": {
+        "days": 364,
+        "final_nav": 0.9905,
+        "total_pct": -0.9541,
+        "ann_pct": -0.9547,
+        "sharpe": -0.026,
+        "mdd_pct": 10.3022,
+        "seg_win_rate": 19.23,
+        "segments": 52,
+        "turnover_sum": 0.0,
+        "long_pnl_pct": -8.0522,
+        "short_pnl_pct": 10.7955
+      }
+    },
+    "ungated_1x": {
+      "all": {
+        "days": 1099,
+        "final_nav": 1.3747,
+        "total_pct": 37.4665,
+        "ann_pct": 11.2088,
+        "sharpe": 0.581,
+        "mdd_pct": 26.9432,
+        "seg_win_rate": 51.59,
+        "segments": 157,
+        "turnover_sum": 117.33,
+        "long_pnl_pct": 33.5455,
+        "short_pnl_pct": 20.087
+      },
+      "oos": {
+        "days": 364,
+        "final_nav": 1.2431,
+        "total_pct": 24.3139,
+        "ann_pct": 24.3325,
+        "sharpe": 1.459,
+        "mdd_pct": 9.2832,
+        "seg_win_rate": 51.92,
+        "segments": 52,
+        "turnover_sum": 0.0,
+        "long_pnl_pct": -3.4619,
+        "short_pnl_pct": 31.1925
+      }
+    },
+    "gated_2x": {
+      "all": {
+        "days": 1099,
+        "final_nav": 1.0376,
+        "total_pct": 3.762,
+        "ann_pct": 1.2406,
+        "sharpe": 0.162,
+        "mdd_pct": 23.5166,
+        "seg_win_rate": 31.21,
+        "segments": 157,
+        "turnover_sum": 95.67,
+        "long_pnl_pct": 25.8757,
+        "short_pnl_pct": 6.9919
+      },
+      "oos": {
+        "days": 364,
+        "final_nav": 0.9607,
+        "total_pct": -3.9281,
+        "ann_pct": -3.9307,
+        "sharpe": -0.288,
+        "mdd_pct": 11.0184,
+        "seg_win_rate": 19.23,
+        "segments": 52,
+        "turnover_sum": 0.0,
+        "long_pnl_pct": -8.0522,
+        "short_pnl_pct": 10.7955
+      }
+    },
+    "ungated_2x": {
+      "all": {
+        "days": 1099,
+        "final_nav": 1.1936,
+        "total_pct": 19.3557,
+        "ann_pct": 6.0853,
+        "sharpe": 0.373,
+        "mdd_pct": 28.1299,
+        "seg_win_rate": 50.32,
+        "segments": 157,
+        "turnover_sum": 117.33,
+        "long_pnl_pct": 33.5455,
+        "short_pnl_pct": 20.087
+      },
+      "oos": {
+        "days": 364,
+        "final_nav": 1.1857,
+        "total_pct": 18.5738,
+        "ann_pct": 18.5877,
+        "sharpe": 1.155,
+        "mdd_pct": 9.5737,
+        "seg_win_rate": 51.92,
+        "segments": 52,
+        "turnover_sum": 0.0,
+        "long_pnl_pct": -3.4619,
+        "short_pnl_pct": 31.1925
+      }
+    }
+  },
+  "random_control": {
+    "iterations": 2000,
+    "real_sharpe": 0.351,
+    "random_mean": -0.314,
+    "random_p95": 0.634,
+    "p_value": 0.131,
+    "real_percentile": 86.9
+  },
+  "gates": {
+    "Q1_oos_sharpe_gt_0.8_1x": false,
+    "Q2_oos_sharpe_gt_0.8_2x": false,
+    "Q3_oos_return_gt_0_both": false,
+    "Q4_beats_random_p95_full": false,
+    "Q5_traded_rebalances_ge_20": true,
+    "Q6_both_legs_positive": true
+  },
+  "verdict": "FALSIFIED",
+  "verdict_reason": "门槛未全过：Q1_oos_sharpe_gt_0.8_1x, Q2_oos_sharpe_gt_0.8_2x, Q3_oos_return_gt_0_both, Q4_beats_random_p95_full"
+}
