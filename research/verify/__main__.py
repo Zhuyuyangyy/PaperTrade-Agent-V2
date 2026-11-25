@@ -268,6 +268,16 @@ def _run_one(args, spec_path: str | None, raw_argv: list[str]) -> dict:
     if spec.exit.exit_signals_path:
         exit_signals = _load_exit_signals(spec, candles)
     funding = None
+    # Guardrail (2026-11-25, S1/S2): a futures spec with funding=true and
+    # externally supplied candles MUST declare a funding series. Twice we ran
+    # the whole battery with funding_applied=False and only noticed in the
+    # result JSON -- silent cost understatement. Fail fast unless the operator
+    # explicitly opts out with --no-funding.
+    external_candles = bool(args.candles or spec.candles_path)
+    if (args.no_funding and spec.funding and spec.venue == "futures"):
+        spec = Spec.from_dict({**spec.to_dict(), "funding": False})
+        print("[资金费] --no-funding 显式关闭：本轮资金费按 0，报告会标注。", file=sys.stderr)
+
     # Funding resolution: the spec's own funding file first (it travels with
     # the spec), then the cache -- but only when the candles ALSO come from
     # that cache, so rates never get applied across mismatched windows.
@@ -277,7 +287,12 @@ def _run_one(args, spec_path: str | None, raw_argv: list[str]) -> dict:
             funding = data.load_funding_csv(fp)
         else:
             raise data.CandleError(f"spec 声明的 funding_path 不存在: {fp}")
-    elif spec.funding and not (args.candles or spec.candles_path) and market_path is not None:
+    elif spec.funding and spec.venue == "futures" and external_candles:
+        raise data.CandleError(
+            f"永续策略（venue=futures, funding=true）使用外部 K 线（--candles 或 candles_path）"
+            f"时必须声明 funding_path，否则资金费会被静默按 0 计。"
+            f"请补 spec.funding_path，或显式传 --no-funding 声明本轮不计资金费。")
+    elif spec.funding and not external_candles and market_path is not None:
         funding = data.load_funding(market_path, spec.symbol)
         if not funding:
             print("[提示] 缓存中没有该 symbol 的资金费数据，按 0 处理", file=sys.stderr)
@@ -301,6 +316,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--compare", nargs="+", metavar="SPEC",
                     help="对比模式：2 个以上 spec 一次跑，输出多策略对比矩阵（排名规则事前声明）")
     ap.add_argument("--candles", help="K 线 CSV（列 t,o,h,l,c），优先于行情缓存；对比模式下所有策略共用")
+    ap.add_argument("--no-funding", action="store_true",
+                    help="显式关闭资金费（永续+外部K线时用于声明本轮不计资金费；默认缺 funding_path 会报错）")
     ap.add_argument("--signals", help="信号 CSV（列 t[,side]），kind=csv 时使用；对比模式下对所有 spec 生效")
     ap.add_argument("--market", help=f"行情缓存 sqlite（默认 {DEFAULT_MARKET}）")
     ap.add_argument("--out", help="报告输出路径（markdown；.html 输出 HTML 版）；缺省打印到 stdout")

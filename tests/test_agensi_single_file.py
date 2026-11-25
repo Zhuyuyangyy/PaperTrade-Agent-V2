@@ -61,7 +61,10 @@ def test_demo_runs_from_a_bare_directory(bare_dir: Path):
     # the demo must not claim data it does not have
     assert "_synthetic_demo_candles()" in text
     payload = json.loads(out.with_suffix(".json").read_text(encoding="utf-8"))
-    assert payload["verdict"]["outcome"] == "FALSIFIED"
+    # 2026-11-25 guardrail: insufficient 硬短路 INCONCLUSIVE。
+    # 合成 demo 的样本外 fills < min_fills，样本内虽有网格触发也不得判 FALSIFIED
+    # （旧行为把 2 笔样本的网格结果当证伪依据，S2 真实踩过这个坑）。
+    assert payload["verdict"]["outcome"] == "INCONCLUSIVE"
     assert payload["runs"]["worst_case"]["stats"]["n"] >= 30  # demo passes its own min_fills
 
 

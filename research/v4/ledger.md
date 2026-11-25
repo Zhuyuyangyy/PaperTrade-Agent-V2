@@ -25,7 +25,7 @@
 | 8b | S1 无 OI 诊断探针（**非契约，不计入家族数**） | **FALSIFIED** | 独立 spec，5 条事前规则触发 | −20.76%；随机 lift −0.09% CI 跨 0；网格 0/9 |
 | 9 | S2 压缩突破+防追高（五道过滤） | **FALSIFIED**（统计效力不足） | `locks/s2_squeeze_breakout.lock.json` sha256 `58ba0d4a…` | 2 笔，网格1/9；引擎在min_fills=insufficient下仍判FALSIFIED |
 | 9b | S2 去防追高诊断探针（**非契约，不计入家族数**） | **INCONCLUSIVE** | 独立spec，只去掉body过滤 | 12笔+2.47%，2x+1.51%，5x−1.37%；样本外0笔 |
-| 10 | S3 ETH-BTC 残差配对 | 设计完成 / 契约**未锁** | 待定 | **未跑** |
+| 10 | S3 ETH-BTC 残差配对 | **BLOCKED / NO_DATA** | 不适用（未锁，未跑） | 全仓 ETH/SOL 缓存为零；用户 2026-11-25 明确指示"不用专门跑确认，直接记 BLOCKED/NO_DATA" |
 
 **注意**：#8 的契约已经锁定，任何阈值修改都会被 `contract_lock.check_lock()` 检出并判契约篡改。
 #8b 是独立诊断（去掉缺失的 OI 条件），**不算独立家族、不进多重检验分母**——它只是判定"裸信号有没有信息"。
@@ -64,8 +64,18 @@ S2=FALSIFIED（但仅 2 笔样本，统计效力不足）；
 仍用 2 笔样本的网格结果判 FALSIFIED。这是引擎逻辑矛盾，已如实保留原始判定并在
 `S2_execution_report.md` 说明。**样本 <min_fills 时的 FALSIFIED 不应作为证伪证据。**
 
-下一道 S3（跨币种残差配对）需 ETH/SOL 数据，本地只有 BTC——数据大概率不可得。
-若要跑，先只读核实缓存；不得为凑样本用替代币种或改契约。
+**2026-11-25 用户决策**：S3 直接记 `BLOCKED / NO_DATA`，不再跑确认。
+先修引擎两个防呆 Bug（已完成）→ 补三币种数据 → 另立 S2b 契约（同时解锁 S3）。
+详见 `S2b_draft.md` 与 `data_backfill_plan.md`。
+
+**引擎修复记录（同日，先于 S2b）**：
+1. `insufficient` 硬短路 INCONCLUSIVE——`_verdict()` 里把 insufficient 判断提到 triggered 之前，
+   triggered checks 保留为证据、reason 注明"不作为证伪依据"。
+   回归 `tests/test_verify_guardrails.py`（5 例）。agensi demo 期望随之从 FALSIFIED 改 INCONCLUSIVE
+   （合成 demo 样本外 fills<30，旧行为是假证伪）。
+2. 永续 + 外部 K 线缺 `funding_path` → fail-fast（CLI 返回 2），新增 `--no-funding` 显式豁免。
+   S1/S2 连续两次漏配的坑从工具链堵死。
+3. 引擎改动后重建 agensi 单文件构建物 + 更新 SHA256SUMS（zip 发布包未重打包，本轮不动发布物）。
 
 ## 禁止事项
 
@@ -74,3 +84,14 @@ S2=FALSIFIED（但仅 2 笔样本，统计效力不足）；
 - 禁止为压低 p 值延长数据窗口或改参数
 - 禁止实盘执行、真实交易密钥
 - 禁止合并 PR #26
+
+### 待处理项：agensi 发行包落后于源码（本轮不动，需用户决定）
+
+两个 guardrail 修改后已重建 `agensi/scripts/verify.py`（4724 行，sha256 `fc1e7c49…`）
+并同步 `SHA256SUMS.txt`，全套 962 passed 全绿。
+但发行包 `strategy-falsifier-agensi-v1.0.0.zip` 内仍是旧 `verify.py`
+（sha256 `85f8b327…`，无 `no_funding`），`docs/agensi-release-report.md` 的验收记录
+（"ZIP 解压运行 demo = FALSIFIED"）也基于旧版。
+
+**本轮未重打包、未改发行报告**——重打包属发布行为，超出"修引擎 Bug"授权范围。
+需要用户决定是否发 v1.0.1（重打包 + 更新报告 + 重验 demo 判定从 FALSIFIED 变 INCONCLUSIVE）。

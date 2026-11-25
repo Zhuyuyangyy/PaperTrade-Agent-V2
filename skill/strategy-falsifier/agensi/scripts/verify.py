@@ -4229,7 +4229,23 @@ def _verdict(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict | None,
 
     triggered = [c for c in checks if c.get("triggered")]
     insufficient = [c for c in checks if c.get("insufficient")]
-    if triggered:
+
+    # Guardrail (2026-11-25, S2): an insufficient样本 must HARD-SHORT-CIRCUIT to
+    # INCONCLUSIVE. Previously `if triggered` came first, so a parameter grid
+    # measured on 2 fills could override a min_fills=30 shortfall and stamp a
+    # "FALSIFIED" that the same report called "其余规则未评估" -- a fake
+    # falsification in the ledger. Evidence is NOT hidden: every triggered
+    # check stays in `checks`, and the reason says it was not adopted.
+    if insufficient:
+        outcome = "INCONCLUSIVE"
+        scopes = "、".join(dict.fromkeys(c["scope"] for c in insufficient))
+        reason = (f"样本量不足（{scopes}），既不能证实也不能证伪"
+                  f"——先去拿更多数据，不要凭这份报告做任何决定。")
+        if triggered:
+            reason += (f" 另有 {len(triggered)} 条规则在样本不足时触发"
+                       f"（{[c['rule'] for c in triggered]}），"
+                       f"因证据不足不作为证伪依据，仅为留痕。")
+    elif triggered:
         outcome = "FALSIFIED"
         # Group by scope and say the scope ONCE: four lines each starting
         # "样本外段（第 19564 根起）：" read like a broken record, and a
@@ -4245,11 +4261,6 @@ def _verdict(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict | None,
                 stripped = [d.split("：", 1)[1] if "：" in d else d for d in details]
                 parts.append(f"{scope}段：" + "；".join(stripped))
         reason = f"{len(triggered)} 条事前证伪规则被触发：" + "；".join(parts)
-    elif insufficient:
-        outcome = "INCONCLUSIVE"
-        scopes = "、".join(dict.fromkeys(c["scope"] for c in insufficient))
-        reason = (f"样本量不足（{scopes}），既不能证实也不能证伪"
-                  f"——先去拿更多数据，不要凭这份报告做任何决定。")
     else:
         outcome = "NOT_FALSIFIED"
         reason = (
@@ -4536,6 +4547,16 @@ def _run_one(args, spec_path: str | None, raw_argv: list[str]) -> dict:
     if spec.exit.exit_signals_path:
         exit_signals = _load_exit_signals(spec, candles)
     funding = None
+    # Guardrail (2026-11-25, S1/S2): a futures spec with funding=true and
+    # externally supplied candles MUST declare a funding series. Twice we ran
+    # the whole battery with funding_applied=False and only noticed in the
+    # result JSON -- silent cost understatement. Fail fast unless the operator
+    # explicitly opts out with --no-funding.
+    external_candles = bool(args.candles or spec.candles_path)
+    if (args.no_funding and spec.funding and spec.venue == "futures"):
+        spec = Spec.from_dict({**spec.to_dict(), "funding": False})
+        print("[资金费] --no-funding 显式关闭：本轮资金费按 0，报告会标注。", file=sys.stderr)
+
     # Funding resolution: the spec's own funding file first (it travels with
     # the spec), then the cache -- but only when the candles ALSO come from
     # that cache, so rates never get applied across mismatched windows.
@@ -4545,7 +4566,12 @@ def _run_one(args, spec_path: str | None, raw_argv: list[str]) -> dict:
             funding = load_funding_csv(fp)
         else:
             raise CandleError(f"spec 声明的 funding_path 不存在: {fp}")
-    elif spec.funding and not (args.candles or spec.candles_path) and market_path is not None:
+    elif spec.funding and spec.venue == "futures" and external_candles:
+        raise CandleError(
+            f"永续策略（venue=futures, funding=true）使用外部 K 线（--candles 或 candles_path）"
+            f"时必须声明 funding_path，否则资金费会被静默按 0 计。"
+            f"请补 spec.funding_path，或显式传 --no-funding 声明本轮不计资金费。")
+    elif spec.funding and not external_candles and market_path is not None:
         funding = load_funding(market_path, spec.symbol)
         if not funding:
             print("[提示] 缓存中没有该 symbol 的资金费数据，按 0 处理", file=sys.stderr)
@@ -4568,6 +4594,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--compare", nargs="+", metavar="SPEC",
                     help="对比模式：2 个以上 spec 一次跑，输出多策略对比矩阵（排名规则事前声明）")
     ap.add_argument("--candles", help="K 线 CSV（列 t,o,h,l,c），优先于行情缓存；对比模式下所有策略共用")
+    ap.add_argument("--no-funding", action="store_true",
+                    help="显式关闭资金费（永续+外部K线时用于声明本轮不计资金费；默认缺 funding_path 会报错）")
     ap.add_argument("--signals", help="信号 CSV（列 t[,side]），kind=csv 时使用；对比模式下对所有 spec 生效")
     ap.add_argument("--market", help=f"行情缓存 sqlite（默认 {DEFAULT_MARKET}）")
     ap.add_argument("--out", help="报告输出路径（markdown；.html 输出 HTML 版）；缺省打印到 stdout")

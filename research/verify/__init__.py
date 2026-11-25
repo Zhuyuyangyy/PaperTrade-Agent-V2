@@ -540,7 +540,23 @@ def _verdict(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict | None,
 
     triggered = [c for c in checks if c.get("triggered")]
     insufficient = [c for c in checks if c.get("insufficient")]
-    if triggered:
+
+    # Guardrail (2026-11-25, S2): an insufficient样本 must HARD-SHORT-CIRCUIT to
+    # INCONCLUSIVE. Previously `if triggered` came first, so a parameter grid
+    # measured on 2 fills could override a min_fills=30 shortfall and stamp a
+    # "FALSIFIED" that the same report called "其余规则未评估" -- a fake
+    # falsification in the ledger. Evidence is NOT hidden: every triggered
+    # check stays in `checks`, and the reason says it was not adopted.
+    if insufficient:
+        outcome = "INCONCLUSIVE"
+        scopes = "、".join(dict.fromkeys(c["scope"] for c in insufficient))
+        reason = (f"样本量不足（{scopes}），既不能证实也不能证伪"
+                  f"——先去拿更多数据，不要凭这份报告做任何决定。")
+        if triggered:
+            reason += (f" 另有 {len(triggered)} 条规则在样本不足时触发"
+                       f"（{[c['rule'] for c in triggered]}），"
+                       f"因证据不足不作为证伪依据，仅为留痕。")
+    elif triggered:
         outcome = "FALSIFIED"
         # Group by scope and say the scope ONCE: four lines each starting
         # "样本外段（第 19564 根起）：" read like a broken record, and a
@@ -556,11 +572,6 @@ def _verdict(spec: Spec, runs: dict, cost_rows: list[dict], ctrl: dict | None,
                 stripped = [d.split("：", 1)[1] if "：" in d else d for d in details]
                 parts.append(f"{scope}段：" + "；".join(stripped))
         reason = f"{len(triggered)} 条事前证伪规则被触发：" + "；".join(parts)
-    elif insufficient:
-        outcome = "INCONCLUSIVE"
-        scopes = "、".join(dict.fromkeys(c["scope"] for c in insufficient))
-        reason = (f"样本量不足（{scopes}），既不能证实也不能证伪"
-                  f"——先去拿更多数据，不要凭这份报告做任何决定。")
     else:
         outcome = "NOT_FALSIFIED"
         reason = (
