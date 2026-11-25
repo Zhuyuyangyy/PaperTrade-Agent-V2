@@ -1,0 +1,71 @@
+{
+  "symbol": "BTCUSDT",
+  "interval": "1h",
+  "venue": "futures",
+  "fee_rate": 0.0004,
+  "fill_model": "taker",
+  "funding": true,
+  "exit": {
+    "take_profit": 0.012,
+    "stop_loss": -0.008,
+    "timeout_bars": 24,
+    "trailing": 0.008
+  },
+  "control": {
+    "enabled": true,
+    "n_random": 2000,
+    "seed": 20261125
+  },
+  "walk_forward": {
+    "enabled": true,
+    "folds": 5
+  },
+  "param_grid": {
+    "axes": {
+      "take_profit": [
+        0.008,
+        0.012,
+        0.016
+      ],
+      "stop_loss": [
+        -0.008,
+        -0.012
+      ]
+    },
+    "max_cells": 6
+  },
+  "fee_multiples": [
+    1,
+    2,
+    5
+  ],
+  "falsify_if": {
+    "control_lift_ci_includes_zero": true,
+    "net_negative_at_fee_multiple": 2,
+    "worst_case_net_negative": true,
+    "min_fills": 30,
+    "grid_positive_ratio_min": 0.5
+  },
+  "name": "s2b-prebreakout-runup-1h-btc-N",
+  "hypothesis": "S2b-N BTC 1h 压缩突破+防透支(前3根<=2.0ATR)。防拥挤关：完全不看funding（消融对照）",
+  "source": "research/v4/S2b_draft.md；数据 data/v3_market BTCUSDT 3年 sha a6f910e9…/311b15bf…",
+  "signals": {
+    "kind": "csv",
+    "path": "../entries/s2b_btc_1h_N.csv",
+    "side": "long"
+  },
+  "funding_path": "../diagnostic/btcusdt_funding_3y.csv",
+  "signal_definition": {
+    "squeeze": "ATR14/ATR60<=0.75 (TR的SMA)",
+    "breakout": "close>前20根high*1.0005 或 <前20根low*0.9995",
+    "volume": "volume_z(20)>=1.5",
+    "anti_runup": "突破前3根累计涨幅<=2.0×ATR14（不卡当根实体）",
+    "crowding_filter": "防拥挤关：完全不看funding（消融对照）",
+    "confirm": "下一根收盘仍站稳ref",
+    "cooldown": "12根1h",
+    "data_sha256": {
+      "bars": "a6f910e94b90b578e2ebb68107b25a7640218e67f9cdf08432f5e30ed4f481d0",
+      "funding": "311b15bf6878b45a"
+    }
+  }
+}

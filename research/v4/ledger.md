@@ -13,7 +13,7 @@
 | 4 | E4 funding level                                                                       | FAIL       | p=0.1000，样本外 −5.2558   | `reports/entryE4_funding_2026-11-23.md`       |
 | 5 | E5 funding delta                                                                       | FAIL       | p=0.0833，剔除 top1 转负    | `reports/entryE5_funding_delta_2026-11-23.md` |
 | 6 | R0 随机基线（1h）                                                                            | FAIL       | E5 p=0.4110，第 58.9 百分位 | `reports/random_baseline_report.md`           |
-| 7 | R0-4h 随机基线         给给                                                                  | FAIL       | p=0.6815，18/18 样本外负    | `reports/random_baseline_4h_report.md`        |
+| 7 | R0-4h 随机基线                                                                  | FAIL       | p=0.6815，18/18 样本外负    | `reports/random_baseline_4h_report.md`        |
 
 **累计独立试验：7 次，正结果 0 次。**
 
@@ -25,7 +25,9 @@
 | 8b | S1 无 OI 诊断探针（**非契约，不计入家族数**） | **FALSIFIED**            | 独立 spec，5 条事前规则触发                                                       | −20.76%；随机 lift −0.09% CI 跨 0；网格 0/9                            |
 | 9  | S2 压缩突破+防追高（五道过滤）            | **FALSIFIED**（统计效力不足）    | `locks/s2_squeeze_breakout.lock.json` sha256 `58ba0d4a…`                | 2 笔，网格1/9；引擎在min_fills=insufficient下仍判FALSIFIED                 |
 | 9b | S2 去防追高诊断探针（**非契约，不计入家族数**）  | **INCONCLUSIVE**         | 独立spec，只去掉body过滤                                                        | 12笔+2.47%，2x+1.51%，5x−1.37%；样本外0笔                               |
-| 10 | S3 ETH-BTC 残差配对              | **BLOCKED / NO_DATA**    | 不适用（未锁，未跑）                                                              | 全仓 ETH/SOL 缓存为零；用户 2026-11-25 明确指示"不用专门跑确认，直接记 BLOCKED/NO_DATA" |
+| 10 | S2b-F BTC 1h（防拥挤开） | **INCONCLUSIVE** | `locks/s2b_btc_1h_F.lock.json` `464759f2…` | 105笔；IS+3.91%/OOS−5.58%；2x成本−10.07%；OOS仅19笔<30 |
+| 11 | S2b-N BTC 1h（防拥挤关） | **INCONCLUSIVE** | `locks/s2b_btc_1h_N.lock.json` `b4861d21…` | 120笔；IS+7.33%/OOS−7.31%；2x成本−9.58%；OOS仅22笔<30 |
+| 12 | S3 跨币种残差配对 | **草案已写，未锁未跑** | `S3_draft.md`（未锁） | 三币数据已到位，残差口径/瘸腿契约待用户审阅 |
 
 **注意**：#8 的契约已经锁定，任何阈值修改都会被 `contract_lock.check_lock()` 检出并判契约篡改。  
 #8b 是独立诊断（去掉缺失的 OI 条件），**不算独立家族、不进多重检验分母**——它只是判定"裸信号有没有信息"。  
@@ -37,7 +39,7 @@
 
 ## 多重检验口径
 
-当前家族数 = 9（历史 7 + S1=INCONCLUSIVE + S2=FALSIFIED）。  
+当前家族数 = 11（历史 7 + S1 + S2 + S2b-F + S2b-N）。  
 #8b（S1 无 OI 探针）与 #9b（S2 去防追高探针）均为非契约诊断，不计入分母。  
 S3 若跑，家族数 → 10。
 
@@ -54,18 +56,22 @@ S3 若跑，家族数 → 10。
 2. 任一试验触发 `insufficient` → 记为 INCONCLUSIVE，不算通过，也不算失败
 3. 任何"先跑一下看看再改阈值" → 违反契约锁，本次试验作废，计数仍保留
 
-**当前进度（2026-11-25）**：累计 9 家族，正结果 0。  
+**当前进度（2026-11-25）**：累计 11 家族，正结果 0。  
 S1=INCONCLUSIVE（OI 数据不可得）+ 裸信号探针 FALSIFIED。  
-S2=FALSIFIED（但仅 2 笔样本，统计效力不足）；  
-**去防追高诊断 12 笔 +2.47%（2x +1.51%），INCONCLUSIVE —— 真实发现是防追高过滤设计错误，  
-不是信号无效**。距停手条件还差 S3 未跑。
+S2=FALSIFIED（但仅 2 笔样本，统计效力不足）；去防追高诊断 12 笔 +2.47%，INCONCLUSIVE。  
+**S2b-F/N（BTC 1h）双 INCONCLUSIVE**：105/120 笔，IS 正但 OOS 负（−5.58%/−7.31%），
+OOS 仅 19/22 笔 <30；1x 勉强打平、**2x 成本 −10%**，1h 无成本安全垫。
+F/N 消融未实锤 funding 方向（全样本 N 略好、OOS F 略好，CI 均跨 0）。  
+ETH/SOL 保留为未触碰跨资产验证集。S3 草案已写（`S3_draft.md`），未锁未跑。
+距停手条件还差 S3 两组未跑。
 
 **引擎缺陷记录**：S2 报告在 `min_fills` 触发 insufficient（"其余规则未评估"）的同时，  
 仍用 2 笔样本的网格结果判 FALSIFIED。这是引擎逻辑矛盾，已如实保留原始判定并在  
 `S2_execution_report.md` 说明。**样本 <min_fills 时的 FALSIFIED 不应作为证伪证据。**
 
-**2026-11-25 用户决策**：S3 直接记 `BLOCKED / NO_DATA`，不再跑确认。  
-先修引擎两个防呆 Bug（已完成）→ 补三币种数据 → 另立 S2b 契约（同时解锁 S3）。  
+**2026-11-25 用户决策链**：S3 初记 `BLOCKED/NO_DATA`（无数据）→ 先修引擎两个防呆 Bug
+（已完成）→ 补三币 3 年数据（已完成）→ 用户选 A：只跑 BTC 1h 的 S2b F/N（已完成，
+双 INCONCLUSIVE）+ 起草 S3 草案（已完成）→ ETH/SOL 保留为跨资产盲测集，S2c 待定。  
 详见 `S2b_draft.md` 与 `data_backfill_plan.md`。
 
 **引擎修复记录（同日，先于 S2b）**：

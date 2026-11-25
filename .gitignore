@@ -56,3 +56,8 @@ STOP
 
 # local runtime logs (never commit)
 logs/
+
+# V4 大体积行情快照：可从 data/v3_market/ 用
+# scripts/backfill_market.py + research/v4/build_s2b_entries.py 一键重建。
+# 只提交脚本与报告，不提交 1.6M 的重复数据。
+research/v4/diagnostic/*_3y.csv

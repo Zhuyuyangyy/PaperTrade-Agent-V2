@@ -1,0 +1,19 @@
+{
+  "lock_version": 1,
+  "locked_at": "2026-11-25T04:49:31+00:00",
+  "strategy": "s2b-prebreakout-runup-1h-btc-N",
+  "contract_sha256": "b4861d21ef6b37310cf0414d287e2ba6e49c278dc3f15467c4871f8b89e75f07",
+  "contract": {
+    "name": "s2b-prebreakout-runup-1h-btc-N",
+    "symbol": "BTCUSDT",
+    "interval": "1h",
+    "venue": "futures",
+    "falsify_if": {
+      "control_lift_ci_includes_zero": true,
+      "net_negative_at_fee_multiple": 2,
+      "worst_case_net_negative": true,
+      "min_fills": 30,
+      "grid_positive_ratio_min": 0.5
+    }
+  }
+}
