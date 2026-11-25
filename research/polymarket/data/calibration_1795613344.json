@@ -1,0 +1,591 @@
+{
+  "generated_utc": 1795613344574,
+  "anchor": "closedTime",
+  "windows": [
+    6.0,
+    24.0,
+    48.0
+  ],
+  "min_volume": 5000.0,
+  "markets_requested": 5000,
+  "markets_used": 1542,
+  "fixed_observations": 2813,
+  "event_observations": 1971,
+  "assumptions": {
+    "fee_rate": 0.01,
+    "slip_bps": 35.0,
+    "fee_formula": "feeRate * p * (1-p) per share",
+    "price_source": "clob prices-history, hourly"
+  },
+  "fixed_horizon": {
+    "6h": {
+      "n": 858,
+      "buckets": [
+        {
+          "lo": 0.5,
+          "hi": 0.8,
+          "n": 279,
+          "avg_price": 0.6211,
+          "win_rate": 0.6703,
+          "wilson_lb": 0.6131,
+          "gross_bps": 791.7,
+          "net_bps": 718.8,
+          "lb_net_bps": -201.4,
+          "median_vol": 8067485
+        },
+        {
+          "lo": 0.8,
+          "hi": 0.9,
+          "n": 46,
+          "avg_price": 0.8529,
+          "win_rate": 0.7826,
+          "wilson_lb": 0.6443,
+          "gross_bps": -824.2,
+          "net_bps": -873.9,
+          "lb_net_bps": -2496.0,
+          "median_vol": 7755714
+        },
+        {
+          "lo": 0.9,
+          "hi": 0.95,
+          "n": 16,
+          "avg_price": 0.9302,
+          "win_rate": 0.875,
+          "wilson_lb": 0.6398,
+          "gross_bps": -593.6,
+          "net_bps": -635.6,
+          "lb_net_bps": -3164.4,
+          "median_vol": 9531283
+        },
+        {
+          "lo": 0.95,
+          "hi": 0.98,
+          "n": 17,
+          "avg_price": 0.9679,
+          "win_rate": 1.0,
+          "wilson_lb": 0.8157,
+          "gross_bps": 332.1,
+          "net_bps": 293.9,
+          "lb_net_bps": -1610.5,
+          "median_vol": 7267638
+        },
+        {
+          "lo": 0.98,
+          "hi": 0.99,
+          "n": 13,
+          "avg_price": 0.9847,
+          "win_rate": 1.0,
+          "wilson_lb": 0.7719,
+          "gross_bps": 155.5,
+          "net_bps": 118.9,
+          "lb_net_bps": -2197.6,
+          "median_vol": 20345318
+        },
+        {
+          "lo": 0.99,
+          "hi": 1.0,
+          "n": 1,
+          "avg_price": 0.99,
+          "win_rate": 1.0,
+          "wilson_lb": 0.2065,
+          "gross_bps": 101.0,
+          "net_bps": 65.0,
+          "lb_net_bps": -7949.7,
+          "median_vol": 5477608
+        }
+      ]
+    },
+    "24h": {
+      "n": 969,
+      "buckets": [
+        {
+          "lo": 0.5,
+          "hi": 0.8,
+          "n": 299,
+          "avg_price": 0.6166,
+          "win_rate": 0.6288,
+          "wilson_lb": 0.5727,
+          "gross_bps": 197.4,
+          "net_bps": 124.1,
+          "lb_net_bps": -785.3,
+          "median_vol": 8260216
+        },
+        {
+          "lo": 0.8,
+          "hi": 0.9,
+          "n": 48,
+          "avg_price": 0.8474,
+          "win_rate": 0.7917,
+          "wilson_lb": 0.6574,
+          "gross_bps": -658.2,
+          "net_bps": -708.5,
+          "lb_net_bps": -2292.7,
+          "median_vol": 7930992
+        },
+        {
+          "lo": 0.9,
+          "hi": 0.95,
+          "n": 17,
+          "avg_price": 0.9268,
+          "win_rate": 1.0,
+          "wilson_lb": 0.8157,
+          "gross_bps": 789.5,
+          "net_bps": 747.2,
+          "lb_net_bps": -1241.5,
+          "median_vol": 9191826
+        },
+        {
+          "lo": 0.95,
+          "hi": 0.98,
+          "n": 20,
+          "avg_price": 0.9644,
+          "win_rate": 1.0,
+          "wilson_lb": 0.8389,
+          "gross_bps": 369.1,
+          "net_bps": 330.6,
+          "lb_net_bps": -1340.2,
+          "median_vol": 8162527
+        },
+        {
+          "lo": 0.98,
+          "hi": 0.99,
+          "n": 15,
+          "avg_price": 0.9835,
+          "win_rate": 1.0,
+          "wilson_lb": 0.7961,
+          "gross_bps": 167.8,
+          "net_bps": 131.1,
+          "lb_net_bps": -1942.0,
+          "median_vol": 21033386
+        }
+      ]
+    },
+    "48h": {
+      "n": 986,
+      "buckets": [
+        {
+          "lo": 0.5,
+          "hi": 0.8,
+          "n": 294,
+          "avg_price": 0.6182,
+          "win_rate": 0.6395,
+          "wilson_lb": 0.5831,
+          "gross_bps": 343.8,
+          "net_bps": 270.6,
+          "lb_net_bps": -641.1,
+          "median_vol": 8537386
+        },
+        {
+          "lo": 0.8,
+          "hi": 0.9,
+          "n": 37,
+          "avg_price": 0.8492,
+          "win_rate": 0.8378,
+          "wilson_lb": 0.6886,
+          "gross_bps": -134.0,
+          "net_bps": -184.1,
+          "lb_net_bps": -1941.0,
+          "median_vol": 7479199
+        },
+        {
+          "lo": 0.9,
+          "hi": 0.95,
+          "n": 20,
+          "avg_price": 0.9267,
+          "win_rate": 0.95,
+          "wilson_lb": 0.7639,
+          "gross_bps": 252.0,
+          "net_bps": 209.6,
+          "lb_net_bps": -1799.0,
+          "median_vol": 10095484
+        },
+        {
+          "lo": 0.95,
+          "hi": 0.98,
+          "n": 25,
+          "avg_price": 0.9652,
+          "win_rate": 1.0,
+          "wilson_lb": 0.8668,
+          "gross_bps": 360.5,
+          "net_bps": 322.1,
+          "lb_net_bps": -1057.9,
+          "median_vol": 10886668
+        },
+        {
+          "lo": 0.98,
+          "hi": 0.99,
+          "n": 14,
+          "avg_price": 0.9864,
+          "win_rate": 1.0,
+          "wilson_lb": 0.7847,
+          "gross_bps": 138.3,
+          "net_bps": 102.0,
+          "lb_net_bps": -2081.0,
+          "median_vol": 16115149
+        },
+        {
+          "lo": 0.99,
+          "hi": 1.0,
+          "n": 2,
+          "avg_price": 0.99,
+          "win_rate": 1.0,
+          "wilson_lb": 0.3424,
+          "gross_bps": 101.0,
+          "net_bps": 65.0,
+          "lb_net_bps": -6577.7,
+          "median_vol": 6505270
+        }
+      ]
+    }
+  },
+  "events": {
+    "0.95": {
+      "n": 279,
+      "avg_price": 0.9615,
+      "win_rate": 0.9606,
+      "wilson_lb": 0.9308,
+      "gross_bps": -9.4,
+      "net_bps": -48.3,
+      "lb_net_bps": -358.0,
+      "median_hours_to_close": 27.67,
+      "median_vol": 9037390
+    },
+    "0.98": {
+      "n": 219,
+      "avg_price": 0.985,
+      "win_rate": 0.9863,
+      "wilson_lb": 0.9605,
+      "gross_bps": 13.3,
+      "net_bps": -23.2,
+      "lb_net_bps": -285.1,
+      "median_hours_to_close": 41.43,
+      "median_vol": 9281357
+    }
+  },
+  "event_by_price": {
+    "0.95": [
+      {
+        "n": 171,
+        "avg_price": 0.9534,
+        "win_rate": 0.9766,
+        "wilson_lb": 0.9414,
+        "gross_bps": 244.0,
+        "net_bps": 204.3,
+        "lb_net_bps": -165.0,
+        "median_hours_to_close": 56.57,
+        "median_vol": 9158407
+      },
+      {
+        "n": 49,
+        "avg_price": 0.9631,
+        "win_rate": 0.9388,
+        "wilson_lb": 0.8348,
+        "gross_bps": -252.6,
+        "net_bps": -291.3,
+        "lb_net_bps": -1370.9,
+        "median_hours_to_close": 5.58,
+        "median_vol": 8131715
+      },
+      {
+        "n": 25,
+        "avg_price": 0.974,
+        "win_rate": 0.88,
+        "wilson_lb": 0.7004,
+        "gross_bps": -965.0,
+        "net_bps": -1002.6,
+        "lb_net_bps": -2846.2,
+        "median_hours_to_close": 3.97,
+        "median_vol": 8574238
+      },
+      {
+        "n": 17,
+        "avg_price": 0.9856,
+        "win_rate": 1.0,
+        "wilson_lb": 0.8157,
+        "gross_bps": 145.6,
+        "net_bps": 109.2,
+        "lb_net_bps": -1760.9,
+        "median_hours_to_close": 50.63,
+        "median_vol": 8422457
+      }
+    ],
+    "0.98": [
+      {
+        "n": 176,
+        "avg_price": 0.9826,
+        "win_rate": 0.9886,
+        "wilson_lb": 0.9595,
+        "gross_bps": 61.7,
+        "net_bps": 25.0,
+        "lb_net_bps": -271.4,
+        "median_hours_to_close": 44.63,
+        "median_vol": 9174234
+      },
+      {
+        "n": 43,
+        "avg_price": 0.9949,
+        "win_rate": 0.9767,
+        "wilson_lb": 0.8794,
+        "gross_bps": -182.4,
+        "net_bps": -218.0,
+        "lb_net_bps": -1196.3,
+        "median_hours_to_close": 27.67,
+        "median_vol": 10115410
+      }
+    ]
+  },
+  "event_by_category": {
+    "crypto": {
+      "n": 24,
+      "avg_price": 0.9578,
+      "win_rate": 1.0,
+      "wilson_lb": 0.862,
+      "gross_bps": 440.5,
+      "net_bps": 401.2,
+      "lb_net_bps": -1039.3,
+      "median_hours_to_close": 9.33,
+      "median_vol": 7131592
+    },
+    "sports": {
+      "n": 70,
+      "avg_price": 0.9621,
+      "win_rate": 0.9571,
+      "wilson_lb": 0.8814,
+      "gross_bps": -51.2,
+      "net_bps": -90.0,
+      "lb_net_bps": -877.3,
+      "median_hours_to_close": 2.46,
+      "median_vol": 7664696
+    },
+    "politics": {
+      "n": 164,
+      "avg_price": 0.9617,
+      "win_rate": 0.9512,
+      "wilson_lb": 0.9067,
+      "gross_bps": -109.1,
+      "net_bps": -147.9,
+      "lb_net_bps": -610.8,
+      "median_hours_to_close": 72.16,
+      "median_vol": 11027408
+    },
+    "other": {
+      "n": 21,
+      "avg_price": 0.9619,
+      "win_rate": 1.0,
+      "wilson_lb": 0.8454,
+      "gross_bps": 396.0,
+      "net_bps": 357.2,
+      "lb_net_bps": -1250.5,
+      "median_hours_to_close": 84.19,
+      "median_vol": 6844356
+    }
+  },
+  "event_by_lead": {
+    "<=6h": {
+      "n": 99,
+      "avg_price": 0.9633,
+      "win_rate": 0.9697,
+      "wilson_lb": 0.9147,
+      "gross_bps": 66.6,
+      "net_bps": 27.9,
+      "lb_net_bps": -543.4,
+      "median_hours_to_close": 2.58,
+      "median_vol": 8216308
+    },
+    "6-24h": {
+      "n": 36,
+      "avg_price": 0.9598,
+      "win_rate": 0.9444,
+      "wilson_lb": 0.8186,
+      "gross_bps": -160.3,
+      "net_bps": -199.3,
+      "lb_net_bps": -1511.0,
+      "median_hours_to_close": 10.36,
+      "median_vol": 7839304
+    },
+    "24-72h": {
+      "n": 40,
+      "avg_price": 0.9633,
+      "win_rate": 0.975,
+      "wilson_lb": 0.8712,
+      "gross_bps": 121.9,
+      "net_bps": 83.2,
+      "lb_net_bps": -994.6,
+      "median_hours_to_close": 56.33,
+      "median_vol": 9698383
+    },
+    ">72h": {
+      "n": 104,
+      "avg_price": 0.9596,
+      "win_rate": 0.9519,
+      "wilson_lb": 0.8924,
+      "gross_bps": -80.5,
+      "net_bps": -119.5,
+      "lb_net_bps": -740.3,
+      "median_hours_to_close": 98.17,
+      "median_vol": 10164842
+    }
+  },
+  "mirror_events": {
+    "0.05": {
+      "n": 453,
+      "avg_price": 0.9643,
+      "win_rate": 0.9227,
+      "wilson_lb": 0.8944,
+      "gross_bps": -431.3,
+      "net_bps": -469.9,
+      "lb_net_bps": -763.3,
+      "median_hours_to_close": 99.79,
+      "median_vol": 8681375
+    },
+    "0.02": {
+      "n": 470,
+      "avg_price": 0.9854,
+      "win_rate": 0.9553,
+      "wilson_lb": 0.9327,
+      "gross_bps": -305.7,
+      "net_bps": -342.2,
+      "lb_net_bps": -572.1,
+      "median_hours_to_close": 93.09,
+      "median_vol": 8685558
+    }
+  },
+  "failures": [
+    {
+      "id": "2159863",
+      "q": "Will Trump say \"Iran\" during events with Xi Jinping?",
+      "cat": "politics",
+      "vol": 28337791.229197014,
+      "yes": false,
+      "fee_type": "mentions_fees",
+      "thr": 0.95,
+      "p": 0.995,
+      "censored": false,
+      "lead_h": 188.69
+    },
+    {
+      "id": "2241873",
+      "q": "Iran closes its airspace by May 24?",
+      "cat": "politics",
+      "vol": 15430021.40518324,
+      "yes": false,
+      "fee_type": null,
+      "thr": 0.95,
+      "p": 0.97,
+      "censored": false,
+      "lead_h": 101.47
+    },
+    {
+      "id": "1308327",
+      "q": "Government shutdown on Saturday?",
+      "cat": "politics",
+      "vol": 13550398.086217,
+      "yes": false,
+      "fee_type": null,
+      "thr": 0.95,
+      "p": 0.955,
+      "censored": false,
+      "lead_h": 62.62
+    },
+    {
+      "id": "541466",
+      "q": "Will South Korea presidential election winner get over 50% of votes?",
+      "cat": "politics",
+      "vol": 13094030.56774,
+      "yes": false,
+      "fee_type": null,
+      "thr": 0.95,
+      "p": 0.975,
+      "censored": false,
+      "lead_h": 15.13
+    },
+    {
+      "id": "2159882",
+      "q": "Will Trump say \"Nuclear\" during events with Xi Jinping?",
+      "cat": "politics",
+      "vol": 12129905.141829975,
+      "yes": false,
+      "fee_type": "mentions_fees",
+      "thr": 0.95,
+      "p": 0.96,
+      "censored": false,
+      "lead_h": 188.67
+    },
+    {
+      "id": "2159870",
+      "q": "Will Trump say \"Strait\" or \"Hormuz\" during events with Xi Jinping?",
+      "cat": "politics",
+      "vol": 9968465.165516004,
+      "yes": false,
+      "fee_type": "mentions_fees",
+      "thr": 0.95,
+      "p": 0.955,
+      "censored": false,
+      "lead_h": 188.7
+    },
+    {
+      "id": "1116472",
+      "q": "Packers vs. Bears",
+      "cat": "sports",
+      "vol": 9202019.48984,
+      "yes": false,
+      "fee_type": null,
+      "thr": 0.95,
+      "p": 0.965,
+      "censored": false,
+      "lead_h": 3.32
+    },
+    {
+      "id": "2133405",
+      "q": "Iran closes its airspace by May 31?",
+      "cat": "politics",
+      "vol": 8565902.329688976,
+      "yes": false,
+      "fee_type": null,
+      "thr": 0.95,
+      "p": 0.965,
+      "censored": false,
+      "lead_h": 230.86
+    },
+    {
+      "id": "1897048",
+      "q": "Will Switzerland win on 2026-06-13?",
+      "cat": "sports",
+      "vol": 6451012.17868902,
+      "yes": false,
+      "fee_type": "sports_fees_v2",
+      "thr": 0.95,
+      "p": 0.955,
+      "censored": false,
+      "lead_h": 2.48
+    },
+    {
+      "id": "881451",
+      "q": "Packers vs. Bears",
+      "cat": "sports",
+      "vol": 6327886.766616,
+      "yes": false,
+      "fee_type": null,
+      "thr": 0.95,
+      "p": 0.95,
+      "censored": false,
+      "lead_h": 2.81
+    },
+    {
+      "id": "542558",
+      "q": "Will Lee Jae-myung win 50-55% of the vote in the South Korea election?",
+      "cat": "politics",
+      "vol": 6176032.109745,
+      "yes": false,
+      "fee_type": null,
+      "thr": 0.95,
+      "p": 0.975,
+      "censored": false,
+      "lead_h": 16.38
+    }
+  ],
+  "censored": {
+    "0.95": 34,
+    "0.98": 20
+  }
+}

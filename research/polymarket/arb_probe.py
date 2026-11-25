@@ -512,10 +512,37 @@ def cmd_tail(args) -> int:
 
 # ---------------------------------------------------------------- 校准
 
+CAL_WINDOWS = (6, 24, 48)            # 结算前小时数（以 closedTime 为锚）
+MAX_SPAN_H = 336.0                   # prices-history 单次查询上限，实测 14 天（16 天返回 400）
+BUCKETS_HIGH = ((0.50, 0.80), (0.80, 0.90), (0.90, 0.95),
+                (0.95, 0.98), (0.98, 0.99), (0.99, 1.0001))
+BUCKETS_LOW = ((0.01, 0.05), (0.05, 0.10), (0.10, 0.20), (0.20, 0.50))
+
+CATEGORY_RULES = (
+    ("sports", ("sports", "esports", "games", "nfl", "nba", "mlb", "nhl", "soccer",
+                "football", "tennis", "ufc", "boxing", "olympic", "cricket", "golf",
+                "counter strike", "league of legends", "dota", "valorant", "cs2",
+                "map handicap", "total rounds", "match winner", "vs.")),
+    ("crypto", ("crypto", "crypto prices", "bitcoin", "btc", "ethereum", "eth",
+                "solana", "sol", "xrp", "dogecoin", "doge", "binance", "defi",
+                "up or down", "token", "altcoin")),
+    ("politics", ("politics", "election", "elections", "president", "presidential",
+                  "senate", "congress", "governor", "parliament", "trump", "biden",
+                  "harris", "vote", "geopolitics", "prime minister", "supreme court")),
+)
+
+
 def fetch_closed_markets(want: int = 300, min_vol: float = 10_000.0,
-                         max_pages: int = 30) -> list[dict]:
+                         max_pages: int | None = None) -> list[dict]:
+    """按成交额降序取已结算的二元市场。
+
+    按 volumeNum 而不是 closedTime 排序：后者会被 5 分钟加密涨跌市场淹没
+    （实测最新 6 个全是 5M 市场），「尾盘折价」在那类市场上没有意义。
+    代价是偏向高成交的老市场，这一偏差在报告里写明。
+    """
     out, seen = [], set()
-    for page in range(max_pages):
+    pages = max_pages if max_pages is not None else want // 100 + 12
+    for page in range(pages):
         try:
             rows = http_json(f"{GAMMA}/markets?limit=100&offset={page*100}"
                              f"&closed=true&order=volumeNum&ascending=false", timeout=40)
@@ -537,33 +564,285 @@ def fetch_closed_markets(want: int = 300, min_vol: float = 10_000.0,
     return out[:want]
 
 
-def price_before(token: str, end_ms: int, hours: float = 6.0) -> float | None:
-    start = int(end_ms / 1000 - hours * 3600)
-    end = int(end_ms / 1000)
+def fetch_event_tags(event_ids, threads: int = 12) -> dict:
+    """事件标签。market 对象上没有 tags，只有 /events/{id} 有；
+    同一个 event 下的多个 market 共享一次请求。"""
+    out = {}
+
+    def one(eid):
+        try:
+            d = http_json(f"{GAMMA}/events/{eid}", timeout=30)
+        except ProbeError:
+            return eid, []
+        return eid, [t.get("label") for t in (d.get("tags") or []) if t.get("label")]
+
+    ids = list(event_ids)
+    if not ids:
+        return out
+    with cf.ThreadPoolExecutor(max_workers=min(threads, len(ids))) as ex:
+        for eid, tags in ex.map(one, ids):
+            out[eid] = tags
+    return out
+
+
+def classify(tags, question: str = "") -> str:
+    """按事件标签定品类，标签缺失时退回问题文本关键词。"""
+    low = [str(t).lower() for t in (tags or [])]
+    text = " ".join(low) + " " + (question or "").lower()
+    best, best_hits = "other", 0
+    for name, keys in CATEGORY_RULES:
+        hits = sum(1 for k in keys if k in text)
+        if name in low:
+            hits += 3
+        if hits > best_hits:
+            best, best_hits = name, hits
+    return best
+
+
+def _norm_ts(t) -> int:
+    """prices-history 的 t 是**秒**，统一到毫秒。
+
+    实际踩过：拿毫秒去和秒比较，所有时间窗都判成"无数据"，
+    500 个市场返回 0 条观测，且不报错。
+    """
+    ts = int(t)
+    return ts * 1000 if ts < 10 ** 11 else ts
+
+
+def price_path(token: str, anchor_ms: int, span_h: float = MAX_SPAN_H):
+    """[anchor - span_h, anchor] 的逐小时价格，一次请求覆盖三个时间窗。"""
+    start = int(anchor_ms / 1000 - span_h * 3600)
+    end = int(anchor_ms / 1000)
     try:
         d = http_json(f"{CLOB}/prices-history?market={token}"
                       f"&startTs={start}&endTs={end}&fidelity=60", timeout=30)
     except ProbeError:
-        return None
+        return []
     hist = d.get("history", []) if isinstance(d, dict) else d
-    if not hist:
+    out = []
+    for pt in hist:
+        p = _f(pt.get("p"))
+        if p is not None:
+            out.append((_norm_ts(pt["t"]), p))
+    out.sort()
+    return out
+
+
+def sample_at(path, target_ms: int, tol_h: float = 3.0):
+    """target 时刻之前最近的一个报价。滞后超过 tol_h 视为该窗口无数据，
+    避免拿 40 小时前的价格冒充 6 小时前的价格。"""
+    best = None
+    for ts, p in path:
+        if ts <= target_ms and (best is None or ts > best[0]):
+            best = (ts, p)
+    if best is None:
         return None
-    return _f(hist[-1].get("p"))
+    lag_h = (target_ms - best[0]) / 3_600_000.0
+    if lag_h > tol_h:
+        return None
+    return best[1], lag_h
+
+
+def wilson_lb(k: int, n: int, z: float = 1.96) -> float | None:
+    """二项比例的 Wilson 95% 下界。小样本下远比正态近似可靠。"""
+    if n <= 0:
+        return None
+    p = k / n
+    den = 1 + z * z / n
+    centre = p + z * z / (2 * n)
+    half = z * math.sqrt(max(p * (1 - p) / n + z * z / (4 * n * n), 0.0))
+    return max(0.0, (centre - half) / den)
+
+
+def net_edge_bps(win: float, price: float, fee_rate: float = 0.0,
+                 slip_bps: float = 0.0) -> float | None:
+    """每 1 美元名义的净期望（bps）。fee 按官方 feeRate×p×(1-p) 每股。"""
+    if price is None or price <= 0 or win is None:
+        return None
+    fee_ps = fee_rate * price * (1 - price)
+    slip_ps = slip_bps / 1e4 * price
+    return (win - price - fee_ps - slip_ps) / price * 1e4
+
+
+def bucket_table(rows, buckets, *, fee_rate: float, slip_bps: float) -> list[dict]:
+    out = []
+    for lo, hi in buckets:
+        sub = [r for r in rows if lo <= r["p"] < hi]
+        if not sub:
+            continue
+        n = len(sub)
+        k = sum(1 for r in sub if r["yes"])
+        avg = sum(r["p"] for r in sub) / n
+        rate = k / n
+        lb = wilson_lb(k, n)
+        out.append({
+            "lo": lo, "hi": min(hi, 1.0), "n": n,
+            "avg_price": round(avg, 4),
+            "win_rate": round(rate, 4),
+            "wilson_lb": round(lb, 4),
+            "gross_bps": round(net_edge_bps(rate, avg, 0.0, 0.0), 1),
+            "net_bps": round(net_edge_bps(rate, avg, fee_rate, slip_bps), 1),
+            "lb_net_bps": round(net_edge_bps(lb, avg, fee_rate, slip_bps), 1),
+            "median_vol": round(statistics.median(r["vol"] for r in sub)),
+        })
+    return out
+
+
+def _print_bucket_table(title: str, table: list[dict], *, fee_rate: float,
+                        slip_bps: float) -> None:
+    print(f"\n{title}")
+    print(f"  {'价格区间':<12}{'样本':>6}{'均价':>8}{'兑现率':>8}{'Wilson下界':>11}"
+          f"{'毛边bps':>9}{'净边bps':>9}{'下界净bps':>10}  判定")
+    for b in table:
+        verdict = "**显著为正**" if (b["lb_net_bps"] or -1e9) > 0 else "否"
+        print(f"  {b['lo']:.2f}-{b['hi']:.2f}  {b['n']:6d}{b['avg_price']:8.4f}"
+              f"{b['win_rate']:8.4f}{b['wilson_lb']:11.4f}{b['gross_bps']:+9.1f}"
+              f"{b['net_bps']:+9.1f}{b['lb_net_bps']:+10.1f}  {verdict}")
+    print(f"  （净边 = 扣 fee {fee_rate:.2f}×p×(1-p) 与滑点 {slip_bps:.0f}bps 名义）")
+
+
+def first_cross(path, threshold: float, max_price: float = 0.995):
+    """价格首次跨入 [threshold, max_price] 的时点。
+
+    这是可直接交易的入场事件（"第一次触到 0.95 就买"），
+    每个市场只贡献一条，避免同一市场重复计数造成的伪样本量。
+    """
+    for i, (ts, p) in enumerate(path):
+        if threshold <= p <= max_price:
+            return ts, p, i
+    return None
+
+
+def first_cross_low(path, threshold: float, min_price: float = 0.005):
+    """价格首次跌到 <= threshold（且 >= min_price）的时点，用于对手盘事件。"""
+    for i, (ts, p) in enumerate(path):
+        if min_price <= p <= threshold:
+            return ts, p, i
+    return None
+
+
+def refine_cross(token: str, ts_ms: int, threshold: float, *, low: bool = False,
+                 back_min: int = 70, fwd_min: int = 10):
+    """小时级只是"首个整点已在区间"，真实首次触价要靠分钟级。
+
+    实测小时级首触均价 0.9775，分钟级能拉回 0.95-0.96 —— 这个差别
+    直接决定边际（0.9775 只有 230bps 毛边，0.955 有 470bps）。
+    """
+    s = int(ts_ms / 1000 - back_min * 60)
+    e = int(ts_ms / 1000 + fwd_min * 60)
+    try:
+        d = http_json(f"{CLOB}/prices-history?market={token}"
+                      f"&startTs={s}&endTs={e}&fidelity=1", timeout=30)
+    except ProbeError:
+        return None
+    pts = []
+    for x in d.get("history", []):
+        v = _f(x.get("p"))
+        if v is not None:
+            pts.append((_norm_ts(x["t"]), v))
+    pts.sort()
+    for t, v in pts:
+        if (v <= threshold) if low else (v >= threshold):
+            return t, v
+    return None
+
+
+def event_stats(rows, fee_rate: float, slip_bps: float) -> dict | None:
+    n = len(rows)
+    if n == 0:
+        return None
+    k = sum(1 for r in rows if r["yes"])
+    avg = sum(r["p"] for r in rows) / n
+    lb = wilson_lb(k, n)
+    return {"n": n, "avg_price": round(avg, 4), "win_rate": round(k / n, 4),
+            "wilson_lb": round(lb, 4),
+            "gross_bps": round(net_edge_bps(k / n, avg), 1),
+            "net_bps": round(net_edge_bps(k / n, avg, fee_rate, slip_bps), 1),
+            "lb_net_bps": round(net_edge_bps(lb, avg, fee_rate, slip_bps), 1),
+            "median_hours_to_close": round(statistics.median(r["lead_h"] for r in rows), 2),
+            "median_vol": round(statistics.median(r["vol"] for r in rows))}
+
+
+def _print_event(title: str, st: dict | None, fee_rate: float, slip_bps: float) -> None:
+    if not st:
+        print(f"\n{title}：无样本")
+        return
+    flag = "**下界净为正**" if (st["lb_net_bps"] or -1e9) > 0 else "否"
+    print(f"\n{title}")
+    print(f"  n={st['n']}  入场均价 {st['avg_price']:.4f}  兑现率 {st['win_rate']:.4f}  "
+          f"Wilson 下界 {st['wilson_lb']:.4f}")
+    print(f"  毛边 {st['gross_bps']:+.1f}bps  净边(费{fee_rate:.2f}+滑{slip_bps:.0f}) "
+          f"{st['net_bps']:+.1f}bps  下界净 {st['lb_net_bps']:+.1f}bps  → {flag}")
+    print(f"  入场时距停盘中位 {st['median_hours_to_close']:.1f}h  "
+          f"中位成交额 ${st['median_vol']:,.0f}")
 
 
 def cmd_calibrate(args) -> int:
-    """已结算市场在结算前 N 小时的价格 vs 实际结果。
+    """已结算二元市场：价格 vs 实际结果。
 
-    这是判断"尾盘折价"有没有肉的**唯一**办法：
-    价格 0.96 的样本里如果 99% 都兑现，才有 +3% 的边；如果只有 96%，那就是公平定价。
+    两种采样口径，回答的是两个不同问题：
+      A. 固定时间窗（停盘前 6/24/48h）：某一时刻的横截面定价准不准。
+         样本天然稀少——多数高成交市场在最后几小时已经贴在 0.001。
+      B. 首次跨入区间（事件研究）：从 0.95 第一次被触及时买入，赚不赚。
+         每个市场一条，样本量足，且直接对应可执行的入场规则。
+
+    锚点用 closedTime（实测与最后成交相差中位 0.4h），
+    不用 endDate（与真实关闭相差中位 -195h、最大 3453h）。
     """
-    print("拉已结算市场…", flush=True)
-    mk = fetch_closed_markets(args.markets, args.min_vol)
+    windows = tuple(sorted({float(w) for w in str(args.windows).split(",") if w.strip()}))
+    fee_rate, slip = args.fee, args.slip
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    mcache = DATA_DIR / f"cache_markets_{args.markets}_{int(args.min_vol)}.json"
+    mk = None
+    if not args.no_cache and mcache.exists():
+        try:
+            mk = json.loads(mcache.read_text(encoding="utf-8"))
+            print(f"用市场缓存 {mcache.name}（{len(mk)} 个，--no-cache 可强制重拉）")
+        except (json.JSONDecodeError, OSError):
+            mk = None
+    if mk is None:
+        print("拉已结算市场…", flush=True)
+        mk = fetch_closed_markets(args.markets, args.min_vol,
+                                  max_pages=args.markets // 100 + 20)
+        if mk and not args.no_cache:
+            mcache.write_text(json.dumps(mk, ensure_ascii=False), encoding="utf-8")
     print(f"  {len(mk)} 个（成交额 >= ${args.min_vol:,.0f}）")
+    if not mk:
+        return 1
+
+    eids = set()
+    for m in mk:
+        ev = (m.get("events") or [{}])[0]
+        if ev.get("id"):
+            eids.add(ev["id"])
+    tcache = DATA_DIR / "cache_event_tags.json"
+    tag_map = {}
+    if not args.no_cache and tcache.exists():
+        try:
+            tag_map = json.loads(tcache.read_text(encoding="utf-8"))
+            print(f"用标签缓存（{len(tag_map)} 个 event）")
+        except (json.JSONDecodeError, OSError):
+            tag_map = {}
+    missing = [e for e in eids if e not in tag_map]
+    if missing:
+        print(f"拉事件标签（{len(missing)} 个 event 待拉，共 {len(eids)} 个）…", flush=True)
+        tag_map.update(fetch_event_tags(missing, threads=min(16, args.threads)))
+        if not args.no_cache:
+            tcache.write_text(json.dumps(tag_map, ensure_ascii=False), encoding="utf-8")
+
+    errs = []
 
     def one(m):
-        end = _parse_end(m.get("endDate"))
-        if not end:
+        try:
+            return _one(m)
+        except Exception as exc:          # 单个市场的脏数据不该毁掉整轮
+            if len(errs) < 5:
+                errs.append(f"{type(exc).__name__}: {exc}")
+            return None
+
+    def _one(m):
+        anchor = _parse_end(m.get("closedTime")) or _parse_end(m.get("endDate"))
+        if not anchor:
             return None
         try:
             prices = json.loads(m["outcomePrices"]) if isinstance(m["outcomePrices"], str) else m["outcomePrices"]
@@ -573,43 +852,180 @@ def cmd_calibrate(args) -> int:
             return None
         y, n = _f(prices[0]), _f(prices[1])
         if y is None or n is None or abs(y + n - 1.0) > 1e-6 or y not in (0.0, 1.0):
-            return None          # 只留干净的二元结果
+            return None                      # 只留干净的二元结果（排除 0.5/0.5 无效）
         toks = _tokens(m)
-        p = price_before(toks[0], end, args.hours)
-        if p is None or not (0.01 <= p <= 0.99):
+        path = price_path(toks[0], anchor)
+        if not path:
             return None
-        return {"q": (m.get("question") or "")[:90], "p": p, "yes": y == 1.0,
-                "hours": args.hours, "vol": _f(m.get("volumeNum")) or 0.0}
+        ev = (m.get("events") or [{}])[0]
+        cat = classify(tag_map.get(ev.get("id")), m.get("question") or "")
+        base = {"id": m.get("id"), "q": (m.get("question") or "")[:120], "cat": cat,
+                "vol": _f(m.get("volumeNum")) or 0.0, "yes": y == 1.0,
+                "fee_type": m.get("feeType")}
+        fixed, events = [], []
+        for h in windows:
+            got = sample_at(path, anchor - int(h * 3_600_000))
+            if not got:
+                continue
+            p, lag = got
+            if not (0.01 <= p <= 0.99):
+                continue
+            longer = [w for w in windows if w > h]
+            prev = None
+            if longer:
+                got_prev = sample_at(path, anchor - int(longer[0] * 3_600_000))
+                if got_prev:
+                    prev = got_prev[0]
+            fixed.append({**base, "h": h, "p": p, "lag_h": round(lag, 2), "prev_p": prev})
+        for thr in (0.95, 0.98):
+            hit = first_cross(path, thr)
+            if not hit:
+                continue
+            ts, p, idx = hit
+            censored = (idx == 0)        # 14 天窗口起点已在区间内，真实首触不可知
+            if not censored:
+                fine = refine_cross(toks[0], ts, thr)
+                if fine:
+                    ts, p = fine
+            events.append({**base, "thr": thr, "p": p, "censored": censored,
+                           "lead_h": round((anchor - ts) / 3_600_000.0, 2)})
+        # 对手盘：YES 首次跌到 <= 0.05 / 0.02，等价于低价买 NO
+        for thr in (0.95, 0.98):
+            hit = first_cross_low(path, 1.0 - thr)
+            if not hit:
+                continue
+            ts, p, idx = hit
+            censored = (idx == 0)
+            if not censored:
+                fine = refine_cross(toks[0], ts, 1.0 - thr, low=True)
+                if fine:
+                    ts, p = fine
+            events.append({**base, "thr": -thr, "p": 1.0 - p, "yes": not base["yes"],
+                           "censored": censored,
+                           "lead_h": round((anchor - ts) / 3_600_000.0, 2)})
+        if not fixed and not events:
+            return None
+        return {"fixed": fixed, "events": events}
 
     t0 = time.time()
+    fixed_rows, event_rows, used = [], [], set()
     with cf.ThreadPoolExecutor(max_workers=args.threads) as ex:
-        rows = [r for r in ex.map(one, mk) if r]
-    print(f"  有效样本 {len(rows)}（{time.time()-t0:.1f}s，误差窗口 {args.hours}h）")
+        for res in ex.map(one, mk):
+            if not res:
+                continue
+            fixed_rows.extend(res["fixed"])
+            event_rows.extend(res["events"])
+            if res["fixed"] or res["events"]:
+                used.add((res["fixed"] or res["events"])[0]["id"])
+    print(f"  可用市场 {len(used)} / {len(mk)}，固定窗观测 {len(fixed_rows)}，"
+          f"跨入事件 {len(event_rows)}（{time.time()-t0:.1f}s）")
+    if errs:
+        print(f"  单市场异常 {len(errs)} 例（已隔离，未中断本轮）：")
+        for e in errs[:5]:
+            print(f"    {e}")
 
-    edges = [(0.50, 0.80), (0.80, 0.90), (0.90, 0.95), (0.95, 0.98),
-             (0.98, 0.99), (0.99, 1.01)]
-    print(f"\n{'价格区间':<14}{'样本':>5}{'均价':>8}{'实际兑现':>9}{'边(bps)':>10}{'期望净(bps)':>12}")
-    table = []
-    for lo, hi in edges:
-        sub = [r for r in rows if lo <= r["p"] < hi]
+    summary = {"generated_utc": int(time.time() * 1000), "anchor": "closedTime",
+               "windows": list(windows), "min_volume": args.min_vol,
+               "markets_requested": args.markets, "markets_used": len(used),
+               "fixed_observations": len(fixed_rows),
+               "event_observations": len(event_rows),
+               "assumptions": {"fee_rate": fee_rate, "slip_bps": slip,
+                               "fee_formula": "feeRate * p * (1-p) per share",
+                               "price_source": "clob prices-history, hourly"},
+               "fixed_horizon": {}, "events": {}, "event_by_price": {},
+               "event_by_category": {}, "event_by_lead": {},
+               "mirror_events": {}, "failures": []}
+
+    # ================= A. 固定时间窗 =================
+    print("\n" + "=" * 78)
+    print("A. 固定时间窗（横截面定价）")
+    for h in windows:
+        sub = [r for r in fixed_rows if r["h"] == h]
         if not sub:
             continue
-        rate = sum(1 for r in sub if r["yes"]) / len(sub)
-        avg = sum(r["p"] for r in sub) / len(sub)
-        edge = rate - avg
-        table.append({"lo": lo, "hi": hi, "n": len(sub), "avg_price": round(avg, 4),
-                      "realized_yes": round(rate, 4), "edge_bps": round(edge * 1e4, 1)})
-        print(f"{lo:.2f}-{hi:.2f}      {len(sub):5d}{avg:8.4f}{rate:9.4f}{edge*1e4:+10.1f}"
-              f"{edge*1e4:12.1f}")
+        table = bucket_table(sub, BUCKETS_HIGH, fee_rate=fee_rate, slip_bps=slip)
+        _print_bucket_table(f"停盘前 {int(h)}h｜YES 侧（n={len(sub)}）", table,
+                            fee_rate=fee_rate, slip_bps=slip)
+        summary["fixed_horizon"][f"{int(h)}h"] = {"n": len(sub), "buckets": table}
+
+    # ================= B. 首次跨入事件 =================
+    print("\n" + "=" * 78)
+    print("B. 首次跨入区间（可执行入场事件，每市场一条）")
+    cens = {thr: sum(1 for r in event_rows if r["thr"] == thr and r["censored"])
+            for thr in (0.95, 0.98)}
+    summary["censored"] = {f"{k:.2f}": v for k, v in cens.items()}
+    print(f"  14 天窗口起点已在区间内（截断，真实首触不可知）："
+          f"0.95 → {cens[0.95]} 个，0.98 → {cens[0.98]} 个")
+    for thr in (0.95, 0.98):
+        sub = [r for r in event_rows if r["thr"] == thr and not r["censored"]]
+        st = event_stats(sub, fee_rate, slip)
+        _print_event(f"首次触及 {thr:.2f} 买入 YES（n={len(sub)}）", st, fee_rate, slip)
+        summary["events"][f"{thr:.2f}"] = st
+        for lo, hi in ((thr, thr + 0.01), (thr + 0.01, thr + 0.02),
+                       (thr + 0.02, thr + 0.03), (thr + 0.03, 0.995)):
+            part = [r for r in sub if lo <= r["p"] < hi]
+            if len(part) < 5:
+                continue
+            st2 = event_stats(part, fee_rate, slip)
+            summary["event_by_price"].setdefault(f"{thr:.2f}", []).append(st2)
+            print(f"    入场价 {lo:.2f}-{hi:.2f}: n={st2['n']:4d} 均价 {st2['avg_price']:.4f} "
+                  f"兑现 {st2['win_rate']:.4f} 下界 {st2['wilson_lb']:.4f} "
+                  f"净边 {st2['net_bps']:+7.1f}bps 下界净 {st2['lb_net_bps']:+7.1f}bps")
+
+    # 分品类（0.95 事件）
+    print("\n0.95 事件按品类：")
+    for cat in ("crypto", "sports", "politics", "other"):
+        sub = [r for r in event_rows if r["thr"] == 0.95 and r["cat"] == cat
+               and not r["censored"]]
+        if len(sub) < 5:
+            continue
+        st = event_stats(sub, fee_rate, slip)
+        summary["event_by_category"][cat] = st
+        print(f"  {cat:9s} n={st['n']:4d} 均价 {st['avg_price']:.4f} 兑现 {st['win_rate']:.4f} "
+              f"下界 {st['wilson_lb']:.4f} 毛边 {st['gross_bps']:+7.1f}bps "
+              f"下界净 {st['lb_net_bps']:+7.1f}bps 距停盘 {st['median_hours_to_close']:.1f}h")
+
+    # 按入场时距停盘时长拆解
+    print("\n0.95 事件按入场时距停盘时长：")
+    leads = (("<=6h", 0, 6), ("6-24h", 6, 24), ("24-72h", 24, 72), (">72h", 72, 1e9))
+    for name, lo, hi in leads:
+        sub = [r for r in event_rows if r["thr"] == 0.95 and lo <= r["lead_h"] < hi
+               and not r["censored"]]
+        if len(sub) < 5:
+            continue
+        st = event_stats(sub, fee_rate, slip)
+        summary["event_by_lead"][name] = st
+        print(f"  {name:7s} n={st['n']:4d} 均价 {st['avg_price']:.4f} 兑现 {st['win_rate']:.4f} "
+              f"下界 {st['wilson_lb']:.4f} 毛边 {st['gross_bps']:+7.1f}bps "
+              f"下界净 {st['lb_net_bps']:+7.1f}bps")
+
+    # 翻车明细
+    fails = [r for r in event_rows if r["thr"] == 0.95 and not r["yes"]
+             and not r["censored"]]
+    fails.sort(key=lambda r: -r["vol"])
+    summary["failures"] = fails[:40]
+    print(f"\n0.95 事件中翻车（买入后归零）{len(fails)} 条：")
+    for r in fails[:15]:
+        print(f"  入场 {r['p']:.4f} 距停盘 {r['lead_h']:7.1f}h 量 ${r['vol']:>11,.0f} "
+              f"{r['cat']:8s} {r['q'][:52]}")
+
+    # ================= C. 对手盘 =================
+    print("\n" + "=" * 78)
+    print("C. 对手盘镜像（YES 跌到低位时买 NO，等价于在 1-p 上做多）")
+    for thr in (0.95, 0.98):
+        sub = [r for r in event_rows if r["thr"] == -thr and not r["censored"]]
+        st = event_stats(sub, fee_rate, slip)
+        _print_event(f"YES 首次跌破 {1-thr:.2f} → 买 NO（n={len(sub)}）", st, fee_rate, slip)
+        summary["mirror_events"][f"{1-thr:.2f}"] = st
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    out = DATA_DIR / f"calibration_{int(time.time())}.json"
-    out.write_text(json.dumps({"generated_utc": int(time.time() * 1000),
-                               "hours_before_end": args.hours,
-                               "min_volume": args.min_vol,
-                               "samples": len(rows), "buckets": table,
-                               "detail": rows}, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"\n写入 {out}")
+    stamp = int(time.time())
+    out = DATA_DIR / f"calibration_{stamp}.json"
+    out.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    detail = DATA_DIR / f"calibration_detail_{stamp}.json"
+    detail.write_text(json.dumps({"fixed": fixed_rows, "events": event_rows},
+                                 ensure_ascii=False), encoding="utf-8")
+    print(f"\n写入 {out}\n明细 {detail}")
     return 0
 
 
@@ -665,8 +1081,11 @@ def main(argv=None) -> int:
     s4 = sub.add_parser("calibrate")
     s4.add_argument("--markets", type=int, default=300)
     s4.add_argument("--min-vol", type=float, default=10_000.0)
-    s4.add_argument("--hours", type=float, default=6.0)
-    s4.add_argument("--threads", type=int, default=8)
+    s4.add_argument("--windows", default="6,24,48", help="结算前小时数，逗号分隔")
+    s4.add_argument("--fee", type=float, default=0.01, help="feeRate（0/0.01/0.05）")
+    s4.add_argument("--slip", type=float, default=35.0, help="滑点 bps（名义）")
+    s4.add_argument("--threads", type=int, default=16)
+    s4.add_argument("--no-cache", action="store_true", help="忽略市场/标签缓存，强制重拉")
     args = p.parse_args(argv)
     return {"snapshot": cmd_snapshot, "probe": cmd_probe, "tail": cmd_tail,
             "calibrate": cmd_calibrate}[args.cmd](args)

@@ -80,3 +80,9 @@ research/live/shadow_data/
 # research/polymarket：全市场快照单份 2MB+，可随时重跑；汇总与机会明细保留
 research/polymarket/data/snapshot_*.json
 research/polymarket/data/*.log
+
+# 校准明细（上万条逐市场观测），汇总保留、明细可重跑重建
+research/polymarket/data/calibration_detail_*.json
+
+# 校准用的市场清单与事件标签缓存（20MB+，可重拉）
+research/polymarket/data/cache_*.json

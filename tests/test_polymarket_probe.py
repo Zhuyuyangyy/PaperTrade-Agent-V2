@@ -164,3 +164,100 @@ def test_tail_breakeven_includes_fee():
     row = ap.eval_tail(m, books, now, max_hours=48)
     # 保本胜率必须高于报价（手续费 + 滑点）
     assert row["breakeven_win_rate"] > 0.95
+
+
+# ---------------------------------------------------------------- 校准数学
+
+def test_timestamps_from_api_are_seconds_and_must_be_normalised():
+    """prices-history 的 t 是秒。用毫秒比较会让所有窗口判空且不报错。"""
+    assert ap._norm_ts(1730905202) == 1730905202000
+    assert ap._norm_ts(1730905202000) == 1730905202000   # 已是毫秒则不重复放大
+
+
+def test_wilson_lb_matches_reference():
+    """8/10 的 Wilson 95% 下界 = 0.4902（标准值）。"""
+    assert ap.wilson_lb(8, 10) == pytest.approx(0.4902, abs=1e-4)
+
+
+def test_wilson_lb_punishes_small_perfect_samples():
+    """满分小样本的下界远低于报价——这是 0.95+ 过不了门槛的数学原因。"""
+    assert ap.wilson_lb(10, 10) < 0.75
+    assert ap.wilson_lb(30, 30) < 0.90
+    assert ap.wilson_lb(400, 400) > 0.985
+    assert ap.wilson_lb(0, 20) == 0.0
+    assert ap.wilson_lb(0, 0) is None
+
+
+def test_sample_at_rejects_stale_quotes():
+    """滞后超过容差必须判无数据，不能拿 5 小时前的价格冒充 6 小时前。"""
+    base = 1_700_000_000_000
+    path = [(base - 10 * 3_600_000, 0.5), (base - 9 * 3_600_000, 0.6)]
+    got = ap.sample_at(path, base, tol_h=3.0)
+    assert got is None                    # 最近点也滞后 9 小时
+    got = ap.sample_at(path, base, tol_h=12.0)
+    assert got[0] == 0.6 and got[1] == pytest.approx(9.0)
+
+
+def test_sample_at_takes_last_quote_not_first():
+    base = 1_700_000_000_000
+    path = [(base - 2 * 3_600_000, 0.40), (base - 1 * 3_600_000, 0.45)]
+    assert ap.sample_at(path, base, tol_h=3.0)[0] == 0.45
+
+
+def test_first_cross_marks_window_start_as_censored():
+    """下标 0 说明 14 天窗口起点就已在区间内，真实首触不可知，不能当首次。"""
+    base = 1_700_000_000_000
+    path = [(base, 0.97), (base + 3_600_000, 0.98)]
+    ts, p, idx = ap.first_cross(path, 0.95)
+    assert idx == 0 and p == 0.97
+    path2 = [(base, 0.50), (base + 3_600_000, 0.96)]
+    ts2, p2, idx2 = ap.first_cross(path2, 0.95)
+    assert idx2 == 1 and p2 == 0.96
+
+
+def test_first_cross_skips_prices_above_ceiling():
+    """0.999 以上是结算边界，不该当作"首次触到 0.95"。"""
+    base = 1_700_000_000_000
+    path = [(base, 0.999), (base + 3_600_000, 0.96)]
+    ts, p, idx = ap.first_cross(path, 0.95)
+    assert p == 0.96
+
+
+def test_first_cross_low_is_the_mirror_direction():
+    base = 1_700_000_000_000
+    path = [(base, 0.50), (base + 3_600_000, 0.04)]
+    ts, p, idx = ap.first_cross_low(path, 0.05)
+    assert p == 0.04 and idx == 1
+
+
+def test_net_edge_applies_official_fee_formula():
+    """fee = feeRate × p × (1-p) 每股；0.96 买、100% 兑现、费 1% → 412.67bps。"""
+    got = ap.net_edge_bps(1.0, 0.96, fee_rate=0.01, slip_bps=0.0)
+    assert got == pytest.approx(412.67, abs=0.02)
+    # 滑点按名义扣：35bps 再吃掉 35bps
+    assert ap.net_edge_bps(1.0, 0.96, 0.01, 35.0) == pytest.approx(377.67, abs=0.02)
+
+
+def test_net_edge_at_the_top_of_the_band_is_razor_thin():
+    """0.99 买入即使全兑现，扣 5% 费 + 35bps 滑点后也只剩 61bps；
+    同样条件下 0.96 买有 351bps —— 边际随价格急剧衰减。"""
+    top = ap.net_edge_bps(1.0, 0.99, fee_rate=0.05, slip_bps=35.0)
+    mid = ap.net_edge_bps(1.0, 0.96, fee_rate=0.05, slip_bps=35.0)
+    assert top == pytest.approx(61.01, abs=0.05)
+    assert mid == pytest.approx(361.67, abs=0.05)
+    assert mid > 4 * top
+
+
+def test_classify_uses_event_tags_over_question_text():
+    assert ap.classify(["Sports", "NFL"], "Will the Chiefs win?") == "sports"
+    assert ap.classify(["Crypto"], "Bitcoin above 100k?") == "crypto"
+    assert ap.classify(["Politics"], "Who wins the Senate?") == "politics"
+    assert ap.classify([], "Will it rain in Seattle tomorrow?") == "other"
+
+
+def test_bucket_table_flags_only_when_lower_bound_beats_cost():
+    rows = [{"p": 0.96, "yes": True, "vol": 1e6} for _ in range(9)]
+    rows.append({"p": 0.96, "yes": False, "vol": 1e6})     # 10 中 9 胜，下界 0.596
+    t = ap.bucket_table(rows, ((0.95, 0.98),), fee_rate=0.01, slip_bps=35.0)
+    assert t[0]["n"] == 10 and t[0]["win_rate"] == pytest.approx(0.9)
+    assert t[0]["lb_net_bps"] < 0                          # 小样本不可能过关
