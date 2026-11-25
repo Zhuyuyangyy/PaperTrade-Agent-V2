@@ -69,5 +69,10 @@ research/lite/reports/trades_*.csv
 research/lite/data/perp1d/*.jsonl
 
 # research/live：dryrun 账本属于运行时状态，不入库（含 NAV、持仓、逐日决策）
-research/live/state/
+research/live/state/*
+# 影子的前向账本是本轮 OOS 的原始凭证，必须入库（每周一次 commit 即为时间戳）
+!research/live/state/funding_shadow_ledger.jsonl
 research/live/STOP
+
+# research/live/shadow_data：25 币 3 年日线 + funding，约 11MB，可用 funding_shadow.py 重建
+research/live/shadow_data/

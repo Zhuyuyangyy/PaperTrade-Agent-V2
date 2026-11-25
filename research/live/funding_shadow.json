@@ -1,0 +1,38 @@
+{
+  "name": "funding_shadow_ungated",
+  "version": "1.0",
+  "pinned_at_utc": "2026-11-25T09:45:00Z",
+  "pinned_by": "user decision 2026-11-25 17:42 GMT+8",
+  "purpose": "无门控纯 funding 截面的零资金前向记录。不进 ladder、不下单、不碰任何资金；只攒 2026-11-25 之后的纯未来样本外。",
+  "research_contract": "research/lite/phase2b_spec.json",
+  "research_contract_sha256": "272d2ccd74250fdcde0231b2a99661ade2206bfab8de53230eba039113ccc9c6",
+  "variant": "ungated",
+  "variant_note": "Phase 2B 的契约版本带离散度 FLAT 门控，已证伪并封存；这里记录的是诊断列（无门控），必须显式标注为 ungated，不得与契约版本混淆。",
+  "rules": {
+    "universe": "25 币永续宽池（与研究契约一致）",
+    "dynamic_pool": "每调仓日按 trailing 30d 成交额取 Top 12",
+    "signal": "过去 14 日（42 次结算）平均 funding 年化排序",
+    "position": "做空最高 3 个、做多最低 3 个，等权，gross = 1.0，net = 0",
+    "rebalance": "周频，UTC 周一 00:00 决策，D 开盘成交",
+    "no_gate": "不做离散度过滤，不空仓（除非当日无有效池）"
+  },
+  "start_date": "2026-11-25",
+  "first_rebalance_rule": "start_date 之后第一个周一（2026-11-30），期初空仓，不追溯建仓",
+  "cost": {
+    "template": "perp",
+    "default_bps_per_side": 12.0,
+    "sensitivity_bps_per_side": [6.0, 12.0, 18.0, 24.0]
+  },
+  "data": {
+    "dir": "research/live/shadow_data",
+    "source": "fapi /fapi/v1/klines(1d) + /fapi/v1/fundingRate",
+    "funding_convention": "与研究实现一致：持仓 7 天只计 6 天的结算（[D, D+6)），少算约 1/7 的 funding，方向保守",
+    "fingerprint": "每根 1d sha256[:16] + 每币 fingerprint + 全池 window_fingerprint"
+  },
+  "forbidden": [
+    "改 25 币池、Top12 规则、14 日窗口、3 多 3 空",
+    "加离散度或任何择时门控",
+    "把影子净值当作可交易收益",
+    "在影子账本里手工改仓位"
+  ]
+}

@@ -105,3 +105,51 @@ Phase 3 首版的 +19.10%/夏普 0.683 来自"最低价当收盘价"的 bug。
 
 拿一个已知被静态基准全面压制的策略跑 4 周 paper，除了制造"我们在推进"的错觉，
 不会产生任何新信息。管线留着，等下一个有正期望的候选再挂。
+
+---
+
+# 8. 只读影子记录器：无门控纯 Funding 截面
+
+`funding_shadow.py`。零资金、不进 `ladder.py`、不下单，只往前走一条账面净值。
+
+| 项 | 值 |
+|---|---|
+| 规则 | 25 币宽池 / 每日 Top12 动态池 / 14 日（42 次结算）平均 funding / 空 3 多 3 / 周频 |
+| 变体 | **ungated**（Phase 2B 的门控版已证伪封存；这里记录的是当时的诊断列） |
+| 起点 | 2026-11-25，期初空仓，第一个调仓日 2026-11-30 |
+| 频率 | 每周一 UTC 00:10 |
+| 成本 | 永续 12bps/边，同时记 6/12/18/24 四档敏感性 |
+| 数据 | 独立目录 `shadow_data/`，不污染 `research/lite/data/perp1d` |
+
+```bash
+python research/live/funding_shadow.py bootstrap   # 建账本（已执行 2026-11-25）
+python research/live/funding_shadow.py run         # 每周一跑一次，幂等
+python research/live/funding_shadow.py loop        # 常驻，自动等下一个周一
+python research/live/funding_shadow.py status
+```
+
+**它不产生 alpha 结论。** 它的价值是：3-6 个月后回来看时，规则、数据指纹、成本假设
+都是当时写死的，没有事后修改的余地。样本外是"未来"，不是"另一段历史"。
+
+两条已知偏差，写在这里免得以后误读：
+
+1. **funding 少算 1/7**：为与 Phase 2B 的研究实现可比，只计 `[D, D+6)` 的结算，
+   持仓 7 天少算 1 天（3 次结算）。方向保守（少算收入）。
+2. **等权 gross=1.0 不是真实资金曲线**：这是相对价值组合的理论收益，
+   不含保证金占用、强平、借贷成本。
+
+---
+
+# 9. 成本与滑点记录规范
+
+`cost_policy.py`。任何模拟 / 纸面 / 影子产物都必须把费率、滑点、敏感性档位
+和数据指纹一起落盘——否则半年后没人知道当时算的是多少。
+
+| 模板 | taker/边 | 滑点/边 | 模型取用 | 用于 |
+|---|---|---|---|---|
+| 现货 | 10bps | 1bps | **11bps/边** | Phase 3 |
+| 永续 | 5bps | 2bps | **12bps/边**（留 5bps 余量） | Phase 2 / 2B / 影子 |
+
+敏感性固定为 **6 / 12 / 18 / 24 bps 每边**，对应"做市返佣 → 默认 → 压力 → 极端"。
+每个产物带 `cost_model` + `sensitivity_bps_per_side` + `data.window_fingerprint` 三块。
+

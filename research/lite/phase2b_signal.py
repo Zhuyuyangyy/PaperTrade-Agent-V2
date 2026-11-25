@@ -71,11 +71,15 @@ def percentile_linear(values, q: float):
 
 # ---------------------------------------------------------------- 信号
 
-def build_plans(spec, bars_all, fund_all):
-    """每个调仓日：动态 Top12 池、纯 funding 排序、池内 14 日截面离散度。"""
+def build_plans(spec, bars_all, fund_all, dates=None):
+    """每个调仓日：动态 Top12 池、纯 funding 排序、池内 14 日截面离散度。
+
+    dates 为 None 时沿用研究契约的固定网格（2023-11-27 → 2026-11-25）；
+    影子记录器需要往前推进，所以允许显式传入日期序列，规则本身不变。
+    """
     n_settle = spec["signal"]["window_settlements"]
     plans = []
-    for ts in cs.rebalance_dates(spec):
+    for ts in (dates if dates is not None else cs.rebalance_dates(spec)):
         adv, ret14, fscore = {}, {}, {}
         for sym, bars in bars_all.items():
             closes, qvs = [], []
