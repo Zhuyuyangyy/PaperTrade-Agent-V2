@@ -1,0 +1,16 @@
+{
+  "symbol": "TRXUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "6cc23c85d9bf56f660e3cb15052cd794f4aae4f77685b266bee211ab99602451",
+  "funding_fingerprint": "b21e5f2c8fdf1a70547fa883215b8b697360061eb96cfa8071962b305da02049"
+}

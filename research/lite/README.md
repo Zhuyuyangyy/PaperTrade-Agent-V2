@@ -136,7 +136,31 @@ python research/lite/carry.py
 
 > 注意：`--tag spot` 落 `spot_btcusdt_1h.jsonl`，与永续数据分开；`--interval` 会影响缺口检测步长。
 
-## 7. 边界
+## 7. Phase 2：Top-12 动态池截面动量（`cross_section.py`）
+
+契约 `phase2_spec.json`（sha256 `4402817e…`），跑前锁定、启动时校验，哈希失配拒跑。
+25 个 USDT 永续 × 1,151 根 1d + 3,452 条 funding，每个调仓日按 trailing 30 日成交额取 Top 12。
+
+| 基线 | 成本 | 全样本年化 | 夏普 | 样本外 | OOS 夏普 |
+|---|---|---|---|---|---|
+| A 纯动量 | 1x | +21.59% | 0.863 | −5.42% | −0.169 |
+| A 纯动量 | 2x | +13.65% | 0.610 | −11.52% | −0.491 |
+| B 动量+funding | 1x | +25.01% | **1.072** | +5.92% | 0.418 |
+| B 动量+funding | 2x | +16.55% | 0.771 | −1.70% | −0.010 |
+
+**A/B 双 FALSIFIED**，但全样本 alpha 显著（随机对照 p=0.0155 / 0.0045）。
+逐年 A：2024 +66.0% → 2025 +19.6% → 2026 −7.9%，与 Phase 1 的 carry 衰减同形。
+B 的 funding 复合有效（空头腿 +5.3% → +26.2%，MDD 29.6% → 20.0%），但没能救活样本外。
+
+详见 [`reports/phase2_verdict_2026-11-25.md`](reports/phase2_verdict_2026-11-25.md)。
+
+```bash
+python research/lite/cross_section.py pull     # 125 次请求
+python research/lite/cross_section.py verify
+python research/lite/cross_section.py run --mc 2000
+```
+
+## 8. 边界
 
 - **单标的、单周期**：只验证 BTCUSDT 15m。结论不能外推到 1h/4h 或其他币
 - **无止损、无仓位管理、无资金费**：故意减少自由度。现货不计资金费；合约需另加

@@ -1,0 +1,16 @@
+{
+  "symbol": "INJUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "cf086a9fbb0db0832629c4509944d1e625afedbcc0a654da84f3f303bff708a1",
+  "funding_fingerprint": "60d2bfa38e23a320f7ad2fda7fb090be1ae7d3f2c4dbef87f7e4ee860f76fa7b"
+}

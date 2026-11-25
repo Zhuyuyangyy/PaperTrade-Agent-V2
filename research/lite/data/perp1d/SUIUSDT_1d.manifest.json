@@ -1,0 +1,16 @@
+{
+  "symbol": "SUIUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "472559870f7f69fb3d21b09445736cc2fd62e9087418de5ba572b599379921cc",
+  "funding_fingerprint": "812cf674b0ea96312c303d0d4ab555c04a0083090130cf7775df06bb4ee2fc7d"
+}

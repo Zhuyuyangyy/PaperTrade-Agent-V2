@@ -1,0 +1,16 @@
+{
+  "symbol": "ADAUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "a601a2a91902a8c4a193718abff9e8590b8d862be5a2394a2e6cf88e8df779be",
+  "funding_fingerprint": "02527ced5f20517750abe1b58b721b6664c1971d06a26db73b467591ca23e693"
+}

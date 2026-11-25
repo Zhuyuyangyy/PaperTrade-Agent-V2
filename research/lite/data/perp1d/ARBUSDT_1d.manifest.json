@@ -1,0 +1,16 @@
+{
+  "symbol": "ARBUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "2ce7a44b2dd28448847bcb66fcc2177592e75ec143436188e822c29e88a65af5",
+  "funding_fingerprint": "9b3980d12579d23e5f70c28f90b4262295c6f0de3b13e2453e2d275350eede2b"
+}

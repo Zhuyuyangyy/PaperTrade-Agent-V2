@@ -1,0 +1,73 @@
+{
+  "name": "phase2_cross_section_momentum",
+  "version": "1.0",
+  "locked_at_utc": "2026-11-25T06:50:00Z",
+  "rationale": "单币时序动量在 15m/1h/4h 均被否；改测截面相对强弱，剥离 Beta。参数由用户 2026-11-25 拍板，跑完前不得修改。",
+  "universe": [
+    "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
+    "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "DOTUSDT",
+    "LTCUSDT", "UNIUSDT", "ARBUSDT", "OPUSDT", "APTUSDT",
+    "ATOMUSDT", "FILUSDT", "NEARUSDT", "ETCUSDT", "BCHUSDT",
+    "TRXUSDT", "1000SHIBUSDT", "INJUSDT", "1000PEPEUSDT", "SUIUSDT"
+  ],
+  "universe_note": "25 个覆盖 2023-2026 的永续宽池，含当年高成交量但后来掉队的 ARB/OP/APT/ATOM/FIL/NEAR/ETC/BCH。MATIC 因永续已下架（换名 POL）无法取得连续数据，已剔除并在报告中标注。SHIB/PEPE 使用 1000 倍合约。",
+  "dynamic_pool": {
+    "size": 12,
+    "metric": "mean(quote_volume) over trailing 30 daily bars",
+    "window_days": 30,
+    "exclude_current_day": true,
+    "min_history_days": 14
+  },
+  "rebalance": {
+    "freq_days": 7,
+    "weekday": "Monday",
+    "decision_point": "D-1 close (UTC 00:00)",
+    "fill_point": "D open (UTC 00:00)",
+    "first_rebalance": "2023-11-27"
+  },
+  "momentum": {
+    "window_days": 14,
+    "vol_window_days": 14,
+    "score": "ret_14d / stdev(daily_return, 14d)",
+    "direction": "long top 3, short bottom 3"
+  },
+  "positions": {
+    "long_n": 3,
+    "short_n": 3,
+    "weighting": "equal weight, gross exposure = 1.0, net exposure = 0",
+    "per_leg_weight": 0.16666666666666666
+  },
+  "cost": {
+    "roundtrip_bps": 24.0,
+    "per_side_bps": 12.0,
+    "formula": "sum(|w_new - w_old|) * 12bps",
+    "stress_2x": true
+  },
+  "funding": {
+    "source": "fapi /fapi/v1/fundingRate",
+    "accrual": "actual settled rate every 8h, applied to held weight",
+    "sign": "long pays positive rate, short receives"
+  },
+  "split": {
+    "in_sample": ["2023-11-27", "2025-11-25"],
+    "out_of_sample": ["2025-11-25", "2026-11-25"]
+  },
+  "gates": {
+    "P1_oos_sharpe_gt_0.8_1x": true,
+    "P2_oos_sharpe_gt_0.8_2x": true,
+    "P3_oos_return_gt_0_both": true,
+    "P4_beats_random_p95": true,
+    "P5_rebalances_ge_30": true,
+    "P6_both_legs_positive": true
+  },
+  "random_control": {
+    "iterations": 2000,
+    "scheme": "same day, same eligible pool, random 3 long / 3 short, identical costs and funding"
+  },
+  "forbidden": [
+    "参数网格搜索",
+    "换池重跑",
+    "跑完后修改阈值或切分点",
+    "用未来数据补齐缺失币种"
+  ]
+}

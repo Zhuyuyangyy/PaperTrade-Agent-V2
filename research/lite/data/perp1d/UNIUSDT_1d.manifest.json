@@ -1,0 +1,16 @@
+{
+  "symbol": "UNIUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "ce32d2345938e42e2c194edf3abd79920fd69bd5e7d3c179c6e9bb69f091a52d",
+  "funding_fingerprint": "0d306452297459bb73ff16fff8a5a2856d56b0527e6ebada5372303fb30eff66"
+}

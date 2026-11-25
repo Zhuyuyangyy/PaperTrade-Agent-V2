@@ -1,0 +1,16 @@
+{
+  "symbol": "LTCUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "1a3c814ece73658ed5d7427ff0b2eef85bd52a0b0dbdf392ae556fc1f7723448",
+  "funding_fingerprint": "facb85db9190e4dd2e34addfc373a75dd7599f5d6948dbb141b952d3c3558201"
+}

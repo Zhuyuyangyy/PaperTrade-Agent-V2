@@ -1,0 +1,7 @@
+{
+  "contract_file": "phase2_spec.json",
+  "contract_sha256": "4402817e06e1136e47a62594f7744a369133be187925d7791c0c0c1a242ab8f9",
+  "locked_at_utc": "2026-11-25T06:50:00Z",
+  "locked_by": "user decision 2026-11-25 14:48 GMT+8",
+  "note": "锁规则不锁结果。改 spec 会让哈希失配，脚本拒跑。跑完前不得改阈值、切分点、池子。"
+}

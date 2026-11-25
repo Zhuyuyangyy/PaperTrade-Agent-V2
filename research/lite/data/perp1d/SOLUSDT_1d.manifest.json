@@ -1,0 +1,16 @@
+{
+  "symbol": "SOLUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "05c7cd5c8a4c70d49e2e64b3000c6589dd3032f33c8b8c423e405fc2c14abf3d",
+  "funding_fingerprint": "8f266b7e4a1be898feceb0e432d25fd72258d7c7b3ea7538e75657a9c5bb3e6f"
+}

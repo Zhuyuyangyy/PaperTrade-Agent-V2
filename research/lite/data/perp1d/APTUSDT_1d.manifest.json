@@ -1,0 +1,16 @@
+{
+  "symbol": "APTUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "6849de91799c945211c1ec8fd2abd359880148b63b9cc25e77dde46b287cffe6",
+  "funding_fingerprint": "47a0042dc4d83ea83c56cc669594cc88ee8c10cb0fb33d33a546b973fb65df26"
+}

@@ -66,3 +66,4 @@ research/v4/diagnostic/*_3y.csv
 # 只提交脚本、manifest 与报告；逐笔 CSV 按需用 --save-trades 生成，不入库。
 research/lite/data/*.jsonl
 research/lite/reports/trades_*.csv
+research/lite/data/perp1d/*.jsonl

@@ -1,0 +1,16 @@
+{
+  "symbol": "FILUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "4f61d76b464bf259da83dfd3c48a895f0d55555cb6b93ad086e472a7c1cc061a",
+  "funding_fingerprint": "edf1475c201eeff53e06e74a7324311cbb86b3e0415c88b83566a6851be8cc1d"
+}

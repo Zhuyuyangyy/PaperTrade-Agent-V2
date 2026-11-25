@@ -1,0 +1,16 @@
+{
+  "symbol": "ETCUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "7f6729f0a156f4af359e12a325f2deec7fe65b8289595d698f38f0cb323ec207",
+  "funding_fingerprint": "5248f39d4209dbfadde666aded11be4b9c53f2ea9fb7ee3081b4fb042e513fd3"
+}

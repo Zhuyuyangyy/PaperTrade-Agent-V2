@@ -1,0 +1,16 @@
+{
+  "symbol": "1000SHIBUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "b3f6b07a9a1d787b2cac3504a53908cb0fedd81bc100abcfd3d0cebeddc7a7f0",
+  "funding_fingerprint": "a0044aa103f366b5c0134ff7056b933581b784b422981a9ca2d21808f48166ef"
+}

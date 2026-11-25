@@ -1,0 +1,16 @@
+{
+  "symbol": "XRPUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "395ffb932643b37a5710001f91a0b55a79beca8ecf6a4dc7c1d4b58c5f7b695b",
+  "funding_fingerprint": "236c669fd416458d49e060f50e95f68af161d965e42b73f4e7574ea737aa6bdc"
+}

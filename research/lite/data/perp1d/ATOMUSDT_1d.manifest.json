@@ -1,0 +1,16 @@
+{
+  "symbol": "ATOMUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "e97ffbbb7876e15b847df6fc1bbac627215e97f0d1ebea404fab5cae21e6fd5c",
+  "funding_fingerprint": "2361f7d558958a603a40537fae5b7eb7209a109a677c63a15bfc4055551bea4c"
+}

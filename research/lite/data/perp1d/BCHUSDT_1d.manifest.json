@@ -1,0 +1,16 @@
+{
+  "symbol": "BCHUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "dce99ea41204034b7a9eaf4cc31fb0f22298c82b490ed686dd82b55200fba434",
+  "funding_fingerprint": "1302f71ae0de38ad190d337643ff789fdc3b562c0396ef8fc47e04818f9bba5f"
+}

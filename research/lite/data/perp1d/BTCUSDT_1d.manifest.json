@@ -1,0 +1,16 @@
+{
+  "symbol": "BTCUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "7825d843e86520528ccc6cf6407d9cfc95fb1b9b9610bf558d8c8c8dd2c3032b",
+  "funding_fingerprint": "eb4f7285889b7d2a3388dd236c3c200bee52d5e130cab8d39410241e13b1c996"
+}

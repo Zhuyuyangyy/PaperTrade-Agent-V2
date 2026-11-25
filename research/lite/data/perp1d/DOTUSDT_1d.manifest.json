@@ -1,0 +1,16 @@
+{
+  "symbol": "DOTUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "0791ea775d8ef7bdb58d57f85ced432457183a48e040abeb47baeb33c13e51a8",
+  "funding_fingerprint": "cdf9b5a19fb796e414cb8edebdb49d3fe9d89051fe177a892ae316db1c3bb735"
+}

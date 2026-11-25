@@ -1,0 +1,16 @@
+{
+  "symbol": "AVAXUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "7a226e305d01142ee95a74526a9d1c0bbcd53710a4dec9bca5b4c90ecc3ae898",
+  "funding_fingerprint": "957c1460ed228da7dc782549ec2dd48975250dcc8c945bfb84486335086fe3f5"
+}

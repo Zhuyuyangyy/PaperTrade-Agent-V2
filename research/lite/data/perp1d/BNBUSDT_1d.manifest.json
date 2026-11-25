@@ -1,0 +1,16 @@
+{
+  "symbol": "BNBUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "9d4b705aa9b242156d70eb787ed10157abfeabbe1ad321f7da77a432151a0807",
+  "funding_fingerprint": "65cd06da4b91d9e243b19f45ebfe188ae18b92867febdbd31cbe8cfdd06f56ca"
+}

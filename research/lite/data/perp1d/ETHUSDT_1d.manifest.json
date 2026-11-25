@@ -1,0 +1,16 @@
+{
+  "symbol": "ETHUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "b83c32371f7928304e7788e75af5793a812905185b770680fafa4bfbe4229818",
+  "funding_fingerprint": "4ebe30807bd35c87147ea16479dd971ffc4c238663765e9b847805351653b924"
+}

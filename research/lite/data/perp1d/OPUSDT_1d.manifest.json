@@ -1,0 +1,16 @@
+{
+  "symbol": "OPUSDT",
+  "interval": "1d",
+  "source": "https://fapi.binance.com/fapi/v1/klines + /fapi/v1/fundingRate",
+  "window": [
+    "2023-10-01T00:00:00Z",
+    "2026-11-25T00:00:00Z"
+  ],
+  "bars": 1151,
+  "first_utc": "2023-10-01T00:00:00Z",
+  "last_utc": "2026-11-24T00:00:00Z",
+  "dropped_unclosed": 1,
+  "funding_rows": 3452,
+  "bars_fingerprint": "30640bcaab979f8d5fab525384e98c53fe9ce15560c0c38e856583078ce429c7",
+  "funding_fingerprint": "84de81b8b7016ee741951699d61d74e7e5768b33038831a4044ea3fd584ff373"
+}
