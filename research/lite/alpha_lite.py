@@ -51,6 +51,16 @@ INTERVAL = "15m"
 INTERVAL_MS = 15 * 60 * 1000
 SYMBOL = "BTCUSDT"
 
+_UNIT_MS = {"m": 60_000, "h": 3_600_000, "d": 86_400_000, "w": 604_800_000}
+
+
+def interval_ms(interval: str) -> int:
+    """把 "15m"/"1h"/"4h"/"1d" 解析成毫秒。不认识的格式直接报错，不猜。"""
+    try:
+        return int(interval[:-1]) * _UNIT_MS[interval[-1]]
+    except (ValueError, KeyError):
+        raise SystemExit(f"无法解析 interval={interval!r}，支持如 15m/1h/4h/1d")
+
 HOSTS = (
     "https://api.binance.com",
     "https://data-api.binance.vision",
@@ -94,9 +104,9 @@ def fingerprint(records) -> str:
     return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
 
 
-def find_gaps(open_times):
+def find_gaps(open_times, step_ms: int = INTERVAL_MS):
     """找出非同周期相邻的间隔。返回 [(前一根 open_time, 后一根 open_time), ...]"""
-    return [(a, b) for a, b in zip(open_times, open_times[1:]) if b - a != INTERVAL_MS]
+    return [(a, b) for a, b in zip(open_times, open_times[1:]) if b - a != step_ms]
 
 
 def atomic_write(path: Path, text: str) -> None:
@@ -165,12 +175,14 @@ def split_closed(rows, server_time: int):
 
 # ---------------------------------------------------------------- 落盘
 
-def store_path(symbol: str, interval: str) -> Path:
-    return DATA_DIR / f"{symbol.lower()}_{interval}.jsonl"
+def store_path(symbol: str, interval: str, tag: str = "") -> Path:
+    prefix = f"{tag}_" if tag else ""
+    return DATA_DIR / f"{prefix}{symbol.lower()}_{interval}.jsonl"
 
 
-def manifest_path(symbol: str, interval: str) -> Path:
-    return DATA_DIR / f"{symbol.lower()}_{interval}.manifest.json"
+def manifest_path(symbol: str, interval: str, tag: str = "") -> Path:
+    prefix = f"{tag}_" if tag else ""
+    return DATA_DIR / f"{prefix}{symbol.lower()}_{interval}.manifest.json"
 
 
 def load_store(path: Path) -> dict:
@@ -198,12 +210,14 @@ def save_store(path: Path, store: dict) -> None:
 
 
 def write_manifest(symbol: str, interval: str, store: dict, host: str,
-                   dropped_unclosed: int) -> dict:
+                   dropped_unclosed: int, tag: str = "") -> dict:
     recs = [store[t] for t in sorted(store)]
-    gaps = [{"from": a, "to": b} for a, b in find_gaps([r["t"] for r in recs])]
+    gaps = [{"from": a, "to": b}
+            for a, b in find_gaps([r["t"] for r in recs], interval_ms(interval))]
     man = {
         "symbol": symbol,
         "interval": interval,
+        "tag": tag or None,
         "source": f"{host}/api/v3/klines",
         "api_key_used": False,
         "bars": len(recs),
@@ -222,7 +236,7 @@ def write_manifest(symbol: str, interval: str, store: dict, host: str,
         "fields": list(RAW_FIELDS),
         "written_at_utc": utc(int(time.time() * 1000)),
     }
-    atomic_write(manifest_path(symbol, interval),
+    atomic_write(manifest_path(symbol, interval, tag),
                  json.dumps(man, indent=2, ensure_ascii=False) + "\n")
     return man
 
@@ -231,10 +245,10 @@ def write_manifest(symbol: str, interval: str, store: dict, host: str,
 
 def pull(args) -> int:
     host = pick_host(args.host)
-    path = store_path(args.symbol, args.interval)
+    path = store_path(args.symbol, args.interval, args.tag)
     store = load_store(path)
     before = len(store)
-    target = args.days * (86_400_000 // INTERVAL_MS)
+    target = args.days * (86_400_000 // interval_ms(args.interval))
     dropped = 0
     requests = 0
 
@@ -290,7 +304,7 @@ def pull(args) -> int:
             break
         time.sleep(args.sleep)
 
-    man = write_manifest(args.symbol, args.interval, store, host, dropped)
+    man = write_manifest(args.symbol, args.interval, store, host, dropped, args.tag)
     print(f"\n完成：{man['bars']} 根  {man['first_utc']} → {man['last_utc']}")
     print(f"缺口 {man['gap_count']} 个；本次丢弃未收盘 {dropped} 根；请求 {requests} 次")
     print(f"fingerprint {man['fingerprint']}")
@@ -302,9 +316,9 @@ def pull(args) -> int:
 
 # ---------------------------------------------------------------- 载入 + 校验
 
-def load_bars(symbol: str, interval: str):
-    path = store_path(symbol, interval)
-    mpath = manifest_path(symbol, interval)
+def load_bars(symbol: str, interval: str, tag: str = ""):
+    path = store_path(symbol, interval, tag)
+    mpath = manifest_path(symbol, interval, tag)
     if not path.exists():
         raise SystemExit(f"没有数据文件 {path}，先跑 pull。")
     if not mpath.exists():
@@ -322,13 +336,14 @@ def load_bars(symbol: str, interval: str):
             f"最早一根 {utc(int(unclosed[0]['r'][6]))}"
         )
 
-    gaps = find_gaps([r["t"] for r in recs])
+    step = interval_ms(interval)
+    gaps = find_gaps([r["t"] for r in recs], step)
     if gaps:
         raise SystemExit(f"数据有缺口 {len(gaps)} 处，拒绝运行（不静默跳过）：{gaps[:3]}")
 
     for r in recs:
         raw = r["r"]
-        if int(raw[6]) - int(raw[0]) != INTERVAL_MS - 1:
+        if int(raw[6]) - int(raw[0]) != step - 1:
             raise SystemExit(f"close_time 与 open_time 不匹配: {r['t']}")
         if not (float(raw[2]) >= float(raw[3])):
             raise SystemExit(f"high < low: {r['t']}")
@@ -597,7 +612,7 @@ def evaluate(bars, name, *, fee_bps, slip_bps, mc):
 
 
 def cmd_run(args) -> int:
-    bars, man = load_bars(args.symbol, args.interval)
+    bars, man = load_bars(args.symbol, args.interval, args.tag)
     print(f"数据 {man['bars']} 根  {man['first_utc']} → {man['last_utc']}  "
           f"缺口 {man['gap_count']}")
     print(f"指纹 {man['fingerprint']}")
@@ -675,10 +690,10 @@ def cmd_run(args) -> int:
 # ---------------------------------------------------------------- verify
 
 def cmd_verify(args) -> int:
-    path = store_path(args.symbol, args.interval)
+    path = store_path(args.symbol, args.interval, args.tag)
     store = load_store(path)
     recs = [store[t] for t in sorted(store)]
-    mpath = manifest_path(args.symbol, args.interval)
+    mpath = manifest_path(args.symbol, args.interval, args.tag)
     man = json.loads(mpath.read_text(encoding="utf-8")) if mpath.exists() else {}
 
     ok = True
@@ -695,7 +710,7 @@ def cmd_verify(args) -> int:
     if bad:
         ok = False
 
-    gaps = find_gaps([r["t"] for r in recs])
+    gaps = find_gaps([r["t"] for r in recs], interval_ms(args.interval))
     print(f"时间连续性：缺口 {len(gaps)}")
     if gaps:
         ok = False
@@ -778,6 +793,9 @@ def selftest() -> int:
     gapped = [0, INTERVAL_MS, 3 * INTERVAL_MS, 4 * INTERVAL_MS]
     check("缺口可被识别", find_gaps(gapped) == [(INTERVAL_MS, 3 * INTERVAL_MS)])
     check("连续序列无缺口", find_gaps([0, INTERVAL_MS, 2 * INTERVAL_MS]) == [])
+    check("1h 步长不被误判为缺口",
+          find_gaps([0, 3_600_000, 7_200_000], interval_ms("1h")) == [])
+    check("interval 解析", interval_ms("15m") == 900_000 and interval_ms("1d") == 86_400_000)
 
     # 8. 指纹稳定且对内容敏感
     recs = [{"t": 0, "h": "a"}, {"t": 900000, "h": "b"}]
@@ -807,6 +825,8 @@ def main(argv=None) -> int:
     def common(sp):
         sp.add_argument("--symbol", default=SYMBOL)
         sp.add_argument("--interval", default=INTERVAL)
+        sp.add_argument("--tag", default="",
+                        help="文件名前缀，用于区分同 symbol 的不同市场（如 spot）")
 
     sp_pull = sub.add_parser("pull", help="拉取并落盘已收盘 K 线")
     common(sp_pull)

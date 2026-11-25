@@ -1,0 +1,142 @@
+{
+  "phase": "Phase 1 spot-perp funding carry",
+  "generated_at_utc": "2026-11-25T06:43:09Z",
+  "rules": {
+    "roll_n": 9,
+    "ann_open": 15.0,
+    "ann_close": 3.0,
+    "neg_n": 3,
+    "basis_min_bps": -5.0,
+    "entry": "bar[i] close signal -> bar[i+1] open",
+    "funding_window": "t_entry < f_t < t_exit (both ends excluded)"
+  },
+  "cost": {
+    "base_bps": 32.0,
+    "legs": {
+      "open_spot_buy": 10.0,
+      "open_perp_sell": 6.0,
+      "close_spot_sell": 10.0,
+      "close_perp_buy": 6.0
+    },
+    "stress_2x_bps": 64.0
+  },
+  "window_years": 2.9999,
+  "data": {
+    "BTCUSDT": {
+      "bars": 26298,
+      "first_utc": "2023-11-25T11:00:00Z",
+      "last_utc": "2026-11-25T04:00:00Z",
+      "funding_rows": 3287
+    },
+    "ETHUSDT": {
+      "bars": 26298,
+      "first_utc": "2023-11-25T11:00:00Z",
+      "last_utc": "2026-11-25T04:00:00Z",
+      "funding_rows": 3287
+    },
+    "SOLUSDT": {
+      "bars": 26298,
+      "first_utc": "2023-11-25T11:00:00Z",
+      "last_utc": "2026-11-25T04:00:00Z",
+      "funding_rows": 3287
+    }
+  },
+  "per_symbol": {
+    "BTCUSDT": {
+      "label": "BTCUSDT",
+      "trades": 2,
+      "total_pct": 10.5642,
+      "ann_pct": 3.4043,
+      "win_rate": 100.0,
+      "avg_hold_h": 2932.0,
+      "mdd_pct": 0.0,
+      "funding_bps": 547.0,
+      "spread_bps": 13.2,
+      "gross_bps": 560.21,
+      "cost_bps": 32.0
+    },
+    "ETHUSDT": {
+      "label": "ETHUSDT",
+      "trades": 3,
+      "total_pct": 12.262,
+      "ann_pct": 3.9309,
+      "win_rate": 100.0,
+      "avg_hold_h": 2301.3,
+      "mdd_pct": 0.0,
+      "funding_bps": 427.57,
+      "spread_bps": 13.16,
+      "gross_bps": 440.73,
+      "cost_bps": 32.0
+    },
+    "SOLUSDT": {
+      "label": "SOLUSDT",
+      "trades": 3,
+      "total_pct": 12.3584,
+      "ann_pct": 3.9607,
+      "win_rate": 100.0,
+      "avg_hold_h": 1653.3,
+      "mdd_pct": 0.0,
+      "funding_bps": 425.47,
+      "spread_bps": 18.48,
+      "gross_bps": 443.95,
+      "cost_bps": 32.0
+    }
+  },
+  "portfolio": {
+    "label": "组合(等权1/3)",
+    "trades": 8,
+    "total_pct": 11.7282,
+    "ann_pct": 3.766,
+    "win_rate": 100.0,
+    "avg_hold_h": 2216.0,
+    "mdd_pct": 0.0,
+    "funding_bps": 152.21,
+    "spread_bps": 5.05,
+    "gross_bps": 157.27,
+    "cost_bps": 10.67
+  },
+  "out_of_sample_1y": {
+    "label": "OOS-1y",
+    "trades": 0,
+    "total_pct": 0.0,
+    "ann_pct": 0.0,
+    "win_rate": null,
+    "avg_hold_h": null,
+    "mdd_pct": 0.0,
+    "funding_bps": 0.0,
+    "spread_bps": 0.0,
+    "gross_bps": 0.0,
+    "cost_bps": 0.0
+  },
+  "stress_2x": {
+    "label": "2x",
+    "trades": 8,
+    "total_pct": 10.8749,
+    "ann_pct": 3.5011,
+    "win_rate": 100.0,
+    "avg_hold_h": 2216.0,
+    "mdd_pct": 0.0,
+    "funding_bps": 152.21,
+    "spread_bps": 5.05,
+    "gross_bps": 157.27,
+    "cost_bps": 21.33
+  },
+  "by_year": {
+    "2023": {
+      "trades": 3,
+      "ret_pct": 8.4179
+    },
+    "2024": {
+      "trades": 5,
+      "ret_pct": 3.3103
+    }
+  },
+  "gates": {
+    "G1_full_ann_gt_5": false,
+    "G2_oos_ann_gt_5": false,
+    "G3_2x_not_negative": true,
+    "G4_mdd_le_15": true,
+    "G5_trades_ge_10": false
+  },
+  "verdict": "INCONCLUSIVE"
+}

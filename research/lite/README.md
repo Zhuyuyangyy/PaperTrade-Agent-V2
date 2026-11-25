@@ -108,7 +108,35 @@ python research/lite/alpha_lite.py run --save-trades
 
 详细报告见 [`reports/15m_baseline_verdict_2026-11-25.md`](reports/15m_baseline_verdict_2026-11-25.md)。
 
-## 6. 边界
+## 6. Phase 1：Funding Carry（`carry.py`）
+
+同一套防前视与成本口径，验证"现货多 + 永续空"的 Delta 中性费率套利。
+规则事前锁定（滚动 9 期年化 > 15% 开仓、连续 3 期 ≤ 0 或年化 < 3% 平仓、4 腿 32bps）。
+
+结果（2023-11 → 2026-11，三币各 26,298 根 1h 交集，零缺口）：
+
+| 币 | 笔数 | 年化 | 均持仓 | funding/笔 | 基差/笔 |
+|---|---|---|---|---|---|
+| BTC | 2 | 3.40% | 2,932h | 547bps | 13bps |
+| ETH | 3 | 3.93% | 2,301h | 428bps | 13bps |
+| SOL | 3 | 3.96% | 1,653h | 425bps | 18bps |
+| 组合 | 8 | **3.77%** | 2,216h | 152bps | 5bps |
+
+判定 **INCONCLUSIVE**（8 笔 < 10），但实质否定：全样本年化 3.77% < 5% 门槛；
+样本外 0 笔（2025-2026 滚动年化最高只有 10.95%，从未触及 15%）；
+**无条件 carry 年化 5.2-7.2%，反而跑赢择时的 3.8%**，且 2026 年已降到 1.6-2.7%。
+
+详见 [`reports/carry_phase1_verdict_2026-11-25.md`](reports/carry_phase1_verdict_2026-11-25.md)，
+Phase 2 草案见 [`PHASE2_draft.md`](PHASE2_draft.md)（未跑）。
+
+```bash
+python research/lite/alpha_lite.py pull --symbol BTCUSDT --interval 1h --days 1095 --tag spot
+python research/lite/carry.py
+```
+
+> 注意：`--tag spot` 落 `spot_btcusdt_1h.jsonl`，与永续数据分开；`--interval` 会影响缺口检测步长。
+
+## 7. 边界
 
 - **单标的、单周期**：只验证 BTCUSDT 15m。结论不能外推到 1h/4h 或其他币
 - **无止损、无仓位管理、无资金费**：故意减少自由度。现货不计资金费；合约需另加

@@ -1,0 +1,76 @@
+{
+  "symbol": "SOLUSDT",
+  "interval": "1h",
+  "tag": "spot",
+  "source": "https://api.binance.com/api/v3/klines",
+  "api_key_used": false,
+  "bars": 55108,
+  "first_open_time": 1597125600000,
+  "last_open_time": 1795582800000,
+  "first_close_time": 1597129199999,
+  "last_close_time": 1795586399999,
+  "first_utc": "2020-08-11T06:00:00Z",
+  "last_utc": "2026-11-25T05:00:00Z",
+  "gaps": [
+    {
+      "from": 1606712400000,
+      "to": 1606719600000
+    },
+    {
+      "from": 1608555600000,
+      "to": 1608573600000
+    },
+    {
+      "from": 1608858000000,
+      "to": 1608865200000
+    },
+    {
+      "from": 1613012400000,
+      "to": 1613019600000
+    },
+    {
+      "from": 1614992400000,
+      "to": 1614999600000
+    },
+    {
+      "from": 1618880400000,
+      "to": 1618891200000
+    },
+    {
+      "from": 1619323200000,
+      "to": 1619337600000
+    },
+    {
+      "from": 1628816400000,
+      "to": 1628834400000
+    },
+    {
+      "from": 1632895200000,
+      "to": 1632906000000
+    },
+    {
+      "from": 1679659200000,
+      "to": 1679666400000
+    }
+  ],
+  "gap_count": 10,
+  "dropped_unclosed_this_run": 1,
+  "fingerprint": "80ec61f1d65d000f7969f4ee1a616cac30895ba1c71d54c409c30db497f77ba4",
+  "hash_algo": "sha256(canonical_json(raw_12_fields))[:16] per bar",
+  "closed_rule": "close_time < serverTime at fetch; re-checked against run start at backtest",
+  "fields": [
+    "open_time",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "close_time",
+    "quote_volume",
+    "trades",
+    "taker_buy_base",
+    "taker_buy_quote",
+    "ignore"
+  ],
+  "written_at_utc": "2026-11-25T06:44:21Z"
+}
