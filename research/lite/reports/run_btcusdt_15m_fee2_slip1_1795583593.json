@@ -1,0 +1,252 @@
+{
+  "generated_at_utc": "2026-11-25T05:13:13Z",
+  "symbol": "BTCUSDT",
+  "interval": "15m",
+  "data": {
+    "bars": 105999,
+    "first_utc": "2023-11-17T01:15:00Z",
+    "last_utc": "2026-11-25T04:45:00Z",
+    "gap_count": 0,
+    "fingerprint": "d3952769f9fbd979b996f6aec07d58dc68c8e4c71c842489b8f327a1f2aa0198",
+    "source": "https://api.binance.com/api/v3/klines"
+  },
+  "cost": {
+    "fee_bps_side": 2.0,
+    "slip_bps_side": 1.0,
+    "roundtrip_bps": 6.0
+  },
+  "split": "in_sample first 60% by entry_time, out_of_sample rest",
+  "results": [
+    {
+      "strategy": "ma",
+      "hold_bars": 16,
+      "warmup": 80,
+      "all": {
+        "trades": 1784,
+        "net_pct": -73.5683,
+        "win_rate": 44.06,
+        "pf": 0.7992,
+        "max_dd_pct": 74.949,
+        "avg_bps": -6.99,
+        "avg_gross_bps": -0.99,
+        "t_stat": -3.071,
+        "long": 893,
+        "short": 891,
+        "forced_exit": 0,
+        "cost_bps_roundtrip": 6.0,
+        "fee_bps_roundtrip": 4.0,
+        "slip_bps_side": 1.0
+      },
+      "in_sample": {
+        "trades": 1072,
+        "net_pct": -54.4813,
+        "win_rate": 44.59,
+        "pf": 0.8103,
+        "max_dd_pct": 55.3612,
+        "avg_bps": -6.84,
+        "avg_gross_bps": -0.84,
+        "t_stat": -2.241,
+        "long": 534,
+        "short": 538,
+        "forced_exit": 0,
+        "cost_bps_roundtrip": 6.0,
+        "fee_bps_roundtrip": 4.0,
+        "slip_bps_side": 1.0
+      },
+      "out_of_sample": {
+        "trades": 712,
+        "net_pct": -41.9322,
+        "win_rate": 43.26,
+        "pf": 0.7809,
+        "max_dd_pct": 47.6183,
+        "avg_bps": -7.22,
+        "avg_gross_bps": -1.22,
+        "t_stat": -2.135,
+        "long": 359,
+        "short": 353,
+        "forced_exit": 0,
+        "cost_bps_roundtrip": 6.0,
+        "fee_bps_roundtrip": 4.0,
+        "slip_bps_side": 1.0
+      },
+      "split_at": "2025-09-09T13:00:00Z",
+      "cost_sensitivity": {
+        "0x": {
+          "net_pct": -22.8663,
+          "trades": 1784,
+          "pf": 0.9686
+        },
+        "1x": {
+          "net_pct": -73.5683,
+          "trades": 1784,
+          "pf": 0.7992
+        },
+        "2x": {
+          "net_pct": -90.9479,
+          "trades": 1784,
+          "pf": 0.6609
+        },
+        "5x": {
+          "net_pct": -99.6378,
+          "trades": 1784,
+          "pf": 0.3835
+        }
+      },
+      "random_control": null
+    },
+    {
+      "strategy": "donchian",
+      "hold_bars": 32,
+      "warmup": 40,
+      "all": {
+        "trades": 2063,
+        "net_pct": -75.2477,
+        "win_rate": 44.79,
+        "pf": 0.8929,
+        "max_dd_pct": 78.4484,
+        "avg_bps": -5.69,
+        "avg_gross_bps": 0.31,
+        "t_stat": -1.76,
+        "long": 1102,
+        "short": 961,
+        "forced_exit": 1,
+        "cost_bps_roundtrip": 6.0,
+        "fee_bps_roundtrip": 4.0,
+        "slip_bps_side": 1.0
+      },
+      "in_sample": {
+        "trades": 1237,
+        "net_pct": -45.365,
+        "win_rate": 46.89,
+        "pf": 0.9312,
+        "max_dd_pct": 52.5536,
+        "avg_bps": -3.72,
+        "avg_gross_bps": 2.28,
+        "t_stat": -0.857,
+        "long": 688,
+        "short": 549,
+        "forced_exit": 0,
+        "cost_bps_roundtrip": 6.0,
+        "fee_bps_roundtrip": 4.0,
+        "slip_bps_side": 1.0
+      },
+      "out_of_sample": {
+        "trades": 826,
+        "net_pct": -54.6952,
+        "win_rate": 41.65,
+        "pf": 0.833,
+        "max_dd_pct": 58.3386,
+        "avg_bps": -8.64,
+        "avg_gross_bps": -2.64,
+        "t_stat": -1.804,
+        "long": 414,
+        "short": 412,
+        "forced_exit": 1,
+        "cost_bps_roundtrip": 6.0,
+        "fee_bps_roundtrip": 4.0,
+        "slip_bps_side": 1.0
+      },
+      "split_at": "2025-09-09T13:00:00Z",
+      "cost_sensitivity": {
+        "0x": {
+          "net_pct": -14.5924,
+          "trades": 2063,
+          "pf": 1.0063
+        },
+        "1x": {
+          "net_pct": -75.2477,
+          "trades": 2063,
+          "pf": 0.8929
+        },
+        "2x": {
+          "net_pct": -92.8318,
+          "trades": 2063,
+          "pf": 0.793
+        },
+        "5x": {
+          "net_pct": -99.8267,
+          "trades": 2063,
+          "pf": 0.5599
+        }
+      },
+      "random_control": null
+    },
+    {
+      "strategy": "mom",
+      "hold_bars": 24,
+      "warmup": 30,
+      "all": {
+        "trades": 4239,
+        "net_pct": -90.8929,
+        "win_rate": 45.01,
+        "pf": 0.8839,
+        "max_dd_pct": 92.7562,
+        "avg_bps": -4.95,
+        "avg_gross_bps": 1.05,
+        "t_stat": -2.728,
+        "long": 2200,
+        "short": 2039,
+        "forced_exit": 1,
+        "cost_bps_roundtrip": 6.0,
+        "fee_bps_roundtrip": 4.0,
+        "slip_bps_side": 1.0
+      },
+      "in_sample": {
+        "trades": 2543,
+        "net_pct": -71.9709,
+        "win_rate": 45.85,
+        "pf": 0.9043,
+        "max_dd_pct": 76.6016,
+        "avg_bps": -4.24,
+        "avg_gross_bps": 1.76,
+        "t_stat": -1.731,
+        "long": 1351,
+        "short": 1192,
+        "forced_exit": 0,
+        "cost_bps_roundtrip": 6.0,
+        "fee_bps_roundtrip": 4.0,
+        "slip_bps_side": 1.0
+      },
+      "out_of_sample": {
+        "trades": 1696,
+        "net_pct": -67.5086,
+        "win_rate": 43.75,
+        "pf": 0.8503,
+        "max_dd_pct": 72.6128,
+        "avg_bps": -6.02,
+        "avg_gross_bps": -0.02,
+        "t_stat": -2.257,
+        "long": 849,
+        "short": 847,
+        "forced_exit": 1,
+        "cost_bps_roundtrip": 6.0,
+        "fee_bps_roundtrip": 4.0,
+        "slip_bps_side": 1.0
+      },
+      "split_at": "2025-09-09T13:00:00Z",
+      "cost_sensitivity": {
+        "0x": {
+          "net_pct": 15.9718,
+          "trades": 4239,
+          "pf": 1.0265
+        },
+        "1x": {
+          "net_pct": -90.8929,
+          "trades": 4239,
+          "pf": 0.8839
+        },
+        "2x": {
+          "net_pct": -99.286,
+          "trades": 4239,
+          "pf": 0.7622
+        },
+        "5x": {
+          "net_pct": -99.9997,
+          "trades": 4239,
+          "pf": 0.4952
+        }
+      },
+      "random_control": null
+    }
+  ]
+}

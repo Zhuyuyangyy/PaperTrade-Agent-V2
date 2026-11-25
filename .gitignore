@@ -61,3 +61,8 @@ logs/
 # scripts/backfill_market.py + research/v4/build_s2b_entries.py 一键重建。
 # 只提交脚本与报告，不提交 1.6M 的重复数据。
 research/v4/diagnostic/*_3y.csv
+
+# research/lite：23MB 行情快照可从公开接口一键重建（python research/lite/alpha_lite.py pull）
+# 只提交脚本、manifest 与报告；逐笔 CSV 按需用 --save-trades 生成，不入库。
+research/lite/data/*.jsonl
+research/lite/reports/trades_*.csv

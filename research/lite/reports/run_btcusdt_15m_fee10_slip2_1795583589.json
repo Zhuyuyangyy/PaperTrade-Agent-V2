@@ -1,0 +1,276 @@
+{
+  "generated_at_utc": "2026-11-25T05:13:09Z",
+  "symbol": "BTCUSDT",
+  "interval": "15m",
+  "data": {
+    "bars": 105999,
+    "first_utc": "2023-11-17T01:15:00Z",
+    "last_utc": "2026-11-25T04:45:00Z",
+    "gap_count": 0,
+    "fingerprint": "d3952769f9fbd979b996f6aec07d58dc68c8e4c71c842489b8f327a1f2aa0198",
+    "source": "https://api.binance.com/api/v3/klines"
+  },
+  "cost": {
+    "fee_bps_side": 10.0,
+    "slip_bps_side": 2.0,
+    "roundtrip_bps": 24.0
+  },
+  "split": "in_sample first 60% by entry_time, out_of_sample rest",
+  "results": [
+    {
+      "strategy": "ma",
+      "hold_bars": 16,
+      "warmup": 80,
+      "all": {
+        "trades": 1784,
+        "net_pct": -98.9404,
+        "win_rate": 31.89,
+        "pf": 0.4577,
+        "max_dd_pct": 98.9643,
+        "avg_bps": -24.99,
+        "avg_gross_bps": -0.99,
+        "t_stat": -10.976,
+        "long": 893,
+        "short": 891,
+        "forced_exit": 0,
+        "cost_bps_roundtrip": 24.0,
+        "fee_bps_roundtrip": 20.0,
+        "slip_bps_side": 2.0
+      },
+      "in_sample": {
+        "trades": 1072,
+        "net_pct": -93.4121,
+        "win_rate": 33.12,
+        "pf": 0.473,
+        "max_dd_pct": 93.4121,
+        "avg_bps": -24.84,
+        "avg_gross_bps": -0.84,
+        "t_stat": -8.138,
+        "long": 534,
+        "short": 538,
+        "forced_exit": 0,
+        "cost_bps_roundtrip": 24.0,
+        "fee_bps_roundtrip": 20.0,
+        "slip_bps_side": 2.0
+      },
+      "out_of_sample": {
+        "trades": 712,
+        "net_pct": -83.9154,
+        "win_rate": 30.06,
+        "pf": 0.4332,
+        "max_dd_pct": 84.2783,
+        "avg_bps": -25.22,
+        "avg_gross_bps": -1.22,
+        "t_stat": -7.454,
+        "long": 359,
+        "short": 353,
+        "forced_exit": 0,
+        "cost_bps_roundtrip": 24.0,
+        "fee_bps_roundtrip": 20.0,
+        "slip_bps_side": 2.0
+      },
+      "split_at": "2025-09-09T13:00:00Z",
+      "cost_sensitivity": {
+        "0x": {
+          "net_pct": -22.8663,
+          "trades": 1784,
+          "pf": 0.9686
+        },
+        "1x": {
+          "net_pct": -98.9404,
+          "trades": 1784,
+          "pf": 0.4577
+        },
+        "2x": {
+          "net_pct": -99.9856,
+          "trades": 1784,
+          "pf": 0.2327
+        },
+        "5x": {
+          "net_pct": -100.0,
+          "trades": 1784,
+          "pf": 0.047
+        }
+      },
+      "random_control": {
+        "iterations": 2000,
+        "basis": "sum of per-trade net returns (NOT compounded; compounding saturates at -100%)",
+        "real_total_pct": -445.8727,
+        "random_mean_pct": -427.0313,
+        "random_median_pct": -427.7974,
+        "p_value_upper": 0.667,
+        "real_percentile": 33.3
+      }
+    },
+    {
+      "strategy": "donchian",
+      "hold_bars": 32,
+      "warmup": 40,
+      "all": {
+        "trades": 2063,
+        "net_pct": -99.4,
+        "win_rate": 37.66,
+        "pf": 0.6279,
+        "max_dd_pct": 99.4209,
+        "avg_bps": -23.69,
+        "avg_gross_bps": 0.31,
+        "t_stat": -7.331,
+        "long": 1102,
+        "short": 961,
+        "forced_exit": 1,
+        "cost_bps_roundtrip": 24.0,
+        "fee_bps_roundtrip": 20.0,
+        "slip_bps_side": 2.0
+      },
+      "in_sample": {
+        "trades": 1237,
+        "net_pct": -94.1256,
+        "win_rate": 40.26,
+        "pf": 0.6615,
+        "max_dd_pct": 94.2867,
+        "avg_bps": -21.72,
+        "avg_gross_bps": 2.28,
+        "t_stat": -5.006,
+        "long": 688,
+        "short": 549,
+        "forced_exit": 0,
+        "cost_bps_roundtrip": 24.0,
+        "fee_bps_roundtrip": 20.0,
+        "slip_bps_side": 2.0
+      },
+      "out_of_sample": {
+        "trades": 826,
+        "net_pct": -89.7866,
+        "win_rate": 33.78,
+        "pf": 0.5765,
+        "max_dd_pct": 90.0278,
+        "avg_bps": -26.64,
+        "avg_gross_bps": -2.64,
+        "t_stat": -5.563,
+        "long": 414,
+        "short": 412,
+        "forced_exit": 1,
+        "cost_bps_roundtrip": 24.0,
+        "fee_bps_roundtrip": 20.0,
+        "slip_bps_side": 2.0
+      },
+      "split_at": "2025-09-09T13:00:00Z",
+      "cost_sensitivity": {
+        "0x": {
+          "net_pct": -14.5924,
+          "trades": 2063,
+          "pf": 1.0063
+        },
+        "1x": {
+          "net_pct": -99.4,
+          "trades": 2063,
+          "pf": 0.6279
+        },
+        "2x": {
+          "net_pct": -99.9958,
+          "trades": 2063,
+          "pf": 0.4014
+        },
+        "5x": {
+          "net_pct": -100.0,
+          "trades": 2063,
+          "pf": 0.1236
+        }
+      },
+      "random_control": {
+        "iterations": 2000,
+        "basis": "sum of per-trade net returns (NOT compounded; compounding saturates at -100%)",
+        "real_total_pct": -488.6596,
+        "random_mean_pct": -495.6115,
+        "random_median_pct": -495.3735,
+        "p_value_upper": 0.4585,
+        "real_percentile": 54.15
+      }
+    },
+    {
+      "strategy": "mom",
+      "hold_bars": 24,
+      "warmup": 30,
+      "all": {
+        "trades": 4239,
+        "net_pct": -99.9956,
+        "win_rate": 35.72,
+        "pf": 0.5703,
+        "max_dd_pct": 99.9958,
+        "avg_bps": -22.95,
+        "avg_gross_bps": 1.05,
+        "t_stat": -12.641,
+        "long": 2200,
+        "short": 2039,
+        "forced_exit": 1,
+        "cost_bps_roundtrip": 24.0,
+        "fee_bps_roundtrip": 20.0,
+        "slip_bps_side": 2.0
+      },
+      "in_sample": {
+        "trades": 2543,
+        "net_pct": -99.7138,
+        "win_rate": 37.08,
+        "pf": 0.5944,
+        "max_dd_pct": 99.7163,
+        "avg_bps": -22.24,
+        "avg_gross_bps": 1.76,
+        "t_stat": -9.084,
+        "long": 1351,
+        "short": 1192,
+        "forced_exit": 0,
+        "cost_bps_roundtrip": 24.0,
+        "fee_bps_roundtrip": 20.0,
+        "slip_bps_side": 2.0
+      },
+      "out_of_sample": {
+        "trades": 1696,
+        "net_pct": -98.4729,
+        "win_rate": 33.67,
+        "pf": 0.5317,
+        "max_dd_pct": 98.5282,
+        "avg_bps": -24.02,
+        "avg_gross_bps": -0.02,
+        "t_stat": -9.0,
+        "long": 849,
+        "short": 847,
+        "forced_exit": 1,
+        "cost_bps_roundtrip": 24.0,
+        "fee_bps_roundtrip": 20.0,
+        "slip_bps_side": 2.0
+      },
+      "split_at": "2025-09-09T13:00:00Z",
+      "cost_sensitivity": {
+        "0x": {
+          "net_pct": 15.9718,
+          "trades": 4239,
+          "pf": 1.0265
+        },
+        "1x": {
+          "net_pct": -99.9956,
+          "trades": 4239,
+          "pf": 0.5703
+        },
+        "2x": {
+          "net_pct": -100.0,
+          "trades": 4239,
+          "pf": 0.3299
+        },
+        "5x": {
+          "net_pct": -100.0,
+          "trades": 4239,
+          "pf": 0.082
+        }
+      },
+      "random_control": {
+        "iterations": 2000,
+        "basis": "sum of per-trade net returns (NOT compounded; compounding saturates at -100%)",
+        "real_total_pct": -972.9654,
+        "random_mean_pct": -1019.7421,
+        "random_median_pct": -1016.7316,
+        "p_value_upper": 0.2795,
+        "real_percentile": 72.05
+      }
+    }
+  ]
+}
