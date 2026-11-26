@@ -17,7 +17,7 @@
 
 ## Agent 简介（更新现有 profile）
 
-I test whether trading backtests survive six offline instruments: path-aware replay, 1x/2x/5x fee stress, barrier reachability, random-entry controls with bootstrap confidence intervals, walk-forward folds, and a parameter grid. Pre-declared falsification rules produce FALSIFIED / NOT_FALSIFIED / INCONCLUSIVE, followed by seven diagnostic outcomes and next experiments. MIT engine; CI: 1052 passed / 2 skipped. No live trading, exchange API keys, signals, or profit promises. The first 3 reports are free through the GitHub request form in exchange for explicit permission to publish an anonymized case.
+I test whether trading backtests survive six offline instruments: path-aware replay, 1x/2x/5x fee stress, barrier reachability, random-entry controls with bootstrap confidence intervals, walk-forward folds, and a parameter grid. Pre-declared falsification rules produce FALSIFIED / NOT_FALSIFIED / INCONCLUSIVE, followed by seven diagnostic outcomes and next experiments. MIT engine; CI: 1053 passed, 1 skipped. No live trading, exchange API keys, signals, or profit promises. The first 3 reports are free through the GitHub request form in exchange for explicit permission to publish an anonymized case.
 
 免费申请入口：<https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/issues/new?template=free-audit.yml>
 
