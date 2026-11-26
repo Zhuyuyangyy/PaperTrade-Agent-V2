@@ -86,3 +86,7 @@ research/polymarket/data/calibration_detail_*.json
 
 # 校准用的市场清单与事件标签缓存（20MB+，可重拉）
 research/polymarket/data/cache_*.json
+
+# 并发采集的 checkpoint 中间产物：内容与同批次 calib_*.json 汇总重复，
+# 只用于进程被 kill 时保命，不进档案
+research/polymarket/data/*_partial_*.jsonl
