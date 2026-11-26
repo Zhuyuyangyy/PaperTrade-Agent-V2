@@ -1,7 +1,7 @@
 # PaperTrade-Agent-V2-Fast
 
 [![CI](https://img.shields.io/github/actions/workflow/status/Zhuyuyangyy/PaperTrade-Agent-V2/Offline%20safety%20and%20strategy%20tests?style=flat-square&label=CI)](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/actions/workflows/tests.yml)
-[![tests](https://img.shields.io/badge/tests-409%20passed%2C%201%20skipped-brightgreen?style=flat-square)](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2)
+[![tests](https://img.shields.io/badge/tests-1058%20passed%2C%202%20skipped-brightgreen?style=flat-square)](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2)
 [![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)](https://www.python.org/downloads/)
 
@@ -10,6 +10,11 @@
 > 状态：**实验已于 2026-10-28 18:05 全部停止**（STOP 文件生效，六本账静止）。
 > 本仓库是那次实验的完整档案：代码、数据、结论、以及得出结论的仪器。
 > 恢复命令见文末；本文所有数字都能用文内的命令复现。
+>
+> **补充封存（2026-11-25）**：Crypto 与 Polymarket 两条新赛道的 **15 条路线全部证伪**，
+> 「公开免费数据主动策略阶段」正式封存，M2–M5 不启动。
+> 完整证伪总表见 [封存：公开免费数据主动策略阶段](#封存公开免费数据主动策略阶段2026-11-25-收官)，
+> 全仓仅保留 1 个零资金只读周频火种 `research/live/funding_shadow.py`。
 
 ---
 
@@ -77,6 +82,73 @@ python skill/strategy-falsifier/scripts/verify.py spec.json --candles klines.csv
 | 6 | **A 股可转债折价：错配存在，但不收敛** | 509 只券、33 万债券日、5.5 万信号：折价后持 1/3/5 日的超额全在 ±0.5bp 内（噪声），越持有越差 |
 
 **这不是"还没调好"，这是"测完了"。** 外部独立研究同向：2,380 个 Solana 币 100+ 规则策略零正期望（swaphunt.dev）、arXiv 2026-06 论文去掉前 3 笔即转负、pumpfun-momentum-bot 模拟正实盘负（延迟吃掉信号）。
+
+---
+
+## 封存：公开免费数据主动策略阶段（2026-11-25 收官）
+
+> **本阶段已封存。** 2026-11 这一轮换到 Crypto 与 Polymarket 两个新赛场，又测了
+> 15 条路线，全部用一手数据证伪，或判为"无法拒绝零假设"。下表的每个数字都来自
+> `research/lite/reports/`、`research/v4/`、`research/polymarket/` 里的报告与
+> `data/*.json`，**没有一条是估算**。
+>
+> **封存含义**：不再开新的「免费公开 API + 散户费率 + 写脚本自动跑」路线。
+> M2（云节点）/ M3（热路径 FOK）/ M4（极小资金 Probe）/ M5（放量）全部不启动。
+> 全仓只留 1 个零维护火种（`research/live/funding_shadow.py`，见文末）。
+
+### 总表：15 条路线，0 条通过
+
+| # | 赛道 | 路线 | 核心假设 | 实测 | 判定 | 出处 |
+|---|---|---|---|---|---|---|
+| 1 | Crypto | 现货-永续 Funding Carry | 用 15% 年化门槛择时吃 funding 溢价 | 全样本年化 **3.77%**（门槛 5%）；样本外 **0 笔**；无条件 carry 5.2–7.2% **反超**择时版 3.8%；溢价本身在衰减（2024 12% → 2026 2.7%） | **FALSIFIED** | `carry_phase1_verdict` |
+| 2 | Crypto | Top-12 动态池截面动量 | 周频多空截面动量有 alpha | 全样本 A 夏普 0.863 / B 1.072，跑赢 2000 次同池随机（p=0.0155 / 0.0045）；但**样本外 A −5.42%、B 仅 +5.92%**（夏普 0.418）；2024 **+66%** → 2026 **−7.9%** | **FALSIFIED** | `phase2_verdict` |
+| 3 | Crypto | 离散度 FLAT 门控 | 低离散度时该空仓 | 门控版 +16.42% / 夏普 0.351 / OOS **−0.026**；**无门控** +37.47% / 0.581 / OOS **+24.31%**。阈值 7.7596% 系从反向样本拟合，2026 符号直接翻转 | **FALSIFIED** | `phase2b_verdict` |
+| 4 | Crypto | 日线 vol-target + 风险平价 | 波动率目标能提升夏普/卡玛 | 修正下标后基线 1 **+6.87% / 夏普 0.366**、基线 2 +3.27% / 0.266；被同仓位静态基准（+11.92% / 0.500 / 回撤 41.29%）**全面压制**，六门槛全 FAIL | **FALSIFIED**（首版数字已作废） | `phase3_correction` |
+| 5 | Crypto | 15m 教科书策略（均线/通道/动量） | 短周期方向性交易有 edge | 毛/笔 **−0.99 / +0.31 / +1.05bps**，95%CI 全跨 0；往返 24bps = ATR 中位 27.3bps 的 **87.9%**；费率压到 6bps **仍然全负** | **FALSIFIED** | `15m_baseline_verdict` |
+| 6 | Crypto | V4 S2（BTC 4h 挤压突破） | 挤压突破在 4h 有效 | 参数网格 **1/9 格为正（11%）**，低于声明下限 50%；最坏口径 −2.14% | **FALSIFIED** | `s2_report` |
+| 7 | Crypto | V4 S2b（BTC 1h 突破前 runup，F/N 双契约） | runup 在 1h 有效 | 样本内 **+3.91% / +7.33%**，样本外 **−5.58% / −7.31%**，2x 成本即崩；对照差值 CI 全含 0 | **INCONCLUSIVE**（样本不足） | `s2b_btc_1h_F/N_report` |
+| 8 | Crypto | V4 S1（拥挤清算反转） | 拥挤度极端后反转可交易 | 正式契约 OI 数据**不可得**；无 OI 诊断 5 条事前规则同时触发 | **INCONCLUSIVE** / 诊断 FALSIFIED | `S1_execution_report` |
+| 9 | Polymarket | 静态完备集套利 | `Σask < 1` 就能吃 | 1,200 事件 / 31,778 市场 / 180 轮扫描：唯一通过完备性校验的 `sum_ask=0.999`，逐档吃下来 **−158.7bps**（fee=0）；13 个"表观 2–88% 价差"全是**结果集缺腿** | **FALSIFIED** | `PHASE0_report` |
+| 10 | Polymarket | 二元 `ask(Y)+ask(N) < 1` | 合成成本能低于 $1 | 518 个高流动性近平价市场，最低 **1.001**——正好 1 个 tick，fee=0 也为负 | **FALSIFIED** | `PHASE0_report` |
+| 11 | Polymarket | 尾盘折价（0.95+ 校准） | 结果已定只等结算，1–3% 折价可捡 | 2,100 市场 / 279 个首次触 0.95：均价 0.9615 vs 兑现 **96.06%** → 净 **−48.3bps**；0.98 档 n=219 净 −23.2bps。兑现率与报价吻合到 0.1pp | **FALSIFIED** | `PHASE0_calibration_report` |
+| 12 | Polymarket | 毫秒级延迟套利 | REST 看不见的 <2s 闪现存在 | 750 市场 / **37.7 万条**毫秒推送 / 10 分钟，`sum_ask` 从未低于 **1.0010**；negRisk 34→2→**0 个确认**（最好 +2.4bps）；t1 中位 **14ms = 安慰剂 14ms**，方向相关 **0.02** | **FALSIFIED** | `PHASE0_latency_report` |
+| 13 | Polymarket | BTC 5m 平值抢延迟 | 抢在盘口重定价前 100ms | 7 窗口 / **643,205 条**推送 / 114 事件；有效区间（ask 0.30–0.85）n=52、胜率 63.5%、净 **+673bps**，但 5 个窗口收益 `[−240, +886, +1731, +5187, −10166]`，Wilcoxon **p=0.8125** | **无法拒绝零假设** | `M1_final_verdict` + `M1prime_verdict` |
+| 14 | Polymarket | 气象 METAR 抢先 | 报文人库后有几秒可吃窗口 | 305 个归零档位：跳变相对 `receiptTime` **p50 = −12s**，高分歧样本（n=5）**p50 = −18s**；8 个高/中分歧样本里 7 个在 137 秒内定价完毕。源方入库延迟中位 **210s**，所有参与者共享 | **FALSIFIED** | `M1_final_verdict` |
+| 15 | Polymarket | M1' 概率校准 | 某些概率段存在系统性错价 | 两批独立样本 172 / 224 市场，结算前 48h 整体偏离 **−1.0pp / −0.75pp**；两批最大单桶偏离（−20.8pp / −23.2pp）**落在不同桶**；Bonferroni 阈值 0.0056，最小 p=0.0497，**无一通过** | **不通过** | `M1prime_verdict` |
+
+### 这 15 条路线撞的是同一堵墙
+
+**第一堵：费率地板。** Crypto 15m 往返 24bps 要吃掉 ATR 中位（27.3bps）的 87.9%；
+Polymarket 在 p=0.50 处 taker 费率是名义 **2.5%**，而一个最小报价单位（1 tick）的
+套利空间连这个费用的 1/5 都不够。所有"高频互相消耗"的赛道，费率结构就是为筛掉散户设计的。
+
+**第二堵：信息同刻定价。** METAR 气象线是最干净的证据：价格在源方入库前后
+**2 秒内**从 0.52 跳到 0.995（KSEA 54-55，2026-11-24）。BTC 5m 更彻底——结算统计量是
+Chainlink **TWAP-60s 均值**，一个 5bps 的瞬时跳动对 5 分钟均值的贡献只有 `5bps × 1/300 ≈ 0.017bps`，
+远小于 1 tick。**盘口不动不是市场迟钝，是数学上正确的。**
+
+**第三堵：样本量的物理上限。** Polymarket 0.95–0.96 桶实测 97.66% 对均价 95.34%，
+按 Wilson 下界要过关需要 **310 个**样本，现有 171 个。而已结算市场里只有 171 个落在
+这个桶——攒够 310 个要再等 1–2 年。这不是"再多跑几天"，是产出速度的硬约束。
+
+### 唯一保留的火种
+
+`research/live/funding_shadow.py` —— **周频、只读、零资金、不盯盘**。它只做一件事：
+每周记一次各永续合约的 funding 年化，落进 `research/live/state/funding_shadow_ledger.jsonl`。
+不产生交易信号、不下单、不占资金。留着它是因为 Phase 1 的结论是"溢价在枯竭"
+（2024 12% → 2026 2.7%），而枯竭到什么程度、有没有可能回流，只有持续记录才答得上来。
+它的测试在 `tests/test_funding_shadow.py`。
+
+### 重启量化的唯一红线
+
+除非拿到下面三样稀缺筹码**之一**，否则不再启动任何量化研发：
+
+1. **别人拿不到的专有/一手数据**（自己的行业数据、付费独家 feed、非公开的一手观测）
+2. **结构性通道壁垒**（跨平台合规资金通道、费率结构本身成为 edge）
+3. **自己具备深度认知的垂直领域建模**（拼模型而非拼延迟，且认知优势可验证）
+
+这三条的共同点：**都不是"写个脚本自动跑"能获得的**。这也正是本阶段 15 条路线
+全部失败的根本原因——它们都在"脚本可得"的范围内竞争，而那个范围里的钱已经被收干净了。
 
 ---
 
@@ -397,3 +469,27 @@ $PY -m research.verify --spec research/verify/samples/demo_spec.json --out r.md
 市场化验证的阶梯已经备好（`research/live/`）：规则事前写死、降级自动、升级需人、停机优先。今天没有策略够资格站上去——FundingRate 三档执行假设全赢对照但恰好被摩擦吃平（PF 1.00），这是仪器给出的最终答案，而阶梯是给下一个候选准备的。
 
 **归档之后**：仪器没有跟着归档。`research/verify/` 把六件仪器产品化为"策略证伪即服务"——市场调研（`docs/market-scan-2026-10-29.md`）显示这是个人在这个生态里少数被验证有真实付费需求的方向：别人卖"收益率曲线"，我们卖"这条曲线是不是幻觉"。
+
+---
+
+## 封存清单（2026-11-25）
+
+| 项 | 状态 |
+|---|---|
+| `feat/polymarket-arb-probe` 分支 | **保留归档**，代码 / 测试 / 报告全在位，不删除 |
+| Crypto Phase 1 / 2 / 2B / 3 + 15m 基线 | 报告在 `research/lite/reports/`，判定见总表 #1–#5 |
+| Crypto V4 S1 / S2 / S2b（4h / 1h） | 报告在 `research/v4/`，判定见总表 #6–#8 |
+| Polymarket 静态套利 / 尾盘 / 延迟 / 5m / 气象 / M1' | 报告在 `research/polymarket/`，判定见总表 #9–#15 |
+| 全仓测试 | 全通过（见 CI 徽章） |
+| M2 云节点 / M3 热路径 FOK / M4 极小资金 / M5 放量 | **全部不启动** |
+| 新的免费公开数据探测线 | **不再开** |
+| 唯一火种 `research/live/funding_shadow.py` | **保留**，周频、只读、零资金、不盯盘 |
+
+**为什么停在这里。** 上面 15 条路线分布在两个完全不同的赛场（中心化交易所的永续合约、
+去中心化预测市场），用了四种不同的方法（时序回测、截面回测、盘口套利扫描、概率校准），
+覆盖了从 15 分钟到 4 小时的周期和从秒级到 48 小时的持有期。它们**全部**失败在同一个约束上：
+**凡是"免费公开 API + 普通散户费率 + 写脚本自动跑"能触达的地方，已经没有能捡的钱了。**
+
+继续挖第 16 条免费数据路线，只会多一份同样的报告，然后白白消耗时间。
+工程师的能力应该投到**工程速度能直接变现**的地方——产品、交付、服务，
+而不是在有效金融市场里试图变出不存在的 Alpha。

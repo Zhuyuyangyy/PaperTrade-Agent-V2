@@ -1,0 +1,2347 @@
+{
+ "params": {
+  "date_from": "2026-10-20",
+  "date_to": "2026-11-25",
+  "min_volume": 8000.0,
+  "pages": 3,
+  "marks": "48",
+  "min_hours": 4.0,
+  "out": ""
+ },
+ "n_rows": 224,
+ "n_markets": 224,
+ "buckets": [
+  {
+   "lo": 0.0,
+   "hi": 0.05,
+   "n": 11,
+   "markets": 11,
+   "mean_p": 0.008727272727272728,
+   "mean_y": 0.0,
+   "dev": -0.008727272727272728,
+   "net_bps": -10113.265104166667
+  },
+  {
+   "lo": 0.1,
+   "hi": 0.2,
+   "n": 11,
+   "markets": 11,
+   "mean_p": 0.153,
+   "mean_y": 0.09090909090909091,
+   "dev": -0.062090909090909085,
+   "net_bps": -4316.545603089721
+  },
+  {
+   "lo": 0.2,
+   "hi": 0.3,
+   "n": 27,
+   "markets": 27,
+   "mean_p": 0.26499999999999996,
+   "mean_y": 0.25925925925925924,
+   "dev": -0.005740740740740713,
+   "net_bps": -403.9262753319347
+  },
+  {
+   "lo": 0.3,
+   "hi": 0.4,
+   "n": 27,
+   "markets": 27,
+   "mean_p": 0.3638888888888889,
+   "mean_y": 0.4444444444444444,
+   "dev": 0.08055555555555555,
+   "net_bps": 2022.0826972010175
+  },
+  {
+   "lo": 0.4,
+   "hi": 0.5,
+   "n": 50,
+   "markets": 50,
+   "mean_p": 0.4512,
+   "mean_y": 0.52,
+   "dev": 0.06880000000000003,
+   "net_bps": 1339.9575576241143
+  },
+  {
+   "lo": 0.5,
+   "hi": 0.6,
+   "n": 34,
+   "markets": 34,
+   "mean_p": 0.549735294117647,
+   "mean_y": 0.47058823529411764,
+   "dev": -0.07914705882352935,
+   "net_bps": -1580.8336311593807
+  },
+  {
+   "lo": 0.6,
+   "hi": 0.7,
+   "n": 16,
+   "markets": 16,
+   "mean_p": 0.64690625,
+   "mean_y": 0.625,
+   "dev": -0.021906250000000016,
+   "net_bps": -424.5243683880008
+  },
+  {
+   "lo": 0.7,
+   "hi": 0.8,
+   "n": 23,
+   "markets": 23,
+   "mean_p": 0.7397173913043479,
+   "mean_y": 0.6956521739130435,
+   "dev": -0.04406521739130442,
+   "net_bps": -677.018774796486
+  },
+  {
+   "lo": 0.8,
+   "hi": 0.9,
+   "n": 10,
+   "markets": 10,
+   "mean_p": 0.8320000000000001,
+   "mean_y": 0.6,
+   "dev": -0.2320000000000001,
+   "net_bps": -2854.2094350961543
+  }
+ ],
+ "rows": [
+  {
+   "cid": "0xdf9bf27ee5757c55b44b8b9826ddc9ec3a8809aa3278634c45edbb7fc8f1a3e3",
+   "q": "Will there be no change in Fed interest rates after the October 2026 meeting?",
+   "y": 1,
+   "p": 0.937,
+   "hours_before_end": 48.0,
+   "vol": 31993966.632922996,
+   "fee_rate": 0.0,
+   "n_pts": 3142
+  },
+  {
+   "cid": "0x12aa13b3da17ceae1b0a59b5d5b77121e91bb79b4bb0b52bf6543ed3f8d0953b",
+   "q": "Will the Fed increase interest rates by 25 bps after the October 2026 meeting?",
+   "y": 0,
+   "p": 0.065,
+   "hours_before_end": 48.0,
+   "vol": 21619678.500434,
+   "fee_rate": 0.0,
+   "n_pts": 3144
+  },
+  {
+   "cid": "0xde5d75ab7702875623ba509bc923241e1211da74a113521b3b70ddac930d7316",
+   "q": "Will the Fed increase interest rates by 50+ bps after the October 2026 meeting?",
+   "y": 0,
+   "p": 0.0035,
+   "hours_before_end": 48.0,
+   "vol": 19785331.289215002,
+   "fee_rate": 0.0,
+   "n_pts": 3122
+  },
+  {
+   "cid": "0xdf8e2dc5860027decbe6164555c3c1c9645c3bd33e16b9dc57ca87125047d4a8",
+   "q": "Will Luiz Inácio Lula da Silva win the 2026 Brazilian presidential election?",
+   "y": 1,
+   "p": 0.215,
+   "hours_before_end": 48.0,
+   "vol": 48514562.175727,
+   "fee_rate": 0.0,
+   "n_pts": 9157
+  },
+  {
+   "cid": "0xd5d9fc47718bd553592d126b1fa5e87183d27f3936975b0c04cc0f2dec1f1bb4",
+   "q": "Will the Democratic Party control the House after the 2026 Midterm elections?",
+   "y": 1,
+   "p": 0.945,
+   "hours_before_end": 48.0,
+   "vol": 37373961.506353006,
+   "fee_rate": 0.01,
+   "n_pts": 11089
+  },
+  {
+   "cid": "0x1a01bf78f56a507fcb666d564d8c8b91b0750679163ed6e96746102c9b7d285d",
+   "q": "Will Flávio Bolsonaro win the 2026 Brazilian presidential election?",
+   "y": 0,
+   "p": 0.779,
+   "hours_before_end": 48.0,
+   "vol": 62159932.427386016,
+   "fee_rate": 0.0,
+   "n_pts": 7980
+  },
+  {
+   "cid": "0xc5eae79d1ffe716572353962eb926b1e3964c500a4880a7a94f58408218ee76b",
+   "q": "2026 Balance of Power: R Senate, R House",
+   "y": 0,
+   "p": 0.055,
+   "hours_before_end": 48.0,
+   "vol": 26226833.333175,
+   "fee_rate": 0.01,
+   "n_pts": 11249
+  },
+  {
+   "cid": "0x16c63b7cc37f012b9f59ee164ec03877914c701d06d48291ae8d6fc08a088b0d",
+   "q": "2026 Balance of Power: D Senate, D House",
+   "y": 1,
+   "p": 0.705,
+   "hours_before_end": 48.0,
+   "vol": 20264994.643411,
+   "fee_rate": 0.01,
+   "n_pts": 10806
+  },
+  {
+   "cid": "0x4e4f77e7dbf4cab666e9a1943674d7ae66348e862df03ea6f44b11eb95731928",
+   "q": "Will the Republican Party control the House after the 2026 Midterm elections?",
+   "y": 0,
+   "p": 0.055,
+   "hours_before_end": 48.0,
+   "vol": 25928654.211806003,
+   "fee_rate": 0.01,
+   "n_pts": 10897
+  },
+  {
+   "cid": "0x3738ad9665480991affe3ba286cd035516e17d1f8b7703e05088ec19c70c21a4",
+   "q": "US x Iran ceasefire continues through October 31?",
+   "y": 1,
+   "p": 0.6805,
+   "hours_before_end": 48.0,
+   "vol": 11868401.715241,
+   "fee_rate": 0.01,
+   "n_pts": 1003
+  },
+  {
+   "cid": "0x12dc2b61723b2a54fc1947a307389b5f32038e7a29a0e936ad1fe410b969d06a",
+   "q": "Will Harry Kane win the 2026 Ballon d'Or?",
+   "y": 1,
+   "p": 0.7045,
+   "hours_before_end": 48.0,
+   "vol": 15236288.001559995,
+   "fee_rate": 0.03,
+   "n_pts": 9182
+  },
+  {
+   "cid": "0xa32317ba83c3c83dc43ef260c3744c22ed8000db53d30bc09372c45cff5fb07a",
+   "q": "Will Republicans lose the Alaska, Iowa, Kansas, Maine, Michigan, Ohio, and Texas Senate se",
+   "y": 1,
+   "p": 0.255,
+   "hours_before_end": 48.0,
+   "vol": 11603210.272226002,
+   "fee_rate": 0.01,
+   "n_pts": 169
+  },
+  {
+   "cid": "0x307a1ed89d60b61002dd5bbf00e1408c5ed2ab3fcdb056191ca7ef9bc34d38f3",
+   "q": "Will the Democratic Party control the Senate after the 2026 Midterm elections?",
+   "y": 1,
+   "p": 0.715,
+   "hours_before_end": 48.0,
+   "vol": 17129861.088641003,
+   "fee_rate": 0.01,
+   "n_pts": 10867
+  },
+  {
+   "cid": "0x86bfb53af7250a40928975c551d12c185b762fa4ce0b40c6a64a50c946d72587",
+   "q": "Will the Republican Party control the Senate after the 2026 Midterm elections?",
+   "y": 0,
+   "p": 0.285,
+   "hours_before_end": 48.0,
+   "vol": 14333086.447598998,
+   "fee_rate": 0.01,
+   "n_pts": 11080
+  },
+  {
+   "cid": "0x0808de4f0cfd47947f2d1be51f9a9c52ea0fec76f73a75cfbe79ddec98d8a908",
+   "q": "2026 Balance of Power: D Senate, R House",
+   "y": 0,
+   "p": 0.0055,
+   "hours_before_end": 48.0,
+   "vol": 11877556.492492,
+   "fee_rate": 0.01,
+   "n_pts": 11163
+  },
+  {
+   "cid": "0x94521176f57d2ce81dde01e0b7699ca4279423042d37ed53908f0c8bfefe7e14",
+   "q": "Will the Republicans win the Texas Senate race in 2026?",
+   "y": 0,
+   "p": 0.275,
+   "hours_before_end": 48.0,
+   "vol": 11750291.667504,
+   "fee_rate": 0.01,
+   "n_pts": 8691
+  },
+  {
+   "cid": "0x87091dc5932f015d80c40e71e47cb043c3f8b6098484eb5bc3943cf35ee9afc1",
+   "q": "Will Kylian Mbappé win the 2026 Ballon d'Or?",
+   "y": 0,
+   "p": 0.1685,
+   "hours_before_end": 48.0,
+   "vol": 13083063.232492,
+   "fee_rate": 0.03,
+   "n_pts": 8942
+  },
+  {
+   "cid": "0xa34edb6c898232378a9cc08744842df2cd89d278ba45b012bed3ac10c7241c4d",
+   "q": "Will Lamine Yamal win the 2026 Ballon d'Or?",
+   "y": 0,
+   "p": 0.1295,
+   "hours_before_end": 48.0,
+   "vol": 11373200.339223001,
+   "fee_rate": 0.03,
+   "n_pts": 9041
+  },
+  {
+   "cid": "0x41f94101d57bf028eff62f2cc3714adb79722553dc59c1676071459c0b009e45",
+   "q": "LoL: Bilibili Gaming vs Gen.G (BO5) - Worlds Playoffs",
+   "y": 1,
+   "p": 0.375,
+   "hours_before_end": 48.0,
+   "vol": 9751737.657525,
+   "fee_rate": 0.05,
+   "n_pts": 137
+  },
+  {
+   "cid": "0x7034c00a24f9edbf325fd5a0b9a63412e469fc8cd2aa9b060fb5ba8e10d7ebef",
+   "q": "Will Lionel Messi win the 2026 Ballon d'Or?",
+   "y": 0,
+   "p": 0.0085,
+   "hours_before_end": 48.0,
+   "vol": 10829931.039864998,
+   "fee_rate": 0.03,
+   "n_pts": 3122
+  },
+  {
+   "cid": "0xf77fa3e63014f1f76ea4433dac66b3860493ed7f1a9fee3dfbef9104d7f1eee3",
+   "q": "Will Likud win the most seats in the 2026 Israeli legislative election?",
+   "y": 1,
+   "p": 0.305,
+   "hours_before_end": 48.0,
+   "vol": 10080625.799564999,
+   "fee_rate": 0.0,
+   "n_pts": 4209
+  },
+  {
+   "cid": "0xfa657d6b58e1b7cb79969d206b46093a17d6b16b8789c9308f46e4b87d7da056",
+   "q": "Cavaliers vs. 76ers",
+   "y": 0,
+   "p": 0.445,
+   "hours_before_end": 48.0,
+   "vol": 8251637.980416,
+   "fee_rate": 0.0,
+   "n_pts": 148
+  },
+  {
+   "cid": "0xd89caa6e08266e51834d64b67e4d8148d1f421c94bf8e6978008d695400059ad",
+   "q": "LoL: Bilibili Gaming vs Gen.G - Game 2 Winner",
+   "y": 1,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 8249933.983362,
+   "fee_rate": 0.05,
+   "n_pts": 136
+  },
+  {
+   "cid": "0x998bc71817b2d76921d1999ce0f3431cfd5945583667a371280ca2b430b0c06e",
+   "q": "2026 Balance of Power: R Senate, D House",
+   "y": 0,
+   "p": 0.235,
+   "hours_before_end": 48.0,
+   "vol": 10578469.224926999,
+   "fee_rate": 0.01,
+   "n_pts": 10840
+  },
+  {
+   "cid": "0x59d4686a0e96b928d1753cce07d056fe3344d66d975c36c9de57d3d0c18b2b97",
+   "q": "Will Chelsea FC win on 2026-10-24?",
+   "y": 0,
+   "p": 0.575,
+   "hours_before_end": 48.0,
+   "vol": 7952579.515821001,
+   "fee_rate": 0.05,
+   "n_pts": 298
+  },
+  {
+   "cid": "0x34918035a590555ba1fb1d6a019d766ab6e557d63e7f3140b63b4550eee7f417",
+   "q": "Will the Democrats win the Texas Senate race in 2026?",
+   "y": 1,
+   "p": 0.735,
+   "hours_before_end": 48.0,
+   "vol": 10065616.121968,
+   "fee_rate": 0.01,
+   "n_pts": 8740
+  },
+  {
+   "cid": "0x0a5cd6611af23220dae3edd65fb1bbad707937def84deeb8d5a939c22d2f2014",
+   "q": "LoL: Bilibili Gaming vs T1 - Game 1 Winner",
+   "y": 1,
+   "p": 0.54,
+   "hours_before_end": 48.0,
+   "vol": 7653094.840475996,
+   "fee_rate": 0.05,
+   "n_pts": 44
+  },
+  {
+   "cid": "0xe7c0c5512d77261c314114f7139d5e7d07a2a7cd3e6c6277e27e6d9a20eb83cc",
+   "q": "Will Chelsea FC win on 2026-11-08?",
+   "y": 0,
+   "p": 0.495,
+   "hours_before_end": 48.0,
+   "vol": 7289087.625864,
+   "fee_rate": 0.05,
+   "n_pts": 286
+  },
+  {
+   "cid": "0xb5b924c7aac7e2d6fa01afd2a9b7e1504c648facbbf8fc6d9b3160ed9bce890c",
+   "q": "Trail Blazers vs. Lakers",
+   "y": 1,
+   "p": 0.475,
+   "hours_before_end": 48.0,
+   "vol": 7256774.812330999,
+   "fee_rate": 0.0,
+   "n_pts": 134
+  },
+  {
+   "cid": "0xe10e72af1e0a1fdbd4d3544a61d0fb5142ffe28529138a3dcad6a3ea0e93d056",
+   "q": "49ers vs. Cowboys",
+   "y": 1,
+   "p": 0.655,
+   "hours_before_end": 48.0,
+   "vol": 7045436.294057,
+   "fee_rate": 0.03,
+   "n_pts": 450
+  },
+  {
+   "cid": "0xcee04ba47d02f6c64642369b34193c355f64de1b9ae425c71ea4efef1989d271",
+   "q": "US announces end of Iranian blockade by October 31, 2026?",
+   "y": 0,
+   "p": 0.0205,
+   "hours_before_end": 48.0,
+   "vol": 6991042.277110999,
+   "fee_rate": 0.01,
+   "n_pts": 2255
+  },
+  {
+   "cid": "0xff6a7cad39309b7170cb0f05207d5391c1d7443174842570803d204e674960d9",
+   "q": "76ers vs. Knicks",
+   "y": 1,
+   "p": 0.375,
+   "hours_before_end": 48.0,
+   "vol": 6715166.732716999,
+   "fee_rate": 0.0,
+   "n_pts": 154
+  },
+  {
+   "cid": "0x0c5b2973c740b849f57e847b18b85bfb1b73856d88822fb40d191ed562010c59",
+   "q": "LoL: Bilibili Gaming vs T1 - Game 2 Winner",
+   "y": 0,
+   "p": 0.54,
+   "hours_before_end": 48.0,
+   "vol": 6678358.904841,
+   "fee_rate": 0.05,
+   "n_pts": 45
+  },
+  {
+   "cid": "0xa54108c7e2c9764f25d43aaa84a1a389a0ad27d4a7396f72e2195c32f7dca7b2",
+   "q": "76ers vs. Hornets",
+   "y": 1,
+   "p": 0.595,
+   "hours_before_end": 48.0,
+   "vol": 6681869.153415,
+   "fee_rate": 0.0,
+   "n_pts": 141
+  },
+  {
+   "cid": "0x82f14e24b6ffb621e390166874d2c48c4ab717fd3ea86eb2b71480a299fcc9a6",
+   "q": "LoL: Dplus KIA vs Bilibili Gaming - Game 1 Winner",
+   "y": 0,
+   "p": 0.475,
+   "hours_before_end": 48.0,
+   "vol": 6221386.719871003,
+   "fee_rate": 0.05,
+   "n_pts": 118
+  },
+  {
+   "cid": "0x4c0d60ebe6cdb84659ef5fd13955f9d87b6ef2da4d9447f7a46c4e57c988d5b4",
+   "q": "Chiefs vs. Seahawks",
+   "y": 0,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 6014310.756953999,
+   "fee_rate": 0.03,
+   "n_pts": 959
+  },
+  {
+   "cid": "0xbfeb6d4cf3eab6071e204219b0647c8224d63a12778df467311b5f2a4b3a5bd4",
+   "q": "Will the Democrats win the Michigan Senate race in 2026?",
+   "y": 1,
+   "p": 0.785,
+   "hours_before_end": 48.0,
+   "vol": 7920536.942460999,
+   "fee_rate": 0.01,
+   "n_pts": 8901
+  },
+  {
+   "cid": "0x258ff19b4baff0ed24bc28f58e83c8be6f2f91d9134700703e0aa51810c51a63",
+   "q": "Will Student List – Students Win win the most seats in the 2026 Serbian parliamentary elec",
+   "y": 1,
+   "p": 0.295,
+   "hours_before_end": 48.0,
+   "vol": 6625643.616994,
+   "fee_rate": 0.0,
+   "n_pts": 779
+  },
+  {
+   "cid": "0x025eb37a34144aff1081fa53834ce5178279b8b6736118566550d6f927fcb2c9",
+   "q": "Exact Score: Red Star FC 0 - 0 Pau FC?",
+   "y": 0,
+   "p": 0.065,
+   "hours_before_end": 48.0,
+   "vol": 5985326.9802560005,
+   "fee_rate": 0.05,
+   "n_pts": 308
+  },
+  {
+   "cid": "0xcad4c2f441ee2828f0a729fe45ae383b0422426055cd3377562b430479d316dd",
+   "q": "LoL: Invictus Gaming vs Gen.G - Game 3 Winner",
+   "y": 0,
+   "p": 0.29,
+   "hours_before_end": 48.0,
+   "vol": 5673747.621781999,
+   "fee_rate": 0.05,
+   "n_pts": 69
+  },
+  {
+   "cid": "0x5d3ed1888dabb8a627ac61dcef595dcdf47eae1651796730f860de681a186abd",
+   "q": "Browns vs. Titans",
+   "y": 1,
+   "p": 0.545,
+   "hours_before_end": 48.0,
+   "vol": 5841793.980730999,
+   "fee_rate": 0.03,
+   "n_pts": 957
+  },
+  {
+   "cid": "0x8b8a3795365dec42e1e0377d3f912e682bfc657c2533e8b5870ec441e967b4dc",
+   "q": "Will 1win launch a token by October 31, 2026?",
+   "y": 1,
+   "p": 0.295,
+   "hours_before_end": 48.0,
+   "vol": 5570340.750388001,
+   "fee_rate": 0.01,
+   "n_pts": 231
+  },
+  {
+   "cid": "0x401c1614a93ddc098c97338b5452d887f4ca1617a4445c2a1a966b6aa58e28d7",
+   "q": "Grizzlies vs. Jazz",
+   "y": 1,
+   "p": 0.465,
+   "hours_before_end": 48.0,
+   "vol": 5558582.804091999,
+   "fee_rate": 0.0,
+   "n_pts": 136
+  },
+  {
+   "cid": "0x74261eede43e69782e24e75d96b7e425778113069351e494eb7471a6ef35686f",
+   "q": "LoL: Bilibili Gaming vs Gen.G - Game 4 Winner",
+   "y": 1,
+   "p": 0.445,
+   "hours_before_end": 48.0,
+   "vol": 5381125.129973002,
+   "fee_rate": 0.05,
+   "n_pts": 135
+  },
+  {
+   "cid": "0x134e5143254278e5df6f0ffcf9502845fa935923b86c56fd627508552240a959",
+   "q": "LoL: Bilibili Gaming vs Gen.G - Game 1 Winner",
+   "y": 0,
+   "p": 0.425,
+   "hours_before_end": 48.0,
+   "vol": 5374223.753044,
+   "fee_rate": 0.05,
+   "n_pts": 136
+  },
+  {
+   "cid": "0x3fd189cac9280dfc49a07115581e8d4c9e0b7e1c1e8580a44e9ff3d74e39cf2d",
+   "q": "Will the Republicans win the Michigan Senate race in 2026?",
+   "y": 0,
+   "p": 0.215,
+   "hours_before_end": 48.0,
+   "vol": 5797374.327056,
+   "fee_rate": 0.01,
+   "n_pts": 9021
+  },
+  {
+   "cid": "0x124b43c1e612cd900304968d43f620735fcc02b92c8f738701e9d9f11584f41b",
+   "q": "Knicks vs. 76ers",
+   "y": 0,
+   "p": 0.515,
+   "hours_before_end": 48.0,
+   "vol": 5256248.743548,
+   "fee_rate": 0.0,
+   "n_pts": 141
+  },
+  {
+   "cid": "0xdb8805f2101fc79f95b8c2ae2a43c59ec51c36de537de597f7493f30429c9bbc",
+   "q": "LoL: Karmine Corp vs T1 - Game 1 Winner",
+   "y": 0,
+   "p": 0.295,
+   "hours_before_end": 48.0,
+   "vol": 5201169.8792739995,
+   "fee_rate": 0.05,
+   "n_pts": 143
+  },
+  {
+   "cid": "0x77706c139c0596bfe18973e428c1dc22a3f08bbf6a6cbe1d41a6e7aac5eb63c1",
+   "q": "Will Real Madrid CF win on 2026-10-25?",
+   "y": 1,
+   "p": 0.255,
+   "hours_before_end": 48.0,
+   "vol": 5275105.224646001,
+   "fee_rate": 0.05,
+   "n_pts": 282
+  },
+  {
+   "cid": "0xc8cfc009e5ef7798f16727298e98712da56877f3c78d0bd1a69992c91371ef69",
+   "q": "UFC 334: Josh Hokit vs. Ciryl Gane (Heavyweight, Main Card)",
+   "y": 0,
+   "p": 0.345,
+   "hours_before_end": 48.0,
+   "vol": 5193203.750892999,
+   "fee_rate": 0.05,
+   "n_pts": 329
+  },
+  {
+   "cid": "0x3adb3ca4a12b16d8081e6458dbf4fbe13a33e873eedc93f228cbe96f87f8efa8",
+   "q": "Nuggets vs. Thunder",
+   "y": 0,
+   "p": 0.265,
+   "hours_before_end": 48.0,
+   "vol": 5113707.114963999,
+   "fee_rate": 0.0,
+   "n_pts": 146
+  },
+  {
+   "cid": "0x30187092881dd5d0fe2c613a39ffcd21a819025da41aac264c441b0ca77c51c9",
+   "q": "LoL: Bilibili Gaming vs T1 (BO5) - Worlds Playoffs",
+   "y": 1,
+   "p": 0.565,
+   "hours_before_end": 48.0,
+   "vol": 5109300.325353999,
+   "fee_rate": 0.05,
+   "n_pts": 47
+  },
+  {
+   "cid": "0x1568624db410028896d3a3560f5144991ccc6a21c1cd7229048c8b660e2e8a6c",
+   "q": "LoL: Bilibili Gaming vs T1 - Game 3 Winner",
+   "y": 1,
+   "p": 0.535,
+   "hours_before_end": 48.0,
+   "vol": 5065125.12212,
+   "fee_rate": 0.05,
+   "n_pts": 47
+  },
+  {
+   "cid": "0x19d2ff72e389d190c183e6b114817301d29eba651d67d75a38ee201a05188fd9",
+   "q": "Will Mary Peltola win the Alaska Senate race in 2026?",
+   "y": 1,
+   "p": 0.725,
+   "hours_before_end": 48.0,
+   "vol": 6319556.536276001,
+   "fee_rate": 0.01,
+   "n_pts": 8638
+  },
+  {
+   "cid": "0xe899447d5c12318b14d086ce50f9efe77ae8db953b4e937f155e68ac0de8cc82",
+   "q": "Commanders vs. 49ers",
+   "y": 0,
+   "p": 0.225,
+   "hours_before_end": 48.0,
+   "vol": 5431003.188646002,
+   "fee_rate": 0.03,
+   "n_pts": 977
+  },
+  {
+   "cid": "0x62385b7f3de107b144914fc446b502108d6671d7407d826fa55fa35dec66e64c",
+   "q": "LoL: Team Liquid vs LOS (BO3) - Worlds Group Stage",
+   "y": 0,
+   "p": 0.795,
+   "hours_before_end": 48.0,
+   "vol": 5030466.235087001,
+   "fee_rate": 0.05,
+   "n_pts": 81
+  },
+  {
+   "cid": "0x3e2266088f5b074f7c6e5805ac2eb29b03a65aabce5c7f557d209f92edb92321",
+   "q": "Commanders vs. Giants",
+   "y": 1,
+   "p": 0.435,
+   "hours_before_end": 48.0,
+   "vol": 4989451.231414,
+   "fee_rate": 0.03,
+   "n_pts": 453
+  },
+  {
+   "cid": "0x30f729ef18553d8956bfd7ae7a1e96dbad07e2476160239b23ec10e6cdc5f01b",
+   "q": "Will Rodri win the 2026 Ballon d'Or?",
+   "y": 0,
+   "p": 0.003,
+   "hours_before_end": 48.0,
+   "vol": 6791367.716875,
+   "fee_rate": 0.03,
+   "n_pts": 2320
+  },
+  {
+   "cid": "0x4d6e293d49331addc7a9d414578b1dbf2e259ad76f45f0ab9385855b0d6ee760",
+   "q": "LoL: Dplus KIA vs Bilibili Gaming - Game 3 Winner",
+   "y": 0,
+   "p": 0.485,
+   "hours_before_end": 48.0,
+   "vol": 4924114.325793003,
+   "fee_rate": 0.05,
+   "n_pts": 118
+  },
+  {
+   "cid": "0x9ea47f0acf34fc1b7bc61575546656775c34341d48e85a4da180b679e5a8bd73",
+   "q": "Pistons vs. 76ers",
+   "y": 1,
+   "p": 0.405,
+   "hours_before_end": 48.0,
+   "vol": 4837689.938258999,
+   "fee_rate": 0.0,
+   "n_pts": 138
+  },
+  {
+   "cid": "0xa3e8ef111c104c3b3d56ca06d6aa42dd0b28b3ba319c169ac5a836170be4b353",
+   "q": "Chiefs vs. Broncos",
+   "y": 0,
+   "p": 0.525,
+   "hours_before_end": 48.0,
+   "vol": 4757147.294672,
+   "fee_rate": 0.03,
+   "n_pts": 423
+  },
+  {
+   "cid": "0x9345d5142a67f5541264c96515496affee02580f1c572680759eac9fd2a1588a",
+   "q": "Billionaire one-time wealth tax passes in California election 2026?",
+   "y": 0,
+   "p": 0.285,
+   "hours_before_end": 48.0,
+   "vol": 5182362.649737,
+   "fee_rate": 0.01,
+   "n_pts": 8769
+  },
+  {
+   "cid": "0x738bf4c43717a69335109fc8882915b55be456cb42811cf008d97fdf3a8cb6a8",
+   "q": "Thunder vs. Spurs",
+   "y": 1,
+   "p": 0.445,
+   "hours_before_end": 48.0,
+   "vol": 4594460.9975580005,
+   "fee_rate": 0.0,
+   "n_pts": 144
+  },
+  {
+   "cid": "0x801561a0810c3ec27b046068244cccd5320256146c151a9b3cf785c23979345f",
+   "q": "Grizzlies vs. Kings",
+   "y": 1,
+   "p": 0.57,
+   "hours_before_end": 48.0,
+   "vol": 4546649.955784,
+   "fee_rate": 0.0,
+   "n_pts": 137
+  },
+  {
+   "cid": "0x805b0872d02b155b3f5118441ebb30f00ec5854f1e5cf842bcf8c4f93f72165d",
+   "q": "Timberwolves vs. Cavaliers",
+   "y": 0,
+   "p": 0.515,
+   "hours_before_end": 48.0,
+   "vol": 4537773.721049,
+   "fee_rate": 0.0,
+   "n_pts": 140
+  },
+  {
+   "cid": "0x83197d7b5052586479ce2549e14f0a78ddbac08f234a35b1a51e3f7b272bb917",
+   "q": "Eagles vs. Commanders",
+   "y": 0,
+   "p": 0.295,
+   "hours_before_end": 48.0,
+   "vol": 4594024.311364001,
+   "fee_rate": 0.03,
+   "n_pts": 437
+  },
+  {
+   "cid": "0xdc139722e0654151002a6e93417bd48cfce00bc3e649f0e2c272e84709a90c02",
+   "q": "LoL: Bilibili Gaming vs Gen.G - Game 3 Winner",
+   "y": 1,
+   "p": 0.425,
+   "hours_before_end": 48.0,
+   "vol": 4504578.738283002,
+   "fee_rate": 0.05,
+   "n_pts": 137
+  },
+  {
+   "cid": "0x26f92ac5a446296cf4b454e14694c3aaeb313cb84d8e258eff0d0dc491c91118",
+   "q": "LoL: Gen.G vs Invictus Gaming (BO1) - Worlds Group Stage",
+   "y": 1,
+   "p": 0.775,
+   "hours_before_end": 48.0,
+   "vol": 4478837.915271032,
+   "fee_rate": 0.05,
+   "n_pts": 109
+  },
+  {
+   "cid": "0x86ced242518f12a9168a7b47e5a57fc0ac4e12e3bcb4981d560abe6b161fb696",
+   "q": "Lakers vs. Pistons",
+   "y": 1,
+   "p": 0.475,
+   "hours_before_end": 48.0,
+   "vol": 4556215.868249,
+   "fee_rate": 0.05,
+   "n_pts": 209
+  },
+  {
+   "cid": "0xda4a7d85a3c1abaf52bb4dd561d45c1cb33e7f76f76a21069a0d10d4668aefa6",
+   "q": "Will Aleksandar Vučić – United Serbia win the most seats in the 2026 Serbian parliamentary",
+   "y": 0,
+   "p": 0.71,
+   "hours_before_end": 48.0,
+   "vol": 4481773.564998,
+   "fee_rate": 0.0,
+   "n_pts": 782
+  },
+  {
+   "cid": "0xe3a2c9ff1ab4d79c2aea24509f96cd522414700a97a38c5ee8b0926c2f6d4a22",
+   "q": "Will BV Borussia 09 Dortmund win on 2026-11-04?",
+   "y": 1,
+   "p": 0.555,
+   "hours_before_end": 48.0,
+   "vol": 4466940.080221001,
+   "fee_rate": 0.05,
+   "n_pts": 281
+  },
+  {
+   "cid": "0x119b6b3b744ac3239c7a71100165d254234eaecea401abde5a3d303bef21d19e",
+   "q": "Will Steve Hilton win the California Governor Election in 2026?",
+   "y": 0,
+   "p": 0.0155,
+   "hours_before_end": 48.0,
+   "vol": 4943258.473774002,
+   "fee_rate": 0.01,
+   "n_pts": 9139
+  },
+  {
+   "cid": "0x23a03783dea7193df8afc1e8a8f15eb54193a706f0cf1a90f4ace9a4c13a75b8",
+   "q": "LoL: Invictus Gaming vs Gen.G (BO5) - Worlds Playoffs",
+   "y": 0,
+   "p": 0.195,
+   "hours_before_end": 48.0,
+   "vol": 4203663.150177,
+   "fee_rate": 0.05,
+   "n_pts": 68
+  },
+  {
+   "cid": "0x601a35941bf6970372c036efd9a00767c7a722932cf0614a88ed0e44dc54bc1b",
+   "q": "Warriors vs. Nuggets",
+   "y": 1,
+   "p": 0.345,
+   "hours_before_end": 48.0,
+   "vol": 4167091.2488450003,
+   "fee_rate": 0.0,
+   "n_pts": 135
+  },
+  {
+   "cid": "0x97520dc2d44481e4e5b643472a297ea9cf14744a830b385c83be5fb31bbf6702",
+   "q": "LoL: Bilibili Gaming vs T1 - Game 4 Winner",
+   "y": 1,
+   "p": 0.49,
+   "hours_before_end": 48.0,
+   "vol": 4162300.8217350007,
+   "fee_rate": 0.05,
+   "n_pts": 43
+  },
+  {
+   "cid": "0xc3d5708780de5528998aeb53ca90e7ade64804f9f2386392a681435d5c42b44d",
+   "q": "Israel x Iran ceasefire continues through October 31?",
+   "y": 1,
+   "p": 0.9615,
+   "hours_before_end": 48.0,
+   "vol": 4439450.044134,
+   "fee_rate": 0.01,
+   "n_pts": 1973
+  },
+  {
+   "cid": "0x53c9ffd7924d9d6e676fa741aa5c246fddd7543f1b566abc918597c3a7bbfeab",
+   "q": "LoL: Invictus Gaming vs LYON (BO3) - Worlds Group Stage",
+   "y": 1,
+   "p": 0.605,
+   "hours_before_end": 48.0,
+   "vol": 4145610.6797499997,
+   "fee_rate": 0.05,
+   "n_pts": 41
+  },
+  {
+   "cid": "0x81c9225fae2ce71e7c712523f458862f2d16cd4f3881f5ca31c351ec15a2fab0",
+   "q": "LoL: Bilibili Gaming vs Movistar KOI (BO1) - Worlds Group Stage",
+   "y": 0,
+   "p": 0.825,
+   "hours_before_end": 48.0,
+   "vol": 4160052.093359022,
+   "fee_rate": 0.05,
+   "n_pts": 111
+  },
+  {
+   "cid": "0x3274464d5a09edb00cdb2f4e9243531eb9bb0a7a1003d6190f42f2f6a9f1f6c5",
+   "q": "Patriots vs. Bears",
+   "y": 0,
+   "p": 0.395,
+   "hours_before_end": 48.0,
+   "vol": 4324894.739619,
+   "fee_rate": 0.03,
+   "n_pts": 972
+  },
+  {
+   "cid": "0x2a4fcda5c1598fc8621cf96cabc410f9f23a2d0336c3bff5070a37a663d39e94",
+   "q": "NATO x Russia military clash by October 31, 2026?",
+   "y": 0,
+   "p": 0.0095,
+   "hours_before_end": 48.0,
+   "vol": 4471995.08702,
+   "fee_rate": 0.01,
+   "n_pts": 2275
+  },
+  {
+   "cid": "0xca394e0db041f91ac2d69f3ea06efdfc8643acb0d2751283bd594e7b8bd581f9",
+   "q": "Israel x Iran ceasefire continues through November 15?",
+   "y": 1,
+   "p": 0.9585,
+   "hours_before_end": 48.0,
+   "vol": 4111380.7240540003,
+   "fee_rate": 0.01,
+   "n_pts": 929
+  },
+  {
+   "cid": "0xd39abb0cc68d296c9d02d0189caade9d26115142d0d0a1581b5978f022bfcf02",
+   "q": "LoL: Karmine Corp vs T1 - Game 4 Winner",
+   "y": 0,
+   "p": 0.395,
+   "hours_before_end": 48.0,
+   "vol": 4102180.824894,
+   "fee_rate": 0.05,
+   "n_pts": 144
+  },
+  {
+   "cid": "0x325459ac058b50618f5f6a0116079b4c8baaed234d16126b015a944d3956f08c",
+   "q": "LoL: G2 Esports vs Dplus KIA (BO1) - Worlds Group Stage",
+   "y": 0,
+   "p": 0.395,
+   "hours_before_end": 48.0,
+   "vol": 4080591.483232,
+   "fee_rate": 0.05,
+   "n_pts": 108
+  },
+  {
+   "cid": "0xcd953913ecd5bf5387092bf447fe13190871b2bc9436c85b0918b4767c3fa58a",
+   "q": "Will the Republicans win the Texas governor race in 2026?",
+   "y": 0,
+   "p": 0.581,
+   "hours_before_end": 48.0,
+   "vol": 4858080.791722,
+   "fee_rate": 0.01,
+   "n_pts": 9015
+  },
+  {
+   "cid": "0xa7f735ef5dd052af7b34b5cb8a3bff1ab0cf111e2c5f15b836a6cc3aeb75b4a7",
+   "q": "Vikings vs. 49ers",
+   "y": 0,
+   "p": 0.385,
+   "hours_before_end": 48.0,
+   "vol": 4033909.8369109994,
+   "fee_rate": 0.05,
+   "n_pts": 474
+  },
+  {
+   "cid": "0xc138f7ba5966e0ec354a50479099578139e6ad25ddd6c3101aea81a3916aa43b",
+   "q": "Bears vs. Seahawks",
+   "y": 1,
+   "p": 0.385,
+   "hours_before_end": 48.0,
+   "vol": 4057672.0735699995,
+   "fee_rate": 0.03,
+   "n_pts": 437
+  },
+  {
+   "cid": "0x6930d30b9c9f6594f572540d99584b843e327f6ea9ce5b2b18afe414c0501c6c",
+   "q": "LoL: Hanwha Life Esports vs G2 Esports - Game 2 Winner",
+   "y": 1,
+   "p": 0.735,
+   "hours_before_end": 48.0,
+   "vol": 4022552.5855049994,
+   "fee_rate": 0.05,
+   "n_pts": 85
+  },
+  {
+   "cid": "0x7ef37ab1c5a9aa47e03e9ca4fbc77aa2511c9275b8a064802a44f2461c1f691a",
+   "q": "Will Manchester United FC win on 2026-11-08?",
+   "y": 0,
+   "p": 0.445,
+   "hours_before_end": 48.0,
+   "vol": 4047125.8247109996,
+   "fee_rate": 0.05,
+   "n_pts": 304
+  },
+  {
+   "cid": "0x9df3a4ac14aa91d88f83d6e740242a4f454432de8530b0854d41aa7b69d71d4c",
+   "q": "LoL: Invictus Gaming vs Gen.G - Game 2 Winner",
+   "y": 0,
+   "p": 0.285,
+   "hours_before_end": 48.0,
+   "vol": 4005105.3651029984,
+   "fee_rate": 0.05,
+   "n_pts": 70
+  },
+  {
+   "cid": "0xd8aee6582edee17dfc5b1743699569a4a81d4ed8385b67e81e33334e8efb5be0",
+   "q": "Bulls vs. Bucks",
+   "y": 1,
+   "p": 0.495,
+   "hours_before_end": 48.0,
+   "vol": 3999587.907950999,
+   "fee_rate": 0.0,
+   "n_pts": 145
+  },
+  {
+   "cid": "0xed91f2fcaaaa61ab7f6f0dace4892b2724660998e64fdbe86f6b8c10c0bcd20d",
+   "q": "Lakers vs. Warriors",
+   "y": 0,
+   "p": 0.555,
+   "hours_before_end": 48.0,
+   "vol": 3998230.539028001,
+   "fee_rate": 0.0,
+   "n_pts": 137
+  },
+  {
+   "cid": "0x00f341c1ce5ac7d38b59f3606333d0db49b6a51f7cfa86c543cebc811ba46f79",
+   "q": "Jaguars vs. Ravens",
+   "y": 1,
+   "p": 0.815,
+   "hours_before_end": 48.0,
+   "vol": 3962345.115105999,
+   "fee_rate": 0.03,
+   "n_pts": 426
+  },
+  {
+   "cid": "0x6dccd54ad0aa48eb04c17f1fd0b033c07a95a87ff8c5c882f004ca45c00e7e08",
+   "q": "LoL: Anyone's Legend vs Karmine Corp (BO1) - Worlds Group Stage",
+   "y": 0,
+   "p": 0.655,
+   "hours_before_end": 48.0,
+   "vol": 3953981.7286380003,
+   "fee_rate": 0.05,
+   "n_pts": 110
+  },
+  {
+   "cid": "0x5470b8ebb3de0afd56dcf537c62575f80cc86bda01ff57a332e8f3ae44c71b65",
+   "q": "US x Iran ceasefire continues through November 2?",
+   "y": 1,
+   "p": 0.9395,
+   "hours_before_end": 48.0,
+   "vol": 3949203.2849440007,
+   "fee_rate": 0.01,
+   "n_pts": 115
+  },
+  {
+   "cid": "0x278974ac3dffc22762bcafe36aa4dab79cf9fc03658ee07ed1f53461d3f15531",
+   "q": "Lakers vs. Clippers",
+   "y": 1,
+   "p": 0.685,
+   "hours_before_end": 48.0,
+   "vol": 3912615.292286,
+   "fee_rate": 0.0,
+   "n_pts": 133
+  },
+  {
+   "cid": "0x8941f985cce9ac4a175ce7a0a3d75f38536a43de46517d75aa9658ee2cf55574",
+   "q": "Will Real Madrid CF win on 2026-11-04?",
+   "y": 1,
+   "p": 0.785,
+   "hours_before_end": 48.0,
+   "vol": 3901132.7830639994,
+   "fee_rate": 0.05,
+   "n_pts": 290
+  },
+  {
+   "cid": "0xd05da9807740aa0f5bc9e9232daabe87a21e5012c19e283abf414f1c1651118b",
+   "q": "Will Yashar win the most seats in the 2026 Israeli legislative election?",
+   "y": 0,
+   "p": 0.695,
+   "hours_before_end": 48.0,
+   "vol": 4385679.261778999,
+   "fee_rate": 0.0,
+   "n_pts": 4249
+  },
+  {
+   "cid": "0x43cd2b241bfa0a17f1835ea5600c3018cd059eebd73ed30299b70922426b043b",
+   "q": "Hornets vs. Lakers",
+   "y": 0,
+   "p": 0.245,
+   "hours_before_end": 48.0,
+   "vol": 3895086.4107049997,
+   "fee_rate": 0.05,
+   "n_pts": 344
+  },
+  {
+   "cid": "0xacb4bae086c3641d13b6ef1d90c4a5e24d52b74f50a33fe4523ce0636238ea1f",
+   "q": "Jaguars vs. Giants",
+   "y": 0,
+   "p": 0.715,
+   "hours_before_end": 48.0,
+   "vol": 3850198.815496,
+   "fee_rate": 0.05,
+   "n_pts": 470
+  },
+  {
+   "cid": "0x04fb634139d4654febf4b62c425b209806e06d9eff93ac2e7c5301ecdaf5e4ca",
+   "q": "US x Iran ceasefire continues through October 22?",
+   "y": 1,
+   "p": 0.9485,
+   "hours_before_end": 48.0,
+   "vol": 3862529.7161600003,
+   "fee_rate": 0.01,
+   "n_pts": 176
+  },
+  {
+   "cid": "0x12c0ff4a99b3f160c77b10c8e9ab08a858bd00270de1be3e00aef8a70808fba7",
+   "q": "Hornets vs. Nets",
+   "y": 1,
+   "p": 0.475,
+   "hours_before_end": 48.0,
+   "vol": 3836643.179295999,
+   "fee_rate": 0.0,
+   "n_pts": 153
+  },
+  {
+   "cid": "0x5724051a6852f8492a217e8af6e53fef22fbeaa22a20cbfbfea49135335f512d",
+   "q": "LoL: Top Esports vs Invictus Gaming - Game 2 Winner",
+   "y": 1,
+   "p": 0.48,
+   "hours_before_end": 48.0,
+   "vol": 3828686.624044002,
+   "fee_rate": 0.05,
+   "n_pts": 74
+  },
+  {
+   "cid": "0x40ee7af3b229f1be9ff15eae770e1bb7c2d2f6371fc9d3c031d0ea2e9705d7eb",
+   "q": "Nets vs. Celtics",
+   "y": 0,
+   "p": 0.175,
+   "hours_before_end": 48.0,
+   "vol": 3801277.964045,
+   "fee_rate": 0.0,
+   "n_pts": 138
+  },
+  {
+   "cid": "0xcff6a1dd39c19b6c0a68202dd44b3386e61df40acd588e7e5634f249422ab0e8",
+   "q": "Hawks vs. Pelicans",
+   "y": 0,
+   "p": 0.605,
+   "hours_before_end": 48.0,
+   "vol": 3798055.5467599994,
+   "fee_rate": 0.0,
+   "n_pts": 139
+  },
+  {
+   "cid": "0xfef153ff34d43a4462ca8a20313ed3b117698adf90b62ba9be0abb371e7d230e",
+   "q": "Knicks vs. Celtics",
+   "y": 0,
+   "p": 0.455,
+   "hours_before_end": 48.0,
+   "vol": 3801132.211343,
+   "fee_rate": 0.0,
+   "n_pts": 142
+  },
+  {
+   "cid": "0x995336898ee77b1733e1fad3934241c1cbf5b93aade93b1aa2363262de389984",
+   "q": "Counter-Strike: FURIA vs BetBoom Team (BO3) - IEM Beijing Playoffs",
+   "y": 0,
+   "p": 0.635,
+   "hours_before_end": 48.0,
+   "vol": 3789834.0084039997,
+   "fee_rate": 0.05,
+   "n_pts": 47
+  },
+  {
+   "cid": "0xda551aac8682348117a22c847462af81151834653c39872e5b99056d372a6392",
+   "q": "Will FC Barcelona win on 2026-11-08?",
+   "y": 1,
+   "p": 0.535,
+   "hours_before_end": 48.0,
+   "vol": 3794420.098503,
+   "fee_rate": 0.05,
+   "n_pts": 291
+  },
+  {
+   "cid": "0xc855714184ac46005a7897c68f274147f0abf1fde791421541edb065fa65a1e4",
+   "q": "Will Likud win 30-34 seats in the 2026 Israeli legislative election?",
+   "y": 0,
+   "p": 0.097,
+   "hours_before_end": 48.0,
+   "vol": 4103583.573451999,
+   "fee_rate": 0.0,
+   "n_pts": 4298
+  },
+  {
+   "cid": "0xc7db52dccbf7f07ec89a8380323d87a7dc996baac7b916fddfe838016a2eaeeb",
+   "q": "Panthers vs. Saints",
+   "y": 1,
+   "p": 0.445,
+   "hours_before_end": 48.0,
+   "vol": 3786595.7234759997,
+   "fee_rate": 0.03,
+   "n_pts": 457
+  },
+  {
+   "cid": "0xa9adb7f78d2c186aea160bc6da92ee0d3a33fd690d9b6c9f2541f5e375eca682",
+   "q": "Raiders vs. Broncos",
+   "y": 0,
+   "p": 0.175,
+   "hours_before_end": 48.0,
+   "vol": 3652767.3021940007,
+   "fee_rate": 0.05,
+   "n_pts": 465
+  },
+  {
+   "cid": "0xf67a0d86970f6791f73ed28dc673221e22c0a9263af5a7f045fa4d40d917af01",
+   "q": "Trail Blazers vs. Knicks",
+   "y": 0,
+   "p": 0.355,
+   "hours_before_end": 48.0,
+   "vol": 3649831.756861001,
+   "fee_rate": 0.05,
+   "n_pts": 339
+  },
+  {
+   "cid": "0x8d432ea906196f359e5b1a3dda5a706a2db4621f672ada9a4b39c5bf9e20fd75",
+   "q": "Vikings vs. Packers",
+   "y": 1,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 3645091.904917999,
+   "fee_rate": 0.03,
+   "n_pts": 454
+  },
+  {
+   "cid": "0x0a798d7c48acab019ab858160fbdef87b672f733689079e4316ecd84eec3280c",
+   "q": "Will FC Barcelona win on 2026-11-22?",
+   "y": 1,
+   "p": 0.815,
+   "hours_before_end": 48.0,
+   "vol": 3619391.818794,
+   "fee_rate": 0.05,
+   "n_pts": 304
+  },
+  {
+   "cid": "0x6619c2b5337061520e670b00bc7d630e12c95f0ca1fcc8076cfabd5d388df1a7",
+   "q": "Seahawks vs. Raiders",
+   "y": 1,
+   "p": 0.725,
+   "hours_before_end": 48.0,
+   "vol": 3608005.1946600005,
+   "fee_rate": 0.03,
+   "n_pts": 449
+  },
+  {
+   "cid": "0x1cef653efb9be0d37575e1a3796f9a35da40cc53c34fee8771a731ddafa618c3",
+   "q": "Bengals vs. Commanders",
+   "y": 0,
+   "p": 0.725,
+   "hours_before_end": 48.0,
+   "vol": 3584913.498212,
+   "fee_rate": 0.05,
+   "n_pts": 473
+  },
+  {
+   "cid": "0xafea74f92302d25d0fe46fde0ffd487f2f0df74966959fe932d0ccc5e90cdaf3",
+   "q": "LoL: Karmine Corp vs T1 - Game 3 Winner",
+   "y": 1,
+   "p": 0.305,
+   "hours_before_end": 48.0,
+   "vol": 3567280.457983002,
+   "fee_rate": 0.05,
+   "n_pts": 144
+  },
+  {
+   "cid": "0xcabe86f531002c79e680777d7570a668a4dc27c26ac05a26649b998605995684",
+   "q": "Cowboys vs. Eagles",
+   "y": 1,
+   "p": 0.675,
+   "hours_before_end": 48.0,
+   "vol": 3600827.1954150004,
+   "fee_rate": 0.03,
+   "n_pts": 937
+  },
+  {
+   "cid": "0x69aeb202063d522a2138eea4af2b246ded0b5f0a369e3533844d3c3a91126b7a",
+   "q": "Will AEK win on 2026-11-04?",
+   "y": 0,
+   "p": 0.085,
+   "hours_before_end": 48.0,
+   "vol": 3566492.6191309993,
+   "fee_rate": 0.05,
+   "n_pts": 283
+  },
+  {
+   "cid": "0xeb0627e2db47f132eb6fc19150580aafe384ee8ef62b21725b80dc5e549ba9ac",
+   "q": "Jets vs. Chargers",
+   "y": 1,
+   "p": 0.395,
+   "hours_before_end": 48.0,
+   "vol": 3542453.420906001,
+   "fee_rate": 0.05,
+   "n_pts": 465
+  },
+  {
+   "cid": "0x1735b1017ecb676f673c31908e2bd7222dde7a70ba8c9f80f523afffdaac0208",
+   "q": "LoL: Karmine Corp vs T1 (BO5) - Worlds Playoffs",
+   "y": 0,
+   "p": 0.175,
+   "hours_before_end": 48.0,
+   "vol": 3502460.4583759992,
+   "fee_rate": 0.05,
+   "n_pts": 141
+  },
+  {
+   "cid": "0xd116777a710b6a7c336fe12cbf742fafb0d8ac508cf400446159973cec9aec29",
+   "q": "Will Republicans win Iowa, and lose Alaska, Kansas, Maine, Michigan, Ohio, and Texas?",
+   "y": 0,
+   "p": 0.105,
+   "hours_before_end": 48.0,
+   "vol": 3502032.293089,
+   "fee_rate": 0.01,
+   "n_pts": 168
+  },
+  {
+   "cid": "0x92c9c48af78d045a419a6e08b1affb483ff5732cfc89902d84103f0c0ff01811",
+   "q": "Grizzlies vs. Trail Blazers",
+   "y": 1,
+   "p": 0.355,
+   "hours_before_end": 48.0,
+   "vol": 3493732.668134001,
+   "fee_rate": 0.0,
+   "n_pts": 136
+  },
+  {
+   "cid": "0x1becab13514c999f7cf2f7605e2008ea4623a29f81ada1df5e2d69bb8d69c322",
+   "q": "Wizards vs. Bulls",
+   "y": 1,
+   "p": 0.465,
+   "hours_before_end": 48.0,
+   "vol": 3455813.7230369993,
+   "fee_rate": 0.0,
+   "n_pts": 141
+  },
+  {
+   "cid": "0xffb12fd0acd3b1015ea0cf57713715414b17ea694c9de7ac567643fb02a5ecdd",
+   "q": "LoL: Gen.G vs LYON - Game 1 Winner",
+   "y": 1,
+   "p": 0.815,
+   "hours_before_end": 48.0,
+   "vol": 3442143.786843001,
+   "fee_rate": 0.05,
+   "n_pts": 94
+  },
+  {
+   "cid": "0x4630a51d1a38778be0ab9e30d5a13bed6c88ef3220ae1dee70fe96f292362050",
+   "q": "Heat vs. Hornets",
+   "y": 0,
+   "p": 0.605,
+   "hours_before_end": 48.0,
+   "vol": 3422816.0640860004,
+   "fee_rate": 0.0,
+   "n_pts": 138
+  },
+  {
+   "cid": "0x793815e8628516f29709620fcafb8d79da6f8b9eccdbc3a81980eba46cf608d1",
+   "q": "Will FC Barcelona win on 2026-10-25?",
+   "y": 0,
+   "p": 0.595,
+   "hours_before_end": 48.0,
+   "vol": 3413868.237974,
+   "fee_rate": 0.05,
+   "n_pts": 285
+  },
+  {
+   "cid": "0x559ca9498eba90b68476a9788fa29cb000e691ef6ab02f1e3bfdf07f11da4572",
+   "q": "76ers vs. Magic",
+   "y": 1,
+   "p": 0.54,
+   "hours_before_end": 48.0,
+   "vol": 3403455.5316780005,
+   "fee_rate": 0.05,
+   "n_pts": 341
+  },
+  {
+   "cid": "0x61a6519df90a42ba68ddb578601bed96d737c3bf7f8fd9959f95350f2c2dd628",
+   "q": "LoL: Hanwha Life Esports vs Top Esports (BO1) - Worlds Group Stage",
+   "y": 1,
+   "p": 0.775,
+   "hours_before_end": 48.0,
+   "vol": 3371205.265297998,
+   "fee_rate": 0.05,
+   "n_pts": 110
+  },
+  {
+   "cid": "0xe579bd7f0e99a4f7a2eb6c0a885e1ed8cbfa3d274d8009244d0acc508de7a460",
+   "q": "Chargers vs. Ravens",
+   "y": 1,
+   "p": 0.345,
+   "hours_before_end": 48.0,
+   "vol": 3344232.9980420005,
+   "fee_rate": 0.03,
+   "n_pts": 462
+  },
+  {
+   "cid": "0xcceae66d81c60f90c9679ab531b865bd7e9f95cc54f7b0634a24095519b10d65",
+   "q": "Will the Republicans win the Florida governor race in 2026?",
+   "y": 1,
+   "p": 0.605,
+   "hours_before_end": 48.0,
+   "vol": 4017484.689736,
+   "fee_rate": 0.01,
+   "n_pts": 8945
+  },
+  {
+   "cid": "0x4d3b279606d656c8cd73a837293acdf65fe675ddf910daab34e4acce7e39000a",
+   "q": "Raptors vs. Timberwolves",
+   "y": 0,
+   "p": 0.405,
+   "hours_before_end": 48.0,
+   "vol": 3335624.7784940004,
+   "fee_rate": 0.0,
+   "n_pts": 138
+  },
+  {
+   "cid": "0x564959d4c61eeb7c568d6f8e4f5a0dcf3622434d4f264d418d9674102e5a7a88",
+   "q": "Will Republicans win Iowa and Kansas, and lose Alaska, Maine, Michigan, Ohio, and Texas?",
+   "y": 0,
+   "p": 0.115,
+   "hours_before_end": 48.0,
+   "vol": 3336768.408186,
+   "fee_rate": 0.01,
+   "n_pts": 176
+  },
+  {
+   "cid": "0xffc7e0860548bde97021f7b513722efa232ec4dda714e5c02d575c00b015d638",
+   "q": "Will Manchester City FC win on 2026-10-24?",
+   "y": 0,
+   "p": 0.595,
+   "hours_before_end": 48.0,
+   "vol": 3330291.5191210005,
+   "fee_rate": 0.05,
+   "n_pts": 291
+  },
+  {
+   "cid": "0x8eb64422e6c508ad981943048e1db94e61b7b2ffdde389ab4182477df85509ff",
+   "q": "Grizzlies vs. Warriors",
+   "y": 1,
+   "p": 0.345,
+   "hours_before_end": 48.0,
+   "vol": 3327598.2846729998,
+   "fee_rate": 0.0,
+   "n_pts": 145
+  },
+  {
+   "cid": "0x130d93a16ff24b39208e549bb9581ff4f7f600248b2dc71fff9a8bed860648cf",
+   "q": "Will FC Barcelona win on 2026-10-20?",
+   "y": 0,
+   "p": 0.395,
+   "hours_before_end": 48.0,
+   "vol": 3334867.546287,
+   "fee_rate": 0.05,
+   "n_pts": 292
+  },
+  {
+   "cid": "0x617fe92447a1c111e9e2c1a94b8c17b46409f8e98983a2960ce3a7b2d5981270",
+   "q": "Counter-Strike: MOUZ vs G2 (BO3) - BLAST Rivals Group B",
+   "y": 0,
+   "p": 0.785,
+   "hours_before_end": 48.0,
+   "vol": 3325097.0523290006,
+   "fee_rate": 0.05,
+   "n_pts": 320
+  },
+  {
+   "cid": "0x1d06cb74c42d371dd4ce3c26f239df4eaf534c6e252dc5459723f41774158223",
+   "q": "Cavaliers vs. Hawks",
+   "y": 0,
+   "p": 0.505,
+   "hours_before_end": 48.0,
+   "vol": 3321018.3103349996,
+   "fee_rate": 0.0,
+   "n_pts": 136
+  },
+  {
+   "cid": "0x66c84964bdacf300a794cb93384f1c56f2d1044900f6f49366289b3b210dd4f1",
+   "q": "LoL: Team Liquid vs LOS - Game 2 Winner",
+   "y": 1,
+   "p": 0.715,
+   "hours_before_end": 48.0,
+   "vol": 3311199.3022580007,
+   "fee_rate": 0.05,
+   "n_pts": 84
+  },
+  {
+   "cid": "0x36dfe6c00ce22c8d125894d3cff971f302187abaf4b2c4e4a1864640b9f05ce0",
+   "q": "Raptors vs. 76ers",
+   "y": 0,
+   "p": 0.155,
+   "hours_before_end": 48.0,
+   "vol": 3321537.337547,
+   "fee_rate": 0.05,
+   "n_pts": 304
+  },
+  {
+   "cid": "0xc7db36794c62024a534e102bc83c9b5bf7c3ac80ca59106aec8816b57ec4c6f8",
+   "q": "Thunder vs. Mavericks",
+   "y": 0,
+   "p": 0.825,
+   "hours_before_end": 48.0,
+   "vol": 3284808.1869330006,
+   "fee_rate": 0.0,
+   "n_pts": 133
+  },
+  {
+   "cid": "0x6a14965298ff31012f31e97f4a660af3183ab557e8af0bd61425688e4eaad6d8",
+   "q": "Thunder vs. Trail Blazers",
+   "y": 0,
+   "p": 0.545,
+   "hours_before_end": 48.0,
+   "vol": 3310352.993005,
+   "fee_rate": 0.05,
+   "n_pts": 284
+  },
+  {
+   "cid": "0x7aef793cab93942a68aab6cd01c26f015adb1be647c99994324886a5b7e108b7",
+   "q": "Pistons vs. Knicks",
+   "y": 0,
+   "p": 0.385,
+   "hours_before_end": 48.0,
+   "vol": 3266969.8681010003,
+   "fee_rate": 0.0,
+   "n_pts": 131
+  },
+  {
+   "cid": "0x5c29edbb42ec6eef7c8d589df3ad8b21258ac9fca670efcb7d91d92e38465a1d",
+   "q": "LoL: Top Esports vs Invictus Gaming (BO5) - Worlds Playoffs",
+   "y": 0,
+   "p": 0.455,
+   "hours_before_end": 48.0,
+   "vol": 3254985.5308769997,
+   "fee_rate": 0.05,
+   "n_pts": 76
+  },
+  {
+   "cid": "0x1061afb6b7e064e3a9a8606800b626f7e8111765ed9db58f5622acc6a83240eb",
+   "q": "LoL: Dplus KIA vs Bilibili Gaming (BO5) - Worlds Playoffs",
+   "y": 0,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 3232424.6263740007,
+   "fee_rate": 0.05,
+   "n_pts": 120
+  },
+  {
+   "cid": "0x741bb46008b72234857c5118c8365ab3c2f69dbf28b30b59de04f173b8a778de",
+   "q": "Will Dan Sullivan win the Alaska Senate race in 2026?",
+   "y": 0,
+   "p": 0.275,
+   "hours_before_end": 48.0,
+   "vol": 3768002.71852,
+   "fee_rate": 0.01,
+   "n_pts": 8839
+  },
+  {
+   "cid": "0xdc8303985c6259152c8ff6b70e365b2a4ebfcc23110a7d70af81548d4e91dd57",
+   "q": "UFC Fight Night: Jirí Procházka vs. Navajo Stirling (Light Heavyweight, Main Card)",
+   "y": 0,
+   "p": 0.395,
+   "hours_before_end": 48.0,
+   "vol": 3264445.757927,
+   "fee_rate": 0.05,
+   "n_pts": 322
+  },
+  {
+   "cid": "0x42dc8b594c965f0fa5042eed05071bab1bf4d863379ba92964385e6fbb34ebb4",
+   "q": "Rockets vs. Spurs",
+   "y": 1,
+   "p": 0.305,
+   "hours_before_end": 48.0,
+   "vol": 3170669.921056,
+   "fee_rate": 0.0,
+   "n_pts": 137
+  },
+  {
+   "cid": "0x9cb1e23d74f1cf5841a5bb915503d1290f793f3fa34aa7291157cd1c82ae7e3f",
+   "q": "Wizards vs. Hornets",
+   "y": 0,
+   "p": 0.515,
+   "hours_before_end": 48.0,
+   "vol": 3164697.1454300005,
+   "fee_rate": 0.0,
+   "n_pts": 140
+  },
+  {
+   "cid": "0x1e27ee2ab2865d6abc31d28246d3c13637f572b4153390d55e94f592bafd647e",
+   "q": "Will Everton FC win on 2026-11-23?",
+   "y": 0,
+   "p": 0.285,
+   "hours_before_end": 48.0,
+   "vol": 3210511.1714530005,
+   "fee_rate": 0.05,
+   "n_pts": 314
+  },
+  {
+   "cid": "0xeff6ba00ee2dbabb77d67d61b389c7bec409998b35de4dda4d332a45205b4f9a",
+   "q": "Warriors vs. Timberwolves",
+   "y": 1,
+   "p": 0.235,
+   "hours_before_end": 48.0,
+   "vol": 3121974.877077,
+   "fee_rate": 0.0,
+   "n_pts": 139
+  },
+  {
+   "cid": "0xaf2e6af4798a80e98ea2b873cd448fbb5ae96f358473868a44c38d15337e6515",
+   "q": "Heat vs. Hawks",
+   "y": 1,
+   "p": 0.435,
+   "hours_before_end": 48.0,
+   "vol": 3067506.954408,
+   "fee_rate": 0.0,
+   "n_pts": 130
+  },
+  {
+   "cid": "0xf7cf9fbe4ac095f448a7b481cd6e6b919f100174bf1b0f966c7395bbad0f10a0",
+   "q": "LoL: Invictus Gaming vs LYON - Game 2 Winner",
+   "y": 0,
+   "p": 0.565,
+   "hours_before_end": 48.0,
+   "vol": 3090028.315037,
+   "fee_rate": 0.05,
+   "n_pts": 43
+  },
+  {
+   "cid": "0xc8c5760c26490b0cd0bedcf1c61aa86c5e09c8b2886b84ff4ea2db81d5f29388",
+   "q": "Will the Republicans win the Mississippi Senate race in 2026?",
+   "y": 0,
+   "p": 0.865,
+   "hours_before_end": 48.0,
+   "vol": 3638936.226246,
+   "fee_rate": 0.01,
+   "n_pts": 8949
+  },
+  {
+   "cid": "0xb9a7b47c2b3c56a902bd706745a98c3f627e6f25e3566205b362856f2804c721",
+   "q": "Bills vs. Vikings",
+   "y": 1,
+   "p": 0.615,
+   "hours_before_end": 48.0,
+   "vol": 3146900.018518999,
+   "fee_rate": 0.03,
+   "n_pts": 445
+  },
+  {
+   "cid": "0xa95eb79c1280e453dea03f7eb0263c1c03dff2b7d6788c25d66b35e6d87ddaf8",
+   "q": "Thunder vs. Trail Blazers",
+   "y": 0,
+   "p": 0.505,
+   "hours_before_end": 48.0,
+   "vol": 3046451.224785,
+   "fee_rate": 0.05,
+   "n_pts": 262
+  },
+  {
+   "cid": "0x6e610e1d2341e2bb60db4c80177840196357a66d124ac458453bb5b3966d1d38",
+   "q": "Ravens vs. Panthers",
+   "y": 0,
+   "p": 0.405,
+   "hours_before_end": 48.0,
+   "vol": 3046887.381713,
+   "fee_rate": 0.05,
+   "n_pts": 468
+  },
+  {
+   "cid": "0xdde72120f1cb96485001d6cfe2a6e3b05e17fc0aef5c86ce752c27404a216430",
+   "q": "LoL: Invictus Gaming vs Gen.G - Game 1 Winner",
+   "y": 0,
+   "p": 0.285,
+   "hours_before_end": 48.0,
+   "vol": 3044270.645765,
+   "fee_rate": 0.05,
+   "n_pts": 67
+  },
+  {
+   "cid": "0x49c26a169079ce41dd215fa99782dfb35262b9104ac640f9255105e4a4beea06",
+   "q": "Bucks vs. Wizards",
+   "y": 0,
+   "p": 0.355,
+   "hours_before_end": 48.0,
+   "vol": 2971442.216784,
+   "fee_rate": 0.0,
+   "n_pts": 154
+  },
+  {
+   "cid": "0x33a835240ed22c5ef25d3fff2cf5d21fca053a141a7529488a2396cd78f90e2e",
+   "q": "Will Arsenal FC win on 2026-10-24?",
+   "y": 1,
+   "p": 0.685,
+   "hours_before_end": 48.0,
+   "vol": 2986795.0604809998,
+   "fee_rate": 0.05,
+   "n_pts": 297
+  },
+  {
+   "cid": "0x08b3a14c88414512c9d074db808bd94681383b4e08b53613f82877c560ecb234",
+   "q": "Trail Blazers vs. 76ers",
+   "y": 1,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 3025706.7720840005,
+   "fee_rate": 0.05,
+   "n_pts": 339
+  },
+  {
+   "cid": "0xd0c4ae292f951b5ced1fabbe2e6d1e3de6fe51be96f50092647fd13fa2c7ec6a",
+   "q": "Thunder vs. Rockets",
+   "y": 0,
+   "p": 0.465,
+   "hours_before_end": 48.0,
+   "vol": 2961793.343136,
+   "fee_rate": 0.0,
+   "n_pts": 144
+  },
+  {
+   "cid": "0x60022c5a948ad070b3c95018820c30e924698de9e38ca2c9e9c72ce1803f7ecc",
+   "q": "Celtics vs. Raptors",
+   "y": 1,
+   "p": 0.585,
+   "hours_before_end": 48.0,
+   "vol": 2964577.150637,
+   "fee_rate": 0.05,
+   "n_pts": 285
+  },
+  {
+   "cid": "0x6c99b60b726fcb7e4fdeecc1b4fbbd467fef8e984dfc6642abd0b675629a7eb3",
+   "q": "Will FC Bayern München win on 2026-10-21?",
+   "y": 0,
+   "p": 0.475,
+   "hours_before_end": 48.0,
+   "vol": 2962332.6716050003,
+   "fee_rate": 0.05,
+   "n_pts": 299
+  },
+  {
+   "cid": "0x2c4bc1dc34eaa1cb08943f536d4ce630384f3e93e028f6fa7a20933438334853",
+   "q": "Steelers vs. Bengals",
+   "y": 0,
+   "p": 0.365,
+   "hours_before_end": 48.0,
+   "vol": 2947617.856256001,
+   "fee_rate": 0.03,
+   "n_pts": 463
+  },
+  {
+   "cid": "0x4c782bf6837afba76d760cba484a28c9b1ed011765d5a12be3d8a64c9e201b65",
+   "q": "Pacers vs. Bucks",
+   "y": 0,
+   "p": 0.54,
+   "hours_before_end": 48.0,
+   "vol": 2926493.6401399993,
+   "fee_rate": 0.0,
+   "n_pts": 141
+  },
+  {
+   "cid": "0x51a31fa59f7e914943b9e02b43a5e5c9d1b746559a9b28d1b1c8ea62b417a897",
+   "q": "LoL: Team Liquid vs CTBC Flying Oyster (BO1) - Worlds Group Stage",
+   "y": 0,
+   "p": 0.715,
+   "hours_before_end": 48.0,
+   "vol": 2909824.8096080013,
+   "fee_rate": 0.05,
+   "n_pts": 112
+  },
+  {
+   "cid": "0x028dc9f74bd4f1ae80594afb93e46cd579030afcab48a74e96195f4c8c67a3d3",
+   "q": "Celtics vs. Pistons",
+   "y": 0,
+   "p": 0.515,
+   "hours_before_end": 48.0,
+   "vol": 2908769.6989610004,
+   "fee_rate": 0.0,
+   "n_pts": 149
+  },
+  {
+   "cid": "0x75ee71f41c90708fd891f13384bf563016523828c13fe64a268169c5bf68e062",
+   "q": "Milwaukee Brewers vs. Los Angeles Dodgers",
+   "y": 1,
+   "p": 0.976,
+   "hours_before_end": 48.0,
+   "vol": 2897744.7801659987,
+   "fee_rate": 0.05,
+   "n_pts": 155
+  },
+  {
+   "cid": "0xfa730903f8b79ede51cdf3632bf280839199925629c085fd085ab4c8b0aa33b5",
+   "q": "LoL: Dplus KIA vs Bilibili Gaming - Game 2 Winner",
+   "y": 0,
+   "p": 0.475,
+   "hours_before_end": 48.0,
+   "vol": 2930740.755976999,
+   "fee_rate": 0.05,
+   "n_pts": 119
+  },
+  {
+   "cid": "0xefe674eda5754a93610852d10432a50de79ea696b2583119634c5fe8944753b1",
+   "q": "Knicks vs. Raptors",
+   "y": 1,
+   "p": 0.595,
+   "hours_before_end": 48.0,
+   "vol": 2891726.9166570003,
+   "fee_rate": 0.05,
+   "n_pts": 341
+  },
+  {
+   "cid": "0xe150c9bbe104412ede8eddf5fedbdf73eba559c979acc820c34be1a3cc835bd7",
+   "q": "LoL: Gen.G vs LYON - Game 3 Winner",
+   "y": 1,
+   "p": 0.815,
+   "hours_before_end": 48.0,
+   "vol": 2885157.103508,
+   "fee_rate": 0.05,
+   "n_pts": 96
+  },
+  {
+   "cid": "0xf20cb5106e675ff9ce2c2ee8ecffec367ca39e243efa2e6b4d8516b71aa93484",
+   "q": "Heat vs. Warriors",
+   "y": 0,
+   "p": 0.385,
+   "hours_before_end": 48.0,
+   "vol": 2877197.578923,
+   "fee_rate": 0.05,
+   "n_pts": 154
+  },
+  {
+   "cid": "0x8e73c5aac5edbcf7c2c0ee58c5dac2bdd1c05e1c618eec7f2b0af9cefc1b9ff5",
+   "q": "LoL: Top Esports vs Bilibili Gaming - Game 2 Winner",
+   "y": 1,
+   "p": 0.305,
+   "hours_before_end": 48.0,
+   "vol": 2870517.862170001,
+   "fee_rate": 0.05,
+   "n_pts": 64
+  },
+  {
+   "cid": "0x88b7e613ec70694ceca726fc74705903ca62548f4920ece7ea4ee5697e8ce988",
+   "q": "Lakers vs. Jazz",
+   "y": 1,
+   "p": 0.595,
+   "hours_before_end": 48.0,
+   "vol": 2842791.58091,
+   "fee_rate": 0.0,
+   "n_pts": 140
+  },
+  {
+   "cid": "0x420fd9373f52ca7542b3285d706aeed94a5bc7f86b98fd0066de7fcd29198ad1",
+   "q": "LoL: Team Liquid vs Anyone's Legend - Game 2 Winner",
+   "y": 1,
+   "p": 0.495,
+   "hours_before_end": 48.0,
+   "vol": 2820245.265059001,
+   "fee_rate": 0.05,
+   "n_pts": 41
+  },
+  {
+   "cid": "0x357e435a4bce8257b9c96b6a711aa269676692f6c1ce14c4fbc76a8d29ec7ed6",
+   "q": "LoL: Top Esports vs Invictus Gaming - Game 3 Winner",
+   "y": 0,
+   "p": 0.48,
+   "hours_before_end": 48.0,
+   "vol": 2830616.7101690006,
+   "fee_rate": 0.05,
+   "n_pts": 75
+  },
+  {
+   "cid": "0xf036481613a53faafdc7638824e5dfab03b4dda5b9bf13fbdfa2075e2d4a8bea",
+   "q": "US announces end of Iranian blockade by November 15, 2026?",
+   "y": 0,
+   "p": 0.0125,
+   "hours_before_end": 48.0,
+   "vol": 2818562.7640060005,
+   "fee_rate": 0.01,
+   "n_pts": 452
+  },
+  {
+   "cid": "0x8fea0f418f6acf73de54f3652e4a7c9644e6d2c13819ad3fef90e6ea74270587",
+   "q": "Colts vs. Texans",
+   "y": 0,
+   "p": 0.155,
+   "hours_before_end": 48.0,
+   "vol": 2815281.2630209983,
+   "fee_rate": 0.03,
+   "n_pts": 472
+  },
+  {
+   "cid": "0x2717d2d6259b48059d6a329e83fb390fe6ebbfabcaa856ea322e29ad959480c1",
+   "q": "Will Real Madrid CF win on 2026-11-21?",
+   "y": 1,
+   "p": 0.845,
+   "hours_before_end": 48.0,
+   "vol": 2793597.046502001,
+   "fee_rate": 0.05,
+   "n_pts": 313
+  },
+  {
+   "cid": "0x8053575189fdeecb76b7d35b089f24ab5ea2ad23057ad8321507c5a19f9f72eb",
+   "q": "LoL: Gen.G vs LYON (BO5) - Worlds Playoffs",
+   "y": 1,
+   "p": 0.915,
+   "hours_before_end": 48.0,
+   "vol": 2776904.3516809996,
+   "fee_rate": 0.05,
+   "n_pts": 97
+  },
+  {
+   "cid": "0x9fe99391f0696e3d14a7d0642b008bbe70be380cabee298f73a13ff690baf5de",
+   "q": "Celtics vs. Kings",
+   "y": 0,
+   "p": 0.885,
+   "hours_before_end": 48.0,
+   "vol": 2763668.670334,
+   "fee_rate": 0.05,
+   "n_pts": 337
+  },
+  {
+   "cid": "0xcd8f56f758d08d500257946bfcd7c16d6de8c1fa3ba574511e5186139376b8a7",
+   "q": "LoL: Top Esports vs Bilibili Gaming (BO3) - Worlds Group Stage",
+   "y": 1,
+   "p": 0.245,
+   "hours_before_end": 48.0,
+   "vol": 2750838.5419679997,
+   "fee_rate": 0.05,
+   "n_pts": 65
+  },
+  {
+   "cid": "0xa5d79e71e66c9fe122f8b8b3ca6ab7a0e3048bd8508f130746944e92ed79ddf3",
+   "q": "Will Xavier Becerra win the California Governor Election in 2026?",
+   "y": 1,
+   "p": 0.9825,
+   "hours_before_end": 48.0,
+   "vol": 3504385.1494760006,
+   "fee_rate": 0.01,
+   "n_pts": 8789
+  },
+  {
+   "cid": "0x1f709c19f78e63c31644f346d311c10d86ddb56165468d74cb889092d12deba2",
+   "q": "Pelicans vs. Nuggets",
+   "y": 0,
+   "p": 0.22,
+   "hours_before_end": 48.0,
+   "vol": 2747787.5989380004,
+   "fee_rate": 0.0,
+   "n_pts": 136
+  },
+  {
+   "cid": "0x3fc1b3baed516c3f03aef0435531f6945e26c2bdfaa2fdc5f125de5709004aea",
+   "q": "Lakers vs. Hawks",
+   "y": 1,
+   "p": 0.465,
+   "hours_before_end": 48.0,
+   "vol": 2733311.008945001,
+   "fee_rate": 0.05,
+   "n_pts": 234
+  },
+  {
+   "cid": "0x7660ebefadf4326226af12ce575b83dd859f51712f04b33f923ca4ce211ba0dd",
+   "q": "LoL: Gen.G vs LYON - Game 2 Winner",
+   "y": 1,
+   "p": 0.815,
+   "hours_before_end": 48.0,
+   "vol": 2725147.212738001,
+   "fee_rate": 0.05,
+   "n_pts": 95
+  },
+  {
+   "cid": "0xf4bcfc73a0bc66dfaa13cbe9669a6aed0738e4739698faf079eab69f96eb4fe9",
+   "q": "Will Paris Saint-Germain FC win on 2026-10-20?",
+   "y": 1,
+   "p": 0.405,
+   "hours_before_end": 48.0,
+   "vol": 2742943.7140180003,
+   "fee_rate": 0.05,
+   "n_pts": 299
+  },
+  {
+   "cid": "0xe1ec65a06032e9c2b0955d3e623dba44279ccb5f82079a36ad93654a92b28daa",
+   "q": "Rockets vs. Mavericks",
+   "y": 0,
+   "p": 0.665,
+   "hours_before_end": 48.0,
+   "vol": 2708585.645523,
+   "fee_rate": 0.0,
+   "n_pts": 139
+  },
+  {
+   "cid": "0xccf963f2dcfddc7802aa7762d96736e09e9b4ab9eb4c5332c3b0f23f47c2cca8",
+   "q": "Spread: Bengals (-6.5)",
+   "y": 0,
+   "p": 0.495,
+   "hours_before_end": 48.0,
+   "vol": 2796585.072530999,
+   "fee_rate": 0.05,
+   "n_pts": 471
+  },
+  {
+   "cid": "0x1cecad283512fa09937db3dfc7106b17bff150dfcc944b0785225eeb7d39ea05",
+   "q": "Raiders vs. Jets",
+   "y": 1,
+   "p": 0.465,
+   "hours_before_end": 48.0,
+   "vol": 2701182.946684,
+   "fee_rate": 0.03,
+   "n_pts": 424
+  },
+  {
+   "cid": "0xea4e24b3a788b5625b13dfd72686924851ac2ae58a46d9e4af275c7444cc2e9b",
+   "q": "LoL: Top Esports vs Invictus Gaming - Game 1 Winner",
+   "y": 0,
+   "p": 0.485,
+   "hours_before_end": 48.0,
+   "vol": 2720569.529377001,
+   "fee_rate": 0.05,
+   "n_pts": 73
+  },
+  {
+   "cid": "0x3dd5a9a57210560fe11f668ead4f31156443ce848c58135413a15d77d70e2a1b",
+   "q": "Giants vs. Eagles",
+   "y": 1,
+   "p": 0.625,
+   "hours_before_end": 48.0,
+   "vol": 2666380.6329359994,
+   "fee_rate": 0.03,
+   "n_pts": 437
+  },
+  {
+   "cid": "0xe02580aa609bb88ef1db2e3ca1b3d152a5f0eb4bf127333c36187d69eb91286b",
+   "q": "LoL: Top Esports vs Invictus Gaming - Game 4 Winner",
+   "y": 0,
+   "p": 0.48,
+   "hours_before_end": 48.0,
+   "vol": 2663395.7232359992,
+   "fee_rate": 0.05,
+   "n_pts": 76
+  },
+  {
+   "cid": "0xc60598366a8358b18c8f9d81e2aa4bcb9ebd672fe4879b8026800ffcccd7c48b",
+   "q": "Rockets vs. Heat",
+   "y": 0,
+   "p": 0.52,
+   "hours_before_end": 48.0,
+   "vol": 2646622.085538,
+   "fee_rate": 0.05,
+   "n_pts": 337
+  },
+  {
+   "cid": "0x6c3f1009a0c91ba9f7aae44aeadf86863b0d433b60f7a090fd00c945019aa32f",
+   "q": "Russia x Ukraine ceasefire agreement by October 31, 2026?",
+   "y": 0,
+   "p": 0.0085,
+   "hours_before_end": 48.0,
+   "vol": 2793343.9149269997,
+   "fee_rate": 0.01,
+   "n_pts": 4070
+  },
+  {
+   "cid": "0x66bbf6d55e0296278858b3147689f3df9259374f158f9f028b608baa322a639c",
+   "q": "Will the Democrats win the Maine Senate race in 2026?",
+   "y": 1,
+   "p": 0.725,
+   "hours_before_end": 48.0,
+   "vol": 3504982.214,
+   "fee_rate": 0.01,
+   "n_pts": 8807
+  },
+  {
+   "cid": "0x120807abdb5f63394def7597b0420b6b55f4ca13c5cb06049e73af82517c23c1",
+   "q": "Will Republicans win Alaska, Iowa, Kansas, Michigan, and Texas, and lose Maine and Ohio?",
+   "y": 0,
+   "p": 0.0035,
+   "hours_before_end": 48.0,
+   "vol": 2627462.955978,
+   "fee_rate": 0.01,
+   "n_pts": 173
+  },
+  {
+   "cid": "0x804d4d76e21a79291fec4b34a6d23d0c085d5db0a8f027b9ed7a4246998e2a67",
+   "q": "Trail Blazers vs. Lakers",
+   "y": 0,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 2599685.155502,
+   "fee_rate": 0.05,
+   "n_pts": 161
+  },
+  {
+   "cid": "0x2345fcf9acc0308ed06ce53dfe765176643720d74b1f4a3f6d2f638d99a65e0b",
+   "q": "Packers vs. Lions",
+   "y": 0,
+   "p": 0.375,
+   "hours_before_end": 48.0,
+   "vol": 2613673.2012069994,
+   "fee_rate": 0.03,
+   "n_pts": 959
+  },
+  {
+   "cid": "0x8d5e15cc4185a45f01d7d46510f86e0a8560d88b5da3ccf66e098f45cdbdac8b",
+   "q": "Pistons vs. Magic",
+   "y": 1,
+   "p": 0.58,
+   "hours_before_end": 48.0,
+   "vol": 2586838.3212089995,
+   "fee_rate": 0.05,
+   "n_pts": 339
+  },
+  {
+   "cid": "0x93abfdbf43701bcca38c1aee7161b7952d52d0cad488ed6dfce11c5fb082f771",
+   "q": "Celtics vs. 76ers",
+   "y": 1,
+   "p": 0.495,
+   "hours_before_end": 48.0,
+   "vol": 2559182.9607170005,
+   "fee_rate": 0.05,
+   "n_pts": 259
+  },
+  {
+   "cid": "0x3b3748b734fb393de1e14f5c3fe9ef400e123faaf9a3595361378564f8e33a7d",
+   "q": "Pacers vs. Knicks",
+   "y": 0,
+   "p": 0.245,
+   "hours_before_end": 48.0,
+   "vol": 2540830.5967430007,
+   "fee_rate": 0.05,
+   "n_pts": 341
+  },
+  {
+   "cid": "0xab9571b00f4a53fe46c1acb1e59b0885202cd7c3bb7e2347313fcebcfadd7e98",
+   "q": "76ers vs. Pacers",
+   "y": 1,
+   "p": 0.555,
+   "hours_before_end": 48.0,
+   "vol": 2539566.1901900005,
+   "fee_rate": 0.0,
+   "n_pts": 136
+  },
+  {
+   "cid": "0x8c9b8ad3a64088a06d45e0b296a9a836203bc7f3ef35d134c57abead446a8b72",
+   "q": "Will the Democrats win the Mississippi Senate race in 2026?",
+   "y": 1,
+   "p": 0.135,
+   "hours_before_end": 48.0,
+   "vol": 3045542.9098750004,
+   "fee_rate": 0.01,
+   "n_pts": 8759
+  },
+  {
+   "cid": "0xf0e0241c227f0f3165d8777f50426ca8fd50bda9c60a3d8cb59f807cfae52163",
+   "q": "Will Leeds United FC win on 2026-10-25?",
+   "y": 0,
+   "p": 0.385,
+   "hours_before_end": 48.0,
+   "vol": 2536368.342163,
+   "fee_rate": 0.05,
+   "n_pts": 289
+  },
+  {
+   "cid": "0xa526f0a79a742ddbce178b2f64bfa20d2ca3c0144e98107198e961b6cb2bd234",
+   "q": "Atlanta Dream vs. Golden State Valkyries",
+   "y": 0,
+   "p": 0.475,
+   "hours_before_end": 48.0,
+   "vol": 2538038.1750610005,
+   "fee_rate": 0.05,
+   "n_pts": 288
+  },
+  {
+   "cid": "0x87b847e161ea1a750e1f094223a644ca374e4d97a7b9d0397974a2f3c67e547d",
+   "q": "Grizzlies vs. Raptors",
+   "y": 1,
+   "p": 0.405,
+   "hours_before_end": 48.0,
+   "vol": 2526217.3518010005,
+   "fee_rate": 0.05,
+   "n_pts": 238
+  },
+  {
+   "cid": "0xc9b6e730517b2437197e47e2c23ab6fd4175db02b79bc3dca833de85c03b3abb",
+   "q": "Heat vs. Clippers",
+   "y": 1,
+   "p": 0.66,
+   "hours_before_end": 48.0,
+   "vol": 2511036.1771540004,
+   "fee_rate": 0.05,
+   "n_pts": 156
+  },
+  {
+   "cid": "0xecbfaf9f3950fe3bb70053492cb4d6714bec94a488680ac59ff544e939ce78ba",
+   "q": "Patriots vs. Lions",
+   "y": 0,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 2528196.636052,
+   "fee_rate": 0.03,
+   "n_pts": 451
+  },
+  {
+   "cid": "0x605e64bac476f348d18ca4b5d587d451afd7c794c304d2d2a5dbbb7cf6dbc9c7",
+   "q": "Will Manchester United FC win on 2026-11-03?",
+   "y": 1,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 2504914.9063920006,
+   "fee_rate": 0.05,
+   "n_pts": 274
+  },
+  {
+   "cid": "0x05562f3c86c1c3f1e5fe0c7307b255e56a04a715d5242765cbbe3419c53cf078",
+   "q": "Pelicans vs. Jazz",
+   "y": 0,
+   "p": 0.445,
+   "hours_before_end": 48.0,
+   "vol": 2500093.5273579997,
+   "fee_rate": 0.0,
+   "n_pts": 144
+  },
+  {
+   "cid": "0x06fc010836a50d778fad4088e20766a0776bcf61cbdf2e9c77d656535f421f9e",
+   "q": "Miami (FL) vs. Notre Dame",
+   "y": 0,
+   "p": 0.285,
+   "hours_before_end": 48.0,
+   "vol": 2485523.1903740005,
+   "fee_rate": 0.03,
+   "n_pts": 256
+  },
+  {
+   "cid": "0xd9a39c750f927be4528547ac505277963153fd3c79aa3bac0e75161f559ba66b",
+   "q": "Counter-Strike: Spirit vs FUT Esports (BO3) - BLAST Rivals Group B",
+   "y": 1,
+   "p": 0.755,
+   "hours_before_end": 48.0,
+   "vol": 2458201.392294,
+   "fee_rate": 0.05,
+   "n_pts": 317
+  },
+  {
+   "cid": "0xec8bca230a30557ec12761af6cf5d1bf20a71bb3be7ae91f98179d3f280433c3",
+   "q": "Heat vs. Jazz",
+   "y": 1,
+   "p": 0.705,
+   "hours_before_end": 48.0,
+   "vol": 2439051.4728730004,
+   "fee_rate": 0.05,
+   "n_pts": 262
+  },
+  {
+   "cid": "0x2c00cb09722a0f0501c5e49131b898ed57bb5c075db4dc2bcbc14908f45b8c48",
+   "q": "Will the Republicans win the Maine Senate race in 2026?",
+   "y": 0,
+   "p": 0.275,
+   "hours_before_end": 48.0,
+   "vol": 2691314.0271459995,
+   "fee_rate": 0.01,
+   "n_pts": 8617
+  },
+  {
+   "cid": "0x86a7781aca8b0b7534a3daf0fa4295b2779965eb08855001a3c09416d8c8d371",
+   "q": "Oklahoma State vs. Arizona State",
+   "y": 1,
+   "p": 0.565,
+   "hours_before_end": 48.0,
+   "vol": 2417983.069314,
+   "fee_rate": 0.05,
+   "n_pts": 327
+  },
+  {
+   "cid": "0xd8c25b81841dd21fcc9b9cdd66062b452cf973c9cb4fcab8cff70ea93a8ea142",
+   "q": "Knicks vs. Timberwolves",
+   "y": 1,
+   "p": 0.525,
+   "hours_before_end": 48.0,
+   "vol": 2417881.273825,
+   "fee_rate": 0.05,
+   "n_pts": 337
+  },
+  {
+   "cid": "0x153760e7ea5d8a07b8ceed9fe46440e44ad2d5f0028070b86acd53802329e1b3",
+   "q": "76ers vs. Cavaliers",
+   "y": 0,
+   "p": 0.475,
+   "hours_before_end": 48.0,
+   "vol": 2417586.5277179996,
+   "fee_rate": 0.05,
+   "n_pts": 167
+  },
+  {
+   "cid": "0x90f8640fc2da5748ae2d21e79ab14eeebc130b68a171071a6d00d39e64a89b05",
+   "q": "LoL: Karmine Corp vs T1 - Game 2 Winner",
+   "y": 0,
+   "p": 0.295,
+   "hours_before_end": 48.0,
+   "vol": 2407725.9129620004,
+   "fee_rate": 0.05,
+   "n_pts": 143
+  },
+  {
+   "cid": "0x2737f507596e6a40ebce7b1f138e904dd460b347febde159cc16eb8c62c00b96",
+   "q": "Pelicans vs. Clippers",
+   "y": 0,
+   "p": 0.505,
+   "hours_before_end": 48.0,
+   "vol": 2405437.7942480003,
+   "fee_rate": 0.05,
+   "n_pts": 215
+  },
+  {
+   "cid": "0x4e9cff8a3aeac036225fedcc98af9b0d55284b3f430b599e7f61b059c1e177af",
+   "q": "Will Together win the most seats in the 2026 Israeli legislative election?",
+   "y": 0,
+   "p": 0.0055,
+   "hours_before_end": 48.0,
+   "vol": 2465583.875958001,
+   "fee_rate": 0.0,
+   "n_pts": 4256
+  },
+  {
+   "cid": "0x12b727031b38130d945b3e164386874360d9a32fdd7e3d00ed2adb13857e089b",
+   "q": "Will the Democrats win the Texas governor race in 2026?",
+   "y": 1,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 2554863.266967,
+   "fee_rate": 0.01,
+   "n_pts": 9089
+  },
+  {
+   "cid": "0x968a1a79e001d49fa3ee1429e3b95eb01797587740f86d4e6becf3ab1b275bfb",
+   "q": "Will the Democrats win the Ohio Senate race in 2026?",
+   "y": 1,
+   "p": 0.725,
+   "hours_before_end": 48.0,
+   "vol": 2561796.6839420004,
+   "fee_rate": 0.01,
+   "n_pts": 9116
+  },
+  {
+   "cid": "0x22492ab0d5c936a0c8b24e241bcbe959ee4d7e52f227a8d128d38a025316eb85",
+   "q": "Will the Democrats win the Florida governor race in 2026?",
+   "y": 0,
+   "p": 0.375,
+   "hours_before_end": 48.0,
+   "vol": 2530534.3083329997,
+   "fee_rate": 0.01,
+   "n_pts": 8982
+  }
+ ]
+}

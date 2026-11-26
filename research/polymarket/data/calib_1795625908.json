@@ -1,0 +1,1817 @@
+{
+ "params": {
+  "date_from": "2026-11-05",
+  "date_to": "2026-11-25",
+  "min_volume": 20000.0,
+  "pages": 2,
+  "marks": "48",
+  "min_hours": 4.0,
+  "out": ""
+ },
+ "n_rows": 172,
+ "n_markets": 172,
+ "buckets": [
+  {
+   "lo": 0.1,
+   "hi": 0.2,
+   "n": 10,
+   "markets": 10,
+   "mean_p": 0.164,
+   "mean_y": 0.1,
+   "dev": -0.064,
+   "net_bps": -4264.201219512195
+  },
+  {
+   "lo": 0.2,
+   "hi": 0.3,
+   "n": 16,
+   "markets": 16,
+   "mean_p": 0.26187499999999997,
+   "mean_y": 0.25,
+   "dev": -0.011874999999999969,
+   "net_bps": -800.9821002386625
+  },
+  {
+   "lo": 0.3,
+   "hi": 0.4,
+   "n": 26,
+   "markets": 26,
+   "mean_p": 0.35923076923076924,
+   "mean_y": 0.2692307692307692,
+   "dev": -0.09000000000000002,
+   "net_bps": -2804.837259100643
+  },
+  {
+   "lo": 0.4,
+   "hi": 0.5,
+   "n": 36,
+   "markets": 36,
+   "mean_p": 0.44875000000000004,
+   "mean_y": 0.4722222222222222,
+   "dev": 0.023472222222222172,
+   "net_bps": 260.5368307025677
+  },
+  {
+   "lo": 0.5,
+   "hi": 0.6,
+   "n": 24,
+   "markets": 24,
+   "mean_p": 0.5435416666666667,
+   "mean_y": 0.625,
+   "dev": 0.0814583333333333,
+   "net_bps": 1271.012840168646
+  },
+  {
+   "lo": 0.6,
+   "hi": 0.7,
+   "n": 18,
+   "markets": 18,
+   "mean_p": 0.6544722222222222,
+   "mean_y": 0.7777777777777778,
+   "dev": 0.12330555555555556,
+   "net_bps": 1738.5369997028988
+  },
+  {
+   "lo": 0.7,
+   "hi": 0.8,
+   "n": 17,
+   "markets": 17,
+   "mean_p": 0.7373529411764705,
+   "mean_y": 0.5294117647058824,
+   "dev": -0.20794117647058818,
+   "net_bps": -2945.0831671320298
+  },
+  {
+   "lo": 0.8,
+   "hi": 0.9,
+   "n": 12,
+   "markets": 12,
+   "mean_p": 0.8416666666666667,
+   "mean_y": 0.9166666666666666,
+   "dev": 0.07499999999999996,
+   "net_bps": 818.144554455445
+  }
+ ],
+ "rows": [
+  {
+   "cid": "0x41f94101d57bf028eff62f2cc3714adb79722553dc59c1676071459c0b009e45",
+   "q": "LoL: Bilibili Gaming vs Gen.G (BO5) - Worlds Playoffs",
+   "y": 1,
+   "p": 0.375,
+   "hours_before_end": 48.0,
+   "vol": 9751737.657525,
+   "fee_rate": 0.05,
+   "n_pts": 137
+  },
+  {
+   "cid": "0xd89caa6e08266e51834d64b67e4d8148d1f421c94bf8e6978008d695400059ad",
+   "q": "LoL: Bilibili Gaming vs Gen.G - Game 2 Winner",
+   "y": 1,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 8249933.983362,
+   "fee_rate": 0.05,
+   "n_pts": 136
+  },
+  {
+   "cid": "0x0a5cd6611af23220dae3edd65fb1bbad707937def84deeb8d5a939c22d2f2014",
+   "q": "LoL: Bilibili Gaming vs T1 - Game 1 Winner",
+   "y": 1,
+   "p": 0.54,
+   "hours_before_end": 48.0,
+   "vol": 7653094.840475996,
+   "fee_rate": 0.05,
+   "n_pts": 44
+  },
+  {
+   "cid": "0xe7c0c5512d77261c314114f7139d5e7d07a2a7cd3e6c6277e27e6d9a20eb83cc",
+   "q": "Will Chelsea FC win on 2026-11-08?",
+   "y": 0,
+   "p": 0.495,
+   "hours_before_end": 48.0,
+   "vol": 7289087.625864,
+   "fee_rate": 0.05,
+   "n_pts": 286
+  },
+  {
+   "cid": "0xe10e72af1e0a1fdbd4d3544a61d0fb5142ffe28529138a3dcad6a3ea0e93d056",
+   "q": "49ers vs. Cowboys",
+   "y": 1,
+   "p": 0.655,
+   "hours_before_end": 48.0,
+   "vol": 7045436.294057,
+   "fee_rate": 0.03,
+   "n_pts": 450
+  },
+  {
+   "cid": "0x0c5b2973c740b849f57e847b18b85bfb1b73856d88822fb40d191ed562010c59",
+   "q": "LoL: Bilibili Gaming vs T1 - Game 2 Winner",
+   "y": 0,
+   "p": 0.54,
+   "hours_before_end": 48.0,
+   "vol": 6678358.904841,
+   "fee_rate": 0.05,
+   "n_pts": 45
+  },
+  {
+   "cid": "0x82f14e24b6ffb621e390166874d2c48c4ab717fd3ea86eb2b71480a299fcc9a6",
+   "q": "LoL: Dplus KIA vs Bilibili Gaming - Game 1 Winner",
+   "y": 0,
+   "p": 0.475,
+   "hours_before_end": 48.0,
+   "vol": 6221386.719871003,
+   "fee_rate": 0.05,
+   "n_pts": 118
+  },
+  {
+   "cid": "0x025eb37a34144aff1081fa53834ce5178279b8b6736118566550d6f927fcb2c9",
+   "q": "Exact Score: Red Star FC 0 - 0 Pau FC?",
+   "y": 0,
+   "p": 0.065,
+   "hours_before_end": 48.0,
+   "vol": 5985326.9802560005,
+   "fee_rate": 0.05,
+   "n_pts": 308
+  },
+  {
+   "cid": "0xcad4c2f441ee2828f0a729fe45ae383b0422426055cd3377562b430479d316dd",
+   "q": "LoL: Invictus Gaming vs Gen.G - Game 3 Winner",
+   "y": 0,
+   "p": 0.29,
+   "hours_before_end": 48.0,
+   "vol": 5673747.621781999,
+   "fee_rate": 0.05,
+   "n_pts": 69
+  },
+  {
+   "cid": "0x74261eede43e69782e24e75d96b7e425778113069351e494eb7471a6ef35686f",
+   "q": "LoL: Bilibili Gaming vs Gen.G - Game 4 Winner",
+   "y": 1,
+   "p": 0.445,
+   "hours_before_end": 48.0,
+   "vol": 5381125.129973002,
+   "fee_rate": 0.05,
+   "n_pts": 135
+  },
+  {
+   "cid": "0x134e5143254278e5df6f0ffcf9502845fa935923b86c56fd627508552240a959",
+   "q": "LoL: Bilibili Gaming vs Gen.G - Game 1 Winner",
+   "y": 0,
+   "p": 0.425,
+   "hours_before_end": 48.0,
+   "vol": 5374223.753044,
+   "fee_rate": 0.05,
+   "n_pts": 136
+  },
+  {
+   "cid": "0xdb8805f2101fc79f95b8c2ae2a43c59ec51c36de537de597f7493f30429c9bbc",
+   "q": "LoL: Karmine Corp vs T1 - Game 1 Winner",
+   "y": 0,
+   "p": 0.295,
+   "hours_before_end": 48.0,
+   "vol": 5201169.8792739995,
+   "fee_rate": 0.05,
+   "n_pts": 143
+  },
+  {
+   "cid": "0xc8cfc009e5ef7798f16727298e98712da56877f3c78d0bd1a69992c91371ef69",
+   "q": "UFC 334: Josh Hokit vs. Ciryl Gane (Heavyweight, Main Card)",
+   "y": 0,
+   "p": 0.345,
+   "hours_before_end": 48.0,
+   "vol": 5193203.750892999,
+   "fee_rate": 0.05,
+   "n_pts": 329
+  },
+  {
+   "cid": "0x30187092881dd5d0fe2c613a39ffcd21a819025da41aac264c441b0ca77c51c9",
+   "q": "LoL: Bilibili Gaming vs T1 (BO5) - Worlds Playoffs",
+   "y": 1,
+   "p": 0.565,
+   "hours_before_end": 48.0,
+   "vol": 5109300.325353999,
+   "fee_rate": 0.05,
+   "n_pts": 47
+  },
+  {
+   "cid": "0x1568624db410028896d3a3560f5144991ccc6a21c1cd7229048c8b660e2e8a6c",
+   "q": "LoL: Bilibili Gaming vs T1 - Game 3 Winner",
+   "y": 1,
+   "p": 0.535,
+   "hours_before_end": 48.0,
+   "vol": 5065125.12212,
+   "fee_rate": 0.05,
+   "n_pts": 47
+  },
+  {
+   "cid": "0x3e2266088f5b074f7c6e5805ac2eb29b03a65aabce5c7f557d209f92edb92321",
+   "q": "Commanders vs. Giants",
+   "y": 1,
+   "p": 0.435,
+   "hours_before_end": 48.0,
+   "vol": 4989451.231414,
+   "fee_rate": 0.03,
+   "n_pts": 453
+  },
+  {
+   "cid": "0x4d6e293d49331addc7a9d414578b1dbf2e259ad76f45f0ab9385855b0d6ee760",
+   "q": "LoL: Dplus KIA vs Bilibili Gaming - Game 3 Winner",
+   "y": 0,
+   "p": 0.485,
+   "hours_before_end": 48.0,
+   "vol": 4924114.325793003,
+   "fee_rate": 0.05,
+   "n_pts": 118
+  },
+  {
+   "cid": "0x86ced242518f12a9168a7b47e5a57fc0ac4e12e3bcb4981d560abe6b161fb696",
+   "q": "Lakers vs. Pistons",
+   "y": 1,
+   "p": 0.475,
+   "hours_before_end": 48.0,
+   "vol": 4556215.868249,
+   "fee_rate": 0.05,
+   "n_pts": 209
+  },
+  {
+   "cid": "0xdc139722e0654151002a6e93417bd48cfce00bc3e649f0e2c272e84709a90c02",
+   "q": "LoL: Bilibili Gaming vs Gen.G - Game 3 Winner",
+   "y": 1,
+   "p": 0.425,
+   "hours_before_end": 48.0,
+   "vol": 4504578.738283002,
+   "fee_rate": 0.05,
+   "n_pts": 137
+  },
+  {
+   "cid": "0x23a03783dea7193df8afc1e8a8f15eb54193a706f0cf1a90f4ace9a4c13a75b8",
+   "q": "LoL: Invictus Gaming vs Gen.G (BO5) - Worlds Playoffs",
+   "y": 0,
+   "p": 0.195,
+   "hours_before_end": 48.0,
+   "vol": 4203663.150177,
+   "fee_rate": 0.05,
+   "n_pts": 68
+  },
+  {
+   "cid": "0x97520dc2d44481e4e5b643472a297ea9cf14744a830b385c83be5fb31bbf6702",
+   "q": "LoL: Bilibili Gaming vs T1 - Game 4 Winner",
+   "y": 1,
+   "p": 0.49,
+   "hours_before_end": 48.0,
+   "vol": 4162300.8217350007,
+   "fee_rate": 0.05,
+   "n_pts": 43
+  },
+  {
+   "cid": "0xca394e0db041f91ac2d69f3ea06efdfc8643acb0d2751283bd594e7b8bd581f9",
+   "q": "Israel x Iran ceasefire continues through November 15?",
+   "y": 1,
+   "p": 0.9585,
+   "hours_before_end": 48.0,
+   "vol": 4111380.7240540003,
+   "fee_rate": 0.01,
+   "n_pts": 929
+  },
+  {
+   "cid": "0xd39abb0cc68d296c9d02d0189caade9d26115142d0d0a1581b5978f022bfcf02",
+   "q": "LoL: Karmine Corp vs T1 - Game 4 Winner",
+   "y": 0,
+   "p": 0.395,
+   "hours_before_end": 48.0,
+   "vol": 4102180.824894,
+   "fee_rate": 0.05,
+   "n_pts": 144
+  },
+  {
+   "cid": "0x7ef37ab1c5a9aa47e03e9ca4fbc77aa2511c9275b8a064802a44f2461c1f691a",
+   "q": "Will Manchester United FC win on 2026-11-08?",
+   "y": 0,
+   "p": 0.445,
+   "hours_before_end": 48.0,
+   "vol": 4047125.8247109996,
+   "fee_rate": 0.05,
+   "n_pts": 304
+  },
+  {
+   "cid": "0xa7f735ef5dd052af7b34b5cb8a3bff1ab0cf111e2c5f15b836a6cc3aeb75b4a7",
+   "q": "Vikings vs. 49ers",
+   "y": 0,
+   "p": 0.385,
+   "hours_before_end": 48.0,
+   "vol": 4033909.8369109994,
+   "fee_rate": 0.05,
+   "n_pts": 474
+  },
+  {
+   "cid": "0x9df3a4ac14aa91d88f83d6e740242a4f454432de8530b0854d41aa7b69d71d4c",
+   "q": "LoL: Invictus Gaming vs Gen.G - Game 2 Winner",
+   "y": 0,
+   "p": 0.285,
+   "hours_before_end": 48.0,
+   "vol": 4005105.3651029984,
+   "fee_rate": 0.05,
+   "n_pts": 70
+  },
+  {
+   "cid": "0x00f341c1ce5ac7d38b59f3606333d0db49b6a51f7cfa86c543cebc811ba46f79",
+   "q": "Jaguars vs. Ravens",
+   "y": 1,
+   "p": 0.815,
+   "hours_before_end": 48.0,
+   "vol": 3962345.115105999,
+   "fee_rate": 0.03,
+   "n_pts": 426
+  },
+  {
+   "cid": "0x43cd2b241bfa0a17f1835ea5600c3018cd059eebd73ed30299b70922426b043b",
+   "q": "Hornets vs. Lakers",
+   "y": 0,
+   "p": 0.245,
+   "hours_before_end": 48.0,
+   "vol": 3895086.4107049997,
+   "fee_rate": 0.05,
+   "n_pts": 344
+  },
+  {
+   "cid": "0xacb4bae086c3641d13b6ef1d90c4a5e24d52b74f50a33fe4523ce0636238ea1f",
+   "q": "Jaguars vs. Giants",
+   "y": 0,
+   "p": 0.715,
+   "hours_before_end": 48.0,
+   "vol": 3850198.815496,
+   "fee_rate": 0.05,
+   "n_pts": 470
+  },
+  {
+   "cid": "0xda551aac8682348117a22c847462af81151834653c39872e5b99056d372a6392",
+   "q": "Will FC Barcelona win on 2026-11-08?",
+   "y": 1,
+   "p": 0.535,
+   "hours_before_end": 48.0,
+   "vol": 3794420.098503,
+   "fee_rate": 0.05,
+   "n_pts": 291
+  },
+  {
+   "cid": "0x995336898ee77b1733e1fad3934241c1cbf5b93aade93b1aa2363262de389984",
+   "q": "Counter-Strike: FURIA vs BetBoom Team (BO3) - IEM Beijing Playoffs",
+   "y": 0,
+   "p": 0.635,
+   "hours_before_end": 48.0,
+   "vol": 3789834.0084039997,
+   "fee_rate": 0.05,
+   "n_pts": 47
+  },
+  {
+   "cid": "0xc7db52dccbf7f07ec89a8380323d87a7dc996baac7b916fddfe838016a2eaeeb",
+   "q": "Panthers vs. Saints",
+   "y": 1,
+   "p": 0.445,
+   "hours_before_end": 48.0,
+   "vol": 3786595.7234759997,
+   "fee_rate": 0.03,
+   "n_pts": 457
+  },
+  {
+   "cid": "0xa9adb7f78d2c186aea160bc6da92ee0d3a33fd690d9b6c9f2541f5e375eca682",
+   "q": "Raiders vs. Broncos",
+   "y": 0,
+   "p": 0.175,
+   "hours_before_end": 48.0,
+   "vol": 3652767.3021940007,
+   "fee_rate": 0.05,
+   "n_pts": 465
+  },
+  {
+   "cid": "0xf67a0d86970f6791f73ed28dc673221e22c0a9263af5a7f045fa4d40d917af01",
+   "q": "Trail Blazers vs. Knicks",
+   "y": 0,
+   "p": 0.355,
+   "hours_before_end": 48.0,
+   "vol": 3649831.756861001,
+   "fee_rate": 0.05,
+   "n_pts": 339
+  },
+  {
+   "cid": "0x8d432ea906196f359e5b1a3dda5a706a2db4621f672ada9a4b39c5bf9e20fd75",
+   "q": "Vikings vs. Packers",
+   "y": 1,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 3645091.904917999,
+   "fee_rate": 0.03,
+   "n_pts": 454
+  },
+  {
+   "cid": "0x0a798d7c48acab019ab858160fbdef87b672f733689079e4316ecd84eec3280c",
+   "q": "Will FC Barcelona win on 2026-11-22?",
+   "y": 1,
+   "p": 0.815,
+   "hours_before_end": 48.0,
+   "vol": 3619391.818794,
+   "fee_rate": 0.05,
+   "n_pts": 304
+  },
+  {
+   "cid": "0x6619c2b5337061520e670b00bc7d630e12c95f0ca1fcc8076cfabd5d388df1a7",
+   "q": "Seahawks vs. Raiders",
+   "y": 1,
+   "p": 0.725,
+   "hours_before_end": 48.0,
+   "vol": 3608005.1946600005,
+   "fee_rate": 0.03,
+   "n_pts": 449
+  },
+  {
+   "cid": "0x1cef653efb9be0d37575e1a3796f9a35da40cc53c34fee8771a731ddafa618c3",
+   "q": "Bengals vs. Commanders",
+   "y": 0,
+   "p": 0.725,
+   "hours_before_end": 48.0,
+   "vol": 3584913.498212,
+   "fee_rate": 0.05,
+   "n_pts": 473
+  },
+  {
+   "cid": "0xafea74f92302d25d0fe46fde0ffd487f2f0df74966959fe932d0ccc5e90cdaf3",
+   "q": "LoL: Karmine Corp vs T1 - Game 3 Winner",
+   "y": 1,
+   "p": 0.305,
+   "hours_before_end": 48.0,
+   "vol": 3567280.457983002,
+   "fee_rate": 0.05,
+   "n_pts": 144
+  },
+  {
+   "cid": "0xeb0627e2db47f132eb6fc19150580aafe384ee8ef62b21725b80dc5e549ba9ac",
+   "q": "Jets vs. Chargers",
+   "y": 1,
+   "p": 0.395,
+   "hours_before_end": 48.0,
+   "vol": 3542453.420906001,
+   "fee_rate": 0.05,
+   "n_pts": 465
+  },
+  {
+   "cid": "0x1735b1017ecb676f673c31908e2bd7222dde7a70ba8c9f80f523afffdaac0208",
+   "q": "LoL: Karmine Corp vs T1 (BO5) - Worlds Playoffs",
+   "y": 0,
+   "p": 0.175,
+   "hours_before_end": 48.0,
+   "vol": 3502460.4583759992,
+   "fee_rate": 0.05,
+   "n_pts": 141
+  },
+  {
+   "cid": "0xffb12fd0acd3b1015ea0cf57713715414b17ea694c9de7ac567643fb02a5ecdd",
+   "q": "LoL: Gen.G vs LYON - Game 1 Winner",
+   "y": 1,
+   "p": 0.815,
+   "hours_before_end": 48.0,
+   "vol": 3442143.786843001,
+   "fee_rate": 0.05,
+   "n_pts": 94
+  },
+  {
+   "cid": "0x559ca9498eba90b68476a9788fa29cb000e691ef6ab02f1e3bfdf07f11da4572",
+   "q": "76ers vs. Magic",
+   "y": 1,
+   "p": 0.54,
+   "hours_before_end": 48.0,
+   "vol": 3403455.5316780005,
+   "fee_rate": 0.05,
+   "n_pts": 341
+  },
+  {
+   "cid": "0xe579bd7f0e99a4f7a2eb6c0a885e1ed8cbfa3d274d8009244d0acc508de7a460",
+   "q": "Chargers vs. Ravens",
+   "y": 1,
+   "p": 0.345,
+   "hours_before_end": 48.0,
+   "vol": 3344232.9980420005,
+   "fee_rate": 0.03,
+   "n_pts": 462
+  },
+  {
+   "cid": "0x617fe92447a1c111e9e2c1a94b8c17b46409f8e98983a2960ce3a7b2d5981270",
+   "q": "Counter-Strike: MOUZ vs G2 (BO3) - BLAST Rivals Group B",
+   "y": 0,
+   "p": 0.785,
+   "hours_before_end": 48.0,
+   "vol": 3325097.0523290006,
+   "fee_rate": 0.05,
+   "n_pts": 320
+  },
+  {
+   "cid": "0x36dfe6c00ce22c8d125894d3cff971f302187abaf4b2c4e4a1864640b9f05ce0",
+   "q": "Raptors vs. 76ers",
+   "y": 0,
+   "p": 0.155,
+   "hours_before_end": 48.0,
+   "vol": 3321537.337547,
+   "fee_rate": 0.05,
+   "n_pts": 304
+  },
+  {
+   "cid": "0x6a14965298ff31012f31e97f4a660af3183ab557e8af0bd61425688e4eaad6d8",
+   "q": "Thunder vs. Trail Blazers",
+   "y": 0,
+   "p": 0.545,
+   "hours_before_end": 48.0,
+   "vol": 3310352.993005,
+   "fee_rate": 0.05,
+   "n_pts": 284
+  },
+  {
+   "cid": "0xdc8303985c6259152c8ff6b70e365b2a4ebfcc23110a7d70af81548d4e91dd57",
+   "q": "UFC Fight Night: Jirí Procházka vs. Navajo Stirling (Light Heavyweight, Main Card)",
+   "y": 0,
+   "p": 0.395,
+   "hours_before_end": 48.0,
+   "vol": 3264445.757927,
+   "fee_rate": 0.05,
+   "n_pts": 322
+  },
+  {
+   "cid": "0x1061afb6b7e064e3a9a8606800b626f7e8111765ed9db58f5622acc6a83240eb",
+   "q": "LoL: Dplus KIA vs Bilibili Gaming (BO5) - Worlds Playoffs",
+   "y": 0,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 3232424.6263740007,
+   "fee_rate": 0.05,
+   "n_pts": 120
+  },
+  {
+   "cid": "0x1e27ee2ab2865d6abc31d28246d3c13637f572b4153390d55e94f592bafd647e",
+   "q": "Will Everton FC win on 2026-11-23?",
+   "y": 0,
+   "p": 0.285,
+   "hours_before_end": 48.0,
+   "vol": 3210511.1714530005,
+   "fee_rate": 0.05,
+   "n_pts": 314
+  },
+  {
+   "cid": "0xb9a7b47c2b3c56a902bd706745a98c3f627e6f25e3566205b362856f2804c721",
+   "q": "Bills vs. Vikings",
+   "y": 1,
+   "p": 0.615,
+   "hours_before_end": 48.0,
+   "vol": 3146900.018518999,
+   "fee_rate": 0.03,
+   "n_pts": 445
+  },
+  {
+   "cid": "0x6e610e1d2341e2bb60db4c80177840196357a66d124ac458453bb5b3966d1d38",
+   "q": "Ravens vs. Panthers",
+   "y": 0,
+   "p": 0.405,
+   "hours_before_end": 48.0,
+   "vol": 3046887.381713,
+   "fee_rate": 0.05,
+   "n_pts": 468
+  },
+  {
+   "cid": "0xa95eb79c1280e453dea03f7eb0263c1c03dff2b7d6788c25d66b35e6d87ddaf8",
+   "q": "Thunder vs. Trail Blazers",
+   "y": 0,
+   "p": 0.505,
+   "hours_before_end": 48.0,
+   "vol": 3046451.224785,
+   "fee_rate": 0.05,
+   "n_pts": 262
+  },
+  {
+   "cid": "0xdde72120f1cb96485001d6cfe2a6e3b05e17fc0aef5c86ce752c27404a216430",
+   "q": "LoL: Invictus Gaming vs Gen.G - Game 1 Winner",
+   "y": 0,
+   "p": 0.285,
+   "hours_before_end": 48.0,
+   "vol": 3044270.645765,
+   "fee_rate": 0.05,
+   "n_pts": 67
+  },
+  {
+   "cid": "0x08b3a14c88414512c9d074db808bd94681383b4e08b53613f82877c560ecb234",
+   "q": "Trail Blazers vs. 76ers",
+   "y": 1,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 3025706.7720840005,
+   "fee_rate": 0.05,
+   "n_pts": 339
+  },
+  {
+   "cid": "0x60022c5a948ad070b3c95018820c30e924698de9e38ca2c9e9c72ce1803f7ecc",
+   "q": "Celtics vs. Raptors",
+   "y": 1,
+   "p": 0.585,
+   "hours_before_end": 48.0,
+   "vol": 2964577.150637,
+   "fee_rate": 0.05,
+   "n_pts": 285
+  },
+  {
+   "cid": "0x2c4bc1dc34eaa1cb08943f536d4ce630384f3e93e028f6fa7a20933438334853",
+   "q": "Steelers vs. Bengals",
+   "y": 0,
+   "p": 0.365,
+   "hours_before_end": 48.0,
+   "vol": 2947617.856256001,
+   "fee_rate": 0.03,
+   "n_pts": 463
+  },
+  {
+   "cid": "0xfa730903f8b79ede51cdf3632bf280839199925629c085fd085ab4c8b0aa33b5",
+   "q": "LoL: Dplus KIA vs Bilibili Gaming - Game 2 Winner",
+   "y": 0,
+   "p": 0.475,
+   "hours_before_end": 48.0,
+   "vol": 2930740.755976999,
+   "fee_rate": 0.05,
+   "n_pts": 119
+  },
+  {
+   "cid": "0xefe674eda5754a93610852d10432a50de79ea696b2583119634c5fe8944753b1",
+   "q": "Knicks vs. Raptors",
+   "y": 1,
+   "p": 0.595,
+   "hours_before_end": 48.0,
+   "vol": 2891726.9166570003,
+   "fee_rate": 0.05,
+   "n_pts": 341
+  },
+  {
+   "cid": "0xe150c9bbe104412ede8eddf5fedbdf73eba559c979acc820c34be1a3cc835bd7",
+   "q": "LoL: Gen.G vs LYON - Game 3 Winner",
+   "y": 1,
+   "p": 0.815,
+   "hours_before_end": 48.0,
+   "vol": 2885157.103508,
+   "fee_rate": 0.05,
+   "n_pts": 96
+  },
+  {
+   "cid": "0xf20cb5106e675ff9ce2c2ee8ecffec367ca39e243efa2e6b4d8516b71aa93484",
+   "q": "Heat vs. Warriors",
+   "y": 0,
+   "p": 0.385,
+   "hours_before_end": 48.0,
+   "vol": 2877197.578923,
+   "fee_rate": 0.05,
+   "n_pts": 154
+  },
+  {
+   "cid": "0xf036481613a53faafdc7638824e5dfab03b4dda5b9bf13fbdfa2075e2d4a8bea",
+   "q": "US announces end of Iranian blockade by November 15, 2026?",
+   "y": 0,
+   "p": 0.0125,
+   "hours_before_end": 48.0,
+   "vol": 2818562.7640060005,
+   "fee_rate": 0.01,
+   "n_pts": 452
+  },
+  {
+   "cid": "0x8fea0f418f6acf73de54f3652e4a7c9644e6d2c13819ad3fef90e6ea74270587",
+   "q": "Colts vs. Texans",
+   "y": 0,
+   "p": 0.155,
+   "hours_before_end": 48.0,
+   "vol": 2815281.2630209983,
+   "fee_rate": 0.03,
+   "n_pts": 472
+  },
+  {
+   "cid": "0xccf963f2dcfddc7802aa7762d96736e09e9b4ab9eb4c5332c3b0f23f47c2cca8",
+   "q": "Spread: Bengals (-6.5)",
+   "y": 0,
+   "p": 0.495,
+   "hours_before_end": 48.0,
+   "vol": 2796585.072530999,
+   "fee_rate": 0.05,
+   "n_pts": 471
+  },
+  {
+   "cid": "0x2717d2d6259b48059d6a329e83fb390fe6ebbfabcaa856ea322e29ad959480c1",
+   "q": "Will Real Madrid CF win on 2026-11-21?",
+   "y": 1,
+   "p": 0.845,
+   "hours_before_end": 48.0,
+   "vol": 2793597.046502001,
+   "fee_rate": 0.05,
+   "n_pts": 313
+  },
+  {
+   "cid": "0x8053575189fdeecb76b7d35b089f24ab5ea2ad23057ad8321507c5a19f9f72eb",
+   "q": "LoL: Gen.G vs LYON (BO5) - Worlds Playoffs",
+   "y": 1,
+   "p": 0.915,
+   "hours_before_end": 48.0,
+   "vol": 2776904.3516809996,
+   "fee_rate": 0.05,
+   "n_pts": 97
+  },
+  {
+   "cid": "0x9fe99391f0696e3d14a7d0642b008bbe70be380cabee298f73a13ff690baf5de",
+   "q": "Celtics vs. Kings",
+   "y": 0,
+   "p": 0.885,
+   "hours_before_end": 48.0,
+   "vol": 2763668.670334,
+   "fee_rate": 0.05,
+   "n_pts": 337
+  },
+  {
+   "cid": "0x3fc1b3baed516c3f03aef0435531f6945e26c2bdfaa2fdc5f125de5709004aea",
+   "q": "Lakers vs. Hawks",
+   "y": 1,
+   "p": 0.465,
+   "hours_before_end": 48.0,
+   "vol": 2733311.008945001,
+   "fee_rate": 0.05,
+   "n_pts": 234
+  },
+  {
+   "cid": "0x7660ebefadf4326226af12ce575b83dd859f51712f04b33f923ca4ce211ba0dd",
+   "q": "LoL: Gen.G vs LYON - Game 2 Winner",
+   "y": 1,
+   "p": 0.815,
+   "hours_before_end": 48.0,
+   "vol": 2725147.212738001,
+   "fee_rate": 0.05,
+   "n_pts": 95
+  },
+  {
+   "cid": "0x3dd5a9a57210560fe11f668ead4f31156443ce848c58135413a15d77d70e2a1b",
+   "q": "Giants vs. Eagles",
+   "y": 1,
+   "p": 0.625,
+   "hours_before_end": 48.0,
+   "vol": 2666380.6329359994,
+   "fee_rate": 0.03,
+   "n_pts": 437
+  },
+  {
+   "cid": "0xc60598366a8358b18c8f9d81e2aa4bcb9ebd672fe4879b8026800ffcccd7c48b",
+   "q": "Rockets vs. Heat",
+   "y": 0,
+   "p": 0.52,
+   "hours_before_end": 48.0,
+   "vol": 2646622.085538,
+   "fee_rate": 0.05,
+   "n_pts": 337
+  },
+  {
+   "cid": "0x804d4d76e21a79291fec4b34a6d23d0c085d5db0a8f027b9ed7a4246998e2a67",
+   "q": "Trail Blazers vs. Lakers",
+   "y": 0,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 2599685.155502,
+   "fee_rate": 0.05,
+   "n_pts": 161
+  },
+  {
+   "cid": "0x8d5e15cc4185a45f01d7d46510f86e0a8560d88b5da3ccf66e098f45cdbdac8b",
+   "q": "Pistons vs. Magic",
+   "y": 1,
+   "p": 0.58,
+   "hours_before_end": 48.0,
+   "vol": 2586838.321209,
+   "fee_rate": 0.05,
+   "n_pts": 339
+  },
+  {
+   "cid": "0x93abfdbf43701bcca38c1aee7161b7952d52d0cad488ed6dfce11c5fb082f771",
+   "q": "Celtics vs. 76ers",
+   "y": 1,
+   "p": 0.495,
+   "hours_before_end": 48.0,
+   "vol": 2559182.9607170005,
+   "fee_rate": 0.05,
+   "n_pts": 259
+  },
+  {
+   "cid": "0x3b3748b734fb393de1e14f5c3fe9ef400e123faaf9a3595361378564f8e33a7d",
+   "q": "Pacers vs. Knicks",
+   "y": 0,
+   "p": 0.245,
+   "hours_before_end": 48.0,
+   "vol": 2540830.5967430007,
+   "fee_rate": 0.05,
+   "n_pts": 341
+  },
+  {
+   "cid": "0xecbfaf9f3950fe3bb70053492cb4d6714bec94a488680ac59ff544e939ce78ba",
+   "q": "Patriots vs. Lions",
+   "y": 0,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 2528196.636052,
+   "fee_rate": 0.03,
+   "n_pts": 451
+  },
+  {
+   "cid": "0x87b847e161ea1a750e1f094223a644ca374e4d97a7b9d0397974a2f3c67e547d",
+   "q": "Grizzlies vs. Raptors",
+   "y": 1,
+   "p": 0.405,
+   "hours_before_end": 48.0,
+   "vol": 2526217.3518010005,
+   "fee_rate": 0.05,
+   "n_pts": 238
+  },
+  {
+   "cid": "0xc9b6e730517b2437197e47e2c23ab6fd4175db02b79bc3dca833de85c03b3abb",
+   "q": "Heat vs. Clippers",
+   "y": 1,
+   "p": 0.66,
+   "hours_before_end": 48.0,
+   "vol": 2511036.1771540004,
+   "fee_rate": 0.05,
+   "n_pts": 156
+  },
+  {
+   "cid": "0x06fc010836a50d778fad4088e20766a0776bcf61cbdf2e9c77d656535f421f9e",
+   "q": "Miami (FL) vs. Notre Dame",
+   "y": 0,
+   "p": 0.285,
+   "hours_before_end": 48.0,
+   "vol": 2485523.1903740005,
+   "fee_rate": 0.03,
+   "n_pts": 256
+  },
+  {
+   "cid": "0xd9a39c750f927be4528547ac505277963153fd3c79aa3bac0e75161f559ba66b",
+   "q": "Counter-Strike: Spirit vs FUT Esports (BO3) - BLAST Rivals Group B",
+   "y": 1,
+   "p": 0.755,
+   "hours_before_end": 48.0,
+   "vol": 2458201.392294,
+   "fee_rate": 0.05,
+   "n_pts": 317
+  },
+  {
+   "cid": "0xec8bca230a30557ec12761af6cf5d1bf20a71bb3be7ae91f98179d3f280433c3",
+   "q": "Heat vs. Jazz",
+   "y": 1,
+   "p": 0.705,
+   "hours_before_end": 48.0,
+   "vol": 2439051.4728730004,
+   "fee_rate": 0.05,
+   "n_pts": 262
+  },
+  {
+   "cid": "0x86a7781aca8b0b7534a3daf0fa4295b2779965eb08855001a3c09416d8c8d371",
+   "q": "Oklahoma State vs. Arizona State",
+   "y": 1,
+   "p": 0.565,
+   "hours_before_end": 48.0,
+   "vol": 2417983.069314,
+   "fee_rate": 0.05,
+   "n_pts": 327
+  },
+  {
+   "cid": "0xd8c25b81841dd21fcc9b9cdd66062b452cf973c9cb4fcab8cff70ea93a8ea142",
+   "q": "Knicks vs. Timberwolves",
+   "y": 1,
+   "p": 0.525,
+   "hours_before_end": 48.0,
+   "vol": 2417881.273825,
+   "fee_rate": 0.05,
+   "n_pts": 337
+  },
+  {
+   "cid": "0x153760e7ea5d8a07b8ceed9fe46440e44ad2d5f0028070b86acd53802329e1b3",
+   "q": "76ers vs. Cavaliers",
+   "y": 0,
+   "p": 0.475,
+   "hours_before_end": 48.0,
+   "vol": 2417586.5277179996,
+   "fee_rate": 0.05,
+   "n_pts": 167
+  },
+  {
+   "cid": "0x90f8640fc2da5748ae2d21e79ab14eeebc130b68a171071a6d00d39e64a89b05",
+   "q": "LoL: Karmine Corp vs T1 - Game 2 Winner",
+   "y": 0,
+   "p": 0.295,
+   "hours_before_end": 48.0,
+   "vol": 2407725.9129620004,
+   "fee_rate": 0.05,
+   "n_pts": 143
+  },
+  {
+   "cid": "0x2737f507596e6a40ebce7b1f138e904dd460b347febde159cc16eb8c62c00b96",
+   "q": "Pelicans vs. Clippers",
+   "y": 0,
+   "p": 0.505,
+   "hours_before_end": 48.0,
+   "vol": 2405437.7942480003,
+   "fee_rate": 0.05,
+   "n_pts": 215
+  },
+  {
+   "cid": "0x6c0dac1551a12d7ade3ac5585a587c251f9d78e00f55ee6e42b72c2bf38a9955",
+   "q": "Thunder vs. Clippers",
+   "y": 0,
+   "p": 0.755,
+   "hours_before_end": 48.0,
+   "vol": 2392491.6917290003,
+   "fee_rate": 0.05,
+   "n_pts": 332
+  },
+  {
+   "cid": "0xba45b9805fe8d9497c5117efe1ae4f28ecdf359788cf2c91de6dad9d00c1486f",
+   "q": "Bills vs. Jets",
+   "y": 1,
+   "p": 0.795,
+   "hours_before_end": 48.0,
+   "vol": 2390938.744618001,
+   "fee_rate": 0.03,
+   "n_pts": 458
+  },
+  {
+   "cid": "0x93a388a80192937b6e0a6d87a9cbe575b0a8bc4c18fc96f29fcf677b34af4cfb",
+   "q": "Mavericks vs. Cavaliers",
+   "y": 0,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 2378204.583118,
+   "fee_rate": 0.05,
+   "n_pts": 329
+  },
+  {
+   "cid": "0xba473e6e80f951d867c398e25e52a19d9d5fad1dbebb799a91cdee4c97dc4663",
+   "q": "Spurs vs. Jazz",
+   "y": 1,
+   "p": 0.895,
+   "hours_before_end": 48.0,
+   "vol": 2377970.9964460004,
+   "fee_rate": 0.05,
+   "n_pts": 341
+  },
+  {
+   "cid": "0x3da741c90a327217e96e05465d1de86350f7b20a014ac9f3a0c9eab521f4dff6",
+   "q": "ATP World Tour Finals, John McEnroe Group: Alexander Zverev vs Arthur Fils",
+   "y": 1,
+   "p": 0.835,
+   "hours_before_end": 48.0,
+   "vol": 2357312.6311140005,
+   "fee_rate": 0.05,
+   "n_pts": 159
+  },
+  {
+   "cid": "0xc42460b4eca4c9f8871e21184ce28a6b7c1ae422bebad855962db1d6af550347",
+   "q": "Thunder vs. Pacers",
+   "y": 0,
+   "p": 0.725,
+   "hours_before_end": 48.0,
+   "vol": 2343421.053032,
+   "fee_rate": 0.05,
+   "n_pts": 340
+  },
+  {
+   "cid": "0x0e9d7335ee3eb0add746b555b39a8dd45533f628d607a4b927955ef51a9488b2",
+   "q": "Buccaneers vs. Bears",
+   "y": 0,
+   "p": 0.285,
+   "hours_before_end": 48.0,
+   "vol": 2323468.4204090005,
+   "fee_rate": 0.03,
+   "n_pts": 448
+  },
+  {
+   "cid": "0xd2ec06b5026f7da6ba5c3d71c50287854ecd72b0353524e641724e35c202bb6a",
+   "q": "Rockets vs. Nuggets",
+   "y": 0,
+   "p": 0.465,
+   "hours_before_end": 48.0,
+   "vol": 2319977.4521770007,
+   "fee_rate": 0.05,
+   "n_pts": 336
+  },
+  {
+   "cid": "0x159b76fa5382b06fb70bf17593a79a9ee670b7888af945f917de7579138194eb",
+   "q": "76ers vs. Pistons",
+   "y": 1,
+   "p": 0.47,
+   "hours_before_end": 48.0,
+   "vol": 2297122.658902,
+   "fee_rate": 0.05,
+   "n_pts": 155
+  },
+  {
+   "cid": "0x9d038b5e1e46d49dad8c2a586efcbba2678000aa9318f45af10933be5cf97684",
+   "q": "Texans vs. Chargers",
+   "y": 1,
+   "p": 0.695,
+   "hours_before_end": 48.0,
+   "vol": 2269079.8952570003,
+   "fee_rate": 0.03,
+   "n_pts": 444
+  },
+  {
+   "cid": "0xcd8c775e8021b7885c6c014203f0ac841ecbf492d449fd2433f78c120eeb399f",
+   "q": "Celtics vs. Nuggets",
+   "y": 0,
+   "p": 0.53,
+   "hours_before_end": 48.0,
+   "vol": 2226718.314386001,
+   "fee_rate": 0.05,
+   "n_pts": 334
+  },
+  {
+   "cid": "0x525051eaca67266968cf515f20aa390fa2cc2ff05a394520f0c44696698a9d7b",
+   "q": "Jets vs. Chiefs",
+   "y": 0,
+   "p": 0.195,
+   "hours_before_end": 48.0,
+   "vol": 2217732.449114,
+   "fee_rate": 0.03,
+   "n_pts": 436
+  },
+  {
+   "cid": "0xf705c405b0962ab4a25eefe5eb9849600d26b5b0d2fc9519f25d570882a22061",
+   "q": "Jazz vs. Clippers",
+   "y": 1,
+   "p": 0.345,
+   "hours_before_end": 48.0,
+   "vol": 2205932.7180190003,
+   "fee_rate": 0.05,
+   "n_pts": 341
+  },
+  {
+   "cid": "0xb146d7376acd8ed1ea031a3c44b42a9c90e60b5a8c7fed3faeb7fa05eabe6c70",
+   "q": "Will AFC Bournemouth win on 2026-11-21?",
+   "y": 1,
+   "p": 0.495,
+   "hours_before_end": 48.0,
+   "vol": 2189837.9159450005,
+   "fee_rate": 0.05,
+   "n_pts": 311
+  },
+  {
+   "cid": "0x9c183fba1441c3917b7e3a99c0103626285576b0d6b8e1bcabf3e10cb8e3a239",
+   "q": "Will Brentford FC win on 2026-11-23?",
+   "y": 1,
+   "p": 0.445,
+   "hours_before_end": 48.0,
+   "vol": 2160524.142817,
+   "fee_rate": 0.05,
+   "n_pts": 315
+  },
+  {
+   "cid": "0x6ab8f6b4d2c5992ce4fe0abd522953301ca3213433beefd5017d1cfbeb4fd69a",
+   "q": "Steelers vs. Eagles",
+   "y": 0,
+   "p": 0.665,
+   "hours_before_end": 48.0,
+   "vol": 2159504.2759489994,
+   "fee_rate": 0.05,
+   "n_pts": 471
+  },
+  {
+   "cid": "0xc31a3f047367e05c7c92b9553b7cf00252bb86b3291cf3dda9e6868644a0de6b",
+   "q": "Knicks vs. Pacers",
+   "y": 0,
+   "p": 0.705,
+   "hours_before_end": 48.0,
+   "vol": 2137681.046777,
+   "fee_rate": 0.05,
+   "n_pts": 320
+  },
+  {
+   "cid": "0x79ebb36fa1dae08c5da6d2fea3aed7d572bfb0b266910afb7aaa4f750f966fef",
+   "q": "Raptors vs. Bucks",
+   "y": 1,
+   "p": 0.705,
+   "hours_before_end": 48.0,
+   "vol": 2116462.089697,
+   "fee_rate": 0.05,
+   "n_pts": 168
+  },
+  {
+   "cid": "0x62e01f20b8345769f914d06b7c695e40b57e7857226c3fe327ea20316ce91fb1",
+   "q": "Browns vs. Saints",
+   "y": 0,
+   "p": 0.395,
+   "hours_before_end": 48.0,
+   "vol": 2110352.9740250004,
+   "fee_rate": 0.03,
+   "n_pts": 440
+  },
+  {
+   "cid": "0xa0f8dfd2fc8b8206debc3b967f8de3410f181becf53e61fbab9eb9d0db208981",
+   "q": "Jazz vs. Lakers",
+   "y": 0,
+   "p": 0.135,
+   "hours_before_end": 48.0,
+   "vol": 2106424.2642090004,
+   "fee_rate": 0.05,
+   "n_pts": 342
+  },
+  {
+   "cid": "0xac7deb260d4926829a16fb8b55a57b483ec2379644742ef9926fe7a9b1d67993",
+   "q": "Israel x Iran ceasefire continues through November 7?",
+   "y": 1,
+   "p": 0.95,
+   "hours_before_end": 48.0,
+   "vol": 2101133.5489560002,
+   "fee_rate": 0.01,
+   "n_pts": 221
+  },
+  {
+   "cid": "0x1d5ff8b0c2a7a10f7502d0484533808ccfaa9c65de11a18e1115a1b08aad8dae",
+   "q": "Chiefs vs. Falcons",
+   "y": 1,
+   "p": 0.625,
+   "hours_before_end": 48.0,
+   "vol": 2099301.051037,
+   "fee_rate": 0.03,
+   "n_pts": 453
+  },
+  {
+   "cid": "0xd52bf2df8eebb1aa0f1e87662421f431d730474c81932a434e4c66d82fa00725",
+   "q": "Magic vs. Celtics",
+   "y": 1,
+   "p": 0.245,
+   "hours_before_end": 48.0,
+   "vol": 2093530.034824,
+   "fee_rate": 0.05,
+   "n_pts": 334
+  },
+  {
+   "cid": "0x1d3dcde6b1f58bea1da7868a6409c8f74423ffd499f02759b043c10833edd9a5",
+   "q": "Celtics vs. Warriors",
+   "y": 0,
+   "p": 0.735,
+   "hours_before_end": 48.0,
+   "vol": 2081881.5322300002,
+   "fee_rate": 0.05,
+   "n_pts": 342
+  },
+  {
+   "cid": "0x50feee38cd63eaf7d2eec5d29c9bab3eaebdda0c8e51bb409ec7b162d767c861",
+   "q": "Cavaliers vs. Knicks",
+   "y": 1,
+   "p": 0.385,
+   "hours_before_end": 48.0,
+   "vol": 2080463.0926449997,
+   "fee_rate": 0.05,
+   "n_pts": 271
+  },
+  {
+   "cid": "0x77e2a154d6810e63cd01b10283159771447b06054885581a408448b5565f8e9e",
+   "q": "Will Manchester City FC win on 2026-11-07?",
+   "y": 0,
+   "p": 0.565,
+   "hours_before_end": 48.0,
+   "vol": 2073962.1470469998,
+   "fee_rate": 0.05,
+   "n_pts": 290
+  },
+  {
+   "cid": "0x0998f4a258f3a3440db42ce507da813b3f66917609f8a9c434db9771f433a6fe",
+   "q": "Nets vs. Grizzlies",
+   "y": 0,
+   "p": 0.375,
+   "hours_before_end": 48.0,
+   "vol": 2070071.202195,
+   "fee_rate": 0.05,
+   "n_pts": 337
+  },
+  {
+   "cid": "0x6c7cda134b82fe6f27a91ae42180b5abf9eb166944c2de8c5743273cc0c951e6",
+   "q": "Pistons vs. Wizards",
+   "y": 1,
+   "p": 0.785,
+   "hours_before_end": 48.0,
+   "vol": 2062688.5329770008,
+   "fee_rate": 0.05,
+   "n_pts": 303
+  },
+  {
+   "cid": "0x92e4d5e6d48986c1daa03069ca16489235744305f927dfaf1bfcb6094e633c0d",
+   "q": "76ers vs. Nets",
+   "y": 1,
+   "p": 0.625,
+   "hours_before_end": 48.0,
+   "vol": 2050352.211806,
+   "fee_rate": 0.05,
+   "n_pts": 342
+  },
+  {
+   "cid": "0xe5d357fae62d4ef13ab61cd8ab943e7e6270df00f32bb1e501f42f5f420cd3fc",
+   "q": "Alabama vs. LSU",
+   "y": 1,
+   "p": 0.325,
+   "hours_before_end": 48.0,
+   "vol": 2022824.5910549997,
+   "fee_rate": 0.03,
+   "n_pts": 267
+  },
+  {
+   "cid": "0x622452b1d91cefe137f30642ca142f70bfa7c5d8ce68884e3b0f4b58595f7bf5",
+   "q": "Will Tottenham Hotspur FC win on 2026-11-21?",
+   "y": 1,
+   "p": 0.635,
+   "hours_before_end": 48.0,
+   "vol": 2013883.4896199997,
+   "fee_rate": 0.05,
+   "n_pts": 309
+  },
+  {
+   "cid": "0xdde6e7a34ee10ceb51438a9d549e15845457709d94dbe007376dc5fad926e108",
+   "q": "Hornets vs. Suns",
+   "y": 0,
+   "p": 0.315,
+   "hours_before_end": 48.0,
+   "vol": 2009336.366353,
+   "fee_rate": 0.05,
+   "n_pts": 307
+  },
+  {
+   "cid": "0xef2c36e28301beaf3dfbf8cd9c98e31bddd47902840e25a5ea490ef7157f2ba6",
+   "q": "Pistons vs. Spurs",
+   "y": 1,
+   "p": 0.235,
+   "hours_before_end": 48.0,
+   "vol": 1994457.774002,
+   "fee_rate": 0.05,
+   "n_pts": 335
+  },
+  {
+   "cid": "0x2e9866846e9573c2857e6f298d5ca13a80e1445ad46f20b6d333c53b2b56dd03",
+   "q": "Will Nottingham Forest FC win on 2026-11-07?",
+   "y": 1,
+   "p": 0.205,
+   "hours_before_end": 48.0,
+   "vol": 1991087.5555200002,
+   "fee_rate": 0.05,
+   "n_pts": 299
+  },
+  {
+   "cid": "0xbddb7c7946f22cd2c0fd059473c4cd0b3458e901bfa581afccdae0058ae25380",
+   "q": "UFC 334: Amanda Nunes vs. Kayla Harrison (Women's Bantamweight, Main Card)",
+   "y": 0,
+   "p": 0.385,
+   "hours_before_end": 48.0,
+   "vol": 1949145.9797200002,
+   "fee_rate": 0.05,
+   "n_pts": 331
+  },
+  {
+   "cid": "0xe3ae72ec65621e5c0fc6872d0021f97df258dff5146db4a812c024ffccee3983",
+   "q": "Warriors vs. Rockets",
+   "y": 0,
+   "p": 0.355,
+   "hours_before_end": 48.0,
+   "vol": 1930489.763467,
+   "fee_rate": 0.05,
+   "n_pts": 286
+  },
+  {
+   "cid": "0xd86a982a25450f40689b8b9c5f20e7cc9c01e0876d3553563d947f34ae49a14d",
+   "q": "Jazz vs. Lakers",
+   "y": 1,
+   "p": 0.135,
+   "hours_before_end": 48.0,
+   "vol": 1923789.0865659995,
+   "fee_rate": 0.05,
+   "n_pts": 337
+  },
+  {
+   "cid": "0xa771fad33ff45722ecb3787546c6ab2c8b3b4b2677e1d02563982d0c0ca9fef1",
+   "q": "ATP World Tour Finals, John McEnroe Group: Ben Shelton vs Rafael Jodar",
+   "y": 1,
+   "p": 0.885,
+   "hours_before_end": 48.0,
+   "vol": 1902680.8411100002,
+   "fee_rate": 0.05,
+   "n_pts": 152
+  },
+  {
+   "cid": "0x73d58d8535df0a3f5efb1d5baaf81a44845de8108d6173b03d703cd1a4daadf9",
+   "q": "ATP World Tour Finals, Ivan Lendl Group: Carlos Alcaraz vs Flavio Cobolli",
+   "y": 1,
+   "p": 0.975,
+   "hours_before_end": 48.0,
+   "vol": 1888092.277319,
+   "fee_rate": 0.05,
+   "n_pts": 175
+  },
+  {
+   "cid": "0x62825c8d55a118056c7ad63eb82a8440214cc4f1a37048dc1a33b90f1218b43b",
+   "q": "Will Villarreal CF win on 2026-11-22?",
+   "y": 0,
+   "p": 0.065,
+   "hours_before_end": 48.0,
+   "vol": 1875404.016087,
+   "fee_rate": 0.05,
+   "n_pts": 304
+  },
+  {
+   "cid": "0x73444f2ecf4789a828543c397d64eef0148451bd74c1a07bc886ac19e029e1c8",
+   "q": "Utah vs. Arizona",
+   "y": 1,
+   "p": 0.565,
+   "hours_before_end": 48.0,
+   "vol": 1871793.415331,
+   "fee_rate": 0.05,
+   "n_pts": 278
+  },
+  {
+   "cid": "0xa2e36e8bcbfb990c2877acdb33cfb76e3e27f700c60fd5222a7e1d22c5b854fe",
+   "q": "Clippers vs. Spurs",
+   "y": 0,
+   "p": 0.125,
+   "hours_before_end": 48.0,
+   "vol": 1864129.4213620003,
+   "fee_rate": 0.05,
+   "n_pts": 342
+  },
+  {
+   "cid": "0xb69fe3437bcc8c68cca5ef13f157052728db8470a5260041c7f3f2e76a71432f",
+   "q": "Knicks vs. Raptors",
+   "y": 1,
+   "p": 0.635,
+   "hours_before_end": 48.0,
+   "vol": 1843789.4211569997,
+   "fee_rate": 0.05,
+   "n_pts": 343
+  },
+  {
+   "cid": "0xc017609e846b09a7aca07af50ddaeb53431b77de61f855283e7e41969ae2915c",
+   "q": "WTA Finals, Group B: Elina Svitolina vs Karolina Muchova",
+   "y": 1,
+   "p": 0.755,
+   "hours_before_end": 48.0,
+   "vol": 1829112.637,
+   "fee_rate": 0.05,
+   "n_pts": 88
+  },
+  {
+   "cid": "0xcc745557f399b88abeaff3b2a50c818df1a9cf44e42b3e07dce4f4580f97fe18",
+   "q": "Buffalo vs. Ball State",
+   "y": 1,
+   "p": 0.555,
+   "hours_before_end": 48.0,
+   "vol": 1816216.9567139999,
+   "fee_rate": 0.05,
+   "n_pts": 213
+  },
+  {
+   "cid": "0xa2b12546df25ae7bdb52b8d3f07b9da6e767ad284c8d6e3c07c7f683b940dbcc",
+   "q": "Spurs vs. Kings",
+   "y": 1,
+   "p": 0.91,
+   "hours_before_end": 48.0,
+   "vol": 1812159.6781040002,
+   "fee_rate": 0.05,
+   "n_pts": 342
+  },
+  {
+   "cid": "0x93458cdb046d83ab182e03834645e71b3d519ffde35e8decb48e122af749e8ad",
+   "q": "Magic vs. Suns",
+   "y": 0,
+   "p": 0.48,
+   "hours_before_end": 48.0,
+   "vol": 1796095.685575,
+   "fee_rate": 0.05,
+   "n_pts": 154
+  },
+  {
+   "cid": "0x2a54c71802ea0352bc9bd2ee93eb37dd602e9961a8628124bb6619dc0f10eda4",
+   "q": "Suns vs. Nuggets",
+   "y": 1,
+   "p": 0.21,
+   "hours_before_end": 48.0,
+   "vol": 1786577.621333,
+   "fee_rate": 0.05,
+   "n_pts": 340
+  },
+  {
+   "cid": "0x72d302f8c2df2423b53c0a181802f468d21979e02e53f2f384d77f666a8e37c2",
+   "q": "WTA Finals, Group A: Jessica Pegula vs Linda Noskova",
+   "y": 1,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 1776096.1507630004,
+   "fee_rate": 0.05,
+   "n_pts": 115
+  },
+  {
+   "cid": "0x28325bbab4c2f54aaa1225365e3e440c8780614fa0b93e33d9a0f2aacc237120",
+   "q": "Will Stade Rennais FC 1901 win on 2026-11-22?",
+   "y": 0,
+   "p": 0.395,
+   "hours_before_end": 48.0,
+   "vol": 1774137.5770639998,
+   "fee_rate": 0.05,
+   "n_pts": 310
+  },
+  {
+   "cid": "0xf1e3dd77c964a7050685ec380f88bd14509f667f8903308711ebd09685a82aab",
+   "q": "Will FC Bayern München win on 2026-11-20?",
+   "y": 0,
+   "p": 0.915,
+   "hours_before_end": 48.0,
+   "vol": 1768263.747586,
+   "fee_rate": 0.05,
+   "n_pts": 310
+  },
+  {
+   "cid": "0xa79a100781ef911fdb98a31872e523fb6948eb64808a4839b018467be9979cc1",
+   "q": "Wizards vs. Bulls",
+   "y": 1,
+   "p": 0.445,
+   "hours_before_end": 48.0,
+   "vol": 1758726.163185,
+   "fee_rate": 0.05,
+   "n_pts": 339
+  },
+  {
+   "cid": "0x976e35b2d3bf476e3fd84a4162a831a613a7102dd156b85d964f47e9302df828",
+   "q": "Nuggets vs. Rockets",
+   "y": 0,
+   "p": 0.37,
+   "hours_before_end": 48.0,
+   "vol": 1738642.6972940005,
+   "fee_rate": 0.05,
+   "n_pts": 238
+  },
+  {
+   "cid": "0x71c59551fa3035fe4e78c04a8d2a899c7f6e00b2e5847a4535a821ef42b0e825",
+   "q": "Thunder vs. Heat",
+   "y": 0,
+   "p": 0.465,
+   "hours_before_end": 48.0,
+   "vol": 1720165.5740810002,
+   "fee_rate": 0.05,
+   "n_pts": 339
+  },
+  {
+   "cid": "0xaf0abf4d1c6dd26a3b58fee38d3288d8cee5fe70e4986b87aeb1fcf4325de239",
+   "q": "Suns vs. Jazz",
+   "y": 1,
+   "p": 0.675,
+   "hours_before_end": 48.0,
+   "vol": 1707289.4547439995,
+   "fee_rate": 0.05,
+   "n_pts": 341
+  },
+  {
+   "cid": "0x7506db8e855c5d7425ebe44e93d416ddf08358a44636f55377f38234294e8add",
+   "q": "UFC Fight Night: Aljamain Sterling vs. Kevin Vallejos (Featherweight, Main Card)",
+   "y": 0,
+   "p": 0.455,
+   "hours_before_end": 48.0,
+   "vol": 1700015.9548559997,
+   "fee_rate": 0.05,
+   "n_pts": 318
+  },
+  {
+   "cid": "0xf5d7380019cbc6eb2fcfe9a6dc60a4bb238a38d97b6a3192cc1a0afb0ec081a0",
+   "q": "Will Arsenal FC win on 2026-11-07?",
+   "y": 1,
+   "p": 0.845,
+   "hours_before_end": 48.0,
+   "vol": 1693826.5219430004,
+   "fee_rate": 0.05,
+   "n_pts": 297
+  },
+  {
+   "cid": "0x5439899c63e831c3e5cd5cdc7fd452486bb46036dd66329cdb588b2448bdec2d",
+   "q": "Virginia Tech vs. Miami (FL)",
+   "y": 0,
+   "p": 0.085,
+   "hours_before_end": 48.0,
+   "vol": 1689827.8371470005,
+   "fee_rate": 0.05,
+   "n_pts": 322
+  },
+  {
+   "cid": "0x0efee97b59ef3e825377994e3097d487e1f615567d06cf9e18be4c4c4279a7d4",
+   "q": "Erste Bank Open: Cameron Norrie vs Daniil Medvedev",
+   "y": 0,
+   "p": 0.335,
+   "hours_before_end": 48.0,
+   "vol": 1680305.524207,
+   "fee_rate": 0.05,
+   "n_pts": 17
+  },
+  {
+   "cid": "0x1db3fa719c3f5b29ce86debe00b52e53fac73e355e5b12b9aa2eacf3a1bd6f9c",
+   "q": "Arizona vs. Kansas State",
+   "y": 1,
+   "p": 0.725,
+   "hours_before_end": 48.0,
+   "vol": 1677338.3454799997,
+   "fee_rate": 0.05,
+   "n_pts": 323
+  },
+  {
+   "cid": "0xa6319871e39acdb207eceb1962f360b7010cff612222ca1b23456ae43260f4ae",
+   "q": "Warriors vs. Grizzlies",
+   "y": 0,
+   "p": 0.375,
+   "hours_before_end": 48.0,
+   "vol": 1661295.758331,
+   "fee_rate": 0.05,
+   "n_pts": 342
+  },
+  {
+   "cid": "0x494bd23625b4fe854113530f68e7d9dc38f0dc8c967879e3ddab07a8dfa2185f",
+   "q": "Pan Pacific Open: Leylah Fernandez vs Diana Shnaider",
+   "y": 0,
+   "p": 0.6805,
+   "hours_before_end": 48.0,
+   "vol": 1649712.5791209997,
+   "fee_rate": 0.05,
+   "n_pts": 12
+  },
+  {
+   "cid": "0x41d36fad9fb624b579c38715a3b66c0021629eaa5b7052d173da36fb07d2a333",
+   "q": "Rockets vs. Suns",
+   "y": 0,
+   "p": 0.705,
+   "hours_before_end": 48.0,
+   "vol": 1632086.1478679995,
+   "fee_rate": 0.05,
+   "n_pts": 188
+  },
+  {
+   "cid": "0x28e6cf7726a9a6ec3f90b328c4c75d6067b7978eae5fe68c2419dfbd3c43bd98",
+   "q": "Nuggets vs. Bulls",
+   "y": 1,
+   "p": 0.735,
+   "hours_before_end": 48.0,
+   "vol": 1612079.1705889995,
+   "fee_rate": 0.05,
+   "n_pts": 340
+  },
+  {
+   "cid": "0xf2b6f73984047ec5f5e1b733d01b41536d63f349fcf9e38f2e281f1f8b047147",
+   "q": "Cowboys vs. Colts",
+   "y": 1,
+   "p": 0.695,
+   "hours_before_end": 48.0,
+   "vol": 1607604.2623169997,
+   "fee_rate": 0.03,
+   "n_pts": 422
+  },
+  {
+   "cid": "0xc3a51e1d780d4860b1a49e5309c1dc7c71401c3c1eaf65f1cb491ce584cd26ce",
+   "q": "Nets vs. Hawks",
+   "y": 0,
+   "p": 0.305,
+   "hours_before_end": 48.0,
+   "vol": 1594889.2468639999,
+   "fee_rate": 0.05,
+   "n_pts": 181
+  },
+  {
+   "cid": "0x6d6ae0aa68a1fa18d02432651325dd8cfdc589f125b50f48ab863ec17df16da6",
+   "q": "Will Brighton & Hove Albion FC win on 2026-11-08?",
+   "y": 1,
+   "p": 0.515,
+   "hours_before_end": 48.0,
+   "vol": 1588595.5977009998,
+   "fee_rate": 0.05,
+   "n_pts": 297
+  },
+  {
+   "cid": "0x6ad48f25a9bead17075c5e0b48465666fed02a82ad934e04af0d9a756f20c006",
+   "q": "Pacers vs. Cavaliers",
+   "y": 0,
+   "p": 0.33,
+   "hours_before_end": 48.0,
+   "vol": 1585134.893739,
+   "fee_rate": 0.05,
+   "n_pts": 342
+  },
+  {
+   "cid": "0x2fe7159e77645183051bc0d4be927222354190bbff9bd37f3d0ff09abfa034b5",
+   "q": "Trail Blazers vs. Timberwolves",
+   "y": 0,
+   "p": 0.445,
+   "hours_before_end": 48.0,
+   "vol": 1576615.3890999998,
+   "fee_rate": 0.05,
+   "n_pts": 340
+  },
+  {
+   "cid": "0x76d60caf9c4169b919cb38c709ab34bfad5c93149b7e2ff36c8cf078c9967492",
+   "q": "Texans vs. Browns",
+   "y": 0,
+   "p": 0.685,
+   "hours_before_end": 48.0,
+   "vol": 1575629.6478070007,
+   "fee_rate": 0.03,
+   "n_pts": 458
+  },
+  {
+   "cid": "0x6939f2859abf4a29b7e4587d96b0f2ff88597ffdcafae357af8435b083289f19",
+   "q": "Pacers vs. 76ers",
+   "y": 0,
+   "p": 0.205,
+   "hours_before_end": 48.0,
+   "vol": 1572868.370257,
+   "fee_rate": 0.05,
+   "n_pts": 338
+  },
+  {
+   "cid": "0xc4632bf991b5671a392de9a8e0927cf3d252c39c2302ff53e5e4a09a77d025db",
+   "q": "Will France win on 2026-11-12?",
+   "y": 0,
+   "p": 0.555,
+   "hours_before_end": 48.0,
+   "vol": 1566623.983359,
+   "fee_rate": 0.05,
+   "n_pts": 306
+  },
+  {
+   "cid": "0x71cb322cecc95314c0492f68a8ddddf870b7df42e155d557b0703b21769da6c3",
+   "q": "Raiders vs. 49ers",
+   "y": 0,
+   "p": 0.195,
+   "hours_before_end": 48.0,
+   "vol": 1563100.2807629996,
+   "fee_rate": 0.03,
+   "n_pts": 443
+  },
+  {
+   "cid": "0x55f1d83171e420f5b1afdf7ddf588e21d07ebeb18365d27d0d2a0dddb832c209",
+   "q": "Pacers vs. Mavericks",
+   "y": 0,
+   "p": 0.415,
+   "hours_before_end": 48.0,
+   "vol": 1559096.6472430003,
+   "fee_rate": 0.05,
+   "n_pts": 238
+  },
+  {
+   "cid": "0xdbcc19248725b32aa85acbdd91f1877cb124a68cf6d7bc2d036e0e91ffa0f9c6",
+   "q": "US x Iran ceasefire continues through November 8?",
+   "y": 0,
+   "p": 0.0095,
+   "hours_before_end": 48.0,
+   "vol": 1556825.223994,
+   "fee_rate": 0.01,
+   "n_pts": 411
+  },
+  {
+   "cid": "0xe2d82c8a571f1cb972a63ccd9fc1bbd0ca3d0da14c41c4986dc222f37def627c",
+   "q": "Jazz vs. Rockets",
+   "y": 0,
+   "p": 0.095,
+   "hours_before_end": 48.0,
+   "vol": 1552163.062808,
+   "fee_rate": 0.05,
+   "n_pts": 330
+  },
+  {
+   "cid": "0x8c9d3ab12a472949eb6852326bfe6004883b2670884035c6c5d2b8a05c0dd99b",
+   "q": "Buccaneers vs. Lions",
+   "y": 0,
+   "p": 0.295,
+   "hours_before_end": 48.0,
+   "vol": 1549642.4284670004,
+   "fee_rate": 0.05,
+   "n_pts": 468
+  },
+  {
+   "cid": "0xbb0e6ceb165858ed1b831f9548fee86f43c602ef70c072d51e38a6647b6f5d4f",
+   "q": "Magic vs. Jazz",
+   "y": 1,
+   "p": 0.615,
+   "hours_before_end": 48.0,
+   "vol": 1546927.4086040002,
+   "fee_rate": 0.05,
+   "n_pts": 284
+  },
+  {
+   "cid": "0x3edef02994f4d87944cb374f81bd892ee2af73869906f4d89f5ac9da98e6ad7c",
+   "q": "Jaguars vs. Titans",
+   "y": 1,
+   "p": 0.835,
+   "hours_before_end": 48.0,
+   "vol": 1546241.2646609999,
+   "fee_rate": 0.03,
+   "n_pts": 454
+  },
+  {
+   "cid": "0x0807bc1fb7e6d616f72b1ffd6158f17448df90223dbdd357281ccb7641b2fdbc",
+   "q": "Thunder vs. Grizzlies",
+   "y": 1,
+   "p": 0.525,
+   "hours_before_end": 48.0,
+   "vol": 1544149.756132,
+   "fee_rate": 0.05,
+   "n_pts": 168
+  },
+  {
+   "cid": "0xd8cbff9a7726e2f72b8a7e9681f719bfa7b0fe614283465ca43952cdfbf49a88",
+   "q": "Rolex Paris Masters: Novak Djokovic vs Valentin Vacherot",
+   "y": 1,
+   "p": 0.685,
+   "hours_before_end": 48.0,
+   "vol": 1509260.0949590001,
+   "fee_rate": 0.05,
+   "n_pts": 70
+  },
+  {
+   "cid": "0x72d0d224c0e02942c86b32ac385f14ca419120abc485c2601991d85cceac8b8f",
+   "q": "Jensen Huang announced resignation or removal by November 13, 2026?",
+   "y": 1,
+   "p": 0.675,
+   "hours_before_end": 48.0,
+   "vol": 1507576.474453,
+   "fee_rate": 0.05,
+   "n_pts": 17
+  },
+  {
+   "cid": "0x652293940a98a7ec9b1d2b23fb9e8399728d1a461dce61523fa2fcce8d844e21",
+   "q": "GTA 6 launch postponed again?",
+   "y": 0,
+   "p": 0.0095,
+   "hours_before_end": 48.0,
+   "vol": 1500668.1486749998,
+   "fee_rate": 0.01,
+   "n_pts": 8457
+  },
+  {
+   "cid": "0x86d17e7151cffa684bfe5765e629d9b0d317b8ff15f6c80f9f4568c48b5b9aa8",
+   "q": "Will Aston Villa FC win on 2026-11-08?",
+   "y": 0,
+   "p": 0.305,
+   "hours_before_end": 48.0,
+   "vol": 1473882.895827,
+   "fee_rate": 0.05,
+   "n_pts": 301
+  },
+  {
+   "cid": "0x779b874ed02642638f0cd5ed1a5f9aac390dae8e3fd5690f0141f6ac1f715e16",
+   "q": "Mavericks vs. Jazz",
+   "y": 1,
+   "p": 0.5,
+   "hours_before_end": 48.0,
+   "vol": 1464779.994393,
+   "fee_rate": 0.05,
+   "n_pts": 340
+  },
+  {
+   "cid": "0x5223c4725e1b98444a422c0f53dba751a1ee933757d10ca8d9be5f79dea60956",
+   "q": "Will Spain win on 2026-11-15?",
+   "y": 0,
+   "p": 0.555,
+   "hours_before_end": 48.0,
+   "vol": 1456800.886412,
+   "fee_rate": 0.05,
+   "n_pts": 307
+  }
+ ]
+}

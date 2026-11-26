@@ -1,0 +1,1 @@
+{"generated_utc": 1795624375567, "params": {"minutes": 12.0, "jump_bps": 5.0, "ref_ms": 5000, "horizon_ms": 30000, "cooldown_ms": 3000, "cap": 200.0}, "seconds": 521.6, "msgs": {"bin": 14246, "poly": 354036}, "feed_lag_p50_ms": {"binance": -803, "poly": -690}, "windows": [1795623600, 1795623900, 1795624200, 1795624500, 1795624800], "events": []}
