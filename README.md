@@ -99,7 +99,10 @@ python skill/strategy-falsifier/scripts/verify.py spec.json --candles klines.csv
 
 ### 总表：15 条路线，0 条通过
 
-精确口径：**11 条 FALSIFIED（被一手数据证伪）+ 4 条未通过（2 条 INCONCLUSIVE 样本不足 #7/#8；2 条无法拒绝零假设 #13/#15）**。
+精确口径：**11 条 FALSIFIED（被一手数据证伪）+ 4 条未通过**，后者再分：
+**2 条 INCONCLUSIVE 样本不足**（#7 样本不足、#8 数据不可得）、
+**1 条无法拒绝零假设**（#13 Wilcoxon p=0.8125）、
+**1 条多重检验全不通过**（#15 Bonferroni 最小 p=0.0497）。
 这 4 条不是"还有希望"，是"连证伪所需的样本都没攒够"——同样不足以支撑任何投入。
 
 | # | 赛道 | 路线 | 核心假设 | 实测 | 判定 | 出处 |
