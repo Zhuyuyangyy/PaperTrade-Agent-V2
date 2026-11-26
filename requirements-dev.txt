@@ -1,3 +1,6 @@
 pandas>=2.1,<3
 pytest>=8,<10
 PyYAML>=6.0,<7
+# research/polymarket 的 WS 探针（ws_probe / latency_probe / flat5m_probe）用它建连。
+# 单元测试只覆盖纯函数，缺这个包不会让收集失败；但装上才能跑真实探测。
+websocket-client>=1.6,<2

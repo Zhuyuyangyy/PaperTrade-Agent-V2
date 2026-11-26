@@ -50,7 +50,20 @@ import threading
 import time
 from pathlib import Path
 
-import websocket
+try:                      # 只有真正建 WS 连接时才需要；单元测试只测纯函数解析逻辑，
+    import websocket      # 不该因为环境没装这个包就让整个测试收集阶段失败。
+except ModuleNotFoundError:   # pragma: no cover
+    class _MissingWebsocket:
+        """占位实现：保留调用点写法不变，只在真正建连时报出可操作的错误。"""
+        WebSocketTimeoutException = TimeoutError
+
+        @staticmethod
+        def create_connection(*_a, **_kw):
+            raise RuntimeError(
+                "缺少 websocket-client：pip install websocket-client"
+            )
+
+    websocket = _MissingWebsocket()
 
 HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:

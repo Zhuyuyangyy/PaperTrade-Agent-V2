@@ -1,7 +1,7 @@
 # PaperTrade-Agent-V2-Fast
 
 [![CI](https://img.shields.io/github/actions/workflow/status/Zhuyuyangyy/PaperTrade-Agent-V2/Offline%20safety%20and%20strategy%20tests?style=flat-square&label=CI)](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/actions/workflows/tests.yml)
-[![tests](https://img.shields.io/badge/tests-1058%20passed%2C%202%20skipped-brightgreen?style=flat-square)](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2)
+[![tests](https://img.shields.io/badge/tests-1052%20passed%2C%202%20skipped-brightgreen?style=flat-square)](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2)
 [![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)](https://www.python.org/downloads/)
 
@@ -352,7 +352,7 @@ python -m research.verify --list-market                   # 本地行情缓存�
 
 **方法论文章**（对外内容资产）：`docs/article-falsification.md`。**分发作战包**（Reddit/X/闲鱼/Toku 文案 + gate 规则 + 本人操作清单）：`docs/dist/`。**落地页**（pitch + demo + 案例矩阵 + 价格）：`docs/index.html`。
 
-**测试**：`tests/test_verify.py` 覆盖 spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/walk-forward/参数网格/HTML 渲染/多策略对比/spec 自带数据/CLI 端到端，该文件 **118 passed**；**全仓 `pytest -q` 为 1058 passed, 2 skipped**（akshare 未装、Windows 缺 symlink 权限各跳 1 个）。
+**测试**：`tests/test_verify.py` 覆盖 spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/walk-forward/参数网格/HTML 渲染/多策略对比/spec 自带数据/CLI 端到端，该文件 **118 passed**；**CI 同口径 `pytest -q tests` 为 1052 passed, 2 skipped**（akshare 未装、Windows 缺 symlink 权限各跳 1 个）。
 
 ## 运维：这个系统活着的时候经历过什么
 
@@ -371,7 +371,7 @@ python -m research.verify --list-market                   # 本地行情缓存�
 | 停止后循环反复复活 | `loop.sh` while true 守护 + 排队后台任务到点自启 | STOP 文件 kill switch（幂等） |
 | 后台任务约 3 小时被系统回收 | 环境事实 | 主+副班双看门狗，故障窗口 30 分钟 |
 
-**CI：全仓 `pytest -q` 1058 passed / 2 skipped**（`tests/test_verify.py` 单文件 118 passed；本地 Windows 与全仓库口径差异详见 `docs/dist/submissions.md`）。
+**CI：`pytest -q tests` 1052 passed / 2 skipped**（`tests/test_verify.py` 单文件 118 passed；不带路径参数的 `pytest -q` 会连 `legacy_v1` 一起收，数字不同，勿混用）。
 
 ---
 
@@ -487,7 +487,7 @@ $PY -m research.verify --spec research/verify/samples/demo_spec.json --out r.md
 | Crypto Phase 1 / 2 / 2B / 3 + 15m 基线 | 报告在 `research/lite/reports/`，判定见总表 #1–#5 |
 | Crypto V4 S1 / S2 / S2b（4h / 1h） | 报告在 `research/v4/`，判定见总表 #6–#8 |
 | Polymarket 静态套利 / 尾盘 / 延迟 / 5m / 气象 / M1' | 报告在 `research/polymarket/`，判定见总表 #9–#15 |
-| 全仓测试 | **1058 passed / 2 skipped**（`pytest -q`，本机实测） |
+| CI 测试 | **1052 passed / 2 skipped**（`pytest -q tests`，与 CI 同命令） |
 | M2 云节点 / M3 热路径 FOK / M4 极小资金 / M5 放量 | **全部不启动** |
 | 新的免费公开数据探测线 | **不再开** |
 | 唯一火种 `research/live/funding_shadow.py` | **保留**，周频、只读、零资金、不盯盘 |

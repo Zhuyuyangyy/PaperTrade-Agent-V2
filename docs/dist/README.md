@@ -5,7 +5,7 @@
 ## 当前状态
 
 - GitHub 免费版：已合并到 `main`，Pages 已构建。
-- 测试口径：CI `pytest -q tests` 为 **1058 passed / 2 skipped**；Windows 本地与全仓库口径差异见 `submissions.md`。
+- 测试口径：CI `pytest -q tests` 为 **1052 passed / 2 skipped**；Windows 本地与全仓库口径差异见 `submissions.md`。
 - Gumroad：Pro ZIP、listing 文案和 SHA256 物料已准备，尚待账户登录与正式上架。
 - Toku：现有 `StrategyFalsifier` profile 已在仓库联系入口中引用；只更新现有主页，不重新注册。
 - Agensi：免费 Skill ZIP 已准备；市场提交尚未完成。Agensi 页面只发免费版，不放外部 checkout 或付费导流。
