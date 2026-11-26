@@ -170,13 +170,14 @@
       <a class="btn btn-primary" href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/issues/new">免费 3 单 · GitHub 开 issue 提交策略</a>
       <a class="btn btn-ghost" href="https://toku.agency/agents/strategyfalsifier">人工审计 · $99 / $299</a>
       <a class="btn btn-ghost" href="#demo">30 秒看一份真实报告</a>
+      <a class="btn btn-ghost" href="falsifier/">🎛 在浏览器里自己跑一遍（不用装环境）</a>
       <a class="btn btn-ghost" href="cases/">案例矩阵：同一台引擎，四种死法</a>
     </div>
     <div class="stats">
       <div class="stat"><div class="v bad">-14.3pp</div><div class="l">回测 → 实盘的收益中位差（行业第一痛点：样本内过拟合）</div></div>
       <div class="stat"><div class="v bad">+34.35%</div><div class="l">三年赚钱曲线仍被判 FALSIFIED——统计上无法与随机入场区分</div></div>
       <div class="stat"><div class="v">6+1</div><div class="l">六台仪器 + 诊断层：回放 / 成本 / 障碍 / 对照 / walk-forward / 参数网格 → 诊断结论与下一步实验</div></div>
-      <div class="stat"><div class="v">409</div><div class="l">个自动化测试守着规则——事后不许改规则，不许挑好看的说</div></div>
+      <div class="stat"><div class="v">1053</div><div class="l">个自动化测试守着规则——事后不许改规则，不许挑好看的说</div></div>
     </div>
     <div class="sample-strip">
       <div class="kicker">Two Samples · 两份免费样张</div>
@@ -265,6 +266,35 @@
       </div>
     </div>
     <p style="margin-top:14px"><a href="verify-sample-report.md">📄 完整样例报告（docs/verify-sample-report.md）</a> · <a href="cases/">📂 案例矩阵（docs/cases/）</a></p>
+
+    <!-- ============ 在线证伪台 ============ -->
+    <div style="margin-top:34px;padding:22px 24px;border:1px solid var(--line);border-left:4px solid #1a4fd6;border-radius:0 12px 12px 0;background:#fff">
+      <div style="font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:#1a4fd6;font-weight:700;margin-bottom:8px">在浏览器里跑，不用装任何东西</div>
+      <h3 style="margin:0 0 10px;font-size:19px">把你自己那条曲线丢进来，30 秒拿到裁决</h3>
+      <p style="margin:0 0 14px;font-size:14px;color:var(--ink-2);line-height:1.75">
+        上面的报告是我们跑给你看的。这个页面是你自己跑——<b>引擎以 WebAssembly 在你本机执行</b>，
+        用的就是仓库里那个 <code style="font-size:12.5px;background:#eef1f6;padding:1px 5px;border-radius:3px">engine.py</code>（逐字节同步，有测试守着，不会漂移）。
+        你的 spec 与 K 线<b>不上传到任何服务器</b>；首次打开取一次 Python 运行时，之后每次运行零网络请求。
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+        <a class="btn btn-primary" href="falsifier/" style="text-decoration:none">打开在线证伪台 →</a>
+        <span style="font-size:12.5px;color:var(--ink-3)">内置 5,000 根真实 BTC 1h K 线，点一下就能出结果</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin:0">
+        <tr>
+          <td style="padding:7px 10px;border-top:1px solid var(--line);width:33%"><b>不用装 Python</b></td>
+          <td style="padding:7px 10px;border-top:1px solid var(--line);color:var(--ink-2)">浏览器里真跑 Python，不是截图、不是预先算好的假数据</td>
+        </tr>
+        <tr>
+          <td style="padding:7px 10px;border-top:1px solid var(--line)"><b>六件仪器全开</b></td>
+          <td style="padding:7px 10px;border-top:1px solid var(--line);color:var(--ink-2)">回放 / 成本 / 障碍 / 随机对照 / walk-forward / 参数网格，一次跑完</td>
+        </tr>
+        <tr>
+          <td style="padding:7px 10px;border-top:1px solid var(--line)"><b>数字可核</b></td>
+          <td style="padding:7px 10px;border-top:1px solid var(--line);color:var(--ink-2)">页面上每个数字都出自同一次执行，页面附完整 markdown + JSON + 复现命令</td>
+        </tr>
+      </table>
+    </div>
     <div class="floor-strip">
       <a href="floor.html"><img src="floor-preview.jpg" alt="交易现场预览：七个 agent 在等距办公室里各自忙活——走路、喝咖啡、白板讨论、复盘" width="1280" height="768" loading="lazy"></a>
       <p>顺手造的<strong>交易现场</strong>：同一套账本渲染成一座等距办公室，七个 agent 各自有活干（赶路 / 喝咖啡 / 白板 huddle / 复盘），60 秒采样 101 agent·秒走动、每人 13–33 个 tile。点图打开可交互页面——<strong>单文件、零依赖、离线可跑</strong>，数字与仪表盘同一份快照。</p>
@@ -366,7 +396,7 @@
     <div class="kicker">Proof</div>
     <h2><span class="no">07</span>社会证明：这些数字，任何人都可以复跑</h2>
     <div class="stats">
-      <div class="stat"><div class="v">409</div><div class="l">个自动化测试守着规则——事后不许改规则，不许挑好看的说</div></div>
+      <div class="stat"><div class="v">1053</div><div class="l">个自动化测试守着规则——事后不许改规则，不许挑好看的说</div></div>
       <div class="stat"><div class="v">6</div><div class="l">台仪器，一个裁决：回放 / 成本 / 障碍 / 对照 / walk-forward / 参数网格</div></div>
       <div class="stat"><div class="v sm">2023-06 → 2026-10</div><div class="l">真实数据窗口：Binance 1h futures，29,347 根 K 线/币，含一轮完整牛市</div></div>
       <div class="stat"><div class="v">4/4</div><div class="l">案例全部公开——包括三年 +34.35% 看着能发朋友圈的那个，照样 FALSIFIED</div></div>
@@ -391,7 +421,7 @@
     </div>
     <div class="objection">
       <h3>「凭什么信你的结论？」</h3>
-      <p>三件事：① 我们公开自己亏 17.23% 的账本（<a href="sales-sample-2/">样张二</a>，539 行可复现数据，79% 幸存者偏差写在开头）；② 四个公开案例全是死法，包括一条三年 +34.35% 的「朋友圈曲线」——照样 FALSIFIED；③ 引擎 MIT、1058 个测试守着规则，每个数字都能用仓库内命令重跑。一个只报喜的验货工具，没有存在意义。</p>
+      <p>三件事：① 我们公开自己亏 17.23% 的账本（<a href="sales-sample-2/">样张二</a>，539 行可复现数据，79% 幸存者偏差写在开头）；② 四个公开案例全是死法，包括一条三年 +34.35% 的「朋友圈曲线」——照样 FALSIFIED；③ 引擎 MIT、1053 个测试守着规则，每个数字都能用仓库内命令重跑。一个只报喜的验货工具，没有存在意义。</p>
     </div>
   </div>
 </section>

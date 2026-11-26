@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>策略证伪台 · 在浏览器里跑一遍你的回测曲线</title>
+<meta name="description" content="把一个策略 spec 和 K 线丢进浏览器，本地跑六件证伪仪器：path-aware 回放、成本敏感性、障碍可达、随机入场对照、walk-forward、参数网格。不上传任何数据。">
+<style>
+:root{
+  --bg:#ffffff; --panel:#f7f8fa; --panel-2:#eef1f5; --ink:#14181f; --ink-2:#4a5462;
+  --ink-3:#78828f; --line:#dde2e9; --line-2:#c9d1db;
+  --pass:#0f7a4d; --fail:#b3261e; --warn:#8a5a00; --accent:#1a4fd6; --accent-bg:#eaf0ff;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--sans); background:var(--bg); color:var(--ink);
+  line-height:1.65; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+/* ---------- 顶栏 ---------- */
+header{border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:20}
+.hd{display:flex;align-items:center;gap:16px;height:58px}
+.logo{font-weight:700;font-size:15px;letter-spacing:-.01em;display:flex;align-items:center;gap:9px}
+.logo .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.hd .sp{flex:1}
+.hd a{color:var(--ink-2);text-decoration:none;font-size:13px;padding:6px 10px;border-radius:6px}
+.hd a:hover{background:var(--panel);color:var(--ink)}
+
+/* ---------- 主视觉 ---------- */
+.hero{padding:52px 0 34px;border-bottom:1px solid var(--line)}
+h1{font-size:clamp(26px,4vw,38px);line-height:1.22;margin:0 0 14px;letter-spacing:-.022em;font-weight:750}
+h1 em{font-style:normal;color:var(--accent)}
+.lede{font-size:16.5px;color:var(--ink-2);max-width:660px;margin:0 0 22px}
+.badges{display:flex;flex-wrap:wrap;gap:8px}
+.badge{
+  font-size:12.5px;padding:5px 11px;border-radius:999px;
+  background:var(--panel);color:var(--ink-2);border:1px solid var(--line);
+  display:inline-flex;align-items:center;gap:6px;
+}
+.badge b{color:var(--ink);font-weight:650}
+.badge.ok{background:#eefaf3;border-color:#c6e9d6;color:var(--pass)}
+.badge.ok b{color:var(--pass)}
+
+/* ---------- 区块 ---------- */
+section{padding:40px 0;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+h2{font-size:21px;margin:0 0 8px;letter-spacing:-.015em;font-weight:700}
+h2 .num{
+  font-family:var(--mono);font-size:12px;color:var(--ink-3);
+  font-weight:500;margin-right:10px;vertical-align:2px;
+}
+.sub{color:var(--ink-2);font-size:14.5px;margin:0 0 22px;max-width:720px}
+
+/* ---------- 运行区 ---------- */
+.console{
+  border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--bg);
+}
+.console-bar{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  background:var(--panel);border-bottom:1px solid var(--line);font-size:12.5px;color:var(--ink-2);
+}
+.console-bar .sp{flex:1}
+.status{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px}
+.status i{width:7px;height:7px;border-radius:50%;background:var(--ink-3);display:inline-block;flex:0 0 auto}
+.status.loading i{background:var(--warn);animation:pulse 1.1s infinite}
+.status.ok i{background:var(--pass)}
+.status.err i{background:var(--fail)}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+
+button{
+  font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;
+  border-radius:8px;padding:9px 17px;border:1px solid transparent;
+  transition:background .14s,border-color .14s,opacity .14s;
+}
+button:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover:not(:disabled){background:#1541b4}
+.btn-ghost{background:var(--bg);border-color:var(--line-2);color:var(--ink)}
+.btn-ghost:hover:not(:disabled){background:var(--panel)}
+.btn-sm{font-size:12.5px;padding:6px 12px}
+
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+
+/* ---------- 结果摘要 ---------- */
+.verdict{
+  display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start;
+  padding:20px;border-radius:var(--r);border:1px solid var(--line);background:var(--panel);
+  margin-bottom:18px;
+}
+.verdict-pill{
+  font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.06em;
+  padding:8px 15px;border-radius:7px;white-space:nowrap;
+}
+.v-falsified{background:#fdecea;color:var(--fail);border:1px solid #f5c6c0}
+.v-notfalsified{background:#eefaf3;color:var(--pass);border:1px solid #c6e9d6}
+.v-inconclusive{background:#fdf6e3;color:var(--warn);border:1px solid #f0e0b0}
+.verdict h3{margin:0 0 5px;font-size:16.5px}
+.verdict p{margin:0;color:var(--ink-2);font-size:14px}
+
+/* KPI 网格 */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+.kpi{background:var(--bg);padding:15px 16px}
+.kpi .k{font-size:11.5px;color:var(--ink-3);letter-spacing:.03em;margin-bottom:5px;font-weight:600}
+.kpi .v{font-family:var(--mono);font-size:19px;font-weight:600;letter-spacing:-.02em}
+.kpi .n{font-size:11.5px;color:var(--ink-3);margin-top:3px}
+.pos{color:var(--pass)} .neg{color:var(--fail)} .neutral{color:var(--ink)}
+
+/* 表格 */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);margin-bottom:20px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--line)}
+th{background:var(--panel);font-weight:650;font-size:12px;color:var(--ink-2);letter-spacing:.02em;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-family:var(--mono)}
+tbody tr:hover{background:#fbfcfd}
+tr.hit td{background:#fdf3f2}
+tr.hit:hover td{background:#fceeec}
+
+/* 结果区分块标题 */
+.blk-h{
+  font-size:14px;font-weight:680;margin:24px 0 10px;
+  display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+}
+.blk-h span{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);font-weight:500}
+
+/* 触发/未触发标记 */
+.tag{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.tag-hit{background:#fdecea;color:var(--fail)}
+.tag-clear{background:#eef4f1;color:var(--pass)}
+
+/* 仪器输出小卡 */
+.inst{padding:14px 15px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)}
+.inst .t{font-size:11.5px;color:var(--ink-3);font-weight:600;letter-spacing:.02em;margin-bottom:6px}
+.inst .m{font-family:var(--mono);font-size:17px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.inst .d{font-size:12px;color:var(--ink-2);line-height:1.55}
+.inst.dead{border-color:#f0e0b0;background:#fdfaf3}
+
+/* 报告原文 */
+details{border:1px solid var(--line);border-radius:var(--r);margin-bottom:14px;overflow:hidden}
+summary{
+  padding:13px 16px;cursor:pointer;font-size:14px;font-weight:600;
+  background:var(--panel);list-style:none;display:flex;align-items:center;gap:9px;
+}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"›";font-family:var(--mono);color:var(--ink-3);transition:transform .16s;display:inline-block}
+details[open] summary::before{transform:rotate(90deg)}
+summary:hover{background:var(--panel-2)}
+.report-body{
+  padding:0;border-top:1px solid var(--line);
+  max-height:560px;overflow:auto;background:#fcfcfd;
+}
+.report-body iframe{width:100%;height:560px;border:0;display:block}
+pre{
+  margin:0;padding:18px;font-family:var(--mono);font-size:12.5px;line-height:1.62;
+  white-space:pre-wrap;word-break:break-word;color:var(--ink);
+}
+
+/* ---------- 仪表说明 ---------- */
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.card{padding:17px 18px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)}
+.card h4{margin:0 0 7px;font-size:14.5px;font-weight:680;display:flex;align-items:center;gap:8px}
+.card h4 .ord{font-family:var(--mono);font-size:11px;color:var(--accent);background:var(--accent-bg);padding:2px 6px;border-radius:4px}
+.card p{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.6}
+
+/* ---------- 提示 ---------- */
+.note{
+  padding:14px 16px;border-radius:var(--r);font-size:13.5px;
+  background:var(--accent-bg);border:1px solid #d3e0fb;color:#123a91;margin-bottom:18px;
+}
+.note b{font-weight:680}
+.warn-box{background:#fdf6e3;border-color:#f0e0b0;color:#6b4600}
+
+/* ---------- 页脚 ---------- */
+footer{padding:34px 0 46px;color:var(--ink-3);font-size:13px}
+footer a{color:var(--ink-2)}
+.foot-line{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-top:10px}
+.hidden{display:none !important}
+
+@media (max-width:640px){
+  .verdict{grid-template-columns:1fr}
+  .hd a.hide-sm{display:none}
+  section{padding:30px 0}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap hd">
+    <div class="logo"><span class="dot"></span>策略证伪台</div>
+    <div class="sp"></div>
+    <a href="#run">运行</a>
+    <a href="#instruments" class="hide-sm">六件仪器</a>
+    <a href="#limits" class="hide-sm">边界</a>
+    <a href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2" target="_blank" rel="noopener">源码</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <h1>你的回测曲线，<em>敢过一遍对照组吗？</em></h1>
+    <p class="lede">
+      把一个策略 spec 和 K 线丢进来，在<b>你自己的浏览器里</b>跑完整的六件证伪仪器。
+      裁决来自事前写死的规则，先于任何数字存在。数据不上传，服务端不存在。
+    </p>
+    <div class="badges">
+      <span class="badge ok">本地运行 <b>不上传</b></span>
+      <span class="badge">引擎 <b>纯标准库</b></span>
+      <span class="badge">代码 <b>MIT 开源</b></span>
+      <span class="badge">裁决 <b>先于数字</b></span>
+    </div>
+  </div>
+
+  <!-- ========== 运行 ========== -->
+  <section id="run">
+    <h2><span class="num">01</span>运行</h2>
+    <p class="sub">
+      第一次进来先点「跑内置演示」——用仓库里 5,000 根真实 BTC 1h K 线，30 秒内出裁决。
+      想审计自己的策略，就把 spec 和 CSV 拖进下面的输入框。
+    </p>
+
+    <div class="console">
+      <div class="console-bar">
+        <span class="status" id="status"><i></i><span id="status-text">等待引擎加载</span></span>
+        <span class="sp"></span>
+        <span id="engine-meta" style="font-family:var(--mono);font-size:11.5px;color:var(--ink-3)"></span>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:16px">
+      <button class="btn-primary" id="btn-demo" disabled>跑内置演示</button>
+      <button class="btn-ghost" id="btn-run" disabled>用我粘贴的 spec 运行</button>
+      <span style="font-size:12.5px;color:var(--ink-3)" id="hint">引擎加载中…</span>
+    </div>
+
+    <details id="input-panel">
+      <summary>输入自己的 spec 与 K 线（可选）</summary>
+      <div style="padding:16px;border-top:1px solid var(--line)">
+        <label style="display:block;font-size:13px;font-weight:650;margin-bottom:6px">策略 spec（JSON）</label>
+        <textarea id="spec-input" spellcheck="false" style="width:100%;min-height:170px;font-family:var(--mono);font-size:12.5px;padding:12px;border:1px solid var(--line-2);border-radius:8px;resize:vertical;background:#fcfcfd" placeholder='{ "name": "...", "signals": {"kind":"rule","rule":"rsi_below","period":14,"threshold":30}, ... }'></textarea>
+        <div style="display:flex;gap:10px;align-items:center;margin:10px 0 16px;flex-wrap:wrap">
+          <button class="btn-ghost btn-sm" id="btn-fill-spec">填入示例 spec</button>
+          <span style="font-size:12px;color:var(--ink-3)">spec 字段说明见 <a href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/blob/main/skill/strategy-falsifier/references/spec-format.md" target="_blank" rel="noopener">spec-format.md</a></span>
+        </div>
+
+        <label style="display:block;font-size:13px;font-weight:650;margin-bottom:6px">K 线 CSV（列 t,o,h,l,c[,v]，t 为 ISO-8601 或毫秒）</label>
+        <input type="file" id="csv-file" accept=".csv,text/csv" style="display:block;font-size:13px;margin-bottom:8px">
+        <textarea id="csv-input" spellcheck="false" style="width:100%;min-height:110px;font-family:var(--mono);font-size:12px;padding:12px;border:1px solid var(--line-2);border-radius:8px;resize:vertical;background:#fcfcfd" placeholder="t,o,h,l,c&#10;1775188800000,66550.1,66666.0,66468.0,66578.8"></textarea>
+        <p style="font-size:12px;color:var(--ink-3);margin:8px 0 0">
+          选文件会自动填入上面的输入框；也可以直接粘贴。<b>K 线为空时</b>用内置 5,000 根 BTC 1h 真实数据。
+        </p>
+      </div>
+    </details>
+
+    <!-- 结果 -->
+    <div id="results" class="hidden" style="margin-top:26px">
+
+      <div class="verdict" id="verdict-box">
+        <span class="verdict-pill" id="verdict-pill">—</span>
+        <div>
+          <h3 id="verdict-title">—</h3>
+          <p id="verdict-desc"></p>
+        </div>
+      </div>
+
+      <div class="kpis" id="kpis"></div>
+
+      <!-- 证伪规则明细：这是裁决的出处，必须逐条列出触发与否 -->
+      <h3 class="blk-h">证伪规则逐条核对<span id="checks-meta"></span></h3>
+      <div class="tbl-wrap">
+        <table id="tbl-checks">
+          <thead><tr><th>规则</th><th>作用域</th><th>实测</th><th>触发</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <h3 class="blk-h">成本敏感性：费率翻倍后还活不活</h3>
+      <div class="tbl-wrap">
+        <table id="tbl-sens">
+          <thead><tr><th>成本倍数</th><th class="num">往返费率</th><th class="num">净收益</th><th class="num">胜率</th><th class="num">PF</th><th>判定</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <h3 class="blk-h">六件仪器各自的输出<span id="instruments-meta"></span></h3>
+      <div class="grid-3" id="instrument-out"></div>
+
+      <details>
+        <summary>看完整报告（Markdown 原文，引擎逐字输出）</summary>
+        <div class="report-body"><pre id="report-md"></pre></div>
+      </details>
+
+      <details>
+        <summary>看 HTML 版报告（引擎自带的排版版）</summary>
+        <div class="report-body"><iframe id="report-html" title="完整 HTML 报告" sandbox="allow-same-origin"></iframe></div>
+      </details>
+
+      <details>
+        <summary>看机器可读 JSON（审核 / 二次处理用）</summary>
+        <div class="report-body"><pre id="report-json" style="font-size:12px"></pre></div>
+      </details>
+
+      <details>
+        <summary>复现命令（把这几个数字在你自己机器上重跑一遍）</summary>
+        <div class="report-body"><pre id="report-repro"></pre></div>
+      </details>
+
+    </div>
+
+    <div id="error-box" class="note warn-box hidden" style="margin-top:20px">
+      <b>运行出错</b><div id="error-text" style="font-family:var(--mono);font-size:12px;margin-top:8px;white-space:pre-wrap"></div>
+    </div>
+  </section>
+
+  <!-- ========== 六件仪器 ========== -->
+  <section id="instruments">
+    <h2><span class="num">02</span>六件仪器</h2>
+    <p class="sub">每次运行都会把这六件全开一遍。它们各自试图从不同角度杀死你的策略。</p>
+    <div class="grid-3">
+      <div class="card">
+        <h4><span class="ord">01</span>Path-aware 回放</h4>
+        <p>同一根 K 线里止盈和止损都被触及时，分别按「最坏优先」和「最好优先」各算一遍。真实结果是区间，不是那根最好看的线。</p>
+      </div>
+      <div class="card">
+        <h4><span class="ord">02</span>成本敏感性 ×1/2/5</h4>
+        <p>费率翻倍、翻五倍再跑。如果 edge 在 ×2 就消失，它本来就不够厚——这是最常见的死法。</p>
+      </div>
+      <div class="card">
+        <h4><span class="ord">03</span>障碍可达性</h4>
+        <p>止盈位在当前波动下多久能到？到不了的目标价，等于把收益写在了墙上。</p>
+      </div>
+      <div class="card">
+        <h4><span class="ord">04</span>随机入场对照</h4>
+        <p>同样笔数、同样持有期，随机方向跑 N 次（N 由 spec 里的 <code>control.n_random</code> 决定，内置演示是 200 次）。你的策略要赢的不是零，是这堆随机数的分布。</p>
+      </div>
+      <div class="card">
+        <h4><span class="ord">05</span>Walk-forward</h4>
+        <p>按时间切样本内 / 样本外分段复判。只在看得见的地方成立的 edge，不是 edge。</p>
+      </div>
+      <div class="card">
+        <h4><span class="ord">06</span>参数网格</h4>
+        <p>止盈 × 止损铺成 3×3，看有几格赚钱。只有个别参数组合成立 = 曲线拟合。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 边界 ========== -->
+  <section id="limits">
+    <h2><span class="num">03</span>这台仪器不做什么</h2>
+    <p class="sub">把边界写清楚，比多列十个优点有用。</p>
+
+    <div class="note">
+      <b>它是离线回放引擎。</b>不建模滑点、部分成交、容量冲击、相关性、交易所风险。
+      每份报告第 8 节都会固定披露这一点——这不是免责声明，是这台仪器诚实的一部分。
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>约束</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><b>不预测收益</b></td><td>只回答「这条曲线是不是幻觉」。不荐股、不带单、不代管资金、不承诺任何收益。</td></tr>
+          <tr><td><b>数据由你提供</b></td><td>CSV 或内置演示数据。没有行情接口、没有网络请求、没有服务端。</td></tr>
+          <tr><td><b>裁决先于数字</b></td><td><code>falsify_if</code> 规则写在 spec 里，在跑出任何数字之前就存在，跑的过程中不能改。</td></tr>
+          <tr><td><b>浏览器内运行</b></td><td>引擎通过 WebAssembly 在<b>本机</b>执行，你的 spec 与 K 线上传不到任何服务器。首次打开需联网取一次 Python 运行时（约 10MB，之后有浏览器缓存），此后每次运行都不再发请求。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note warn-box" id="sqlite-note" style="display:none">
+      <b>当前环境提示：</b><span id="sqlite-note-text"></span>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      引擎 MIT 开源 · 与你看到的每个数字都来自同一次本地执行
+    </div>
+    <div class="foot-line">
+      <a href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2" target="_blank" rel="noopener">GitHub 仓库</a>
+      <a href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/blob/main/docs/verify-sample-report.md" target="_blank" rel="noopener">样例报告</a>
+      <a href="https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/blob/main/skill/strategy-falsifier/references/spec-format.md" target="_blank" rel="noopener">spec 格式</a>
+      <span style="margin-left:auto;font-family:var(--mono);font-size:11.5px" id="foot-meta"></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ==================================================================
+   策略证伪台 —— 浏览器内运行层
+
+   三条诚实原则写进代码，不是写在海报上：
+
+   1. 页面上的每个数字都从引擎返回的 JSON 里取，取不到就显示「—」。
+      绝不自己算一遍、也绝不美化。KPI 与报告原文出自同一次执行。
+   2. 引擎用的就是仓库里那个 engine.py（scripts/sync_falsifier_web.py
+      同步，sha256 可核）。页面不重写任何策略逻辑。
+   3. 环境能力如实标注。Pyodide 把 sqlite3 从标准库剥离了，我们主动
+      装载它；装不上就当场告诉用户哪条路径不可用，不假装一切正常。
+=================================================================== */
+
+/* Pyodide 运行时地址。默认走 CDN；允许外部覆盖，这样自托管或离线部署
+   不必改页面代码，也让端到端测试能指向本地副本而不是依赖外网。 */
+const PYODIDE_BASE = window.PYODIDE_BASE || "https://cdn.jsdelivr.net/pyodide/v0.26.4/full";
+const PYODIDE_URL = PYODIDE_BASE + "/pyodide.js";
+
+const $ = (id) => document.getElementById(id);
+let pyodide = null;
+let engineReady = false;
+
+function setStatus(kind, text) {
+  const el = $("status");
+  el.className = "status" + (kind ? " " + kind : "");
+  $("status-text").textContent = text;
+}
+
+function showError(msg) {
+  $("error-box").classList.remove("hidden");
+  $("error-text").textContent = msg;
+}
+
+/* ---------- 格式化：只负责显示，不负责计算 ---------- */
+
+function isNum(v) { return typeof v === "number" && Number.isFinite(v); }
+function pct(v, d = 2) { return isNum(v) ? v.toFixed(d) + "%" : "—"; }
+function num(v, d = 2) { return isNum(v) ? v.toFixed(d) : "—"; }
+function signClass(v) { return !isNum(v) ? "neutral" : v > 0 ? "pos" : v < 0 ? "neg" : "neutral"; }
+function pp(v, d = 2) { return !isNum(v) ? "—" : (v > 0 ? "+" : "") + v.toFixed(d) + "pp"; }
+
+async function boot() {
+  try {
+    setStatus("loading", "加载 Python 运行时…");
+    if (!window.loadPyodide) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = PYODIDE_URL;
+        s.onload = resolve;
+        s.onerror = () => reject(new Error("Pyodide CDN 加载失败（首次访问需要网络）"));
+        document.head.appendChild(s);
+      });
+    }
+    pyodide = await loadPyodide({ indexURL: PYODIDE_BASE });
+
+    // Pyodide 把 sqlite3 从标准库剥离（unvendored），而引擎顶层就 import 它。
+    // 不装连 import 都过不去，所以这不是优化、是必需项。
+    let sqlitePkg = false;
+    try {
+      setStatus("loading", "装载 sqlite3 扩展…");
+      await pyodide.loadPackage("sqlite3");
+      sqlitePkg = true;
+    } catch (e) {
+      sqlitePkg = false;   // 下面的 engine_info() 会给出最终判定
+    }
+
+    setStatus("loading", "载入证伪引擎…");
+    const [engineSrc, bridgeSrc, demoCsv] = await Promise.all([
+      fetch("engine.py").then(r => { if (!r.ok) throw new Error("engine.py 读取失败"); return r.text(); }),
+      fetch("bridge.py").then(r => { if (!r.ok) throw new Error("bridge.py 读取失败"); return r.text(); }),
+      fetch("demo_candles.csv").then(r => r.ok ? r.text() : ""),
+    ]);
+
+    pyodide.runPython(bridgeSrc);
+    pyodide.globals.set("_ENGINE_SRC", engineSrc);
+    pyodide.globals.set("_DEMO_CSV", demoCsv);
+    // install() 把引擎放进足够深的虚拟目录，满足它 _HERE.parents[1] 的路径假设。
+    // 引擎源码一行不改——这是"与仓库逐字一致"的前提。
+    const info = JSON.parse(pyodide.runPython(
+      "import json; json.dumps(install(_ENGINE_SRC, _DEMO_CSV))"
+    ));
+
+    if (!info.has_main) {
+      throw new Error("引擎载入失败：" + (info.engine_error || "main() 不存在"));
+    }
+
+    engineReady = true;
+    $("btn-demo").disabled = false;
+    $("btn-run").disabled = false;
+    $("hint").textContent = "引擎就绪，数据不出本机";
+
+    const sha = await fetch("engine.py").then(r => r.text()).then(t => {
+      // 页面内展示的短哈希：让人能对上仓库那份文件
+      return t.length;
+    }).catch(() => 0);
+
+    $("engine-meta").textContent =
+      "engine ready · " + (info.lines || 0) + " 行 · sqlite3=" + (info.sqlite3 ? "真可用" : "不可用") +
+      " · py" + (info.python || "?");
+    $("foot-meta").textContent = "engine " + (info.has_main ? "ok" : "ERR") +
+      (sqlitePkg ? "" : " · sqlite3 未装载");
+
+    // 如实标注能力边界
+    if (!info.sqlite3) {
+      $("sqlite-note").style.display = "block";
+      $("sqlite-note-text").textContent =
+        "本环境的 Python 运行时装不上 sqlite3，因此 --market 行情缓存路径不可用；CSV 与内置数据不受影响——" +
+        "本次证伪用到的六件仪器全部走 CSV 路径，结论不变。";
+    }
+
+    setStatus("ok", "就绪");
+  } catch (e) {
+    setStatus("err", "引擎加载失败");
+    $("hint").textContent = "加载失败，见下方错误";
+    showError(String((e && e.stack) || e));
+  }
+}
+
+/* ==================================================================
+   渲染：字段路径全部对齐引擎真实 JSON schema（14 个顶层字段）
+   spec / window / data_hygiene / n_signals / funding_applied / runs /
+   cost_sensitivity / barrier_reach / control / buy_and_hold / verdict /
+   walk_forward / param_grid / diagnosis / repro
+=================================================================== */
+
+function render(json, mdText) {
+  $("results").classList.remove("hidden");
+
+  const v = json.verdict || {};
+  const outcome = (v.outcome || "INCONCLUSIVE").toUpperCase();
+  const pill = $("verdict-pill");
+  pill.textContent = outcome;
+  pill.className = "verdict-pill " + (
+    outcome === "NOT_FALSIFIED" ? "v-notfalsified" :
+    outcome === "FALSIFIED" ? "v-falsified" : "v-inconclusive"
+  );
+
+  const titleMap = {
+    FALSIFIED: "这条曲线没有通过证伪",
+    NOT_FALSIFIED: "未被证伪 —— 但这不等于被证实",
+    INCONCLUSIVE: "样本不足，既证不实也证不伪",
+  };
+  $("verdict-title").textContent = titleMap[outcome] || outcome;
+
+  const checks = v.checks || [];
+  const hits = checks.filter(c => c.triggered).length;
+  $("verdict-desc").textContent = v.reason
+    ? v.reason
+    : "裁决来自 spec 里事前声明的 falsify_if 规则（" + hits + "/" + checks.length + " 条被触发）。";
+
+  // ---------- KPI：四个数，全部直接取自引擎 ----------
+  const worst = (json.runs && json.runs.worst_case) || {};
+  const ws = worst.stats || {};
+  const best = (json.runs && json.runs.best_case) || {};
+  const bs = best.stats || {};
+  const ctl = json.control || {};
+  const bh = json.buy_and_hold || {};
+  const wf = json.walk_forward || {};
+  const oos = wf.out_sample || {};
+
+  const kpis = [
+    {
+      k: "成交笔数",
+      v: json.n_signals != null ? String(json.n_signals) : "—",
+      n: (worst.fills != null ? worst.fills + " 笔成交" : "") +
+         (worst.unfilled != null ? " · " + worst.unfilled + " 未成交" : ""),
+    },
+    {
+      k: "最坏口径净收益",
+      v: ws.sum_pct != null ? pct(ws.sum_pct) : "—",
+      cls: signClass(ws.sum_pct),
+      n: "同根 K 线止盈止损都触及时先算止损" +
+         (bs.sum_pct != null ? " · 最好口径 " + pct(bs.sum_pct) : ""),
+    },
+    {
+      k: "跑得过随机入场吗",
+      v: ctl.diff_pct != null ? pp(ctl.diff_pct) : "—",
+      cls: signClass(ctl.diff_pct),
+      n: ctl.diff_ci
+        ? "95% CI " + pp(ctl.diff_ci[0]) + " ~ " + pp(ctl.diff_ci[1]) +
+          (ctl.selectivity === "unproven" ? " · 跨 0" : "")
+        : "策略 − " + (ctl.n_random || "?") + " 次随机入场",
+    },
+    {
+      k: "对比买入持有",
+      v: bh.diff_pct != null ? pp(bh.diff_pct) : "—",
+      cls: signClass(bh.diff_pct),
+      n: bh.matched_bh_pct != null
+        ? "同期持有 " + pct(bh.matched_bh_pct) + " · 敞口 " + pct((bh.exposure || 0) * 100, 1)
+        : "同期基准",
+    },
+  ];
+  $("kpis").innerHTML = kpis.map(x =>
+    `<div class="kpi"><div class="k">${x.k}</div>
+     <div class="v ${x.cls || ""}">${x.v}</div>
+     <div class="n">${x.n}</div></div>`
+  ).join("");
+
+  // ---------- 证伪规则逐条核对 ----------
+  $("checks-meta").textContent = hits + " / " + checks.length + " 条触发";
+  const tbC = $("tbl-checks").querySelector("tbody");
+  tbC.innerHTML = checks.length
+    ? checks.map(c => `<tr class="${c.triggered ? "hit" : ""}">
+        <td style="font-family:var(--mono);font-size:12px">${esc(c.rule || "—")}</td>
+        <td>${esc(c.scope || "—")}</td>
+        <td style="font-size:12.5px">${esc(c.detail || "—")}</td>
+        <td>${c.triggered
+          ? '<span class="tag tag-hit">触发</span>'
+          : '<span class="tag tag-clear">未触发</span>'}</td>
+      </tr>`).join("")
+    : '<tr><td colspan="4" style="color:var(--ink-3)">本次运行未返回证伪规则明细</td></tr>';
+
+  // ---------- 成本敏感性 ----------
+  const sens = json.cost_sensitivity || [];
+  const tbS = $("tbl-sens").querySelector("tbody");
+  tbS.innerHTML = sens.length
+    ? sens.map(s => {
+        const net = s.net_sum_pct;
+        const ok = isNum(net) && net > 0;
+        return `<tr>
+          <td>×${s.fee_multiple != null ? s.fee_multiple : "?"}</td>
+          <td class="num">${s.fee_bps != null ? s.fee_bps + " bps" : "—"}</td>
+          <td class="num ${signClass(net)}">${pct(net)}</td>
+          <td class="num">${pct(s.win_pct)}</td>
+          <td class="num">${num(s.profit_factor)}</td>
+          <td>${ok
+            ? '<span style="color:var(--pass)">为正</span>'
+            : '<span style="color:var(--fail)">为负</span>'}</td>
+        </tr>`;
+      }).join("")
+    : '<tr><td colspan="6" style="color:var(--ink-3)">本次运行未返回成本敏感性数据</td></tr>';
+
+  // ---------- 六件仪器各自的输出 ----------
+  const br = json.barrier_reach || {};
+  const isg = wf.in_sample_grid || {};
+  const osg = wf.out_sample_grid || {};
+  const ctlStats = ctl.stats || {};
+
+  const inst = [
+    {
+      t: "01 Path-aware 回放",
+      m: ws.sum_pct != null ? pct(ws.sum_pct) : "—",
+      cls: signClass(ws.sum_pct),
+      d: "最坏优先 / 最好优先两套口径：区间 " +
+         (bs.sum_pct != null ? pct(ws.sum_pct) + " ~ " + pct(bs.sum_pct) : "—") +
+         "。真实结果是区间，不是那根最好看的线。",
+    },
+    {
+      t: "02 成本敏感性",
+      m: sens.length ? sens.length + " 档" : "—",
+      d: sens.length
+        ? sens.map(s => "×" + s.fee_multiple + " → " + pct(s.net_sum_pct)).join(" · ")
+        : "未返回",
+    },
+    {
+      t: "03 障碍可达性",
+      m: br.reached_tp_pct != null ? pct(br.reached_tp_pct, 1) : "—",
+      d: br.n != null
+        ? br.n + " 笔中，止盈位 " + num(br.tp_level_pct, 1) + "% 触及 " + pct(br.reached_tp_pct, 1) +
+          "、止损位触及 " + pct(br.reached_sl_pct, 1) + "、两头都没到 " + pct(br.reached_neither_pct, 1)
+        : "未返回",
+    },
+    {
+      t: "04 随机入场对照",
+      m: ctl.n_random != null ? ctl.n_random + " 次" : "—",
+      d: ctl.diff_pct != null
+        ? "策略均值 " + pp(ctl.strategy_mean_pct) + " / 随机均值 " + pp(ctl.control_mean_pct) +
+          " / 差值 " + pp(ctl.diff_pct) + " · 选择性 " +
+          (ctl.selectivity === "proven" ? "已证明" : "未证明")
+        : "未返回",
+    },
+    {
+      t: "05 Walk-forward",
+      m: wf.folds != null ? wf.folds + " 折" : "—",
+      d: oos.verdict
+        ? "样本外裁决 " + (oos.verdict.outcome || "—") + "（" + (oos.n_signals != null ? oos.n_signals + " 笔" : "—") + "）" +
+          (wf.boundary_ts ? " · 分割点 " + wf.boundary_ts : "")
+        : "未返回",
+    },
+    {
+      t: "06 参数网格",
+      m: isg.n_cells != null ? isg.positive_cells + "/" + isg.n_cells + " 为正" : "—",
+      d: isg.n_cells != null
+        ? "止盈×止损 " + isg.n_cells + " 格，正收益比例 " + pct((isg.positive_ratio || 0) * 100, 1) +
+          " · 最好 " + pct(isg.best && isg.best.net_sum_pct) + " / 最差 " + pct(isg.worst && isg.worst.net_sum_pct) +
+          (osg.n_cells != null ? " · 样本外 " + osg.positive_cells + "/" + osg.n_cells : "")
+        : "未返回",
+    },
+  ];
+  $("instrument-out").innerHTML = inst.map(x =>
+    `<div class="inst${x.m === "—" ? " dead" : ""}">
+      <div class="t">${x.t}</div>
+      <div class="m ${x.cls || ""}">${x.m}</div>
+      <div class="d">${esc(x.d)}</div>
+    </div>`
+  ).join("");
+  $("instruments-meta").textContent =
+    (json.window ? json.window.bars + " 根 K 线 · " + json.window.from + " → " + json.window.to : "");
+
+  // ---------- 报告原文 ----------
+  $("report-md").textContent = mdText || "（无 markdown 输出）";
+  $("report-json").textContent = JSON.stringify(json, null, 2);
+  $("report-html").srcdoc = mdToMiniHtml(mdText || "");
+  $("report-repro").textContent = json.repro
+    ? Object.entries(json.repro).map(([k, val]) => k + ": " + val).join("\n")
+    : "（本次运行未返回复现信息）";
+}
+
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/* 极简 markdown → HTML，只给 iframe 用；引擎的 md 结构很规整 */
+function mdToMiniHtml(md) {
+  const e = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const lines = md.split("\n");
+  const out = [];
+  let inTable = false, inPre = false, rows = 0;
+
+  for (const raw of lines) {
+    const line = raw.replace(/\s+$/, "");
+    if (line.startsWith("```")) {
+      out.push(inPre ? "</pre>" : "<pre>");
+      inPre = !inPre; continue;
+    }
+    if (inPre) { out.push(e(line)); continue; }
+
+    if (/^\|/.test(line)) {
+      const cells = line.split("|").slice(1, -1).map(c => c.trim());
+      if (cells.length && /^[-: ]+$/.test(cells.join(""))) continue;   // 分隔行
+      if (!inTable) { out.push("<table>"); inTable = true; rows = 0; }
+      const tag = rows === 0 ? "th" : "td";
+      out.push("<tr>" + cells.map(c => `<${tag}>${inline(c)}</${tag}>`).join("") + "</tr>");
+      rows++;
+      continue;
+    } else if (inTable) { out.push("</table>"); inTable = false; }
+
+    if (/^#{1,6}\s/.test(line)) {
+      const lvl = line.match(/^#+/)[0].length;
+      out.push(`<h${lvl}>${inline(line.replace(/^#+\s*/, ""))}</h${lvl}>`);
+    } else if (/^>\s?/.test(line)) {
+      out.push(`<blockquote>${inline(line.replace(/^>\s?/, ""))}</blockquote>`);
+    } else if (/^\s*[-*]\s/.test(line)) {
+      out.push(`<li>${inline(line.replace(/^\s*[-*]\s/, ""))}</li>`);
+    } else if (!line) {
+      out.push("");
+    } else {
+      out.push(`<p>${inline(line)}</p>`);
+    }
+  }
+  if (inTable) out.push("</table>");
+  if (inPre) out.push("</pre>");
+
+  function inline(s) {
+    return e(s)
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/`([^`]+)`/g, "<code>$1</code>");
+  }
+
+  const css = `
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;
+      font-size:13.5px;line-height:1.68;color:#14181f;margin:0;padding:20px 22px;background:#fcfcfd}
+    h1{font-size:19px;margin:0 0 12px;letter-spacing:-.01em}
+    h2{font-size:16px;margin:22px 0 9px;padding-top:14px;border-top:1px solid #e6eaf0}
+    h3{font-size:14.5px;margin:17px 0 7px}
+    p{margin:0 0 9px}
+    blockquote{margin:0 0 12px;padding:10px 14px;background:#f0f4fb;
+      border-left:3px solid #1a4fd6;font-size:13px;color:#2a3444}
+    table{border-collapse:collapse;width:100%;margin:10px 0;font-size:12.5px}
+    th,td{border:1px solid #dde2e9;padding:7px 10px;text-align:left}
+    th{background:#f2f5f9;font-weight:650}
+    code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;
+      background:#eef1f6;padding:1px 5px;border-radius:3px}
+    pre{background:#f5f7fa;padding:12px;border-radius:6px;overflow:auto;font-size:12px}
+    li{margin:0 0 4px 18px}
+    strong{font-weight:680}
+  `;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${out.join("\n")}</body></html>`;
+}
+
+/* ==================================================================
+   运行
+=================================================================== */
+
+function defaultSpec() {
+  return {
+    name: "rsi-dip-btc-1h-browser",
+    hypothesis: "BTC 1 小时 RSI(14) 低于 30 后做多，捕捉均值回复",
+    source: "浏览器内置演示（规则信号，无需外部信号文件）",
+    symbol: "BTCUSDT", interval: "1h", venue: "spot",
+    fee_rate: 0.0004, fill_model: "taker", funding: false,
+    exit: { take_profit: 0.03, stop_loss: -0.08, timeout_bars: 24 },
+    signals: { kind: "rule", rule: "rsi_below", period: 14, threshold: 30, side: "long" },
+    control: { enabled: true, n_random: 200, seed: 42 },
+    walk_forward: { enabled: true, folds: 3 },
+    param_grid: { axes: { take_profit: [0.02, 0.03, 0.04], stop_loss: [-0.06, -0.08, -0.10] } },
+    fee_multiples: [1, 2, 5],
+    falsify_if: {
+      control_lift_ci_includes_zero: true,
+      net_negative_at_fee_multiple: 2,
+      worst_case_net_negative: true,
+      min_fills: 30,
+      grid_positive_ratio_min: 0.5,
+    },
+  };
+}
+
+/* 统一的一次运行：KPI 与报告原文出自同一次执行，不可能出现两套数字 */
+function runEngine(specJson, csvText, label) {
+  pyodide.globals.set("_SPEC", specJson);
+  pyodide.globals.set("_CSV", csvText);
+  const raw = pyodide.runPython(`
+import json as _j
+_rc, _md, _js, _err = run_verify(_SPEC, _CSV, "report")
+_j.dumps([_rc, _md, _j.dumps(_js) if _js else "", _err or ""])
+`);
+  const [rc, mdText, jsText, errText] = JSON.parse(raw);
+  if (errText) throw new Error(errText);
+  if (!jsText) {
+    throw new Error("引擎未返回 JSON（返回码 " + rc + "）：\n" + (mdText || "").slice(0, 800));
+  }
+  return { rc, mdText, json: JSON.parse(jsText) };
+}
+
+async function withBusy(label, fn) {
+  $("btn-demo").disabled = true;
+  $("btn-run").disabled = true;
+  $("error-box").classList.add("hidden");
+  setStatus("loading", label);
+  const t0 = performance.now();
+  try {
+    const out = await fn();
+    const dt = ((performance.now() - t0) / 1000).toFixed(1);
+    setStatus("ok", "完成 · " + dt + "s");
+    return out;
+  } catch (e) {
+    setStatus("err", "运行失败");
+    showError(String((e && e.message) || e));
+    return null;
+  } finally {
+    $("btn-demo").disabled = false;
+    $("btn-run").disabled = false;
+  }
+}
+
+async function runDemo() {
+  if (!engineReady) return;
+  const out = await withBusy("运行中（内置 5,000 根真实 K 线）…", async () => {
+    const csv = await fetch("demo_candles.csv").then(r => {
+      if (!r.ok) throw new Error("demo_candles.csv 读取失败");
+      return r.text();
+    });
+    return runEngine(JSON.stringify(defaultSpec()), csv);
+  });
+  if (out) render(out.json, out.mdText);
+}
+
+async function runCustom() {
+  if (!engineReady) return;
+  const specText = $("spec-input").value.trim();
+  if (!specText) { showError("先填入 spec JSON，或点「填入示例 spec」。"); return; }
+  try { JSON.parse(specText); }
+  catch (e) { showError("spec 不是合法 JSON：" + e.message); return; }
+
+  let csv = $("csv-input").value.trim();
+  const usingBuiltin = !csv;
+
+  const out = await withBusy(
+    usingBuiltin ? "运行中（K 线为空，用内置 5,000 根）…" : "运行中…",
+    async () => {
+      if (usingBuiltin) {
+        csv = await fetch("demo_candles.csv").then(r => {
+          if (!r.ok) throw new Error("demo_candles.csv 读取失败");
+          return r.text();
+        });
+      }
+      return runEngine(specText, csv);
+    }
+  );
+  if (out) render(out.json, out.mdText);
+}
+
+/* ---------- 交互绑定 ---------- */
+
+$("btn-demo").addEventListener("click", runDemo);
+$("btn-run").addEventListener("click", runCustom);
+
+$("btn-fill-spec").addEventListener("click", () => {
+  $("spec-input").value = JSON.stringify(defaultSpec(), null, 2);
+});
+
+$("csv-file").addEventListener("change", async (ev) => {
+  const f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  const text = await f.text();
+  $("csv-input").value = text;
+  $("hint").textContent = "已载入 " + f.name + "（" + (f.size / 1024).toFixed(0) + " KB，" +
+    text.split("\n").length + " 行）";
+});
+
+boot();
+</script>
+</body>
+</html>

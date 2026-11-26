@@ -90,3 +90,12 @@ research/polymarket/data/cache_*.json
 # 并发采集的 checkpoint 中间产物：内容与同批次 calib_*.json 汇总重复，
 # 只用于进程被 kill 时保命，不进档案
 research/polymarket/data/*_partial_*.jsonl
+
+# web/falsifier：浏览器证伪台的本地开发工作区（npm 依赖 15MB、调试脚本）。
+# 部署产物已由 scripts/sync_falsifier_web.py 同步到 docs/falsifier/，
+# 那 4 个文件才是要提交的。这里只留 node 脚本供本地跑 E2E。
+web/falsifier/node_modules/
+web/falsifier/_diag.js
+web/falsifier/_schema.json
+web/falsifier/_report.md
+web/falsifier/e2e_screenshot.png
