@@ -11,7 +11,8 @@
 > 本仓库是那次实验的完整档案：代码、数据、结论、以及得出结论的仪器。
 > 恢复命令见文末；本文所有数字都能用文内的命令复现。
 >
-> **补充封存（2026-11-25）**：Crypto 与 Polymarket 两条新赛道的 **15 条路线全部证伪**，
+> **补充封存（2026-11-25）**：Crypto 与 Polymarket 两条新赛道的 **15 条路线 0 条通过**
+> （11 条 FALSIFIED + 4 条样本不足/不通过），
 > 「公开免费数据主动策略阶段」正式封存，M2–M5 不启动。
 > 完整证伪总表见 [封存：公开免费数据主动策略阶段](#封存公开免费数据主动策略阶段2026-11-25-收官)，
 > 全仓仅保留 1 个零资金只读周频火种 `research/live/funding_shadow.py`。
@@ -97,6 +98,9 @@ python skill/strategy-falsifier/scripts/verify.py spec.json --candles klines.csv
 > 全仓只留 1 个零维护火种（`research/live/funding_shadow.py`，见文末）。
 
 ### 总表：15 条路线，0 条通过
+
+精确口径：**11 条 FALSIFIED（被一手数据证伪）+ 4 条未通过（3 条 INCONCLUSIVE 样本不足 / 1 条无法拒绝零假设）**。
+这 4 条不是"还有希望"，是"连证伪所需的样本都没攒够"——同样不足以支撑任何投入。
 
 | # | 赛道 | 路线 | 核心假设 | 实测 | 判定 | 出处 |
 |---|---|---|---|---|---|---|
@@ -345,7 +349,7 @@ python -m research.verify --list-market                   # 本地行情缓存�
 
 **方法论文章**（对外内容资产）：`docs/article-falsification.md`。**分发作战包**（Reddit/X/闲鱼/Toku 文案 + gate 规则 + 本人操作清单）：`docs/dist/`。**落地页**（pitch + demo + 案例矩阵 + 价格）：`docs/index.html`。
 
-**测试**：`tests/test_verify.py` 覆盖 spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/walk-forward/参数网格/HTML 渲染/多策略对比/spec 自带数据/CLI 端到端，全套测试 **409 passed, 1 skipped**（CI 实测口径）（akshare 未装、Windows 缺 symlink 权限各跳 1 个）。
+**测试**：`tests/test_verify.py` 覆盖 spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/walk-forward/参数网格/HTML 渲染/多策略对比/spec 自带数据/CLI 端到端，该文件 **118 passed**；**全仓 `pytest -q` 为 1058 passed, 2 skipped**（akshare 未装、Windows 缺 symlink 权限各跳 1 个）。
 
 ## 运维：这个系统活着的时候经历过什么
 
@@ -364,7 +368,7 @@ python -m research.verify --list-market                   # 本地行情缓存�
 | 停止后循环反复复活 | `loop.sh` while true 守护 + 排队后台任务到点自启 | STOP 文件 kill switch（幂等） |
 | 后台任务约 3 小时被系统回收 | 环境事实 | 主+副班双看门狗，故障窗口 30 分钟 |
 
-**CI：409 passed，1 skipped**（`pytest -q tests`；本地 Windows 与全仓库口径不同，详见 `docs/dist/submissions.md`）。
+**CI：全仓 `pytest -q` 1058 passed / 2 skipped**（`tests/test_verify.py` 单文件 118 passed；本地 Windows 与全仓库口径差异详见 `docs/dist/submissions.md`）。
 
 ---
 
@@ -480,14 +484,15 @@ $PY -m research.verify --spec research/verify/samples/demo_spec.json --out r.md
 | Crypto Phase 1 / 2 / 2B / 3 + 15m 基线 | 报告在 `research/lite/reports/`，判定见总表 #1–#5 |
 | Crypto V4 S1 / S2 / S2b（4h / 1h） | 报告在 `research/v4/`，判定见总表 #6–#8 |
 | Polymarket 静态套利 / 尾盘 / 延迟 / 5m / 气象 / M1' | 报告在 `research/polymarket/`，判定见总表 #9–#15 |
-| 全仓测试 | 全通过（见 CI 徽章） |
+| 全仓测试 | **1058 passed / 2 skipped**（`pytest -q`，本机实测） |
 | M2 云节点 / M3 热路径 FOK / M4 极小资金 / M5 放量 | **全部不启动** |
 | 新的免费公开数据探测线 | **不再开** |
 | 唯一火种 `research/live/funding_shadow.py` | **保留**，周频、只读、零资金、不盯盘 |
 
 **为什么停在这里。** 上面 15 条路线分布在两个完全不同的赛场（中心化交易所的永续合约、
 去中心化预测市场），用了四种不同的方法（时序回测、截面回测、盘口套利扫描、概率校准），
-覆盖了从 15 分钟到 4 小时的周期和从秒级到 48 小时的持有期。它们**全部**失败在同一个约束上：
+覆盖了从 15 分钟到 4 小时的周期和从秒级到 48 小时的持有期。**没有一条通过**——
+11 条被直接证伪，4 条卡在样本不足或无法拒绝零假设。它们失败在同一个约束上：
 **凡是"免费公开 API + 普通散户费率 + 写脚本自动跑"能触达的地方，已经没有能捡的钱了。**
 
 继续挖第 16 条免费数据路线，只会多一份同样的报告，然后白白消耗时间。
