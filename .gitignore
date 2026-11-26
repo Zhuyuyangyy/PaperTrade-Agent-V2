@@ -99,3 +99,4 @@ web/falsifier/_diag.js
 web/falsifier/_schema.json
 web/falsifier/_report.md
 web/falsifier/e2e_screenshot.png
+web/falsifier/prod_screenshot.png
