@@ -36,6 +36,22 @@ def sha(p: Path) -> str:
     return h.hexdigest()
 
 
+def _lf(data: bytes) -> bytes:
+    """统一成 LF，用于比较与写出。"""
+    return data.replace(b"\r\n", b"\n")
+
+
+def write_lf(src: Path, dst: Path) -> None:
+    """按字节复制，但把行尾统一成 LF。
+
+    为什么不能直接用 shutil.copy2：Windows 上它按原样搬运，源文件是 CRLF
+    就写出 CRLF，而 Git 提交时又转成 LF——于是本地文件、仓库 blob、GitHub
+    Pages 上的文件是三份不同的字节。页面卖"逐字节一致"，这就把承诺变成了
+    空话。这里强制 LF，让三者相同。
+    """
+    dst.write_bytes(_lf(src.read_bytes()))
+
+
 def main(argv: list[str]) -> int:
     check_only = "--check" in argv
     missing = [str(p.relative_to(ROOT)) for p in (SRC, CANDLES_SRC) if not p.is_file()]
@@ -45,7 +61,10 @@ def main(argv: list[str]) -> int:
 
     DST.parent.mkdir(parents=True, exist_ok=True)
 
-    same_engine = DST.is_file() and sha(DST) == sha(SRC)
+    # 比较时忽略行尾：语义上同一份引擎，行尾差异是平台产物不是内容差异。
+    # 写出去的一律是 LF（见 write_lf 的注释），所以"本地 CRLF 源 + 目标 LF"
+    # 不该被判定为不一致。
+    same_engine = DST.is_file() and _lf(DST.read_bytes()) == _lf(SRC.read_bytes())
     same_candles = CANDLES_DST.is_file() and sha(CANDLES_DST) == sha(CANDLES_SRC)
 
     if check_only:
@@ -57,7 +76,7 @@ def main(argv: list[str]) -> int:
         return 0 if ok else 1
 
     if not same_engine:
-        shutil.copy2(SRC, DST)
+        write_lf(SRC, DST)
         print(f"engine.py 已同步 -> {DST.relative_to(ROOT)}  sha256 {sha(DST)[:16]}")
     else:
         print("engine.py 已是最新")

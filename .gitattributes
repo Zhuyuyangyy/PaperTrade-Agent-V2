@@ -2,3 +2,40 @@
 research/lite/*_spec.json -text
 research/lite/*_spec.lock.json -text
 research/lite/data/*.manifest.json -text
+
+# ---------------------------------------------------------------------------
+# docs/falsifier/ 的引擎与网页资产：行尾必须全平台一致
+#
+# 这个目录的卖点是"网页里的 engine.py 与仓库引擎逐字节相同"，
+# tests/test_falsifier_web.py 用 sha256 守这一条。而行尾一旦被自动转换，
+# 这条承诺就失效——而且失效方式很隐蔽：CI 在 Ubuntu 上跑 LF 是绿的，
+# Windows 本地是 CRLF，线上部署的是 LF，三方哈希各不相同。
+#
+# 实锤过一次：本地 231755 B（CRLF），线上 227031 B（LF），差 4724 字节
+# 正好 4724 行。本地 --check 说一致，线上文件却是另一份字节。
+#
+# 对策：把源码与网页资产钉死成 LF。
+# ---------------------------------------------------------------------------
+
+*.py     text eol=lf
+*.html   text eol=lf
+*.css    text eol=lf
+*.js     text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+
+# 数据文件原样不动：CSV 里可能有引号内的换行，让 Git 碰会改内容
+*.csv    -text
+*.jsonl  -text
+*.sqlite -text
+
+# 二进制
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.wasm   binary
+*.zip    binary
+
+# Windows 脚本必须 CRLF
+*.bat    text eol=crlf
+*.cmd    text eol=crlf

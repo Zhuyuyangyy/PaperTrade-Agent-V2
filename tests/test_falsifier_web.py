@@ -33,7 +33,14 @@ CANDLES_SRC = ROOT / "research" / "verify" / "samples" / "demo_candles.csv"
 
 
 def _sha(p: Path) -> str:
-    return hashlib.sha256(p.read_bytes()).hexdigest()
+    """文件内容的 sha256，行尾归一后计算。
+
+    为什么要归一行尾：源码在 Windows 上是 CRLF、Git 里是 LF、Pages 上是 LF。
+    语义上是同一份引擎，行尾差异是平台产物。若不归一，这条测试在 Windows
+    上永远红、在 Ubuntu 上永远绿——那就不是在测一致性，是在测平台。
+    真正要求逐字节相同的场景（契约锁）另外用 -text 钉死，见 .gitattributes。
+    """
+    return hashlib.sha256(p.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
 
 
 # ---------------------------------------------------------------------------
@@ -73,6 +80,45 @@ def test_sync_script_check_mode_passes():
         capture_output=True, text=True, cwd=str(ROOT), timeout=120,
     )
     assert r.returncode == 0, f"--check 失败：\n{r.stdout}\n{r.stderr}"
+
+
+def test_deployed_files_use_lf_endings():
+    """部署文件必须是 LF，否则本地/Git/线上会变成三份不同的字节。
+
+    这条是真踩过的坑：Windows 上 shutil.copy2 搬出 CRLF（231755 B），
+    Git 提交转成 LF（227031 B），Pages 上的是 LF。差异 4724 字节正好
+    4724 行。当时本地 --check 说"一致"、线上文件却是另一份字节，
+    而页面卖的是"你跑的就是仓库那个引擎"。
+    """
+    for name in ("engine.py", "bridge.py", "index.html"):
+        p = WEB / name
+        data = p.read_bytes()
+        assert b"\r\n" not in data, (
+            f"docs/falsifier/{name} 里有 CRLF。跑 python scripts/sync_falsifier_web.py 重写为 LF。"
+        )
+
+
+def test_git_blob_matches_working_tree():
+    """工作区文件与 Git 里存的 blob 必须相同——否则"我推上去了"是假的。
+
+    行尾归一后比较：两边都该是 LF，所以这里能真正比出内容差异。
+    """
+    import subprocess
+    for name in ("engine.py", "bridge.py", "index.html"):
+        path = WEB / name
+        rel = path.relative_to(ROOT).as_posix()
+        blob = subprocess.run(
+            ["git", "show", f":{rel}"],
+            capture_output=True, cwd=str(ROOT), timeout=60,
+        )
+        if blob.returncode != 0:          # 尚未 git add 的新文件
+            pytest.skip(f"{rel} 还没进暂存区")
+        local = path.read_bytes().replace(b"\r\n", b"\n")
+        staged = blob.stdout.replace(b"\r\n", b"\n")
+        assert local == staged, (
+            f"{rel} 的工作区内容和 Git 暂存的内容不一致——"
+            f"本地 {len(local)} B / 暂存 {len(staged)} B。先 git add。"
+        )
 
 
 # ---------------------------------------------------------------------------
