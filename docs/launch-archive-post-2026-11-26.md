@@ -13,7 +13,7 @@
 |---|---|---|---|---|
 | 1 | 测试数 | `409 passed` | **`1058 passed, 2 skipped`** | 徽章已随 main 更新，帖子必须同口径，否则点进去对不上 |
 | 2 | 路线总数口径 | 「15 条路线全部 FALSIFIED」 | **「15 条路线、0 条通过：11 条 FALSIFIED + 4 条样本不足/无法拒绝零假设」** | 「全部证伪」是错的。#7/#8 是 INCONCLUSIVE，#13/#15 无法拒绝零假设 |
-| 3 | 未通过内部划分 | 未区分，笼统带过 | **「2 条 INCONCLUSIVE（样本不足）+ 2 条无法拒绝零假设」** | 精确到条，读者可逐条去仓库核对 |
+| 3 | 未通过内部划分 | 未区分，笼统带过 | **「2 条 INCONCLUSIVE（#7 样本不足 / #8 数据不可得）+ 1 条无法拒绝零假设（#13 p=0.8125）+ 1 条多重检验全不通过（#15 p=0.0497）」** | 精确到条、精确到 p 值，读者可逐条去仓库核对 |
 | 4 | 证伪理由 | 「净利为负，所以不行」 | **「有效区间净 +673bps，但 5 个窗口 Wilcoxon p=0.8125，无法拒绝零假设」** | 原来的说法会被 +673bps 打脸；说清「样本不够」比说「亏钱」更站得住 |
 | 5 | 校准结论 | 「校准有错价」/「完全有效」 | **「整体偏离 −1.0pp / −0.75pp，Bonferroni 阈值 0.0056，最小 p=0.0497，无一通过」** | 给出数字和检验方法，而不是形容词 |
 | 6 | 封存范围 | 「不做量化了」 | **「封存的是『免费公开 API + 散户费率 + 脚本自动跑』这一阶段；M2–M5 不启动」** | 封的是方法边界，不是能力上限。留了三条重启红线的余地 |
@@ -33,9 +33,9 @@
 
 ---
 
-**先说结论，说精确一点：15 条路线、0 条通过。其中 11 条被一手数据证伪，4 条卡在样本不足或无法拒绝零假设。**
+**先说结论，说精确一点：15 条路线、0 条通过。其中 11 条被一手数据证伪，4 条卡在样本不足或检验不通过。**
 
-那 4 条我没算进「证伪」，因为不算。它们不是「还有希望」，是「连证伪所需的样本都没攒够」——同样不足以支撑任何一分钱投入。
+那 4 条我没算进「证伪」，因为不算。它们不是「还有希望」，是「连证伪所需的样本都没攒够」——同样不足以支撑任何一分钱投入。具体是：2 条 INCONCLUSIVE（一条样本不足、一条根本拿不到 OI 数据）、1 条 Wilcoxon p=0.8125 无法拒绝零假设、1 条多重检验 Bonferroni 全不通过（最小 p=0.0497）。
 
 **Crypto 侧 8 条：**
 
@@ -122,7 +122,7 @@ python -m research.verify --demo
 
 > **I tested 15 quantitative routes. Zero passed. Then I archived the whole phase.**
 >
-> To be precise: 15 routes, 0 passed — **11 FALSIFIED by first-hand data, 4 stuck at insufficient sample or "cannot reject the null."**
+> To be precise: 15 routes, 0 passed — **11 FALSIFIED by first-hand data, 4 not passed** — 2 INCONCLUSIVE (one insufficient sample, one where the OI data simply isn't obtainable), 1 where Wilcoxon p=0.8125 cannot reject the null, and 1 where Bonferroni kills every bucket (min p=0.0497).
 >
 > I did *not* count those 4 as falsified. They aren't "maybe there's hope" — they're "I couldn't even gather enough data to falsify them," which is equally disqualifying for putting money in.
 >
@@ -155,7 +155,7 @@ python -m research.verify --demo
 |---|---|---|
 | 徽章数字 | 打开仓库主页看徽章 | `1058 passed, 2 skipped` |
 | 总表存在 | 主页搜「15 条路线，0 条通过」 | 命中 |
-| 划分口径 | 总表下方「精确口径」一行 | `11 条 FALSIFIED + 4 条未通过` |
+| 划分口径 | 总表下方「精确口径」一行 | `11 条 FALSIFIED + 4 条未通过`（2 INCONCLUSIVE / 1 无法拒绝零假设 / 1 多重检验不通过） |
 | demo 能跑 | `python -m research.verify --demo` | 30 秒出报告 |
 | 链接不 404 | 点仓库地址 | 200，默认分支 `main` |
 
