@@ -121,6 +121,31 @@ def test_git_blob_matches_working_tree():
         )
 
 
+def test_page_shows_engine_sha_for_verification():
+    """页面必须把引擎的 sha256 摆出来，让"跑的就是仓库那个引擎"可被核对。
+
+    没有这个凭据，那句话就只是文案。有了它，任何人可以：
+      sha256sum docs/falsifier/engine.py
+    然后和页面上显示的前 12 位对一遍。
+    """
+    js = re.search(r"<script>([\s\S]*)</script>", INDEX.read_text(encoding="utf-8")).group(1)
+    assert "crypto.subtle.digest" in js, "页面没有计算引擎哈希，用户无法核对"
+    assert "SHA-256" in js, "哈希算法不是 SHA-256"
+    assert "engineSha" in js and "engine-meta" in js, "哈希没有显示到界面上"
+
+
+def test_page_loading_copy_sets_first_visit_expectation():
+    """首次访问要下载约 10MB 运行时，文案必须提前说，别让用户以为卡死。
+
+    实测线上首次就绪约 40s（CDN 下载 + sqlite3 装载）。如果只显示
+    "加载中…"，用户大概率在 10 秒时就关掉了。
+    """
+    html = INDEX.read_text(encoding="utf-8")
+    assert "10 MB" in html or "10MB" in html, (
+        "页面没告诉用户首次要下载约 10MB，用户会以为卡死了"
+    )
+
+
 # ---------------------------------------------------------------------------
 # 2. 页面资产完整性
 # ---------------------------------------------------------------------------

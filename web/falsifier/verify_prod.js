@@ -34,7 +34,7 @@ const URL = process.env.PROD_URL;
   console.log("\n[1] 等引擎就绪（真实 CDN 取 Pyodide）");
   await page.waitForFunction(
     () => document.getElementById("status-text").textContent.includes("就绪"),
-    { timeout: 240000 }
+    { timeout: 300000 }
   ).catch(async () => {
     const st = await page.textContent("#status-text");
     const err = await page.textContent("#error-text").catch(() => "");

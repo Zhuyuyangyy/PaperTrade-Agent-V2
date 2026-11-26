@@ -236,7 +236,7 @@ footer a{color:var(--ink-2)}
     <div class="actions" style="margin-top:16px">
       <button class="btn-primary" id="btn-demo" disabled>跑内置演示</button>
       <button class="btn-ghost" id="btn-run" disabled>用我粘贴的 spec 运行</button>
-      <span style="font-size:12.5px;color:var(--ink-3)" id="hint">引擎加载中…</span>
+      <span style="font-size:12.5px;color:var(--ink-3)" id="hint">正在下载 Python 运行时（首次约 10 MB，之后走浏览器缓存）…</span>
     </div>
 
     <details id="input-panel">
@@ -436,8 +436,9 @@ function signClass(v) { return !isNum(v) ? "neutral" : v > 0 ? "pos" : v < 0 ? "
 function pp(v, d = 2) { return !isNum(v) ? "—" : (v > 0 ? "+" : "") + v.toFixed(d) + "pp"; }
 
 async function boot() {
+  const tBoot = Date.now();
   try {
-    setStatus("loading", "加载 Python 运行时…");
+    setStatus("loading", "下载 Python 运行时…（首次较慢）");
     if (!window.loadPyodide) {
       await new Promise((resolve, reject) => {
         const s = document.createElement("script");
@@ -483,15 +484,22 @@ async function boot() {
     engineReady = true;
     $("btn-demo").disabled = false;
     $("btn-run").disabled = false;
-    $("hint").textContent = "引擎就绪，数据不出本机";
+    const bootSec = ((Date.now() - tBoot) / 1000).toFixed(1);
+    $("hint").textContent = "引擎就绪（首次加载 " + bootSec + "s，数据不出本机）";
 
-    const sha = await fetch("engine.py").then(r => r.text()).then(t => {
-      // 页面内展示的短哈希：让人能对上仓库那份文件
-      return t.length;
-    }).catch(() => 0);
+    // 显示引擎源码的 sha256 前 12 位：用户能拿它去和仓库那份文件比对，
+    // "页面跑的就是仓库那个引擎"这句话才有一个可核的凭据。
+    let engineSha = "";
+    try {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(engineSrc));
+      engineSha = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 12);
+    } catch (e) {
+      engineSha = "";   // 非安全上下文下 crypto.subtle 不可用，不影响运行
+    }
 
     $("engine-meta").textContent =
       "engine ready · " + (info.lines || 0) + " 行 · sqlite3=" + (info.sqlite3 ? "真可用" : "不可用") +
+      (engineSha ? " · sha " + engineSha : "") +
       " · py" + (info.python || "?");
     $("foot-meta").textContent = "engine " + (info.has_main ? "ok" : "ERR") +
       (sqlitePkg ? "" : " · sqlite3 未装载");
