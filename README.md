@@ -89,7 +89,7 @@ python skill/strategy-falsifier/scripts/verify.py spec.json --candles klines.csv
 ## 封存：公开免费数据主动策略阶段（2026-11-25 收官）
 
 > **本阶段已封存。** 2026-11 这一轮换到 Crypto 与 Polymarket 两个新赛场，又测了
-> 15 条路线，全部用一手数据证伪，或判为"无法拒绝零假设"。下表的每个数字都来自
+> 15 条路线，全部用一手数据判定——11 条被证伪，4 条卡在样本不足或无法拒绝零假设。下表的每个数字都来自
 > `research/lite/reports/`、`research/v4/`、`research/polymarket/` 里的报告与
 > `data/*.json`，**没有一条是估算**。
 >
