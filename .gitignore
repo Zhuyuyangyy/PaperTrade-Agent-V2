@@ -100,3 +100,20 @@ web/falsifier/_schema.json
 web/falsifier/_report.md
 web/falsifier/e2e_screenshot.png
 web/falsifier/prod_screenshot.png
+
+# research/tsmom：引擎逐配置的原始报告（24MB / 707 个文件）。
+# 这些是可重新生成的中间产物——scan.py 跑一遍就有。入库的只有两个汇总
+# （scan_results.json / fair_control.json）与源数据，报告正文引用的每个数字
+# 都能从它们追到。
+research/tsmom/_out/*.md
+research/tsmom/_out/*.json
+!research/tsmom/_out/scan_results.json
+!research/tsmom/_out/fair_control.json
+# 每个配置一个 spec，可由 scan.py / fair_control.py 按同一份常量重建；
+# 留着会让每次改参数都刷出上百个 diff，掩盖真正的改动。
+research/tsmom/specs/*.json
+# signals/*.csv：600 个 CSV（3MB）由 signals.py 按固定参数确定性重建，
+# 入库它们只会让 diff 变噪音。signals.py 是唯一来源。
+research/tsmom/signals/*.csv
+# 运行日志，不是档案
+research/tsmom/_out/scan*.log

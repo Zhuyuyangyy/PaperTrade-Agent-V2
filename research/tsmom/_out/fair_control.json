@@ -1,0 +1,3866 @@
+[
+ {
+  "name": "FAIR_BTCUSDT__tsmom_long__10__to3",
+  "leg": "tsmom_long",
+  "symbol": "BTCUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 179,
+  "open_signals": 0,
+  "net_sum_pct": -3.6535999999999964,
+  "net_mean_pct": -0.020411173184357524,
+  "compound_x": 0.7946144512379475,
+  "compound_pct": -20.53855487620525,
+  "win_pct": 34.07821229050279,
+  "profit_factor": 0.9873311985186907,
+  "max_dd_pct": -56.99071088400929,
+  "best_case_sum_pct": -3.6535999999999964,
+  "worst_case_sum_pct": -3.6535999999999964,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": -0.5890608398510241,
+  "control_ci": [
+   -1.5704179143389199,
+   0.4309629348230913
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 37.2696024395223,
+  "bh_diff_pct": -40.9232024395223,
+  "exposure_pct": 14.045441133077604,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "6 条事前证伪规则被触发：最坏优先口径净收益 -3.65% ≤ 0；成本 ×2（往返 16bps）时净收益 -17.97% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.59%，95% 区间 [-1.57, +0.43] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -6.16% ≤ 0；成本 ×2（往返 16bps）时净收益 -11.36% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.10%，95% 区间 [-1.02, +0.88] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -3.6535999999999964,
+   "2.0": -17.973599999999998,
+   "5.0": -60.9336
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 84,
+    "net_sum_pct": 181.50390000000004
+   },
+   "flip": {
+    "n": 95,
+    "net_sum_pct": -185.15750000000003
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": 2.5057000000000023,
+  "wf_oos_sum_pct": -6.159299999999999,
+  "wf_oos_fills": 65,
+  "variant": "tsmom_long",
+  "lookback": 10,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 6.8,
+  "hold_p90": 18,
+  "hold_max": 50,
+  "n_segments": 179
+ },
+ {
+  "name": "FAIR_BTCUSDT__tsmom_long__20__to3",
+  "leg": "tsmom_long",
+  "symbol": "BTCUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 123,
+  "open_signals": 0,
+  "net_sum_pct": 61.2431,
+  "net_mean_pct": 0.4979113821138211,
+  "compound_x": 1.5667498600613914,
+  "compound_pct": 56.674986006139136,
+  "win_pct": 47.15447154471545,
+  "profit_factor": 1.336223442217952,
+  "max_dd_pct": -31.328800965077754,
+  "best_case_sum_pct": 61.2431,
+  "worst_case_sum_pct": 61.2431,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": -0.02152561788617896,
+  "control_ci": [
+   -1.2024055284552848,
+   1.1535677886178861
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 25.91646724260899,
+  "bh_diff_pct": 35.32663275739101,
+  "exposure_pct": 9.766892888757745,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "2 条事前证伪规则被触发：策略 − 随机对照组 = -0.02%，95% 区间 [-1.20, +1.15] 跨 0，未能证明选择性；样本外段：策略 − 随机对照组 = +0.06%，95% 区间 [-1.15, +1.44] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 61.2431,
+   "2.0": 51.4031,
+   "5.0": 21.883099999999995
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 60,
+    "net_sum_pct": 181.63989999999998
+   },
+   "flip": {
+    "n": 63,
+    "net_sum_pct": -120.39679999999997
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": 53.5531,
+  "wf_oos_sum_pct": 7.689999999999999,
+  "wf_oos_fills": 47,
+  "variant": "tsmom_long",
+  "lookback": 20,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 9.8,
+  "hold_p90": 25,
+  "hold_max": 96,
+  "n_segments": 123
+ },
+ {
+  "name": "FAIR_BTCUSDT__tsmom_long__30__to4",
+  "leg": "tsmom_long",
+  "symbol": "BTCUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 94,
+  "open_signals": 0,
+  "net_sum_pct": 66.77340000000001,
+  "net_mean_pct": 0.7103553191489362,
+  "compound_x": 1.6242297321177213,
+  "compound_pct": 62.422973211772124,
+  "win_pct": 45.744680851063826,
+  "profit_factor": 1.403195936484627,
+  "max_dd_pct": -25.36040349385743,
+  "best_case_sum_pct": 66.77340000000001,
+  "worst_case_sum_pct": 66.77340000000001,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": 0.563134985815603,
+  "control_ci": [
+   -0.8526593829787235,
+   2.1342602198581555
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 24.585410012626056,
+  "bh_diff_pct": 42.18798998737395,
+  "exposure_pct": 9.265269991147832,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "2 条事前证伪规则被触发：策略 − 随机对照组 = +0.56%，95% 区间 [-0.85, +2.13] 跨 0，未能证明选择性；样本外段：策略 − 随机对照组 = +0.36%，95% 区间 [-1.11, +2.05] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 66.77340000000001,
+   "2.0": 59.2534,
+   "5.0": 36.693400000000004
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 42,
+    "net_sum_pct": 188.57539999999997
+   },
+   "flip": {
+    "n": 52,
+    "net_sum_pct": -121.80199999999999
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": 57.8466,
+  "wf_oos_sum_pct": 8.9268,
+  "wf_oos_fills": 42,
+  "variant": "tsmom_long",
+  "lookback": 30,
+  "fair_timeout": 4,
+  "hold_median": 4,
+  "hold_mean": 13.2,
+  "hold_p90": 42,
+  "hold_max": 126,
+  "n_segments": 94
+ },
+ {
+  "name": "FAIR_BTCUSDT__tsmom_long__60__to4",
+  "leg": "tsmom_long",
+  "symbol": "BTCUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 51,
+  "open_signals": 0,
+  "net_sum_pct": 68.895,
+  "net_mean_pct": 1.3508823529411764,
+  "compound_x": 1.771535430476059,
+  "compound_pct": 77.15354304760591,
+  "win_pct": 43.13725490196079,
+  "profit_factor": 1.737959356804072,
+  "max_dd_pct": -28.41546305433007,
+  "best_case_sum_pct": 68.895,
+  "worst_case_sum_pct": 68.895,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": 1.1216733529411764,
+  "control_ci": [
+   -0.8021709803921571,
+   3.338346980392157
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 13.388869783946037,
+  "bh_diff_pct": 55.50613021605396,
+  "exposure_pct": 5.045736205370316,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 1 条规则在样本不足时触发（['control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": 68.895,
+   "2.0": 64.815,
+   "5.0": 52.575
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 25,
+    "net_sum_pct": 141.8798
+   },
+   "flip": {
+    "n": 26,
+    "net_sum_pct": -72.9848
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": 60.8611,
+  "wf_oos_sum_pct": 8.0339,
+  "wf_oos_fills": 20,
+  "variant": "tsmom_long",
+  "lookback": 60,
+  "fair_timeout": 4,
+  "hold_median": 4,
+  "hold_mean": 23.9,
+  "hold_p90": 83,
+  "hold_max": 172,
+  "n_segments": 51
+ },
+ {
+  "name": "FAIR_BTCUSDT__tsmom_short__10__to3",
+  "leg": "tsmom_short",
+  "symbol": "BTCUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 180,
+  "open_signals": 0,
+  "net_sum_pct": -14.622300000000003,
+  "net_mean_pct": -0.08123500000000002,
+  "compound_x": 0.7097456558899701,
+  "compound_pct": -29.025434411002994,
+  "win_pct": 40.55555555555556,
+  "profit_factor": 0.9510235046850272,
+  "max_dd_pct": -61.94455820470819,
+  "best_case_sum_pct": -14.622300000000003,
+  "worst_case_sum_pct": -14.622300000000003,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 0.6474146666666666,
+  "control_ci": [
+   -0.3600720000000001,
+   1.6698882222222224
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -37.605453928069124,
+  "bh_diff_pct": 22.98315392806912,
+  "exposure_pct": 14.163470050162289,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "6 条事前证伪规则被触发：最坏优先口径净收益 -14.62% ≤ 0；成本 ×2（往返 16bps）时净收益 -29.02% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.65%，95% 区间 [-0.36, +1.67] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -38.37% ≤ 0；成本 ×2（往返 16bps）时净收益 -43.57% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.42%，95% 区间 [-1.35, +0.53] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -14.622300000000003,
+   "2.0": -29.0223,
+   "5.0": -72.2223
+  },
+  "by_reason": {
+   "flip": {
+    "n": 95,
+    "net_sum_pct": -208.4788
+   },
+   "timeout": {
+    "n": 85,
+    "net_sum_pct": 193.85649999999998
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": 23.745099999999997,
+  "wf_oos_sum_pct": -38.3674,
+  "wf_oos_fills": 65,
+  "variant": "tsmom_short",
+  "lookback": 10,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 5.9,
+  "hold_p90": 14,
+  "hold_max": 31,
+  "n_segments": 180
+ },
+ {
+  "name": "FAIR_BTCUSDT__tsmom_short__20__to3",
+  "leg": "tsmom_short",
+  "symbol": "BTCUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 124,
+  "open_signals": 0,
+  "net_sum_pct": 38.156400000000005,
+  "net_mean_pct": 0.30771290322580647,
+  "compound_x": 1.3311762256561697,
+  "compound_pct": 33.11762256561697,
+  "win_pct": 53.2258064516129,
+  "profit_factor": 1.2729159052171481,
+  "max_dd_pct": -29.07453371887575,
+  "best_case_sum_pct": 38.156400000000005,
+  "worst_case_sum_pct": 38.156400000000005,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 0.9871499032258065,
+  "control_ci": [
+   0.014047053763440766,
+   2.0524950752688174
+  ],
+  "selectivity": "proven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -26.95057531511621,
+  "bh_diff_pct": 65.10697531511622,
+  "exposure_pct": 10.150486869282975,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "3 条事前证伪规则被触发：样本外段：最坏优先口径净收益 -19.94% ≤ 0；成本 ×2（往返 16bps）时净收益 -23.78% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.15%，95% 区间 [-1.05, +0.72] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 38.156400000000005,
+   "2.0": 28.2364,
+   "5.0": -1.5236000000000016
+  },
+  "by_reason": {
+   "flip": {
+    "n": 64,
+    "net_sum_pct": -73.4815
+   },
+   "timeout": {
+    "n": 60,
+    "net_sum_pct": 111.6379
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": 58.0929,
+  "wf_oos_sum_pct": -19.9365,
+  "wf_oos_fills": 48,
+  "variant": "tsmom_short",
+  "lookback": 20,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 8.5,
+  "hold_p90": 26,
+  "hold_max": 54,
+  "n_segments": 124
+ },
+ {
+  "name": "FAIR_BTCUSDT__tsmom_short__30__to3",
+  "leg": "tsmom_short",
+  "symbol": "BTCUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 95,
+  "open_signals": 0,
+  "net_sum_pct": -58.407599999999995,
+  "net_mean_pct": -0.6148168421052631,
+  "compound_x": 0.4894574671733345,
+  "compound_pct": -51.05425328266655,
+  "win_pct": 41.05263157894737,
+  "profit_factor": 0.6943004394906159,
+  "max_dd_pct": -53.50899501786266,
+  "best_case_sum_pct": -58.407599999999995,
+  "worst_case_sum_pct": -58.407599999999995,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": -0.062282842105263136,
+  "control_ci": [
+   -1.254189789473684,
+   1.162168701754386
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -19.742863312236295,
+  "bh_diff_pct": -38.6647366877637,
+  "exposure_pct": 7.435821776335202,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "6 条事前证伪规则被触发：最坏优先口径净收益 -58.41% ≤ 0；成本 ×2（往返 16bps）时净收益 -66.01% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.06%，95% 区间 [-1.25, +1.16] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -56.18% ≤ 0；成本 ×2（往返 16bps）时净收益 -59.62% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -1.22%，95% 区间 [-2.41, -0.09] 整体为负——显著差于随机入场",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -58.407599999999995,
+   "2.0": -66.0076,
+   "5.0": -88.8076
+  },
+  "by_reason": {
+   "flip": {
+    "n": 54,
+    "net_sum_pct": -144.9522
+   },
+   "timeout": {
+    "n": 41,
+    "net_sum_pct": 86.5446
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": -2.2231999999999976,
+  "wf_oos_sum_pct": -56.184400000000004,
+  "wf_oos_fills": 43,
+  "variant": "tsmom_short",
+  "lookback": 30,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 10.6,
+  "hold_p90": 37,
+  "hold_max": 82,
+  "n_segments": 95
+ },
+ {
+  "name": "FAIR_BTCUSDT__tsmom_short__60__to5",
+  "leg": "tsmom_short",
+  "symbol": "BTCUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 51,
+  "open_signals": 0,
+  "net_sum_pct": 82.3047,
+  "net_mean_pct": 1.6138176470588235,
+  "compound_x": 2.0742008021903544,
+  "compound_pct": 107.42008021903544,
+  "win_pct": 52.94117647058824,
+  "profit_factor": 2.092955685368908,
+  "max_dd_pct": -15.47489569950551,
+  "best_case_sum_pct": 82.3047,
+  "worst_case_sum_pct": 82.3047,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 2.10845331372549,
+  "control_ci": [
+   0.34747909803921573,
+   4.0938186078431364
+  ],
+  "selectivity": "proven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -15.668939136695471,
+  "bh_diff_pct": 97.97363913669547,
+  "exposure_pct": 5.901445854234287,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。",
+  "checks": [
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": 82.3047,
+   "2.0": 78.2247,
+   "5.0": 65.98469999999999
+  },
+  "by_reason": {
+   "flip": {
+    "n": 26,
+    "net_sum_pct": -38.2903
+   },
+   "timeout": {
+    "n": 25,
+    "net_sum_pct": 120.59500000000001
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": 64.0054,
+  "wf_oos_sum_pct": 18.2993,
+  "wf_oos_fills": 20,
+  "variant": "tsmom_short",
+  "lookback": 60,
+  "fair_timeout": 5,
+  "hold_median": 5,
+  "hold_mean": 19.5,
+  "hold_p90": 63,
+  "hold_max": 99,
+  "n_segments": 51
+ },
+ {
+  "name": "FAIR_ETHUSDT__tsmom_long__10__to4",
+  "leg": "tsmom_long",
+  "symbol": "ETHUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 160,
+  "open_signals": 0,
+  "net_sum_pct": 168.1996,
+  "net_mean_pct": 1.0512475000000001,
+  "compound_x": 3.2862061769779727,
+  "compound_pct": 228.62061769779726,
+  "win_pct": 41.25,
+  "profit_factor": 1.5039757851344167,
+  "max_dd_pct": -52.97844487239017,
+  "best_case_sum_pct": 168.1996,
+  "worst_case_sum_pct": 168.1996,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": 0.6169521666666669,
+  "control_ci": [
+   -1.0236965833333331,
+   2.2797137083333334
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 27.470894362568316,
+  "bh_diff_pct": 140.7287056374317,
+  "exposure_pct": 15.933903806432575,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "2 条事前证伪规则被触发：策略 − 随机对照组 = +0.62%，95% 区间 [-1.02, +2.28] 跨 0，未能证明选择性；样本外段：策略 − 随机对照组 = +1.38%，95% 区间 [-0.59, +3.66] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 168.1996,
+   "2.0": 155.3996,
+   "5.0": 116.9996
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 73,
+    "net_sum_pct": 406.8915
+   },
+   "flip": {
+    "n": 87,
+    "net_sum_pct": -238.69190000000012
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": 110.36429999999999,
+  "wf_oos_sum_pct": 57.835300000000004,
+  "wf_oos_fills": 68,
+  "variant": "tsmom_long",
+  "lookback": 10,
+  "fair_timeout": 4,
+  "hold_median": 4,
+  "hold_mean": 7.3,
+  "hold_p90": 18,
+  "hold_max": 60,
+  "n_segments": 160
+ },
+ {
+  "name": "FAIR_ETHUSDT__tsmom_long__20__to2",
+  "leg": "tsmom_long",
+  "symbol": "ETHUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 126,
+  "open_signals": 0,
+  "net_sum_pct": 31.834599999999995,
+  "net_mean_pct": 0.2526555555555555,
+  "compound_x": 1.1252561272288504,
+  "compound_pct": 12.525612722885038,
+  "win_pct": 41.269841269841265,
+  "profit_factor": 1.133831474901501,
+  "max_dd_pct": -45.8020047182219,
+  "best_case_sum_pct": 31.834599999999995,
+  "worst_case_sum_pct": 31.834599999999995,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": -0.022795444444444535,
+  "control_ci": [
+   -1.37295273015873,
+   1.363815650793651
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 13.226726915310675,
+  "bh_diff_pct": 18.60787308468932,
+  "exposure_pct": 7.671879610504575,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "2 条事前证伪规则被触发：策略 − 随机对照组 = -0.02%，95% 区间 [-1.37, +1.36] 跨 0，未能证明选择性；样本外段：策略 − 随机对照组 = +0.46%，95% 区间 [-1.33, +2.42] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 31.834599999999995,
+   "2.0": 21.754600000000003,
+   "5.0": -8.485400000000004
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 59,
+    "net_sum_pct": 164.81040000000004
+   },
+   "flip": {
+    "n": 67,
+    "net_sum_pct": -132.97580000000002
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": 23.7284,
+  "wf_oos_sum_pct": 8.1062,
+  "wf_oos_fills": 47,
+  "variant": "tsmom_long",
+  "lookback": 20,
+  "fair_timeout": 2,
+  "hold_median": 2,
+  "hold_mean": 9.0,
+  "hold_p90": 34,
+  "hold_max": 61,
+  "n_segments": 126
+ },
+ {
+  "name": "FAIR_ETHUSDT__tsmom_long__30__to4",
+  "leg": "tsmom_long",
+  "symbol": "ETHUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 83,
+  "open_signals": 0,
+  "net_sum_pct": 194.7375,
+  "net_mean_pct": 2.3462349397590363,
+  "compound_x": 5.233782390334969,
+  "compound_pct": 423.3782390334969,
+  "win_pct": 38.55421686746988,
+  "profit_factor": 2.398130584804307,
+  "max_dd_pct": -20.141600300680885,
+  "best_case_sum_pct": 194.7375,
+  "worst_case_sum_pct": 194.7375,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": 2.021377606425703,
+  "control_ci": [
+   -0.0337202409638554,
+   4.201543020080321
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 14.244167447257647,
+  "bh_diff_pct": 180.49333255274237,
+  "exposure_pct": 8.262024195928003,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "2 条事前证伪规则被触发：策略 − 随机对照组 = +2.02%，95% 区间 [-0.03, +4.20] 跨 0，未能证明选择性；样本外段：策略 − 随机对照组 = +3.35%，95% 区间 [-0.26, +7.48] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 194.7375,
+   "2.0": 188.0975,
+   "5.0": 168.1775
+  },
+  "by_reason": {
+   "flip": {
+    "n": 45,
+    "net_sum_pct": -85.31949999999999
+   },
+   "timeout": {
+    "n": 38,
+    "net_sum_pct": 280.05699999999996
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": 104.98210000000002,
+  "wf_oos_sum_pct": 89.7554,
+  "wf_oos_fills": 31,
+  "variant": "tsmom_long",
+  "lookback": 30,
+  "fair_timeout": 4,
+  "hold_median": 4,
+  "hold_mean": 14.2,
+  "hold_p90": 50,
+  "hold_max": 74,
+  "n_segments": 83
+ },
+ {
+  "name": "FAIR_ETHUSDT__tsmom_long__60__to4",
+  "leg": "tsmom_long",
+  "symbol": "ETHUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 46,
+  "open_signals": 0,
+  "net_sum_pct": 61.11259999999999,
+  "net_mean_pct": 1.3285347826086955,
+  "compound_x": 1.6733317235678127,
+  "compound_pct": 67.33317235678126,
+  "win_pct": 45.65217391304348,
+  "profit_factor": 1.832372193876856,
+  "max_dd_pct": -12.263382378288668,
+  "best_case_sum_pct": 61.11259999999999,
+  "worst_case_sum_pct": 61.11259999999999,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": 0.7375981159420288,
+  "control_ci": [
+   -1.3590629565217391,
+   3.043122043478261
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 7.936036149186402,
+  "bh_diff_pct": 53.176563850813594,
+  "exposure_pct": 4.603127766302744,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 1 条规则在样本不足时触发（['control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": 61.11259999999999,
+   "2.0": 57.4326,
+   "5.0": 46.3926
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 22,
+    "net_sum_pct": 106.95649999999999
+   },
+   "flip": {
+    "n": 24,
+    "net_sum_pct": -45.843900000000005
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": 35.9826,
+  "wf_oos_sum_pct": 25.129999999999995,
+  "wf_oos_fills": 15,
+  "variant": "tsmom_long",
+  "lookback": 60,
+  "fair_timeout": 4,
+  "hold_median": 4,
+  "hold_mean": 27.5,
+  "hold_p90": 105,
+  "hold_max": 229,
+  "n_segments": 46
+ },
+ {
+  "name": "FAIR_ETHUSDT__tsmom_short__10__to3",
+  "leg": "tsmom_short",
+  "symbol": "ETHUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 161,
+  "open_signals": 0,
+  "net_sum_pct": -16.9445,
+  "net_mean_pct": -0.10524534161490684,
+  "compound_x": 0.6235001170256786,
+  "compound_pct": -37.64998829743214,
+  "win_pct": 40.37267080745342,
+  "profit_factor": 0.9541953511707765,
+  "max_dd_pct": -65.45799839798302,
+  "best_case_sum_pct": -16.9445,
+  "worst_case_sum_pct": -16.9445,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 0.738476658385093,
+  "control_ci": [
+   -0.5037734492753623,
+   2.096947641821946
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -22.862737935717988,
+  "bh_diff_pct": 5.918237935717986,
+  "exposure_pct": 13.248745942755974,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "6 条事前证伪规则被触发：最坏优先口径净收益 -16.94% ≤ 0；成本 ×2（往返 16bps）时净收益 -29.82% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.74%，95% 区间 [-0.50, +2.10] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -47.41% ≤ 0；成本 ×2（往返 16bps）时净收益 -52.85% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.96%，95% 区间 [-2.39, +0.42] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -16.9445,
+   "2.0": -29.824500000000008,
+   "5.0": -68.4645
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 78,
+    "net_sum_pct": 216.99490000000006
+   },
+   "flip": {
+    "n": 83,
+    "net_sum_pct": -233.93939999999986
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": 30.4649,
+  "wf_oos_sum_pct": -47.409400000000005,
+  "wf_oos_fills": 68,
+  "variant": "tsmom_short",
+  "lookback": 10,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 6.8,
+  "hold_p90": 17,
+  "hold_max": 34,
+  "n_segments": 161
+ },
+ {
+  "name": "FAIR_ETHUSDT__tsmom_short__20__to3",
+  "leg": "tsmom_short",
+  "symbol": "ETHUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 127,
+  "open_signals": 0,
+  "net_sum_pct": -106.8263,
+  "net_mean_pct": -0.841151968503937,
+  "compound_x": 0.28879892439888655,
+  "compound_pct": -71.12010756011135,
+  "win_pct": 32.28346456692913,
+  "profit_factor": 0.63501659274839,
+  "max_dd_pct": -72.07415579404861,
+  "best_case_sum_pct": -106.8263,
+  "worst_case_sum_pct": -106.8263,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": -0.06014130183727029,
+  "control_ci": [
+   -1.3106413097112863,
+   1.2891598740157482
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -17.61805640480718,
+  "bh_diff_pct": -89.20824359519283,
+  "exposure_pct": 10.209501327825317,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "6 条事前证伪规则被触发：最坏优先口径净收益 -106.83% ≤ 0；成本 ×2（往返 16bps）时净收益 -116.99% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.06%，95% 区间 [-1.31, +1.29] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -15.21% ≤ 0；成本 ×2（往返 16bps）时净收益 -19.05% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.39%，95% 区间 [-1.98, +1.26] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -106.8263,
+   "2.0": -116.98630000000001,
+   "5.0": -147.46630000000002
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 59,
+    "net_sum_pct": 65.9409
+   },
+   "flip": {
+    "n": 68,
+    "net_sum_pct": -172.7672
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": -91.6169,
+  "wf_oos_sum_pct": -15.209399999999999,
+  "wf_oos_fills": 48,
+  "variant": "tsmom_short",
+  "lookback": 20,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 8.9,
+  "hold_p90": 23,
+  "hold_max": 84,
+  "n_segments": 127
+ },
+ {
+  "name": "FAIR_ETHUSDT__tsmom_short__30__to3",
+  "leg": "tsmom_short",
+  "symbol": "ETHUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 84,
+  "open_signals": 0,
+  "net_sum_pct": -113.9084,
+  "net_mean_pct": -1.3560523809523808,
+  "compound_x": 0.27881189275338225,
+  "compound_pct": -72.11881072466177,
+  "win_pct": 33.33333333333333,
+  "profit_factor": 0.48445607111175476,
+  "max_dd_pct": -73.29717531171161,
+  "best_case_sum_pct": -113.9084,
+  "worst_case_sum_pct": -113.9084,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": -0.616592714285714,
+  "control_ci": [
+   -2.0037680952380956,
+   0.771498
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -11.660505539597818,
+  "bh_diff_pct": -102.24789446040218,
+  "exposure_pct": 6.75715550309826,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "6 条事前证伪规则被触发：最坏优先口径净收益 -113.91% ≤ 0；成本 ×2（往返 16bps）时净收益 -120.63% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.62%，95% 区间 [-2.00, +0.77] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -13.54% ≤ 0；成本 ×2（往返 16bps）时净收益 -16.02% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.60%，95% 区间 [-2.78, +1.79] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -113.9084,
+   "2.0": -120.62839999999998,
+   "5.0": -140.78840000000002
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 39,
+    "net_sum_pct": 37.5242
+   },
+   "flip": {
+    "n": 45,
+    "net_sum_pct": -151.43260000000004
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": -100.37070000000001,
+  "wf_oos_sum_pct": -13.5377,
+  "wf_oos_fills": 31,
+  "variant": "tsmom_short",
+  "lookback": 30,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 12.7,
+  "hold_p90": 42,
+  "hold_max": 100,
+  "n_segments": 84
+ },
+ {
+  "name": "FAIR_ETHUSDT__tsmom_short__60__to3",
+  "leg": "tsmom_short",
+  "symbol": "ETHUSDT",
+  "bars": 3389,
+  "first": "2017-08-17",
+  "last": "2026-11-26",
+  "fills": 47,
+  "open_signals": 0,
+  "net_sum_pct": 61.4206,
+  "net_mean_pct": 1.3068212765957448,
+  "compound_x": 1.687122032380727,
+  "compound_pct": 68.7122032380727,
+  "win_pct": 46.808510638297875,
+  "profit_factor": 1.8684536105797034,
+  "max_dd_pct": -20.45454352674515,
+  "best_case_sum_pct": 61.4206,
+  "worst_case_sum_pct": 61.4206,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 2.2642312765957446,
+  "control_ci": [
+   0.3295110780141842,
+   4.273536354609929
+  ],
+  "selectivity": "proven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -6.61950096134374,
+  "bh_diff_pct": 68.04010096134374,
+  "exposure_pct": 3.8359398052522873,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。",
+  "checks": [
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": 61.4206,
+   "2.0": 57.660599999999995,
+   "5.0": 46.3806
+  },
+  "by_reason": {
+   "flip": {
+    "n": 25,
+    "net_sum_pct": -37.3639
+   },
+   "timeout": {
+    "n": 22,
+    "net_sum_pct": 98.78450000000001
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-01",
+  "wf_is_sum_pct": 42.7718,
+  "wf_oos_sum_pct": 18.6488,
+  "wf_oos_fills": 15,
+  "variant": "tsmom_short",
+  "lookback": 60,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 20.2,
+  "hold_p90": 79,
+  "hold_max": 108,
+  "n_segments": 47
+ },
+ {
+  "name": "FAIR_SOLUSDT__tsmom_long__10__to3",
+  "leg": "tsmom_long",
+  "symbol": "SOLUSDT",
+  "bars": 2299,
+  "first": "2020-08-11",
+  "last": "2026-11-26",
+  "fills": 155,
+  "open_signals": 0,
+  "net_sum_pct": 125.5325,
+  "net_mean_pct": 0.8098870967741936,
+  "compound_x": 1.953224393332563,
+  "compound_pct": 95.3224393332563,
+  "win_pct": 41.935483870967744,
+  "profit_factor": 1.3044450566800265,
+  "max_dd_pct": -53.08891535428315,
+  "best_case_sum_pct": 125.5325,
+  "worst_case_sum_pct": 125.5325,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": 1.0776660265400797,
+  "control_ci": [
+   -0.6646211910669976,
+   2.9128749962239726
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 59.433141135706514,
+  "bh_diff_pct": 66.09935886429349,
+  "exposure_pct": 18.48629839060461,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "2 条事前证伪规则被触发：策略 − 随机对照组 = +1.08%，95% 区间 [-0.66, +2.91] 跨 0，未能证明选择性；样本外段：策略 − 随机对照组 = +0.72%，95% 区间 [-1.04, +2.63] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 125.5325,
+   "2.0": 113.1325,
+   "5.0": 75.9325
+  },
+  "by_reason": {
+   "flip": {
+    "n": 83,
+    "net_sum_pct": -301.60680000000013
+   },
+   "timeout": {
+    "n": 72,
+    "net_sum_pct": 427.1393
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-04-29",
+  "wf_is_sum_pct": 115.696,
+  "wf_oos_sum_pct": 9.836500000000001,
+  "wf_oos_fills": 39,
+  "variant": "tsmom_long",
+  "lookback": 10,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 7.2,
+  "hold_p90": 20,
+  "hold_max": 52,
+  "n_segments": 155
+ },
+ {
+  "name": "FAIR_SOLUSDT__tsmom_long__20__to3",
+  "leg": "tsmom_long",
+  "symbol": "SOLUSDT",
+  "bars": 2299,
+  "first": "2020-08-11",
+  "last": "2026-11-26",
+  "fills": 112,
+  "open_signals": 0,
+  "net_sum_pct": -30.1565,
+  "net_mean_pct": -0.2692544642857143,
+  "compound_x": 0.469245810938312,
+  "compound_pct": -53.07541890616881,
+  "win_pct": 40.17857142857143,
+  "profit_factor": 0.9141295251318462,
+  "max_dd_pct": -80.94283219821922,
+  "best_case_sum_pct": -30.1565,
+  "worst_case_sum_pct": -30.1565,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": -0.1177437619445772,
+  "control_ci": [
+   -2.19228219660774,
+   2.096762174510272
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 41.95280550755754,
+  "bh_diff_pct": -72.10930550755754,
+  "exposure_pct": 13.049151805132666,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 3 条规则在样本不足时触发（['worst_case_net_negative', 'net_negative_at_fee_multiple=2', 'control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": -30.1565,
+   "2.0": -39.1165,
+   "5.0": -65.9965
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 53,
+    "net_sum_pct": 232.02040000000005
+   },
+   "flip": {
+    "n": 59,
+    "net_sum_pct": -262.17690000000005
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-04-29",
+  "wf_is_sum_pct": -51.376200000000004,
+  "wf_oos_sum_pct": 21.2197,
+  "wf_oos_fills": 28,
+  "variant": "tsmom_long",
+  "lookback": 20,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 9.9,
+  "hold_p90": 31,
+  "hold_max": 74,
+  "n_segments": 112
+ },
+ {
+  "name": "FAIR_SOLUSDT__tsmom_long__30__to3",
+  "leg": "tsmom_long",
+  "symbol": "SOLUSDT",
+  "bars": 2299,
+  "first": "2020-08-11",
+  "last": "2026-11-26",
+  "fills": 76,
+  "open_signals": 0,
+  "net_sum_pct": 128.1868,
+  "net_mean_pct": 1.6866684210526315,
+  "compound_x": 2.7913694993360103,
+  "compound_pct": 179.13694993360104,
+  "win_pct": 55.26315789473685,
+  "profit_factor": 1.7252296136877707,
+  "max_dd_pct": -21.355608108614422,
+  "best_case_sum_pct": 128.1868,
+  "worst_case_sum_pct": 128.1868,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": 2.0628597254004575,
+  "control_ci": [
+   -0.12904572698468586,
+   4.315795467347297
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 28.10837969006355,
+  "bh_diff_pct": 100.07842030993646,
+  "exposure_pct": 8.742931709438887,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 1 条规则在样本不足时触发（['control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": 128.1868,
+   "2.0": 122.1068,
+   "5.0": 103.86680000000001
+  },
+  "by_reason": {
+   "flip": {
+    "n": 41,
+    "net_sum_pct": -113.55290000000004
+   },
+   "timeout": {
+    "n": 35,
+    "net_sum_pct": 241.73970000000003
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-04-29",
+  "wf_is_sum_pct": 99.5722,
+  "wf_oos_sum_pct": 28.614599999999996,
+  "wf_oos_fills": 22,
+  "variant": "tsmom_long",
+  "lookback": 30,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 14.8,
+  "hold_p90": 47,
+  "hold_max": 112,
+  "n_segments": 76
+ },
+ {
+  "name": "FAIR_SOLUSDT__tsmom_long__60__to2",
+  "leg": "tsmom_long",
+  "symbol": "SOLUSDT",
+  "bars": 2299,
+  "first": "2020-08-11",
+  "last": "2026-11-26",
+  "fills": 81,
+  "open_signals": 0,
+  "net_sum_pct": 90.2955,
+  "net_mean_pct": 1.1147592592592592,
+  "compound_x": 1.72606658595858,
+  "compound_pct": 72.606658595858,
+  "win_pct": 40.74074074074074,
+  "profit_factor": 1.4672681253955546,
+  "max_dd_pct": -57.06615159967575,
+  "best_case_sum_pct": 90.2955,
+  "worst_case_sum_pct": 90.2955,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": 1.6601993930385235,
+  "control_ci": [
+   -0.7215094677732361,
+   4.345359168421488
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 24.192784509358184,
+  "bh_diff_pct": 66.10271549064183,
+  "exposure_pct": 7.525010874293171,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 1 条规则在样本不足时触发（['control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": 90.2955,
+   "2.0": 83.8155,
+   "5.0": 64.37549999999999
+  },
+  "by_reason": {
+   "flip": {
+    "n": 41,
+    "net_sum_pct": -66.3989
+   },
+   "timeout": {
+    "n": 40,
+    "net_sum_pct": 156.69439999999997
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-04-29",
+  "wf_is_sum_pct": 108.87599999999999,
+  "wf_oos_sum_pct": -18.5805,
+  "wf_oos_fills": 21,
+  "variant": "tsmom_long",
+  "lookback": 60,
+  "fair_timeout": 2,
+  "hold_median": 2,
+  "hold_mean": 14.2,
+  "hold_p90": 59,
+  "hold_max": 165,
+  "n_segments": 81
+ },
+ {
+  "name": "FAIR_SOLUSDT__tsmom_short__10__to4",
+  "leg": "tsmom_short",
+  "symbol": "SOLUSDT",
+  "bars": 2299,
+  "first": "2020-08-11",
+  "last": "2026-11-26",
+  "fills": 156,
+  "open_signals": 0,
+  "net_sum_pct": 37.5901,
+  "net_mean_pct": 0.2409621794871795,
+  "compound_x": 0.7024644068855571,
+  "compound_pct": -29.75355931144429,
+  "win_pct": 43.58974358974359,
+  "profit_factor": 1.0730151688172642,
+  "max_dd_pct": -72.66189462585604,
+  "best_case_sum_pct": 37.5901,
+  "worst_case_sum_pct": 37.5901,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 0.5932488461538461,
+  "control_ci": [
+   -1.2517024358974358,
+   2.540764230769231
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -72.89429814127413,
+  "bh_diff_pct": 110.48439814127414,
+  "exposure_pct": 22.662026968247066,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "4 条事前证伪规则被触发：策略 − 随机对照组 = +0.59%，95% 区间 [-1.25, +2.54] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -12.22% ≤ 0；成本 ×2（往返 16bps）时净收益 -15.42% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.85%，95% 区间 [-3.00, +1.26] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 37.5901,
+   "2.0": 25.110099999999996,
+   "5.0": -12.329899999999999
+  },
+  "by_reason": {
+   "flip": {
+    "n": 86,
+    "net_sum_pct": -371.3840999999999
+   },
+   "timeout": {
+    "n": 70,
+    "net_sum_pct": 408.9741999999999
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-04-29",
+  "wf_is_sum_pct": 49.814,
+  "wf_oos_sum_pct": -12.2239,
+  "wf_oos_fills": 40,
+  "variant": "tsmom_short",
+  "lookback": 10,
+  "fair_timeout": 4,
+  "hold_median": 4,
+  "hold_mean": 7.3,
+  "hold_p90": 18,
+  "hold_max": 52,
+  "n_segments": 156
+ },
+ {
+  "name": "FAIR_SOLUSDT__tsmom_short__20__to3",
+  "leg": "tsmom_short",
+  "symbol": "SOLUSDT",
+  "bars": 2299,
+  "first": "2020-08-11",
+  "last": "2026-11-26",
+  "fills": 113,
+  "open_signals": 0,
+  "net_sum_pct": 23.69740000000001,
+  "net_mean_pct": 0.20971150442477887,
+  "compound_x": 0.8462205177986087,
+  "compound_pct": -15.377948220139126,
+  "win_pct": 42.47787610619469,
+  "profit_factor": 1.0728299667035261,
+  "max_dd_pct": -44.76715947082418,
+  "best_case_sum_pct": 23.69740000000001,
+  "worst_case_sum_pct": 23.69740000000001,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 0.20972817109144554,
+  "control_ci": [
+   -1.791664784660767,
+   2.3099791858407084
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -41.97368415044575,
+  "bh_diff_pct": 65.67108415044575,
+  "exposure_pct": 13.049151805132666,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 1 条规则在样本不足时触发（['control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": 23.69740000000001,
+   "2.0": 14.657399999999996,
+   "5.0": -12.462600000000005
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 54,
+    "net_sum_pct": 216.88190000000006
+   },
+   "flip": {
+    "n": 59,
+    "net_sum_pct": -193.1845
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-04-29",
+  "wf_is_sum_pct": 58.571400000000004,
+  "wf_oos_sum_pct": -34.874,
+  "wf_oos_fills": 29,
+  "variant": "tsmom_short",
+  "lookback": 20,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 10.1,
+  "hold_p90": 31,
+  "hold_max": 70,
+  "n_segments": 113
+ },
+ {
+  "name": "FAIR_SOLUSDT__tsmom_short__30__to4",
+  "leg": "tsmom_short",
+  "symbol": "SOLUSDT",
+  "bars": 2299,
+  "first": "2020-08-11",
+  "last": "2026-11-26",
+  "fills": 77,
+  "open_signals": 0,
+  "net_sum_pct": 43.04090000000001,
+  "net_mean_pct": 0.5589727272727273,
+  "compound_x": 1.0068339725488766,
+  "compound_pct": 0.6833972548876632,
+  "win_pct": 49.35064935064935,
+  "profit_factor": 1.1556330088395097,
+  "max_dd_pct": -53.16377489085329,
+  "best_case_sum_pct": 43.04090000000001,
+  "worst_case_sum_pct": 43.04090000000001,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 0.5926283939393939,
+  "control_ci": [
+   -2.0350507792207795,
+   3.3720593203463203
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -35.95745608888186,
+  "bh_diff_pct": 78.99835608888188,
+  "exposure_pct": 11.178773379730318,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 1 条规则在样本不足时触发（['control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": 43.04090000000001,
+   "2.0": 36.8809,
+   "5.0": 18.400899999999996
+  },
+  "by_reason": {
+   "flip": {
+    "n": 41,
+    "net_sum_pct": -186.1644000000001
+   },
+   "timeout": {
+    "n": 36,
+    "net_sum_pct": 229.2053000000001
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-04-29",
+  "wf_is_sum_pct": 81.452,
+  "wf_oos_sum_pct": -38.4111,
+  "wf_oos_fills": 23,
+  "variant": "tsmom_short",
+  "lookback": 30,
+  "fair_timeout": 4,
+  "hold_median": 4,
+  "hold_mean": 14.6,
+  "hold_p90": 41,
+  "hold_max": 78,
+  "n_segments": 77
+ },
+ {
+  "name": "FAIR_SOLUSDT__tsmom_short__60__to4",
+  "leg": "tsmom_short",
+  "symbol": "SOLUSDT",
+  "bars": 2299,
+  "first": "2020-08-11",
+  "last": "2026-11-26",
+  "fills": 82,
+  "open_signals": 0,
+  "net_sum_pct": -13.842799999999992,
+  "net_mean_pct": -0.16881463414634135,
+  "compound_x": 0.57499294682485,
+  "compound_pct": -42.500705317515,
+  "win_pct": 46.34146341463415,
+  "profit_factor": 0.9502086927246017,
+  "max_dd_pct": -71.22517105001094,
+  "best_case_sum_pct": -13.842799999999992,
+  "worst_case_sum_pct": -13.842799999999992,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": -0.05967196747967472,
+  "control_ci": [
+   -2.579695544715447,
+   2.712288487804878
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -36.65701749138929,
+  "bh_diff_pct": 22.8142174913893,
+  "exposure_pct": 11.396259243149196,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 3 条规则在样本不足时触发（['worst_case_net_negative', 'net_negative_at_fee_multiple=2', 'control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": -13.842799999999992,
+   "2.0": -20.402800000000003,
+   "5.0": -40.082800000000006
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 35,
+    "net_sum_pct": 167.70239999999995
+   },
+   "flip": {
+    "n": 47,
+    "net_sum_pct": -181.54519999999997
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-04-29",
+  "wf_is_sum_pct": -1.9005999999999923,
+  "wf_oos_sum_pct": -11.9422,
+  "wf_oos_fills": 22,
+  "variant": "tsmom_short",
+  "lookback": 60,
+  "fair_timeout": 4,
+  "hold_median": 4,
+  "hold_mean": 13.0,
+  "hold_p90": 44,
+  "hold_max": 85,
+  "n_segments": 82
+ },
+ {
+  "name": "FAIR_BNBUSDT__tsmom_long__10__to3",
+  "leg": "tsmom_long",
+  "symbol": "BNBUSDT",
+  "bars": 3308,
+  "first": "2017-11-06",
+  "last": "2026-11-26",
+  "fills": 170,
+  "open_signals": 0,
+  "net_sum_pct": 137.6584,
+  "net_mean_pct": 0.8097552941176471,
+  "compound_x": 3.054879180057748,
+  "compound_pct": 205.4879180057748,
+  "win_pct": 47.05882352941176,
+  "profit_factor": 1.5453169775952376,
+  "max_dd_pct": -44.26270829555661,
+  "best_case_sum_pct": 137.6584,
+  "worst_case_sum_pct": 137.6584,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": -0.15941737254901966,
+  "control_ci": [
+   -1.6319572745098039,
+   1.317687843137255
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 84.52342088124757,
+  "bh_diff_pct": 53.134979118752426,
+  "exposure_pct": 14.298669891172914,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "2 条事前证伪规则被触发：策略 − 随机对照组 = -0.16%，95% 区间 [-1.63, +1.32] 跨 0，未能证明选择性；样本外段：策略 − 随机对照组 = +0.36%，95% 区间 [-0.59, +1.37] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 137.6584,
+   "2.0": 124.05839999999999,
+   "5.0": 83.25840000000001
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 85,
+    "net_sum_pct": 306.36060000000003
+   },
+   "flip": {
+    "n": 85,
+    "net_sum_pct": -168.70219999999998
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-22",
+  "wf_is_sum_pct": 115.353,
+  "wf_oos_sum_pct": 22.3054,
+  "wf_oos_fills": 63,
+  "variant": "tsmom_long",
+  "lookback": 10,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 7.1,
+  "hold_p90": 19,
+  "hold_max": 45,
+  "n_segments": 170
+ },
+ {
+  "name": "FAIR_BNBUSDT__tsmom_long__20__to3",
+  "leg": "tsmom_long",
+  "symbol": "BNBUSDT",
+  "bars": 3308,
+  "first": "2017-11-06",
+  "last": "2026-11-26",
+  "fills": 129,
+  "open_signals": 0,
+  "net_sum_pct": 41.514500000000005,
+  "net_mean_pct": 0.32181782945736437,
+  "compound_x": 1.3375583530890784,
+  "compound_pct": 33.75583530890785,
+  "win_pct": 46.51162790697674,
+  "profit_factor": 1.231592717697824,
+  "max_dd_pct": -44.409039935481445,
+  "best_case_sum_pct": 41.514500000000005,
+  "worst_case_sum_pct": 41.514500000000005,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": -0.7018828372093024,
+  "control_ci": [
+   -2.1762993565891473,
+   0.7265558449612404
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 61.11418592259339,
+  "bh_diff_pct": -19.599685922593387,
+  "exposure_pct": 10.33857315598549,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "4 条事前证伪规则被触发：策略 − 随机对照组 = -0.70%，95% 区间 [-2.18, +0.73] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -41.37% ≤ 0；成本 ×2（往返 16bps）时净收益 -44.65% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -1.20%，95% 区间 [-2.49, +0.14] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 41.514500000000005,
+   "2.0": 31.19449999999999,
+   "5.0": 0.23450000000000007
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 64,
+    "net_sum_pct": 125.83659999999993
+   },
+   "flip": {
+    "n": 65,
+    "net_sum_pct": -84.32209999999998
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-22",
+  "wf_is_sum_pct": 82.88499999999999,
+  "wf_oos_sum_pct": -41.3705,
+  "wf_oos_fills": 41,
+  "variant": "tsmom_long",
+  "lookback": 20,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 9.7,
+  "hold_p90": 34,
+  "hold_max": 72,
+  "n_segments": 129
+ },
+ {
+  "name": "FAIR_BNBUSDT__tsmom_long__30__to3",
+  "leg": "tsmom_long",
+  "symbol": "BNBUSDT",
+  "bars": 3308,
+  "first": "2017-11-06",
+  "last": "2026-11-26",
+  "fills": 104,
+  "open_signals": 0,
+  "net_sum_pct": -24.297299999999996,
+  "net_mean_pct": -0.2336278846153846,
+  "compound_x": 0.628980804193357,
+  "compound_pct": -37.1019195806643,
+  "win_pct": 43.269230769230774,
+  "profit_factor": 0.8873024442780849,
+  "max_dd_pct": -57.56976677091228,
+  "best_case_sum_pct": -24.297299999999996,
+  "worst_case_sum_pct": -24.297299999999996,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": -1.3515372179487177,
+  "control_ci": [
+   -3.095669756410256,
+   0.40060183333333343
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 50.74979181876176,
+  "bh_diff_pct": -75.04709181876176,
+  "exposure_pct": 8.585247883917775,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "6 条事前证伪规则被触发：最坏优先口径净收益 -24.30% ≤ 0；成本 ×2（往返 16bps）时净收益 -32.62% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -1.35%，95% 区间 [-3.10, +0.40] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -9.54% ≤ 0；成本 ×2（往返 16bps）时净收益 -12.58% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.48%，95% 区间 [-1.67, +0.78] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -24.297299999999996,
+   "2.0": -32.61730000000001,
+   "5.0": -57.5773
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 49,
+    "net_sum_pct": 106.5365
+   },
+   "flip": {
+    "n": 55,
+    "net_sum_pct": -130.8338
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-22",
+  "wf_is_sum_pct": -14.7604,
+  "wf_oos_sum_pct": -9.536899999999997,
+  "wf_oos_fills": 38,
+  "variant": "tsmom_long",
+  "lookback": 30,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 12.0,
+  "hold_p90": 37,
+  "hold_max": 120,
+  "n_segments": 104
+ },
+ {
+  "name": "FAIR_BNBUSDT__tsmom_long__60__to2",
+  "leg": "tsmom_long",
+  "symbol": "BNBUSDT",
+  "bars": 3308,
+  "first": "2017-11-06",
+  "last": "2026-11-26",
+  "fills": 70,
+  "open_signals": 0,
+  "net_sum_pct": 11.004100000000003,
+  "net_mean_pct": 0.1572014285714286,
+  "compound_x": 1.045797565712072,
+  "compound_pct": 4.579756571207194,
+  "win_pct": 37.142857142857146,
+  "profit_factor": 1.1137365272431856,
+  "max_dd_pct": -26.5148337621843,
+  "best_case_sum_pct": 11.004100000000003,
+  "worst_case_sum_pct": 11.004100000000003,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": -0.471856238095238,
+  "control_ci": [
+   -2.0031299047619044,
+   1.0679318095238095
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 26.80446750990938,
+  "bh_diff_pct": -15.800367509909377,
+  "exposure_pct": 4.534461910519952,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 1 条规则在样本不足时触发（['control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": 11.004100000000003,
+   "2.0": 5.4041,
+   "5.0": -11.395899999999997
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 34,
+    "net_sum_pct": 85.17200000000003
+   },
+   "flip": {
+    "n": 36,
+    "net_sum_pct": -74.16789999999999
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-22",
+  "wf_is_sum_pct": 38.438100000000006,
+  "wf_oos_sum_pct": -27.433999999999997,
+  "wf_oos_fills": 26,
+  "variant": "tsmom_long",
+  "lookback": 60,
+  "fair_timeout": 2,
+  "hold_median": 2,
+  "hold_mean": 18.8,
+  "hold_p90": 64,
+  "hold_max": 196,
+  "n_segments": 70
+ },
+ {
+  "name": "FAIR_BNBUSDT__tsmom_short__10__to3",
+  "leg": "tsmom_short",
+  "symbol": "BNBUSDT",
+  "bars": 3308,
+  "first": "2017-11-06",
+  "last": "2026-11-26",
+  "fills": 170,
+  "open_signals": 0,
+  "net_sum_pct": -96.9527,
+  "net_mean_pct": -0.5703099999999999,
+  "compound_x": 0.3233781360613773,
+  "compound_pct": -67.66218639386227,
+  "win_pct": 35.88235294117647,
+  "profit_factor": 0.6930185269795796,
+  "max_dd_pct": -70.57382274339969,
+  "best_case_sum_pct": -96.9527,
+  "worst_case_sum_pct": -96.9527,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 0.5588626666666667,
+  "control_ci": [
+   -0.6806619411764705,
+   2.015646431372549
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -82.93759539413547,
+  "bh_diff_pct": -14.015104605864522,
+  "exposure_pct": 14.026602176541717,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "6 条事前证伪规则被触发：最坏优先口径净收益 -96.95% ≤ 0；成本 ×2（往返 16bps）时净收益 -110.55% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.56%，95% 区间 [-0.68, +2.02] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -1.96% ≤ 0；成本 ×2（往返 16bps）时净收益 -7.08% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.12%，95% 区间 [-0.95, +1.22] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -96.9527,
+   "2.0": -110.55270000000002,
+   "5.0": -151.3527
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 78,
+    "net_sum_pct": 112.3663
+   },
+   "flip": {
+    "n": 92,
+    "net_sum_pct": -209.319
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-22",
+  "wf_is_sum_pct": -94.9891,
+  "wf_oos_sum_pct": -1.9636000000000007,
+  "wf_oos_fills": 64,
+  "variant": "tsmom_short",
+  "lookback": 10,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 6.2,
+  "hold_p90": 16,
+  "hold_max": 31,
+  "n_segments": 170
+ },
+ {
+  "name": "FAIR_BNBUSDT__tsmom_short__20__to3",
+  "leg": "tsmom_short",
+  "symbol": "BNBUSDT",
+  "bars": 3308,
+  "first": "2017-11-06",
+  "last": "2026-11-26",
+  "fills": 130,
+  "open_signals": 0,
+  "net_sum_pct": 13.2195,
+  "net_mean_pct": 0.10168846153846155,
+  "compound_x": 0.9397773522862601,
+  "compound_pct": -6.022264771373987,
+  "win_pct": 43.07692307692308,
+  "profit_factor": 1.0578038346992664,
+  "max_dd_pct": -39.672265819998785,
+  "best_case_sum_pct": 13.2195,
+  "worst_case_sum_pct": 13.2195,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 1.2889437948717948,
+  "control_ci": [
+   -0.24025600000000003,
+   2.936599794871795
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -62.024451727941845,
+  "bh_diff_pct": 75.24395172794185,
+  "exposure_pct": 10.489721886336154,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "4 条事前证伪规则被触发：策略 − 随机对照组 = +1.29%，95% 区间 [-0.24, +2.94] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -22.80% ≤ 0；成本 ×2（往返 16bps）时净收益 -26.08% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.20%，95% 区间 [-1.52, +1.25] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 13.2195,
+   "2.0": 2.819500000000004,
+   "5.0": -28.3805
+  },
+  "by_reason": {
+   "flip": {
+    "n": 68,
+    "net_sum_pct": -116.679
+   },
+   "timeout": {
+    "n": 62,
+    "net_sum_pct": 129.89849999999998
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-22",
+  "wf_is_sum_pct": 36.0169,
+  "wf_oos_sum_pct": -22.7974,
+  "wf_oos_fills": 41,
+  "variant": "tsmom_short",
+  "lookback": 20,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 7.7,
+  "hold_p90": 23,
+  "hold_max": 49,
+  "n_segments": 130
+ },
+ {
+  "name": "FAIR_BNBUSDT__tsmom_short__30__to3",
+  "leg": "tsmom_short",
+  "symbol": "BNBUSDT",
+  "bars": 3308,
+  "first": "2017-11-06",
+  "last": "2026-11-26",
+  "fills": 104,
+  "open_signals": 0,
+  "net_sum_pct": 8.142300000000002,
+  "net_mean_pct": 0.07829134615384617,
+  "compound_x": 0.9563389019675255,
+  "compound_pct": -4.366109803247453,
+  "win_pct": 38.46153846153847,
+  "profit_factor": 1.0499903915401347,
+  "max_dd_pct": -48.27298062102942,
+  "best_case_sum_pct": 8.142300000000002,
+  "worst_case_sum_pct": 8.142300000000002,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 1.3732776794871793,
+  "control_ci": [
+   -0.13683325641025637,
+   3.1149557820512817
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -49.33356967409783,
+  "bh_diff_pct": 57.47586967409784,
+  "exposure_pct": 8.34340991535671,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "5 条事前证伪规则被触发：成本 ×2（往返 16bps）时净收益 -0.18% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +1.37%，95% 区间 [-0.14, +3.11] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -4.75% ≤ 0；成本 ×2（往返 16bps）时净收益 -7.79% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.25%，95% 区间 [-1.04, +1.61] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 8.142300000000002,
+   "2.0": -0.17769999999999683,
+   "5.0": -25.137700000000002
+  },
+  "by_reason": {
+   "flip": {
+    "n": 58,
+    "net_sum_pct": -87.493
+   },
+   "timeout": {
+    "n": 46,
+    "net_sum_pct": 95.63529999999996
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-22",
+  "wf_is_sum_pct": 12.892300000000004,
+  "wf_oos_sum_pct": -4.75,
+  "wf_oos_fills": 38,
+  "variant": "tsmom_short",
+  "lookback": 30,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 9.6,
+  "hold_p90": 31,
+  "hold_max": 62,
+  "n_segments": 104
+ },
+ {
+  "name": "FAIR_BNBUSDT__tsmom_short__60__to2",
+  "leg": "tsmom_short",
+  "symbol": "BNBUSDT",
+  "bars": 3308,
+  "first": "2017-11-06",
+  "last": "2026-11-26",
+  "fills": 70,
+  "open_signals": 0,
+  "net_sum_pct": -21.390199999999997,
+  "net_mean_pct": -0.3055742857142857,
+  "compound_x": 0.7323743247988831,
+  "compound_pct": -26.76256752011169,
+  "win_pct": 41.42857142857143,
+  "profit_factor": 0.8346989795326949,
+  "max_dd_pct": -39.669998370582945,
+  "best_case_sum_pct": -21.390199999999997,
+  "worst_case_sum_pct": -21.390199999999997,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 0.48348338095238097,
+  "control_ci": [
+   -1.0644100952380953,
+   2.143123476190476
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -26.632977831306437,
+  "bh_diff_pct": 5.242777831306441,
+  "exposure_pct": 4.504232164449819,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 3 条规则在样本不足时触发（['worst_case_net_negative', 'net_negative_at_fee_multiple=2', 'control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": -21.390199999999997,
+   "2.0": -26.990199999999998,
+   "5.0": -43.7902
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 33,
+    "net_sum_pct": 58.8817
+   },
+   "flip": {
+    "n": 37,
+    "net_sum_pct": -80.27189999999999
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-08-22",
+  "wf_is_sum_pct": -17.1372,
+  "wf_oos_sum_pct": -4.253,
+  "wf_oos_fills": 26,
+  "variant": "tsmom_short",
+  "lookback": 60,
+  "fair_timeout": 2,
+  "hold_median": 2,
+  "hold_mean": 12.8,
+  "hold_p90": 53,
+  "hold_max": 90,
+  "n_segments": 70
+ },
+ {
+  "name": "FAIR_DOGEUSDT__tsmom_long__10__to2",
+  "leg": "tsmom_long",
+  "symbol": "DOGEUSDT",
+  "bars": 2702,
+  "first": "2019-07-05",
+  "last": "2026-11-26",
+  "fills": 196,
+  "open_signals": 0,
+  "net_sum_pct": -37.35209999999999,
+  "net_mean_pct": -0.19057193877551015,
+  "compound_x": 0.3993409783857898,
+  "compound_pct": -60.06590216142102,
+  "win_pct": 32.142857142857146,
+  "profit_factor": 0.9196409151255693,
+  "max_dd_pct": -85.27668992285018,
+  "best_case_sum_pct": -37.35209999999999,
+  "worst_case_sum_pct": -37.35209999999999,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": -1.2513992721088436,
+  "control_ci": [
+   -4.395735224489796,
+   1.1641272857142857
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 37.846724357440884,
+  "bh_diff_pct": -75.19882435744088,
+  "exposure_pct": 14.951887490747595,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "6 条事前证伪规则被触发：最坏优先口径净收益 -37.35% ≤ 0；成本 ×2（往返 16bps）时净收益 -53.03% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -1.25%，95% 区间 [-4.40, +1.16] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -17.01% ≤ 0；成本 ×2（往返 16bps）时净收益 -21.49% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.34%，95% 区间 [-1.30, +2.15] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -37.35209999999999,
+   "2.0": -53.03210000000001,
+   "5.0": -100.07209999999999
+  },
+  "by_reason": {
+   "flip": {
+    "n": 109,
+    "net_sum_pct": -271.7011
+   },
+   "timeout": {
+    "n": 87,
+    "net_sum_pct": 234.34900000000002
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-01-19",
+  "wf_is_sum_pct": -20.338099999999994,
+  "wf_oos_sum_pct": -17.014000000000003,
+  "wf_oos_fills": 56,
+  "variant": "tsmom_long",
+  "lookback": 10,
+  "fair_timeout": 2,
+  "hold_median": 2,
+  "hold_mean": 5.3,
+  "hold_p90": 15,
+  "hold_max": 53,
+  "n_segments": 196
+ },
+ {
+  "name": "FAIR_DOGEUSDT__tsmom_long__20__to3",
+  "leg": "tsmom_long",
+  "symbol": "DOGEUSDT",
+  "bars": 2702,
+  "first": "2019-07-05",
+  "last": "2026-11-26",
+  "fills": 97,
+  "open_signals": 0,
+  "net_sum_pct": 82.05319999999999,
+  "net_mean_pct": 0.8459092783505154,
+  "compound_x": 1.4650091100705642,
+  "compound_pct": 46.50091100705642,
+  "win_pct": 41.23711340206185,
+  "profit_factor": 1.3152089190849348,
+  "max_dd_pct": -51.26940777562593,
+  "best_case_sum_pct": 82.05319999999999,
+  "worst_case_sum_pct": 82.05319999999999,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": -0.7267667216494847,
+  "control_ci": [
+   -4.282837054982817,
+   2.289304886597938
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 23.888402750364914,
+  "bh_diff_pct": 58.16479724963507,
+  "exposure_pct": 9.437453737971872,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 1 条规则在样本不足时触发（['control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": 82.05319999999999,
+   "2.0": 74.2932,
+   "5.0": 51.013200000000005
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 47,
+    "net_sum_pct": 248.81439999999998
+   },
+   "flip": {
+    "n": 50,
+    "net_sum_pct": -166.76119999999995
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-01-19",
+  "wf_is_sum_pct": 45.979499999999994,
+  "wf_oos_sum_pct": 36.073699999999995,
+  "wf_oos_fills": 26,
+  "variant": "tsmom_long",
+  "lookback": 20,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 10.3,
+  "hold_p90": 32,
+  "hold_max": 69,
+  "n_segments": 97
+ },
+ {
+  "name": "FAIR_DOGEUSDT__tsmom_long__30__to3",
+  "leg": "tsmom_long",
+  "symbol": "DOGEUSDT",
+  "bars": 2702,
+  "first": "2019-07-05",
+  "last": "2026-11-26",
+  "fills": 87,
+  "open_signals": 0,
+  "net_sum_pct": 114.34930000000001,
+  "net_mean_pct": 1.3143597701149428,
+  "compound_x": 1.9738473995796244,
+  "compound_pct": 97.38473995796244,
+  "win_pct": 40.229885057471265,
+  "profit_factor": 1.5633464412150426,
+  "max_dd_pct": -40.49601686742375,
+  "best_case_sum_pct": 114.34930000000001,
+  "worst_case_sum_pct": 114.34930000000001,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": 0.22053577011494285,
+  "control_ci": [
+   -2.927748678160919,
+   3.5292380114942525
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 22.20216255622151,
+  "bh_diff_pct": 92.1471374437785,
+  "exposure_pct": 8.771280532938563,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "2 条事前证伪规则被触发：策略 − 随机对照组 = +0.22%，95% 区间 [-2.93, +3.53] 跨 0，未能证明选择性；样本外段：策略 − 随机对照组 = +1.31%，95% 区间 [-1.33, +4.37] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 114.34930000000001,
+   "2.0": 107.38929999999999,
+   "5.0": 86.5093
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 42,
+    "net_sum_pct": 191.66000000000005
+   },
+   "flip": {
+    "n": 45,
+    "net_sum_pct": -77.3107
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-01-19",
+  "wf_is_sum_pct": 100.62729999999999,
+  "wf_oos_sum_pct": 13.721999999999998,
+  "wf_oos_fills": 30,
+  "variant": "tsmom_long",
+  "lookback": 30,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 11.7,
+  "hold_p90": 34,
+  "hold_max": 121,
+  "n_segments": 87
+ },
+ {
+  "name": "FAIR_DOGEUSDT__tsmom_long__60__to3",
+  "leg": "tsmom_long",
+  "symbol": "DOGEUSDT",
+  "bars": 2702,
+  "first": "2019-07-05",
+  "last": "2026-11-26",
+  "fills": 60,
+  "open_signals": 0,
+  "net_sum_pct": 227.83569999999997,
+  "net_mean_pct": 3.797261666666666,
+  "compound_x": 3.9987063369768707,
+  "compound_pct": 299.8706336976871,
+  "win_pct": 43.333333333333336,
+  "profit_factor": 2.4849730328656854,
+  "max_dd_pct": -36.250906356642545,
+  "best_case_sum_pct": 227.83569999999997,
+  "worst_case_sum_pct": 227.83569999999997,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": 2.644549333333333,
+  "control_ci": [
+   -2.5221396666666664,
+   9.478679333333332
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 15.457201779647885,
+  "bh_diff_pct": 212.3784982203521,
+  "exposure_pct": 6.10658771280533,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 1 条规则在样本不足时触发（['control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": 227.83569999999997,
+   "2.0": 223.03570000000002,
+   "5.0": 208.6357
+  },
+  "by_reason": {
+   "flip": {
+    "n": 31,
+    "net_sum_pct": -75.81119999999999
+   },
+   "timeout": {
+    "n": 29,
+    "net_sum_pct": 303.6468999999999
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-01-19",
+  "wf_is_sum_pct": 198.5109,
+  "wf_oos_sum_pct": 29.3248,
+  "wf_oos_fills": 12,
+  "variant": "tsmom_long",
+  "lookback": 60,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 16.1,
+  "hold_p90": 61,
+  "hold_max": 143,
+  "n_segments": 60
+ },
+ {
+  "name": "FAIR_DOGEUSDT__tsmom_short__10__to3",
+  "leg": "tsmom_short",
+  "symbol": "DOGEUSDT",
+  "bars": 2702,
+  "first": "2019-07-05",
+  "last": "2026-11-26",
+  "fills": 198,
+  "open_signals": 0,
+  "net_sum_pct": -127.25200000000001,
+  "net_mean_pct": -0.6426868686868688,
+  "compound_x": 0.16976315504244766,
+  "compound_pct": -83.02368449575523,
+  "win_pct": 38.88888888888889,
+  "profit_factor": 0.760301820942906,
+  "max_dd_pct": -86.50607693557876,
+  "best_case_sum_pct": -127.25200000000001,
+  "worst_case_sum_pct": -127.25200000000001,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 0.6371854646464645,
+  "control_ci": [
+   -1.6590607474747474,
+   3.7751410202020206
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -50.80666059050727,
+  "bh_diff_pct": -76.44533940949273,
+  "exposure_pct": 20.059215396002962,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "4 条事前证伪规则被触发：最坏优先口径净收益 -127.25% ≤ 0；成本 ×2（往返 16bps）时净收益 -143.09% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.64%，95% 区间 [-1.66, +3.78] 跨 0，未能证明选择性；样本外段：策略 − 随机对照组 = +0.06%，95% 区间 [-1.64, +1.79] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -127.25200000000001,
+   "2.0": -143.09199999999998,
+   "5.0": -190.612
+  },
+  "by_reason": {
+   "flip": {
+    "n": 106,
+    "net_sum_pct": -363.91659999999985
+   },
+   "timeout": {
+    "n": 92,
+    "net_sum_pct": 236.66460000000006
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-01-19",
+  "wf_is_sum_pct": -156.2317,
+  "wf_oos_sum_pct": 28.979699999999998,
+  "wf_oos_fills": 58,
+  "variant": "tsmom_short",
+  "lookback": 10,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 6.2,
+  "hold_p90": 16,
+  "hold_max": 34,
+  "n_segments": 198
+ },
+ {
+  "name": "FAIR_DOGEUSDT__tsmom_short__20__to6",
+  "leg": "tsmom_short",
+  "symbol": "DOGEUSDT",
+  "bars": 2702,
+  "first": "2019-07-05",
+  "last": "2026-11-26",
+  "fills": 99,
+  "open_signals": 0,
+  "net_sum_pct": -326.5359,
+  "net_mean_pct": -3.2983424242424246,
+  "compound_x": -1.7315348707817813,
+  "compound_pct": -273.1534870781781,
+  "win_pct": 47.474747474747474,
+  "profit_factor": 0.44931766745479507,
+  "max_dd_pct": -347.64597271356445,
+  "best_case_sum_pct": -326.5359,
+  "worst_case_sum_pct": -326.5359,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": -0.5422170909090913,
+  "control_ci": [
+   -8.652996888888891,
+   5.445740797979797
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -43.86995785305793,
+  "bh_diff_pct": -282.6659421469421,
+  "exposure_pct": 17.320503330866025,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 3 条规则在样本不足时触发（['worst_case_net_negative', 'net_negative_at_fee_multiple=2', 'control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": -326.5359,
+   "2.0": -334.4559,
+   "5.0": -358.2159
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 48,
+    "net_sum_pct": 158.9708
+   },
+   "flip": {
+    "n": 51,
+    "net_sum_pct": -485.5066999999998
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-01-19",
+  "wf_is_sum_pct": -328.78880000000004,
+  "wf_oos_sum_pct": 2.2528999999999977,
+  "wf_oos_fills": 27,
+  "variant": "tsmom_short",
+  "lookback": 20,
+  "fair_timeout": 6,
+  "hold_median": 6,
+  "hold_mean": 12.7,
+  "hold_p90": 35,
+  "hold_max": 62,
+  "n_segments": 99
+ },
+ {
+  "name": "FAIR_DOGEUSDT__tsmom_short__30__to3",
+  "leg": "tsmom_short",
+  "symbol": "DOGEUSDT",
+  "bars": 2702,
+  "first": "2019-07-05",
+  "last": "2026-11-26",
+  "fills": 88,
+  "open_signals": 0,
+  "net_sum_pct": -91.721,
+  "net_mean_pct": -1.042284090909091,
+  "compound_x": 0.32219554090370583,
+  "compound_pct": -67.78044590962942,
+  "win_pct": 38.63636363636363,
+  "profit_factor": 0.6646761447389972,
+  "max_dd_pct": -68.7767090701492,
+  "best_case_sum_pct": -91.721,
+  "worst_case_sum_pct": -91.721,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 0.21153990909090892,
+  "control_ci": [
+   -2.0816976363636366,
+   2.9552391515151517
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -22.403675057437706,
+  "bh_diff_pct": -69.3173249425623,
+  "exposure_pct": 8.845299777942264,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "6 条事前证伪规则被触发：最坏优先口径净收益 -91.72% ≤ 0；成本 ×2（往返 16bps）时净收益 -98.76% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.21%，95% 区间 [-2.08, +2.96] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -17.99% ≤ 0；成本 ×2（往返 16bps）时净收益 -20.47% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -1.25%，95% 区间 [-3.69, +1.31] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -91.721,
+   "2.0": -98.76100000000001,
+   "5.0": -119.881
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 41,
+    "net_sum_pct": 69.7091
+   },
+   "flip": {
+    "n": 47,
+    "net_sum_pct": -161.43009999999998
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-01-19",
+  "wf_is_sum_pct": -73.7328,
+  "wf_oos_sum_pct": -17.9882,
+  "wf_oos_fills": 31,
+  "variant": "tsmom_short",
+  "lookback": 30,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 14.0,
+  "hold_p90": 40,
+  "hold_max": 86,
+  "n_segments": 88
+ },
+ {
+  "name": "FAIR_DOGEUSDT__tsmom_short__60__to5",
+  "leg": "tsmom_short",
+  "symbol": "DOGEUSDT",
+  "bars": 2702,
+  "first": "2019-07-05",
+  "last": "2026-11-26",
+  "fills": 61,
+  "open_signals": 0,
+  "net_sum_pct": -9.472199999999994,
+  "net_mean_pct": -0.15528196721311466,
+  "compound_x": 0.7569274165520471,
+  "compound_pct": -24.30725834479529,
+  "win_pct": 55.73770491803278,
+  "profit_factor": 0.9448949174313848,
+  "max_dd_pct": -54.04307917336369,
+  "best_case_sum_pct": -9.472199999999994,
+  "worst_case_sum_pct": -9.472199999999994,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 2.2160900327868855,
+  "control_ci": [
+   -1.0767444207650274,
+   5.762063415300547
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -22.21619660507421,
+  "bh_diff_pct": 12.743996605074216,
+  "exposure_pct": 8.771280532938563,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 3 条规则在样本不足时触发（['worst_case_net_negative', 'net_negative_at_fee_multiple=2', 'control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": -9.472199999999994,
+   "2.0": -14.352200000000003,
+   "5.0": -28.9922
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 28,
+    "net_sum_pct": 73.0651
+   },
+   "flip": {
+    "n": 33,
+    "net_sum_pct": -82.53730000000003
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2025-01-19",
+  "wf_is_sum_pct": 11.317300000000008,
+  "wf_oos_sum_pct": -20.7895,
+  "wf_oos_fills": 13,
+  "variant": "tsmom_short",
+  "lookback": 60,
+  "fair_timeout": 5,
+  "hold_median": 5,
+  "hold_mean": 20.5,
+  "hold_p90": 62,
+  "hold_max": 178,
+  "n_segments": 61
+ },
+ {
+  "name": "FAIR_XRPUSDT__tsmom_long__10__to3",
+  "leg": "tsmom_long",
+  "symbol": "XRPUSDT",
+  "bars": 3129,
+  "first": "2018-05-04",
+  "last": "2026-11-26",
+  "fills": 169,
+  "open_signals": 0,
+  "net_sum_pct": -117.2471,
+  "net_mean_pct": -0.6937698224852071,
+  "compound_x": 0.19592539048535915,
+  "compound_pct": -80.40746095146409,
+  "win_pct": 30.76923076923077,
+  "profit_factor": 0.7475197101002367,
+  "max_dd_pct": -83.25263131217699,
+  "best_case_sum_pct": -117.2471,
+  "worst_case_sum_pct": -117.2471,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": -1.6428564891518738,
+  "control_ci": [
+   -3.2455192524654835,
+   0.0763915601577909
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 9.145486978984117,
+  "bh_diff_pct": -126.39258697898413,
+  "exposure_pct": 14.413550655161394,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "6 条事前证伪规则被触发：最坏优先口径净收益 -117.25% ≤ 0；成本 ×2（往返 16bps）时净收益 -130.77% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -1.64%，95% 区间 [-3.25, +0.08] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -42.92% ≤ 0；成本 ×2（往返 16bps）时净收益 -47.24% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -1.49%，95% 区间 [-3.52, +0.91] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -117.2471,
+   "2.0": -130.7671,
+   "5.0": -171.3271
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 77,
+    "net_sum_pct": 191.19929999999997
+   },
+   "flip": {
+    "n": 92,
+    "net_sum_pct": -308.4463999999999
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-10-05",
+  "wf_is_sum_pct": -74.32260000000001,
+  "wf_oos_sum_pct": -42.9245,
+  "wf_oos_fills": 54,
+  "variant": "tsmom_long",
+  "lookback": 10,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 6.1,
+  "hold_p90": 16,
+  "hold_max": 38,
+  "n_segments": 169
+ },
+ {
+  "name": "FAIR_XRPUSDT__tsmom_long__20__to2",
+  "leg": "tsmom_long",
+  "symbol": "XRPUSDT",
+  "bars": 3129,
+  "first": "2018-05-04",
+  "last": "2026-11-26",
+  "fills": 117,
+  "open_signals": 0,
+  "net_sum_pct": -35.305499999999995,
+  "net_mean_pct": -0.3017564102564102,
+  "compound_x": 0.5753760984437993,
+  "compound_pct": -42.462390155620064,
+  "win_pct": 37.60683760683761,
+  "profit_factor": 0.8625030133631704,
+  "max_dd_pct": -70.78201867427356,
+  "best_case_sum_pct": -35.305499999999995,
+  "worst_case_sum_pct": -35.305499999999995,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": -0.881519076923077,
+  "control_ci": [
+   -2.3729967948717947,
+   0.6594751623931624
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 5.069560409636428,
+  "bh_diff_pct": -40.375060409636426,
+  "exposure_pct": 7.989773090444231,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "6 条事前证伪规则被触发：最坏优先口径净收益 -35.31% ≤ 0；成本 ×2（往返 16bps）时净收益 -44.67% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.88%，95% 区间 [-2.37, +0.66] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -2.82% ≤ 0；成本 ×2（往返 16bps）时净收益 -6.34% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.44%，95% 区间 [-2.59, +2.01] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -35.305499999999995,
+   "2.0": -44.665499999999994,
+   "5.0": -72.74549999999999
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 57,
+    "net_sum_pct": 115.85010000000001
+   },
+   "flip": {
+    "n": 60,
+    "net_sum_pct": -151.1556
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-10-05",
+  "wf_is_sum_pct": -32.4819,
+  "wf_oos_sum_pct": -2.823599999999997,
+  "wf_oos_fills": 44,
+  "variant": "tsmom_long",
+  "lookback": 20,
+  "fair_timeout": 2,
+  "hold_median": 2,
+  "hold_mean": 8.3,
+  "hold_p90": 27,
+  "hold_max": 44,
+  "n_segments": 117
+ },
+ {
+  "name": "FAIR_XRPUSDT__tsmom_long__30__to3",
+  "leg": "tsmom_long",
+  "symbol": "XRPUSDT",
+  "bars": 3129,
+  "first": "2018-05-04",
+  "last": "2026-11-26",
+  "fills": 109,
+  "open_signals": 0,
+  "net_sum_pct": 11.7252,
+  "net_mean_pct": 0.10757064220183485,
+  "compound_x": 0.650920860704389,
+  "compound_pct": -34.9079139295611,
+  "win_pct": 37.61467889908257,
+  "profit_factor": 1.0416535372930458,
+  "max_dd_pct": -74.48880462795628,
+  "best_case_sum_pct": 11.7252,
+  "worst_case_sum_pct": 11.7252,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": -0.3612504280322789,
+  "control_ci": [
+   -2.5299158172501612,
+   2.4173883710226747
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 5.6170729338771626,
+  "bh_diff_pct": 6.108127066122837,
+  "exposure_pct": 8.852668584212209,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "4 条事前证伪规则被触发：策略 − 随机对照组 = -0.36%，95% 区间 [-2.53, +2.42] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -37.22% ≤ 0；成本 ×2（往返 16bps）时净收益 -40.58% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -1.29%，95% 区间 [-3.44, +1.14] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 11.7252,
+   "2.0": 3.0051999999999968,
+   "5.0": -23.154799999999998
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 44,
+    "net_sum_pct": 205.25019999999998
+   },
+   "flip": {
+    "n": 65,
+    "net_sum_pct": -193.52499999999995
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-10-05",
+  "wf_is_sum_pct": 48.9486,
+  "wf_oos_sum_pct": -37.2234,
+  "wf_oos_fills": 42,
+  "variant": "tsmom_long",
+  "lookback": 30,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 9.4,
+  "hold_p90": 34,
+  "hold_max": 55,
+  "n_segments": 109
+ },
+ {
+  "name": "FAIR_XRPUSDT__tsmom_long__60__to2",
+  "leg": "tsmom_long",
+  "symbol": "XRPUSDT",
+  "bars": 3129,
+  "first": "2018-05-04",
+  "last": "2026-11-26",
+  "fills": 83,
+  "open_signals": 0,
+  "net_sum_pct": 12.441999999999998,
+  "net_mean_pct": 0.14990361445783132,
+  "compound_x": 0.933570871393911,
+  "compound_pct": -6.642912860608896,
+  "win_pct": 38.55421686746988,
+  "profit_factor": 1.0700470771306032,
+  "max_dd_pct": -48.15022711903363,
+  "best_case_sum_pct": 12.441999999999998,
+  "worst_case_sum_pct": 12.441999999999998,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "long",
+  "control_diff_pct": -0.5722013855421687,
+  "control_ci": [
+   -2.4299326425702814,
+   1.3288140240963855
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "long",
+  "bh_matched_pct": 3.5284140451069543,
+  "bh_diff_pct": 8.913585954893044,
+  "exposure_pct": 5.560882070949185,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 1 条规则在样本不足时触发（['control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": 12.441999999999998,
+   "2.0": 5.802,
+   "5.0": -14.118
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 39,
+    "net_sum_pct": 95.8898
+   },
+   "flip": {
+    "n": 44,
+    "net_sum_pct": -83.4478
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-10-05",
+  "wf_is_sum_pct": -12.701699999999999,
+  "wf_oos_sum_pct": 25.143699999999995,
+  "wf_oos_fills": 28,
+  "variant": "tsmom_long",
+  "lookback": 60,
+  "fair_timeout": 2,
+  "hold_median": 2,
+  "hold_mean": 13.2,
+  "hold_p90": 55,
+  "hold_max": 106,
+  "n_segments": 83
+ },
+ {
+  "name": "FAIR_XRPUSDT__tsmom_short__10__to4",
+  "leg": "tsmom_short",
+  "symbol": "XRPUSDT",
+  "bars": 3129,
+  "first": "2018-05-04",
+  "last": "2026-11-26",
+  "fills": 170,
+  "open_signals": 0,
+  "net_sum_pct": 28.509300000000003,
+  "net_mean_pct": 0.16770176470588236,
+  "compound_x": 0.503560953236717,
+  "compound_pct": -49.6439046763283,
+  "win_pct": 43.529411764705884,
+  "profit_factor": 1.0668673126209232,
+  "max_dd_pct": -87.14132675389857,
+  "best_case_sum_pct": 28.509300000000003,
+  "worst_case_sum_pct": 28.509300000000003,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 1.4464077647058822,
+  "control_ci": [
+   -0.4593483333333332,
+   3.3872965882352943
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -11.587744426204997,
+  "bh_diff_pct": 40.097044426205,
+  "exposure_pct": 18.21668264621285,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "1 条事前证伪规则被触发：策略 − 随机对照组 = +1.45%，95% 区间 [-0.46, +3.39] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": 28.509300000000003,
+   "2.0": 14.909300000000009,
+   "5.0": -25.890700000000006
+  },
+  "by_reason": {
+   "flip": {
+    "n": 91,
+    "net_sum_pct": -316.6590999999999
+   },
+   "timeout": {
+    "n": 78,
+    "net_sum_pct": 345.88820000000004
+   },
+   "end": {
+    "n": 1,
+    "net_sum_pct": -0.7198
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-10-05",
+  "wf_is_sum_pct": -46.9826,
+  "wf_oos_sum_pct": 75.4919,
+  "wf_oos_fills": 54,
+  "variant": "tsmom_short",
+  "lookback": 10,
+  "fair_timeout": 4,
+  "hold_median": 4,
+  "hold_mean": 7.2,
+  "hold_p90": 18,
+  "hold_max": 35,
+  "n_segments": 170
+ },
+ {
+  "name": "FAIR_XRPUSDT__tsmom_short__20__to6",
+  "leg": "tsmom_short",
+  "symbol": "XRPUSDT",
+  "bars": 3129,
+  "first": "2018-05-04",
+  "last": "2026-11-26",
+  "fills": 120,
+  "open_signals": 0,
+  "net_sum_pct": -17.638700000000004,
+  "net_mean_pct": -0.1469891666666667,
+  "compound_x": 0.2776860032549675,
+  "compound_pct": -72.23139967450325,
+  "win_pct": 46.666666666666664,
+  "profit_factor": 0.9534547609736377,
+  "max_dd_pct": -85.18456115996972,
+  "best_case_sum_pct": -17.638700000000004,
+  "worst_case_sum_pct": -17.638700000000004,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": 0.8949181666666668,
+  "control_ci": [
+   -1.8316061666666668,
+   3.598273666666666
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -11.018521892987911,
+  "bh_diff_pct": -6.620178107012093,
+  "exposure_pct": 17.321828060083096,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "4 条事前证伪规则被触发：最坏优先口径净收益 -17.64% ≤ 0；成本 ×2（往返 16bps）时净收益 -27.24% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = +0.89%，95% 区间 [-1.83, +3.60] 跨 0，未能证明选择性；样本外段：策略 − 随机对照组 = +1.24%，95% 区间 [-0.95, +3.40] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -17.638700000000004,
+   "2.0": -27.238699999999994,
+   "5.0": -56.038700000000006
+  },
+  "by_reason": {
+   "flip": {
+    "n": 65,
+    "net_sum_pct": -268.47110000000004
+   },
+   "timeout": {
+    "n": 55,
+    "net_sum_pct": 250.8323999999999
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-10-05",
+  "wf_is_sum_pct": -32.6377,
+  "wf_oos_sum_pct": 14.999,
+  "wf_oos_fills": 44,
+  "variant": "tsmom_short",
+  "lookback": 20,
+  "fair_timeout": 6,
+  "hold_median": 6,
+  "hold_mean": 10.7,
+  "hold_p90": 28,
+  "hold_max": 56,
+  "n_segments": 120
+ },
+ {
+  "name": "FAIR_XRPUSDT__tsmom_short__30__to3",
+  "leg": "tsmom_short",
+  "symbol": "XRPUSDT",
+  "bars": 3129,
+  "first": "2018-05-04",
+  "last": "2026-11-26",
+  "fills": 111,
+  "open_signals": 0,
+  "net_sum_pct": -91.3021,
+  "net_mean_pct": -0.8225414414414415,
+  "compound_x": 0.31387686644737595,
+  "compound_pct": -68.61231335526242,
+  "win_pct": 32.432432432432435,
+  "profit_factor": 0.6866134505296557,
+  "max_dd_pct": -69.45376358651542,
+  "best_case_sum_pct": -91.3021,
+  "worst_case_sum_pct": -91.3021,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": -0.18843510810810815,
+  "control_ci": [
+   -1.863853153153153,
+   1.7171108558558559
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -6.281777241574289,
+  "bh_diff_pct": -85.0203227584257,
+  "exposure_pct": 9.87535953978907,
+  "verdict": "FALSIFIED",
+  "verdict_reason": "6 条事前证伪规则被触发：最坏优先口径净收益 -91.30% ≤ 0；成本 ×2（往返 16bps）时净收益 -100.18% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.19%，95% 区间 [-1.86, +1.72] 跨 0，未能证明选择性；样本外段：最坏优先口径净收益 -62.14% ≤ 0；成本 ×2（往返 16bps）时净收益 -65.50% ≤ 0，edge 付不起 toll；策略 − 随机对照组 = -0.91%，95% 区间 [-2.83, +1.04] 跨 0，未能证明选择性",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   }
+  ],
+  "cost": {
+   "1.0": -91.3021,
+   "2.0": -100.1821,
+   "5.0": -126.8221
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 52,
+    "net_sum_pct": 66.4956
+   },
+   "flip": {
+    "n": 59,
+    "net_sum_pct": -157.79770000000005
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-10-05",
+  "wf_is_sum_pct": -29.163999999999994,
+  "wf_oos_sum_pct": -62.138099999999994,
+  "wf_oos_fills": 42,
+  "variant": "tsmom_short",
+  "lookback": 30,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 11.0,
+  "hold_p90": 34,
+  "hold_max": 94,
+  "n_segments": 111
+ },
+ {
+  "name": "FAIR_XRPUSDT__tsmom_short__60__to3",
+  "leg": "tsmom_short",
+  "symbol": "XRPUSDT",
+  "bars": 3129,
+  "first": "2018-05-04",
+  "last": "2026-11-26",
+  "fills": 83,
+  "open_signals": 0,
+  "net_sum_pct": -108.8374,
+  "net_mean_pct": -1.3112939759036144,
+  "compound_x": 0.28130555799894835,
+  "compound_pct": -71.86944420010516,
+  "win_pct": 42.168674698795186,
+  "profit_factor": 0.5533536416459665,
+  "max_dd_pct": -78.963214825346,
+  "best_case_sum_pct": -108.8374,
+  "worst_case_sum_pct": -108.8374,
+  "coverage_pct": 100.0,
+  "control_n": 300,
+  "control_side": "short",
+  "control_diff_pct": -0.39246964257028105,
+  "control_ci": [
+   -2.260645265060241,
+   1.4429309598393576
+  ],
+  "selectivity": "unproven",
+  "bh_valid": true,
+  "bh_mixed_sides": false,
+  "bh_side": "short",
+  "bh_matched_pct": -4.553780265736701,
+  "bh_diff_pct": -104.2836197342633,
+  "exposure_pct": 7.158836689038031,
+  "verdict": "INCONCLUSIVE",
+  "verdict_reason": "样本量不足（样本外），既不能证实也不能证伪——先去拿更多数据，不要凭这份报告做任何决定。 另有 3 条规则在样本不足时触发（['worst_case_net_negative', 'net_negative_at_fee_multiple=2', 'control_lift_ci_includes_zero']），因证据不足不作为证伪依据，仅为留痕。",
+  "checks": [
+   {
+    "rule": "worst_case_net_negative",
+    "triggered": true
+   },
+   {
+    "rule": "net_negative_at_fee_multiple=2",
+    "triggered": true
+   },
+   {
+    "rule": "control_lift_ci_includes_zero",
+    "triggered": true
+   },
+   {
+    "rule": "min_fills",
+    "triggered": false
+   }
+  ],
+  "cost": {
+   "1.0": -108.8374,
+   "2.0": -115.4774,
+   "5.0": -135.3974
+  },
+  "by_reason": {
+   "timeout": {
+    "n": 39,
+    "net_sum_pct": 34.319
+   },
+   "flip": {
+    "n": 44,
+    "net_sum_pct": -143.15640000000005
+   }
+  },
+  "wf_folds": 4,
+  "wf_boundary": "2024-10-05",
+  "wf_is_sum_pct": -110.31360000000001,
+  "wf_oos_sum_pct": 1.4762000000000002,
+  "wf_oos_fills": 29,
+  "variant": "tsmom_short",
+  "lookback": 60,
+  "fair_timeout": 3,
+  "hold_median": 3,
+  "hold_mean": 13.5,
+  "hold_p90": 49,
+  "hold_max": 107,
+  "n_segments": 83
+ }
+]
