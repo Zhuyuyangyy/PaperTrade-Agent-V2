@@ -118,3 +118,12 @@ research/tsmom/specs/*.json
 research/tsmom/signals/*.csv
 # 运行日志，不是档案
 research/tsmom/_out/scan*.log
+
+# research/cards：6 个行情 CSV 共 85MB（2020-09 至今 × 三币 × 三周期）。
+# fetch_multi.py 是唯一来源，确定性重建，入库没有意义——但**入库三个周期的
+# 完整回测结果**（每个约 118KB），因为报告里的每个数字都要能从这里追到。
+research/cards/data/*.csv
+# 运行日志。抓取日志保留在终端历史里就够，不需要版本控制。
+research/cards/_*.log
+# Python 缓存
+research/cards/__pycache__/
