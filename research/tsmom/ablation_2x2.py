@@ -80,8 +80,11 @@ def run_one(symbol: str, lookback: int) -> dict:
     c = one_cell(candles, mom, sizing="fixed", funding=funding)
     d = one_cell(candles, mom, sizing="vol", funding=funding)
 
+    # 只落盘汇总统计。逐日 returns/weights/dates 曾经让这个文件涨到 7MB，
+    # 而报告与测试一个字段都不读它们——需要时由 daily_replay() 重算即可。
+    _series_fields = {"returns", "weights", "dates"}
     out = {"symbol": symbol, "lookback": lookback,
-           "cells": {k: {kk: vv for kk, vv in v.items() if kk != "returns"}
+           "cells": {k: {kk: vv for kk, vv in v.items() if kk not in _series_fields}
                      for k, v in (("A", a), ("B", b), ("C", c), ("D", d))}}
     for name, x, y in (("C_minus_A", c, a), ("B_minus_A", b, a), ("D_minus_B", d, b)):
         diff = rp.paired_diff(x, y)
