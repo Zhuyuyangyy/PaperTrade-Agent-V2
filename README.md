@@ -1,7 +1,7 @@
 # PaperTrade-Agent-V2-Fast
 
 [![CI](https://img.shields.io/github/actions/workflow/status/Zhuyuyangyy/PaperTrade-Agent-V2/Offline%20safety%20and%20strategy%20tests?style=flat-square&label=CI)](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2/actions/workflows/tests.yml)
-[![tests](https://img.shields.io/badge/tests-1090%20passed%2C%201%20skipped-brightgreen?style=flat-square)](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2)
+[![tests](https://img.shields.io/badge/tests-1094%20passed%2C%201%20skipped-brightgreen?style=flat-square)](https://github.com/Zhuyuyangyy/PaperTrade-Agent-V2)
 [![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)](https://www.python.org/downloads/)
 
@@ -17,10 +17,14 @@
 > 完整证伪总表见 [封存：公开免费数据主动策略阶段](#封存公开免费数据主动策略阶段2026-11-25-收官)，
 > 全仓仅保留 1 个零资金只读周频火种 `research/live/funding_shadow.py`。
 >
-> **补课（2026-11-27）**：此前从未测过的经典路线**时间序列动量（TSMOM）**已补测，
-> 10 币日线 300 个配置，**同样 FALSIFIED**。这一轮真正的产出是发现并修掉了
-> 自己对照组的一处构造缺陷（朴素对照组 82.3% → 修正后 6.2%，策略数字一个没变）。
-> 总表增至 16 条，仍为 0 条通过。详见
+> **补课（2026-11-27，2026-11-28 修订）**：此前从未测过的经典路线**时间序列动量（TSMOM）**
+> 已补测。原假设是「日线 TSMOM **+ 波动率反比仓位** + 真实成本」，但首轮只实现了
+> 方向信号、没有波动率配仓，因此**总体裁决改为 INCONCLUSIVE — PARTIAL IMPLEMENTATION
+> （实现不完整，证据不足）**。已测的具体配置仍按原规则判死（原报告写 82.3% → 6.2%，但 300 vs 48
+> 不可比；同批 48 配置配对比较为 70.8% → 6.2%）。
+> 2026-11-28 补齐 2×2 消融：D−B（风险调整后动量择时的额外贡献）跨币中位 −0.54%，
+> 20/20 配置的 bootstrap CI 均跨 0。**没有证据支持动量择时有额外贡献，也没有证据
+> 能把完整的 TSMOM 判死**——后者需要修复引擎成交时点与强平建模后再测。详见
 > [第 16 条路线](#第-16-条路线时间序列动量2026-11-27) 与
 > [`research/tsmom/REPORT.md`](research/tsmom/REPORT.md)。
 
@@ -126,11 +130,14 @@ python skill/strategy-falsifier/scripts/verify.py spec.json --candles klines.csv
 
 ### 总表：16 条路线，0 条通过
 
-精确口径：**12 条 FALSIFIED（被一手数据证伪）+ 4 条未通过**，后者再分：
+精确口径：**11 条 FALSIFIED（被一手数据证伪）+ 4 条未通过 + 1 条实现不完整**，后者再分：
 **2 条 INCONCLUSIVE 样本不足**（#7 样本不足、#8 数据不可得）、
 **1 条无法拒绝零假设**（#13 Wilcoxon p=0.8125）、
-**1 条多重检验全不通过**（#15 Bonferroni 最小 p=0.0497）。
-这 4 条不是"还有希望"，是"连证伪所需的样本都没攒够"——同样不足以支撑任何投入。
+**1 条多重检验全不通过**（#15 Bonferroni 最小 p=0.0497）、
+**1 条 PARTIAL IMPLEMENTATION**（#16 原假设含波动率反比仓位，首轮只测了方向信号）。
+前 4 条不是"还有希望"，是"连证伪所需的样本都没攒够"；#16 不是"还有希望"，是
+"原假设的第二个组件还没测"——三者都不足以支撑任何投入，但**不能把 #16 说成已证伪**：
+不显著不等于无效，实现不完整更不等于无效。
 
 | # | 赛道 | 路线 | 核心假设 | 实测 | 判定 | 出处 |
 |---|---|---|---|---|---|---|
@@ -149,7 +156,7 @@ python skill/strategy-falsifier/scripts/verify.py spec.json --candles klines.csv
 | 13 | Polymarket | BTC 5m 平值抢延迟 | 抢在盘口重定价前 100ms | 7 窗口 / **643,205 条**推送 / 114 事件；有效区间（ask 0.30–0.85）n=52、胜率 63.5%、净 **+673bps**，但 5 个窗口收益 `[−240, +886, +1731, +5187, −10166]`，Wilcoxon **p=0.8125** | **无法拒绝零假设** | `M1_final_verdict` + `M1prime_verdict` |
 | 14 | Polymarket | 气象 METAR 抢先 | 报文人库后有几秒可吃窗口 | 305 个归零档位：跳变相对 `receiptTime` **p50 = −12s**，高分歧样本（n=5）**p50 = −18s**；8 个高/中分歧样本里 7 个在 137 秒内定价完毕。源方入库延迟中位 **210s**，所有参与者共享 | **FALSIFIED** | `M1_final_verdict` |
 | 15 | Polymarket | M1' 概率校准 | 某些概率段存在系统性错价 | 两批独立样本 172 / 224 市场，结算前 48h 整体偏离 **−1.0pp / −0.75pp**；两批最大单桶偏离（−20.8pp / −23.2pp）**落在不同桶**；Bonferroni 阈值 0.0056，最小 p=0.0497，**无一通过** | **不通过** | `M1prime_verdict` |
-| 16 | Crypto | **时间序列动量 TSMOM**（日线，10 币） | 过去 N 日涨跌的符号能预测未来，且非 beta | 300 个配置；朴素对照组下 **82.3% 通过**，把对照组持有期改正后跌到 **6.2%**（3/48）；3 个显著 vs 纯随机期望 **2.4**，Bonferroni 阈值 p<0.001 而现有约 p≈0.03；多头腿 38/50 赚（中位 4.64x）、空头腿 42/50 亏（中位 0.34x）→ **钱来自 beta 不是择时** | **FALSIFIED** | `research/tsmom/REPORT.md` |
+| 16 | Crypto | **时间序列动量 TSMOM**（日线，10 币） | 过去 N 日涨跌的符号能预测未来，且非 beta；**含波动率反比仓位** | 方向层：300 配置；同批 48 配置配对比较，朴素对照组 **70.8%** → 公平对照组 **6.2%**（31 个翻转）；3 个显著 vs 纯随机期望 2.4，Bonferroni p<0.001 而现有约 p≈0.03；多头腿 38/50 赚、空头腿 42/50 亏 → 钱来自 beta。**2×2 消融补齐后**：D−B（风险调整后动量择时）中位 −0.54%，20/20 CI 跨 0；B−A 中位 −25.01%（sizing 在牛市里降敞口，必须扣除） | **INCONCLUSIVE — PARTIAL IMPLEMENTATION**（方向层已测配置仍 FALSIFIED；完整 TSMOM 未证伪） | `research/tsmom/REPORT.md` |
 
 ### 这 15 条路线撞的是同一堵墙
 
@@ -187,12 +194,17 @@ Chainlink **TWAP-60s 均值**，一个 5bps 的瞬时跳动对 5 分钟均值的
 
 ---
 
-## 第 16 条路线：时间序列动量（2026-11-27）
+## 第 16 条路线：时间序列动量（2026-11-27，11-28 修订）
 
 > 前 15 条是"找 edge"，这一条不一样：它是**回来补课**。之前测的都是短周期
 > 趋势跟踪（#5 的 15m、#6 的 4h、#7 的 1h）和**截面**动量（#2 的 12 币排序），
 > 而文献里最经典的**时间序列动量**（每个标的只看自己过去 N 日）从未测过——
 > 且日线上的成本占比只有 15m 的 1/10。这是一块明显的空白。
+>
+> **原假设的完整形态是「日线 TSMOM + 波动率反比仓位 + 真实成本」。**
+> 首轮只实现了方向信号，**没有实现波动率配仓**，因此总体裁决是
+> **INCONCLUSIVE — PARTIAL IMPLEMENTATION**。已测的具体配置仍按原规则判死，
+> 不美化任何结果。
 
 完整报告：**[`research/tsmom/REPORT.md`](research/tsmom/REPORT.md)**
 
@@ -212,14 +224,19 @@ Chainlink **TWAP-60s 均值**，一个 5bps 的瞬时跳动对 5 分钟均值的
 所有成交、成本、退出由证伪引擎独立推演。写信号的人不算收益，算收益的人不知道
 信号怎么来的。
 
-### 结果：82.3% → 6.2%
+### 结果：同批 48 配置，70.8% → 6.2%
 
-| | 通过选择性检验 |
+原版写的是 247/300（82.3%）→ 3/48（6.2%），**这是不可比的**：分子来自 300 个
+配置，分母来自 48 个。修订后在**同一批 48 个配置**上配对比较：
+
+| 同批 48 配置 | 通过选择性检验 |
 |---|---|
-| 朴素对照组 | 247 / 300 = **82.3%** |
-| 对照组持有期改正后 | 3 / 48 = **6.2%** |
+| 朴素对照组（timeout=100000） | 34 / 48 = **70.8%** |
+| 公平对照组（timeout=中位持仓） | 3 / 48 = **6.2%** |
 
-**策略自身的数字一个都没变，只把对照组改公平，结论就翻了个方向。**
+31 个配置从"通过"翻成"不通过"，0 个反向翻转。**策略自身的数字一个都没变，
+只把对照组改公平，结论就翻了个方向。** 原 82.3% 只保留为"缺陷严重度"的历史
+记录，不再作为前后对比的基线。
 
 ### 两处测量缺陷（比结论更值得记）
 
@@ -287,19 +304,51 @@ t 值是 1.90 / 2.21 / 2.25，全部落在噪声区间；Bonferroni 阈值是 p<
 9 个币里 8 个正费率占比 80% 以上。**任何"长期持多"的动量策略，先要跨过年化
 11.4% 的资金费门槛。**
 
-### 这一轮没有回答什么
+### 补齐的 2×2 消融（2026-11-28）
 
-1. **波动率目标测不了**——引擎每笔等权，无法表达"仓位 = 目标波动/已实现波动"。
-   而波动率缩放恰恰是 TSMOM 文献的核心改进。测的只是方向层面。
-2. **对照组分布形状没对齐**——中位持仓对齐了中心，但策略是"动量翻转"退出、
-   对照组是"均匀入场+固定超时"，尾部不同。
-3. **没测等权组合**——10 个币各自独立，没有测截面分散对夏普的贡献。
-4. **样本期只有一次**——2020-09 起是加密大牛市，空头结论高度依赖这段历史。
-5. **AI 消融没开始**——基线已证明不存在，消融失去参照。
+引擎每笔等权，无法表达波动率配仓。因此写了独立回放器 `replay.py`，先证明
+**`engine_compat` 模式逐笔复现引擎**（94 笔 net 全等、报告 nets 是排序后的），
+再换成 `strict` 模式（退出推迟到下一根开盘）和逐日口径跑四格：
+
+| | 固定敞口 | 波动率调整敞口（目标 20%，事前 20 日 RV，上限 3x） |
+|---|---|---|
+| **买入持有** | A：年化中位 10.25%，夏普 0.497，平均\|w\|=1.0 | B：7.36%，夏普 0.392，平均\|w\|=0.36 |
+| **TSMOM** | C：11.46%，夏普 0.540，平均\|w\|=0.98 | D：5.92%，夏普 0.364，平均\|w\|=0.36 |
+
+| 对比 | 含义 | 跨币中位 | >0 | CI 不含 0 |
+|---|---|---|---|---|
+| C − A | 动量方向信号（固定敞口） | −10.11% | 8/20 | **0/20** |
+| B − A | 波动率调整本身 | **−25.01%** | **0/20** | 6/20 |
+| **D − B** | **★ 风险调整后动量择时的额外贡献** | **−0.54%** | 8/20 | **0/20** |
+
+**B−A 全负不是"波动率调整有害"**：它在牛市里把平均敞口从 1.0 降到 0.36，
+年化少赚 25pp，资金费却几乎没少（32.09% vs 32.32%，因为资金费按名义仓位比例
+收，降敞口同时也降低了绝对成本）。这正是论文里"买入持有做波动率调整也有
+0.73% alpha"必须被扣除的原因。
+
+**D−B 才是原假设真正要检验的量**：扣除 sizing 后，动量择时中位 −0.54%，
+20/20 配置的 bootstrap CI 全部跨 0。结论是**没有证据支持额外贡献**，不是
+"证明 TSMOM 无效"——后者需要修复下面三项测量缺陷后重测。
+
+### 仍未回答 / 测量缺陷清单
+
+1. **退出成交时点**：入场在信号 bar 的下一根开盘（正确），退出却在信号 bar
+   的**当根收盘**（`verify.py:335` `fill at close`）。收盘后才知道信号翻转却按
+   收盘价成交，是潜在前视。`strict` 模式量化后 BTC 30 日只差 0.08pp
+   （455.91% → 455.83%），方向成立但量级小；尚未全配置重测。
+2. **强平未建模**：空头单笔可亏 −334%，实盘早爆仓；复利结果因此不具备完整
+   可交易性。回放器有 `liquidation` 开关但未纳入 2×2 主结果。
+3. **现货日线配永续资金费**：日线来自现货 API，资金费来自永续 API，两者不等价。
+   窗口内覆盖率 BTC 100%、SOL 100.5%，2019 年前缺失对本窗口无影响，但口径
+   必须声明。
+4. **对照组分布形状**：中位持仓对齐了中心，尾部仍是"动量翻转"vs"均匀入场+固定超时"。
+5. **没测等权组合**：10 币各自独立，截面分散对夏普的贡献未测。
+6. **样本期单一**：2020-09 起是加密大牛市，空头结论高度依赖这段历史。
+7. **AI 消融没开始**：方向层基线没有站住，消融失去参照。
 
 ### 回归测试
 
-`tests/test_tsmom.py`（21 个用例）守三件事：
+`tests/test_tsmom.py`（25 个用例）守四件事：
 
 - **信号不能前视**：构造性证明——把第 i 根之后的数据全删掉，`position[i]` 必须
   一模一样。这是唯一无法靠"看输出对不对"发现的错误，用了未来数据的信号回测
@@ -310,6 +359,9 @@ t 值是 1.90 / 2.21 / 2.25，全部落在噪声区间；Bonferroni 阈值是 p<
   行尾（Windows CRLF / Linux LF），同一份数据变成两套字节；资金费端点不带
   `startTime` 时只返回最近 500 条（166 天），看着完整实则缺九年——那等于把
   最大的成本项悄悄抹掉。
+- **裁决与配对口径**：34/48 与 3/48 必须来自同一批配置（300 vs 48 不可比）；
+  2×2 的 D−B 中位与 20/20 CI 跨 0 被固定；文档里整体裁决必须是
+  `INCONCLUSIVE — PARTIAL IMPLEMENTATION`，旧版"同样 FALSIFIED"一出现就失败。
 
 ---
 
@@ -506,7 +558,7 @@ python -m research.verify --list-market                   # 本地行情缓存�
 
 **方法论文章**（对外内容资产）：`docs/article-falsification.md`。**分发作战包**（Reddit/X/闲鱼/Toku 文案 + gate 规则 + 本人操作清单）：`docs/dist/`。**落地页**（pitch + demo + 案例矩阵 + 价格）：`docs/index.html`。
 
-**测试**：`tests/test_verify.py` 覆盖 spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/walk-forward/参数网格/HTML 渲染/多策略对比/spec 自带数据/CLI 端到端，该文件 **118 passed**；**CI 实测 `pytest -q tests` 为 1090 passed, 1 skipped**（GitHub Actions Ubuntu / Python 3.11；本地 Windows 为 1089 passed, 2 skipped，多的那个 skip 是 symlink 需要 SeCreateSymbolicLinkPrivilege）。
+**测试**：`tests/test_verify.py` 覆盖 spec 校验/数据加载/RSI/指标/障碍可达/对照组确定性/walk-forward/参数网格/HTML 渲染/多策略对比/spec 自带数据/CLI 端到端，该文件 **118 passed**；**CI 实测 `pytest -q tests` 为 1094 passed, 1 skipped**（GitHub Actions Ubuntu / Python 3.11；本地 Windows 为 1093 passed, 2 skipped，多的那个 skip 是 symlink 需要 SeCreateSymbolicLinkPrivilege）。
 
 ## 运维：这个系统活着的时候经历过什么
 
@@ -525,7 +577,7 @@ python -m research.verify --list-market                   # 本地行情缓存�
 | 停止后循环反复复活 | `loop.sh` while true 守护 + 排队后台任务到点自启 | STOP 文件 kill switch（幂等） |
 | 后台任务约 3 小时被系统回收 | 环境事实 | 主+副班双看门狗，故障窗口 30 分钟 |
 
-**CI：`pytest -q tests` 1090 passed / 1 skipped**（`tests/test_verify.py` 单文件 118 passed；不带路径参数的 `pytest -q` 会连 `legacy_v1` 一起收，数字不同，勿混用）。
+**CI：`pytest -q tests` 1094 passed / 1 skipped**（`tests/test_verify.py` 单文件 118 passed；不带路径参数的 `pytest -q` 会连 `legacy_v1` 一起收，数字不同，勿混用）。
 
 ---
 
@@ -599,8 +651,10 @@ $PY -m research.verify --spec research/verify/samples/demo_spec.json --out r.md
 $PY research/tsmom/fetch_daily.py        # 15 币日线，零空洞
 $PY research/tsmom/fetch_funding.py      # 资金费 7907 条（多头真实成本）
 $PY research/tsmom/scan.py               # 300 个配置全扫描
-$PY research/tsmom/fair_control.py       # 对照组修正（82.3% → 6.2%）
+$PY research/tsmom/fair_control.py       # 公平对照组（同批 48 配置：70.8% → 6.2%）
 $PY research/tsmom/analyze.py            # 汇总
+$PY research/tsmom/verify_replay.py      # 回放器逐笔等价验证
+$PY research/tsmom/ablation_2x2.py       # 2×2 消融
 $PY -m pytest tests/test_tsmom.py -q     # 前视偏差 + 报告数字的回归测试
 ```
 
@@ -650,7 +704,7 @@ $PY -m pytest tests/test_tsmom.py -q     # 前视偏差 + 报告数字的回归�
 | Crypto Phase 1 / 2 / 2B / 3 + 15m 基线 | 报告在 `research/lite/reports/`，判定见总表 #1–#5 |
 | Crypto V4 S1 / S2 / S2b（4h / 1h） | 报告在 `research/v4/`，判定见总表 #6–#8 |
 | Polymarket 静态套利 / 尾盘 / 延迟 / 5m / 气象 / M1' | 报告在 `research/polymarket/`，判定见总表 #9–#15 |
-| CI 测试 | **1090 passed / 1 skipped**（`pytest -q tests`，GitHub Actions 实测） |
+| CI 测试 | **1094 passed / 1 skipped**（`pytest -q tests`，GitHub Actions 实测） |
 | M2 云节点 / M3 热路径 FOK / M4 极小资金 / M5 放量 | **全部不启动** |
 | 新的免费公开数据探测线 | **不再开** |
 | 唯一火种 `research/live/funding_shadow.py` | **保留**，周频、只读、零资金、不盯盘 |
@@ -658,13 +712,15 @@ $PY -m pytest tests/test_tsmom.py -q     # 前视偏差 + 报告数字的回归�
 **为什么停在这里。** 上面 16 条路线分布在两个完全不同的赛场（中心化交易所的永续合约、
 去中心化预测市场），用了五种不同的方法（时序回测、截面回测、盘口套利扫描、概率校准、
 时间序列动量），覆盖了从 15 分钟到日线的周期和从秒级到数年的持有期。**没有一条通过**——
-12 条被直接证伪，4 条卡在样本不足或无法拒绝零假设。它们失败在同一个约束上：
+11 条被直接证伪，4 条卡在样本不足或无法拒绝零假设，1 条实现不完整（#16）。它们失败在同一个约束上：
 **凡是"免费公开 API + 普通散户费率 + 写脚本自动跑"能触达的地方，已经没有能捡的钱了。**
 
 第 16 条（TSMOM）尤其说明问题：它本是"唯一没测过的经典路线"，理由看起来很硬——
 日线成本只有 15m 的 1/10，且是该领域引用最多的策略。测完 300 个配置后发现，
-**唯一像样的成果是发现自己上一版的对照组有构造缺陷**（82.3% → 6.2%）。
-连"补课"都只能补出一次自我纠错，这就是这类路线的天花板。
+**唯一像样的成果是发现自己上一版的对照组有构造缺陷**（配对后 70.8% → 6.2%）。
+补齐 2×2 消融后，D−B 中位 −0.54%、20/20 CI 跨 0——仍然没有可检出的 alpha。
+这一轮的裁决是 INCONCLUSIVE — PARTIAL IMPLEMENTATION：**测到的部分没有证据，
+没测到的部分不能宣称已死**。这比当初直接判 FALSIFIED 更准确，也更克制。
 
 继续挖第 17 条免费数据路线，只会多一份同样的报告，然后白白消耗时间。
 工程师的能力应该投到**工程速度能直接变现**的地方——产品、交付、服务，

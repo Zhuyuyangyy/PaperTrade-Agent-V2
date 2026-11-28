@@ -234,3 +234,84 @@ def test_funding_covers_the_research_window():
         assert first < 1_600_000_000_000, (
             f"{sym} 资金费起点晚于 2020-09，覆盖不到研究窗口"
         )
+
+# --------------------------------------------------------------------------
+# 4. 2026-11-28 审阅修订：配对比较、2×2 消融、裁决口径
+# --------------------------------------------------------------------------
+
+def test_paired_control_comparison_uses_same_48_configs():
+    """对照组修订必须配对比较：300 vs 48 是不可比的，那是我犯过的错。"""
+    scan = json.loads((TSMOM / "_out" / "scan_results.json").read_text(encoding="utf-8"))
+    fair = json.loads((TSMOM / "_out" / "fair_control.json").read_text(encoding="utf-8"))
+    scan_map = {(r.get("symbol"), r.get("variant"), r.get("lookback")): r
+                for r in scan if "error" not in r}
+
+    def passes(r):
+        ci = r.get("control_ci")
+        return bool(ci and not (ci[0] <= 0 <= ci[1]))
+
+    pairs = [(scan_map[(f["symbol"], f["variant"], f["lookback"])], f) for f in fair
+             if (f["symbol"], f["variant"], f["lookback"]) in scan_map]
+    assert len(pairs) == 48
+    naive = sum(1 for s, _ in pairs if passes(s))
+    fixed = sum(1 for _, f in pairs if passes(f))
+    assert naive == 34, f"朴素对照组通过数漂了：{naive}（应为 34 = 70.8%）"
+    assert fixed == 3, f"公平对照组通过数漂了：{fixed}（应为 3 = 6.2%）"
+
+
+def test_ablation_2x2_survivors_and_d_b():
+    """D−B 是原假设真正要检验的量，必须固化为证据不足而非证伪。"""
+    rows = json.loads((TSMOM / "_out" / "ablation_2x2.json").read_text(encoding="utf-8"))
+    assert len(rows) == 20
+    for key, want_median, want_n_pos in (("C_minus_A", -10.11, 8),
+                                          ("B_minus_A", -25.01, 0),
+                                          ("D_minus_B", -0.54, 8)):
+        vals = [r[key]["ann_pct"] for r in rows]
+        assert abs(statistics.median(vals) - want_median) < 0.02, (
+            f"{key} 中位漂了：{statistics.median(vals)}")
+        assert sum(1 for v in vals if v > 0) == want_n_pos
+    # D−B 的 CI 全部跨 0 —— 这是「证据不足」而非「已证伪」的判据
+    for r in rows:
+        lo, hi = r["D_minus_B"]["ci95_ann_pct"]
+        assert lo <= 0 <= hi, f"{r['symbol']} 的 D−B CI 不再跨 0，结论需重审"
+
+
+def test_verdict_is_partial_implementation_not_falsified():
+    """完整 TSMOM 未被证伪：裁决写错比数字写错更严重。"""
+    report = (TSMOM / "REPORT.md").read_text(encoding="utf-8")
+    readme = (REPO / "README.md").read_text(encoding="utf-8")
+    for name, text in (("REPORT.md", report), ("README.md", readme)):
+        assert "INCONCLUSIVE — PARTIAL IMPLEMENTATION" in text, (
+            f"{name} 丢掉了 PARTIAL IMPLEMENTATION 裁决")
+        # 允许在「具体配置」语境里出现 FALSIFIED，也允许在否定句里出现
+        # 「不能证伪」；禁止的是旧版那个无条件裁决句。
+        for stale in ("**同样 FALSIFIED**", "10 币日线 300 个配置，**同样 FALSIFIED**",
+                      "总表增至 16 条，仍为 0 条通过。详见"):
+            assert stale not in text, f"{name} 仍残留旧版整体裁决：{stale}"
+
+
+def test_replay_engine_compat_is_trade_identical():
+    """回放器必须先逐位复现引擎，才有资格改引擎的成交假设。"""
+    spec = importlib.util.spec_from_file_location("tsmom_replay", TSMOM / "replay.py")
+    rp = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rp)
+    eng_spec = importlib.util.spec_from_file_location(
+        "tsmom_engine_mod", REPO / "skill" / "strategy-falsifier" / "agensi" / "scripts" / "verify.py")
+    eng = importlib.util.module_from_spec(eng_spec)
+    sys.modules["tsmom_engine_mod"] = eng
+    eng_spec.loader.exec_module(eng)
+
+    sym, lb = "BTCUSDT", 30
+    meta = sg.build(sym, "tsmom_long", lb, offset_start="2020-09-01", offset_end="2026-11-26")
+    candles = rp.read_candles(TSMOM / "data" / f"{sym}.csv")
+    ent_t = rp.read_signal_csv(TSMOM / meta["entries_path"], "side")
+    exi_t = rp.read_signal_csv(TSMOM / meta["exits_path"], "reason")
+    idx = {c["t"]: i for i, c in enumerate(candles)}
+    rule = eng.Exit(timeout_bars=100000,
+                    exit_signals={idx[t]: s for t, s in exi_t.items()})
+    sim = eng.simulate(candles, {idx[t]: s for t, s in ent_t.items()},
+                       rule, fee_rate=0.0004)
+    mine = rp.replay_trades(candles, ent_t, exi_t, mode="engine_compat")
+    assert len(sim.fills) == len(mine) == 94
+    assert all(abs(f.net_pct - m["net"]) < 1e-9
+               for f, m in zip(sim.fills, mine))

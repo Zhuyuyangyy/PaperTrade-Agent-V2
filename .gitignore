@@ -109,6 +109,7 @@ research/tsmom/_out/*.md
 research/tsmom/_out/*.json
 !research/tsmom/_out/scan_results.json
 !research/tsmom/_out/fair_control.json
+!research/tsmom/_out/ablation_2x2.json
 # 每个配置一个 spec，可由 scan.py / fair_control.py 按同一份常量重建；
 # 留着会让每次改参数都刷出上百个 diff，掩盖真正的改动。
 research/tsmom/specs/*.json
